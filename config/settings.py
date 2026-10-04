@@ -3,6 +3,7 @@ import os
 import sys
 from pathlib import Path
 
+import dj_database_url
 from django.core.exceptions import ImproperlyConfigured
 from dotenv import load_dotenv
 from import_export.formats.base_formats import CSV, XLSX
@@ -28,6 +29,10 @@ if not SECRET_KEY:
 DEBUG = env_bool('DEBUG', False)
 ALLOWED_HOSTS = env_lista('ALLOWED_HOSTS')
 CSRF_TRUSTED_ORIGINS = env_lista('CSRF_TRUSTED_ORIGINS')
+render_hostname = os.getenv('RENDER_EXTERNAL_HOSTNAME')
+if render_hostname:
+    ALLOWED_HOSTS.append(render_hostname)
+    CSRF_TRUSTED_ORIGINS.append(f'https://{render_hostname}')
 ADMIN_URL = os.getenv('ADMIN_URL', 'panel').strip('/') or 'panel'
 
 INSTALLED_APPS = [
@@ -48,6 +53,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.locale.LocaleMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -77,10 +83,16 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'config.wsgi.application'
 
-# --- Base de datos: se elige con DB_ENGINE, sin tocar codigo ---
+# --- Base de datos: se elige con DB_ENGINE o DATABASE_URL ---
 DB_ENGINE = os.getenv('DB_ENGINE', 'sqlite').strip().lower()
 
-if DB_ENGINE == 'sqlite':
+if os.getenv('DATABASE_URL'):
+    DATABASES = {
+        'default': dj_database_url.parse(
+            os.environ['DATABASE_URL'], conn_max_age=60, ssl_require=not DEBUG,
+        )
+    }
+elif DB_ENGINE == 'sqlite':
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.sqlite3',
@@ -141,6 +153,15 @@ USE_TZ = True
 STATIC_URL = 'static/'
 STATICFILES_DIRS = [BASE_DIR / 'static']
 STATIC_ROOT = BASE_DIR / 'staticfiles'
+STORAGES = {
+    'default': {'BACKEND': 'django.core.files.storage.FileSystemStorage'},
+    'staticfiles': {
+        'BACKEND': (
+            'django.contrib.staticfiles.storage.StaticFilesStorage' if EN_TESTS
+            else 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+        ),
+    },
+}
 MEDIA_URL = 'media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
