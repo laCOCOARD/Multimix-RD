@@ -1,0 +1,26 @@
+{% extends "admin/change_form.html" %}
+
+{% block content %}
+{% if original and transiciones %}
+  <form class="panel-transiciones" method="post" action="{% url 'admin:pedidos_pedido_estado' original.pk %}">
+    {% csrf_token %}
+    <span class="panel-transiciones-titulo">Cambiar estado:</span>
+    {% for valor, etiqueta in transiciones %}
+      <button class="button panel-boton-estado panel-boton-{{ valor }}" type="submit" name="estado" value="{{ valor }}"
+              {% if valor == 'cancelado' %}data-confirmar="¿Cancelar el pedido {{ original.numero }}? Se liberará el stock reservado."{% endif %}>
+        {{ etiqueta }}
+      </button>
+    {% endfor %}
+  </form>
+  <script>
+    document.querySelectorAll('[data-confirmar]').forEach((boton) => {
+      boton.addEventListener('click', (evento) => {
+        if (!window.confirm(boton.dataset.confirmar)) evento.preventDefault();
+      });
+    });
+  </script>
+{% elif original %}
+  <p class="panel-transiciones panel-transiciones-titulo">Este pedido está en un estado final y ya no cambia.</p>
+{% endif %}
+{{ block.super }}
+{% endblock %}

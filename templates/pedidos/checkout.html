@@ -1,0 +1,187 @@
+{% extends 'base.html' %}
+{% load moneda static %}
+
+{% block titulo %}Finalizar pedido · {{ tienda.nombre }}{% endblock %}
+{% block meta %}<meta name="robots" content="noindex">{% endblock %}
+
+{% block contenido %}
+<div class="container py-4">
+  <h1 class="h3 mb-4">Finalizar pedido</h1>
+
+  <form method="post" action="{% url 'pedidos:checkout' %}" id="checkout" novalidate
+        data-url-totales="{% url 'pedidos:totales' %}"
+        data-pagos-recoger="{{ pagos_recoger|join:',' }}" data-pagos-envio="{{ pagos_envio|join:',' }}">
+    {% csrf_token %}
+
+    {% if formulario.non_field_errors %}
+      <div class="alert alert-danger" role="alert">
+        {% for error in formulario.non_field_errors %}<p class="mb-0">{{ error }}</p>{% endfor %}
+      </div>
+    {% endif %}
+
+    <div class="row g-4">
+      <div class="col-lg-7">
+
+        <section class="mm-panel mb-4">
+          <h2 class="h5 mb-3"><span class="mm-paso">1</span>Tus datos</h2>
+          <div class="row g-3">
+            <div class="col-12">
+              <label class="form-label" for="id_nombre">{{ formulario.nombre.label }}</label>
+              <input class="form-control{% if formulario.nombre.errors %} is-invalid{% endif %}" type="text" id="id_nombre" name="nombre"
+                     value="{{ formulario.nombre.value|default:'' }}" minlength="3" maxlength="120" autocomplete="name" required>
+              <div class="invalid-feedback">{{ formulario.nombre.errors.0|default:'Escribe tu nombre completo.' }}</div>
+            </div>
+            <div class="col-sm-6">
+              <label class="form-label" for="id_telefono">{{ formulario.telefono.label }}</label>
+              <input class="form-control{% if formulario.telefono.errors %} is-invalid{% endif %}" type="tel" id="id_telefono" name="telefono"
+                     value="{{ formulario.telefono.value|default:'' }}" maxlength="20" placeholder="809-555-1234"
+                     autocomplete="tel" inputmode="tel" required>
+              <div class="invalid-feedback">{{ formulario.telefono.errors.0|default:'Escribe un teléfono dominicano válido (809, 829 o 849).' }}</div>
+            </div>
+            <div class="col-sm-6">
+              <label class="form-label" for="id_correo">{{ formulario.correo.label }}</label>
+              <input class="form-control{% if formulario.correo.errors %} is-invalid{% endif %}" type="email" id="id_correo" name="correo"
+                     value="{{ formulario.correo.value|default:'' }}" autocomplete="email">
+              <div class="invalid-feedback">{{ formulario.correo.errors.0|default:'Escribe un correo válido.' }}</div>
+            </div>
+          </div>
+        </section>
+
+        <section class="mm-panel mb-4">
+          <h2 class="h5 mb-3"><span class="mm-paso">2</span>Entrega</h2>
+          <div class="row g-2 mb-2">
+            {% for valor, etiqueta in formulario.fields.metodo_entrega.choices %}
+              <div class="col-sm-6">
+                <input class="btn-check js-entrega" type="radio" name="metodo_entrega" id="entrega-{{ valor }}" value="{{ valor }}"
+                       {% if formulario.metodo_entrega.value == valor %}checked{% endif %} required>
+                <label class="mm-opcion" for="entrega-{{ valor }}">
+                  <i class="bi {% if valor == 'recoger' %}bi-shop{% else %}bi-truck{% endif %}"></i>
+                  <span>{{ etiqueta }}<small>{% if valor == 'recoger' %}Sin costo{% else %}Tarifa según tu zona{% endif %}</small></span>
+                </label>
+              </div>
+            {% endfor %}
+          </div>
+          {% if formulario.metodo_entrega.errors %}<p class="text-danger small">{{ formulario.metodo_entrega.errors.0 }}</p>{% endif %}
+
+          <div class="js-bloque-recoger mt-3">
+            <p class="mb-0"><i class="bi bi-geo-alt me-1"></i>
+              {% if tienda.direccion_tienda %}Recoges en: <strong>{{ tienda.direccion_tienda }}</strong>{% else %}Te confirmaremos la dirección por WhatsApp.{% endif %}
+              {% if tienda.horario %}<br><span class="text-muted small">{{ tienda.horario }}</span>{% endif %}
+            </p>
+          </div>
+
+          <div class="js-bloque-envio row g-3 mt-1">
+            <div class="col-12">
+              <label class="form-label" for="id_zona">{{ formulario.zona.label }}</label>
+              <select class="form-select{% if formulario.zona.errors %} is-invalid{% endif %}" id="id_zona" name="zona">
+                <option value="">Elige tu zona</option>
+                {% for zona in zonas %}
+                  <option value="{{ zona.pk }}"{% if formulario.zona.value|stringformat:'s' == zona.pk|stringformat:'s' %} selected{% endif %}>{{ zona.nombre }} — {{ zona.tarifa|moneda }}</option>
+                {% endfor %}
+              </select>
+              <div class="invalid-feedback">{{ formulario.zona.errors.0|default:'Elige tu zona de envío.' }}</div>
+            </div>
+            <div class="col-12">
+              <label class="form-label" for="id_direccion">{{ formulario.direccion.label }}</label>
+              <input class="form-control{% if formulario.direccion.errors %} is-invalid{% endif %}" type="text" id="id_direccion" name="direccion"
+                     value="{{ formulario.direccion.value|default:'' }}" maxlength="255" autocomplete="street-address"
+                     placeholder="Calle, número, sector">
+              <div class="invalid-feedback">{{ formulario.direccion.errors.0|default:'Escribe la dirección de entrega.' }}</div>
+            </div>
+            <div class="col-12">
+              <label class="form-label" for="id_referencia">{{ formulario.referencia.label }}</label>
+              <input class="form-control" type="text" id="id_referencia" name="referencia"
+                     value="{{ formulario.referencia.value|default:'' }}" maxlength="255" placeholder="Ej.: frente al colmado, portón azul">
+            </div>
+          </div>
+        </section>
+
+        <section class="mm-panel mb-4">
+          <h2 class="h5 mb-3"><span class="mm-paso">3</span>Pago</h2>
+          <div class="row g-2">
+            {% for valor, etiqueta in formulario.fields.metodo_pago.choices %}
+              {% if valor in pagos_recoger or valor in pagos_envio %}
+              <div class="col-sm-6 js-opcion-pago" data-pago="{{ valor }}">
+                <input class="btn-check js-pago" type="radio" name="metodo_pago" id="pago-{{ valor }}" value="{{ valor }}"
+                       {% if formulario.metodo_pago.value == valor %}checked{% endif %} required>
+                <label class="mm-opcion" for="pago-{{ valor }}">
+                  <i class="bi {% if valor == 'transferencia' %}bi-bank{% else %}bi-cash-coin{% endif %}"></i>
+                  <span>{{ etiqueta }}</span>
+                </label>
+              </div>
+              {% endif %}
+            {% endfor %}
+          </div>
+          {% if formulario.metodo_pago.errors %}<p class="text-danger small mt-2 mb-0">{{ formulario.metodo_pago.errors.0 }}</p>{% endif %}
+
+          <div class="js-bloque-transferencia mt-3">
+            <p class="small text-muted">Transfiere el total a cualquiera de estas cuentas. Tu pedido queda reservado y lo confirmamos al verificar el pago.</p>
+            {% include 'includes/cuentas_bancarias.html' %}
+            <div class="form-check mt-3">
+              <input class="form-check-input" type="checkbox" id="id_transferencia_realizada" name="transferencia_realizada"
+                     {% if formulario.transferencia_realizada.value %}checked{% endif %}>
+              <label class="form-check-label" for="id_transferencia_realizada">{{ formulario.transferencia_realizada.label }}</label>
+            </div>
+            <div class="mt-2">
+              <label class="form-label small" for="id_referencia_transferencia">{{ formulario.referencia_transferencia.label }}</label>
+              <input class="form-control" type="text" id="id_referencia_transferencia" name="referencia_transferencia"
+                     value="{{ formulario.referencia_transferencia.value|default:'' }}" maxlength="60">
+            </div>
+          </div>
+        </section>
+
+        <section class="mm-panel mb-4">
+          <h2 class="h5 mb-3"><span class="mm-paso">4</span>Notas</h2>
+          <label class="form-label" for="id_notas">{{ formulario.notas.label }}</label>
+          <textarea class="form-control{% if formulario.notas.errors %} is-invalid{% endif %}" id="id_notas" name="notas" rows="3" maxlength="500">{{ formulario.notas.value|default:'' }}</textarea>
+          <div class="invalid-feedback">{{ formulario.notas.errors.0 }}</div>
+        </section>
+
+        <div class="mm-campo-extra" aria-hidden="true">
+          <label for="id_sitio_web">Sitio web (no llenar)</label>
+          <input type="text" id="id_sitio_web" name="sitio_web" tabindex="-1" autocomplete="off">
+        </div>
+      </div>
+
+      <div class="col-lg-5">
+        <div class="mm-panel mm-resumen">
+          <h2 class="h5 mb-3">Resumen del pedido</h2>
+          <ul class="list-unstyled mm-resumen-lineas">
+            {% for linea in lineas %}
+              <li>
+                <span>{{ linea.cantidad }} × {{ linea.producto.nombre }}</span>
+                <span>{{ linea.subtotal|moneda }}</span>
+              </li>
+            {% endfor %}
+          </ul>
+
+          <label class="form-label small" for="id_cupon">{{ formulario.cupon.label }}</label>
+          <div class="input-group mb-1">
+            <input class="form-control text-uppercase{% if formulario.cupon.errors %} is-invalid{% endif %}" type="text" id="id_cupon" name="cupon"
+                   value="{{ formulario.cupon.value|default:'' }}" maxlength="30" autocomplete="off">
+            <button class="btn btn-outline-primary solo-con-js" type="button" id="aplicar-cupon">Aplicar</button>
+          </div>
+          <p class="small mb-3 {% if formulario.cupon.errors %}text-danger{% else %}text-success{% endif %}" id="mensaje-cupon" role="status">
+            {% if formulario.cupon.errors %}{{ formulario.cupon.errors.0 }}{% elif totales.cupon %}Cupón aplicado.{% endif %}
+          </p>
+
+          <dl class="mm-totales">
+            <div><dt>Subtotal</dt><dd id="total-subtotal">{{ totales.subtotal|moneda }}</dd></div>
+            <div class="text-success{% if not totales.descuento %} d-none{% endif %}" id="fila-descuento">
+              <dt>Descuento</dt><dd>-<span id="total-descuento">{{ totales.descuento|moneda }}</span></dd>
+            </div>
+            <div><dt>Envío</dt><dd id="total-envio">{% if formulario.metodo_entrega.value == 'envio' %}{{ totales.costo_envio|moneda }}{% else %}Gratis{% endif %}</dd></div>
+            <div class="mm-total"><dt>Total</dt><dd id="total-total">{{ totales.total|moneda }}</dd></div>
+          </dl>
+
+          <button class="btn btn-primary btn-lg w-100" type="submit" id="confirmar"><i class="bi bi-check2-circle me-1"></i>Confirmar pedido</button>
+          <p class="small text-muted mt-2 mb-0">Al confirmar reservamos tus productos y te llevamos a WhatsApp para enviar el pedido.</p>
+          <a class="btn btn-link w-100 mt-1" href="{% url 'carrito:detalle' %}">Volver al carrito</a>
+        </div>
+      </div>
+    </div>
+  </form>
+</div>
+{% endblock %}
+
+{% block scripts %}<script src="{% static 'js/checkout.js' %}" defer></script>{% endblock %}

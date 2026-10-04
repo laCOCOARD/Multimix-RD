@@ -1,0 +1,100 @@
+{% extends 'base.html' %}
+{% load moneda static %}
+
+{% block titulo %}Mi carrito · {{ tienda.nombre }}{% endblock %}
+{% block meta %}<meta name="robots" content="noindex">{% endblock %}
+
+{% block contenido %}
+<div class="container py-4">
+  <h1 class="h3 mb-4">Mi carrito</h1>
+
+  {% if lineas %}
+  <div class="row g-4" id="carrito"
+       data-url-actualizar="{% url 'carrito:actualizar' %}" data-url-eliminar="{% url 'carrito:eliminar' %}">
+    <div class="col-lg-8">
+      <div class="mm-panel p-0">
+        {% for linea in lineas %}
+          <div class="mm-linea js-linea" data-producto="{{ linea.producto.pk }}">
+            <a class="mm-linea-foto" href="{{ linea.producto.get_absolute_url }}">
+              {% with foto=linea.producto.foto_principal %}
+                {% if foto %}<img src="{{ foto.imagen.url }}" alt="" loading="lazy" width="96" height="96">
+                {% else %}<span class="mm-sin-foto"><i class="bi bi-image"></i></span>{% endif %}
+              {% endwith %}
+            </a>
+            <div class="mm-linea-datos">
+              <a class="mm-linea-nombre" href="{{ linea.producto.get_absolute_url }}">{{ linea.producto.nombre }}</a>
+              <p class="small text-muted mb-2">
+                {{ linea.precio_unitario|moneda }} c/u
+                {% if linea.producto.en_oferta %}<s class="ms-1">{{ linea.producto.precio|moneda }}</s>{% endif %}
+              </p>
+              <div class="d-flex flex-wrap align-items-center gap-2">
+                <form class="d-flex align-items-center gap-2 js-form-cantidad" method="post" action="{% url 'carrito:actualizar' %}">
+                  {% csrf_token %}
+                  <input type="hidden" name="producto_id" value="{{ linea.producto.pk }}">
+                  <div class="input-group mm-cantidad">
+                    <button class="btn btn-outline-secondary solo-con-js js-menos" type="button" aria-label="Quitar una unidad">−</button>
+                    <input class="form-control text-center js-cantidad" type="number" name="cantidad" value="{{ linea.cantidad }}"
+                           min="1" max="{% if linea.producto.stock_disponible < maximo_por_producto %}{{ linea.producto.stock_disponible }}{% else %}{{ maximo_por_producto }}{% endif %}"
+                           step="1" inputmode="numeric" aria-label="Cantidad de {{ linea.producto.nombre }}">
+                    <button class="btn btn-outline-secondary solo-con-js js-mas" type="button" aria-label="Agregar una unidad">+</button>
+                  </div>
+                  <button class="btn btn-sm btn-outline-primary solo-sin-js" type="submit">Actualizar</button>
+                </form>
+                <form class="js-form-eliminar" method="post" action="{% url 'carrito:eliminar' %}">
+                  {% csrf_token %}
+                  <input type="hidden" name="producto_id" value="{{ linea.producto.pk }}">
+                  <button class="btn btn-sm btn-link text-danger" type="submit"><i class="bi bi-trash me-1"></i>Eliminar</button>
+                </form>
+              </div>
+            </div>
+            <p class="mm-linea-subtotal js-subtotal-linea">{{ linea.subtotal|moneda }}</p>
+          </div>
+        {% endfor %}
+      </div>
+      <a class="btn btn-link px-0 mt-3" href="{% url 'catalogo:lista' %}"><i class="bi bi-arrow-left me-1"></i>Seguir comprando</a>
+    </div>
+
+    <div class="col-lg-4">
+      <div class="mm-panel mm-resumen">
+        <h2 class="h5 mb-3">Resumen</h2>
+
+        {% if resumen.cupon %}
+          <form class="d-flex justify-content-between align-items-center mb-3" method="post" action="{% url 'carrito:cupon_quitar' %}">
+            {% csrf_token %}
+            <span><i class="bi bi-ticket-perforated me-1"></i>Cupón <strong>{{ resumen.cupon.codigo }}</strong></span>
+            <button class="btn btn-sm btn-outline-danger" type="submit">Quitar</button>
+          </form>
+        {% else %}
+          <form class="mb-3" method="post" action="{% url 'carrito:cupon_aplicar' %}">
+            {% csrf_token %}
+            <label class="form-label small" for="codigo-cupon">¿Tienes un cupón?</label>
+            <div class="input-group">
+              <input class="form-control text-uppercase" type="text" id="codigo-cupon" name="codigo" maxlength="30" autocomplete="off" required>
+              <button class="btn btn-outline-primary" type="submit">Aplicar</button>
+            </div>
+          </form>
+        {% endif %}
+
+        <dl class="mm-totales">
+          <div><dt>Subtotal</dt><dd class="js-subtotal">{{ resumen.subtotal|moneda }}</dd></div>
+          <div class="text-success js-fila-descuento{% if not resumen.descuento %} d-none{% endif %}">
+            <dt>Descuento</dt><dd>-<span class="js-descuento">{{ resumen.descuento|moneda }}</span></dd>
+          </div>
+          <div class="mm-total"><dt>Total</dt><dd class="js-total">{{ resumen.total|moneda }}</dd></div>
+        </dl>
+        <p class="small text-muted">El envío se calcula en el siguiente paso.</p>
+        <a class="btn btn-primary btn-lg w-100" href="{% url 'pedidos:checkout' %}">Continuar con el pedido</a>
+      </div>
+    </div>
+  </div>
+  {% else %}
+    <div class="mm-vacio">
+      <i class="bi bi-bag"></i>
+      <p class="lead mb-2">Tu carrito está vacío.</p>
+      <a class="btn btn-primary" href="{% url 'catalogo:lista' %}">Ver el catálogo</a>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}<script src="{% static 'js/carrito.js' %}" defer></script>{% endblock %}

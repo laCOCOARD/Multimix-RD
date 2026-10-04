@@ -1,0 +1,266 @@
+/* ==========================================================================
+   Multimix RD — estilos de la tienda
+   Para cambiar la marca basta con editar las variables de :root.
+   ========================================================================== */
+
+:root {
+  --mm-primario: #0f4c81;
+  --mm-primario-oscuro: #0b3a63;
+  --mm-primario-suave: #e8f0f8;
+  --mm-acento: #ff7a1a;
+  --mm-acento-oscuro: #e56300;
+  --mm-oscuro: #0b2239;
+  --mm-texto: #1d2b3a;
+  --mm-texto-suave: #5b6b7c;
+  --mm-fondo: #f5f7fa;
+  --mm-superficie: #ffffff;
+  --mm-borde: #e3e8ee;
+  --mm-exito: #1a8f5a;
+  --mm-peligro: #d23b3b;
+  --mm-whatsapp: #25d366;
+  --mm-whatsapp-oscuro: #1da851;
+  --mm-radio: .9rem;
+  --mm-sombra: 0 1px 2px rgba(11, 34, 57, .06), 0 6px 18px rgba(11, 34, 57, .06);
+  --mm-sombra-alta: 0 10px 30px rgba(11, 34, 57, .14);
+  --mm-transicion: .25s ease;
+
+  --bs-primary: var(--mm-primario);
+  --bs-primary-rgb: 15, 76, 129;
+  --bs-link-color: var(--mm-primario);
+  --bs-link-color-rgb: 15, 76, 129;
+  --bs-link-hover-color: var(--mm-primario-oscuro);
+  --bs-link-hover-color-rgb: 11, 58, 99;
+  --bs-body-color: var(--mm-texto);
+  --bs-body-bg: var(--mm-fondo);
+  --bs-border-radius: .6rem;
+  --bs-font-sans-serif: "Segoe UI", system-ui, -apple-system, Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+body { -webkit-font-smoothing: antialiased; }
+h1, h2, h3, .h1, .h2, .h3 { font-weight: 700; color: var(--mm-oscuro); letter-spacing: -.01em; }
+a { text-decoration: none; }
+a:hover { text-decoration: underline; }
+img { max-width: 100%; height: auto; }
+
+/* --- Botones ------------------------------------------------------------ */
+.btn { font-weight: 600; transition: transform var(--mm-transicion), box-shadow var(--mm-transicion), background-color var(--mm-transicion), border-color var(--mm-transicion); }
+.btn:hover { text-decoration: none; }
+.btn:active { transform: scale(.98); }
+
+.btn-primary {
+  --bs-btn-bg: var(--mm-primario);
+  --bs-btn-border-color: var(--mm-primario);
+  --bs-btn-hover-bg: var(--mm-primario-oscuro);
+  --bs-btn-hover-border-color: var(--mm-primario-oscuro);
+  --bs-btn-active-bg: var(--mm-primario-oscuro);
+  --bs-btn-active-border-color: var(--mm-primario-oscuro);
+  --bs-btn-disabled-bg: var(--mm-primario);
+  --bs-btn-disabled-border-color: var(--mm-primario);
+}
+.btn-outline-primary {
+  --bs-btn-color: var(--mm-primario);
+  --bs-btn-border-color: var(--mm-primario);
+  --bs-btn-hover-bg: var(--mm-primario);
+  --bs-btn-hover-border-color: var(--mm-primario);
+  --bs-btn-active-bg: var(--mm-primario);
+  --bs-btn-active-border-color: var(--mm-primario);
+}
+.btn-acento {
+  --bs-btn-color: #fff;
+  --bs-btn-bg: var(--mm-acento);
+  --bs-btn-border-color: var(--mm-acento);
+  --bs-btn-hover-color: #fff;
+  --bs-btn-hover-bg: var(--mm-acento-oscuro);
+  --bs-btn-hover-border-color: var(--mm-acento-oscuro);
+  --bs-btn-active-color: #fff;
+  --bs-btn-active-bg: var(--mm-acento-oscuro);
+}
+.btn-whatsapp {
+  --bs-btn-color: #fff;
+  --bs-btn-bg: var(--mm-whatsapp);
+  --bs-btn-border-color: var(--mm-whatsapp);
+  --bs-btn-hover-color: #fff;
+  --bs-btn-hover-bg: var(--mm-whatsapp-oscuro);
+  --bs-btn-hover-border-color: var(--mm-whatsapp-oscuro);
+  --bs-btn-active-color: #fff;
+  --bs-btn-active-bg: var(--mm-whatsapp-oscuro);
+}
+.form-control:focus, .form-select:focus, .form-check-input:focus {
+  border-color: var(--mm-primario);
+  box-shadow: 0 0 0 .2rem rgba(15, 76, 129, .18);
+}
+.form-check-input:checked { background-color: var(--mm-primario); border-color: var(--mm-primario); }
+.page-link { color: var(--mm-primario); }
+.active > .page-link { background-color: var(--mm-primario); border-color: var(--mm-primario); }
+
+/* --- Cabecera ----------------------------------------------------------- */
+.mm-cabecera { background: var(--mm-superficie); border-bottom: 1px solid var(--mm-borde); box-shadow: 0 1px 8px rgba(11, 34, 57, .05); }
+.mm-logo:hover { text-decoration: none; }
+.mm-logo-texto { font-size: 1.45rem; font-weight: 800; letter-spacing: -.03em; color: var(--mm-primario); }
+.mm-logo-texto::after { content: ""; display: inline-block; width: .45rem; height: .45rem; margin-left: .2rem; border-radius: 50%; background: var(--mm-acento); }
+.mm-cabecera .nav-link { font-weight: 600; color: var(--mm-texto); }
+.mm-cabecera .nav-link:hover { color: var(--mm-primario); text-decoration: none; }
+.mm-buscador { gap: .4rem; min-width: min(100%, 17rem); }
+.mm-btn-carrito { font-size: 1.3rem; color: var(--mm-oscuro); border: 0; padding: .3rem .6rem; }
+.mm-btn-carrito:hover { color: var(--mm-primario); }
+.mm-contador { position: absolute; top: 0; right: -.1rem; background: var(--mm-acento); font-size: .68rem; }
+.mm-contador.mm-salto { animation: mm-salto .45s ease; }
+@keyframes mm-salto { 40% { transform: scale(1.45); } }
+.dropdown-item:active { background: var(--mm-primario); }
+
+/* --- Banner ------------------------------------------------------------- */
+.mm-banner {
+  padding: clamp(3rem, 9vw, 6.5rem) 0;
+  color: #fff;
+  background: radial-gradient(circle at 85% 20%, rgba(255, 122, 26, .35), transparent 45%),
+              linear-gradient(120deg, var(--mm-oscuro), var(--mm-primario));
+  background-size: cover;
+  background-position: center;
+}
+.mm-banner-titulo { color: #fff; font-size: clamp(2rem, 5.5vw, 3.4rem); font-weight: 800; line-height: 1.1; animation: mm-aparecer .7s ease both; }
+.mm-banner-subtitulo { font-size: clamp(1rem, 2.2vw, 1.25rem); opacity: .92; margin: 1rem 0 1.75rem; max-width: 34rem; animation: mm-aparecer .7s .1s ease both; }
+@keyframes mm-aparecer { from { opacity: 0; transform: translateY(14px); } }
+
+.mm-ventajas { margin-top: -1.75rem; position: relative; }
+.mm-ventaja { display: flex; align-items: center; gap: .7rem; height: 100%; padding: .9rem 1rem; background: var(--mm-superficie); border-radius: var(--mm-radio); box-shadow: var(--mm-sombra); font-weight: 600; font-size: .92rem; }
+.mm-ventaja i { font-size: 1.4rem; color: var(--mm-primario); }
+
+/* --- Secciones ---------------------------------------------------------- */
+.mm-seccion { padding-top: 3rem; }
+.mm-seccion-cabecera { display: flex; justify-content: space-between; align-items: baseline; gap: 1rem; margin-bottom: 1.1rem; }
+.mm-seccion-cabecera h2 { font-size: 1.45rem; margin: 0; }
+.mm-seccion-cabecera h2 i { color: var(--mm-acento); }
+.mm-seccion-cabecera a { font-weight: 600; white-space: nowrap; }
+
+.mm-categoria { position: relative; display: block; aspect-ratio: 4 / 3; overflow: hidden; border-radius: var(--mm-radio); background: var(--mm-primario-suave); box-shadow: var(--mm-sombra); }
+.mm-categoria img { width: 100%; height: 100%; object-fit: cover; transition: transform .5s ease; }
+.mm-categoria:hover img { transform: scale(1.07); }
+.mm-categoria-sin-foto { display: grid; place-items: center; height: 100%; font-size: 2.5rem; color: var(--mm-primario); }
+.mm-categoria-nombre { position: absolute; inset: auto 0 0 0; padding: 1.6rem .9rem .7rem; color: #fff; font-weight: 700; background: linear-gradient(transparent, rgba(11, 34, 57, .85)); }
+
+/* --- Tarjeta de producto ------------------------------------------------ */
+.mm-tarjeta { display: flex; flex-direction: column; background: var(--mm-superficie); border: 1px solid var(--mm-borde); border-radius: var(--mm-radio); overflow: hidden; transition: transform var(--mm-transicion), box-shadow var(--mm-transicion); }
+.mm-tarjeta:hover { transform: translateY(-4px); box-shadow: var(--mm-sombra-alta); }
+.mm-tarjeta-foto { position: relative; display: block; aspect-ratio: 1; background: var(--mm-primario-suave); overflow: hidden; }
+.mm-tarjeta-foto img { width: 100%; height: 100%; object-fit: cover; transition: transform .5s ease; }
+.mm-tarjeta:hover .mm-tarjeta-foto img { transform: scale(1.06); }
+.mm-sin-foto { display: grid; place-items: center; width: 100%; height: 100%; font-size: 2.2rem; color: #9db3c8; background: var(--mm-primario-suave); }
+.mm-etiquetas { position: absolute; top: .55rem; left: .55rem; display: flex; flex-direction: column; align-items: flex-start; gap: .3rem; }
+.mm-etiquetas .badge, .mm-precio .badge { font-size: .7rem; font-weight: 700; padding: .35em .6em; }
+.mm-etiqueta-oferta { background: var(--mm-peligro); }
+.mm-etiqueta-nuevo { background: var(--mm-exito); }
+.mm-etiqueta-destacado { background: var(--mm-acento); }
+.mm-etiqueta-agotado { background: #6b7785; }
+.mm-tarjeta-cuerpo { display: flex; flex-direction: column; flex: 1; padding: .85rem; }
+.mm-tarjeta-categoria { margin: 0 0 .15rem; font-size: .72rem; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; color: var(--mm-texto-suave); }
+.mm-tarjeta-nombre { font-size: .98rem; font-weight: 600; line-height: 1.3; margin: 0 0 .5rem; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; min-height: 2.55em; }
+.mm-tarjeta-nombre a { color: var(--mm-oscuro); }
+.mm-precio { display: flex; flex-wrap: wrap; align-items: baseline; gap: .15rem .5rem; }
+.mm-precio-final { font-size: 1.08rem; font-weight: 800; color: var(--mm-primario); }
+.mm-precio-anterior { font-size: .85rem; color: var(--mm-texto-suave); }
+.mm-precio-grande .mm-precio-final { font-size: 1.9rem; }
+.mm-precio-grande .mm-precio-anterior { font-size: 1.1rem; }
+
+/* --- Catalogo ----------------------------------------------------------- */
+.mm-filtros { background: var(--mm-superficie); border: 1px solid var(--mm-borde); border-radius: var(--mm-radio); padding: 1.1rem; }
+.mm-filtros .form-label { font-weight: 700; font-size: .85rem; }
+.mm-lista-categorias .list-group-item { padding: .4rem .6rem; border: 0; border-radius: .4rem; font-size: .93rem; }
+.mm-lista-categorias .list-group-item:hover { text-decoration: none; }
+.mm-lista-categorias .list-group-item.active { background: var(--mm-primario-suave); color: var(--mm-primario); font-weight: 700; }
+.mm-vacio { text-align: center; padding: 3.5rem 1rem; background: var(--mm-superficie); border: 1px dashed var(--mm-borde); border-radius: var(--mm-radio); }
+.mm-vacio > i { font-size: 3rem; color: #a9bacb; }
+.mm-codigo-error { font-size: 5rem; font-weight: 800; line-height: 1; color: var(--mm-primario); margin: 0; }
+
+/* --- Detalle de producto ------------------------------------------------ */
+.mm-galeria-principal { position: relative; aspect-ratio: 1; border-radius: var(--mm-radio); overflow: hidden; background: var(--mm-superficie); border: 1px solid var(--mm-borde); }
+.mm-galeria-principal img { width: 100%; height: 100%; object-fit: contain; transition: opacity .2s ease; }
+.mm-galeria-miniaturas { display: flex; gap: .5rem; margin-top: .6rem; overflow-x: auto; padding-bottom: .25rem; }
+.mm-miniatura { flex: 0 0 4.5rem; aspect-ratio: 1; border-radius: .6rem; overflow: hidden; border: 2px solid transparent; opacity: .7; transition: opacity var(--mm-transicion), border-color var(--mm-transicion); }
+.mm-miniatura img { width: 100%; height: 100%; object-fit: cover; }
+.mm-miniatura:hover, .mm-miniatura.activa { opacity: 1; border-color: var(--mm-primario); }
+.mm-disponibilidad { font-weight: 600; }
+.mm-descripcion { color: var(--mm-texto); }
+.mm-garantias li { display: flex; gap: .6rem; padding: .35rem 0; font-size: .93rem; }
+.mm-garantias i { color: var(--mm-primario); }
+
+/* --- Paneles, carrito y checkout ---------------------------------------- */
+.mm-panel { background: var(--mm-superficie); border: 1px solid var(--mm-borde); border-radius: var(--mm-radio); padding: 1.25rem; }
+.mm-resumen { position: sticky; top: 5.5rem; }
+.mm-linea { display: grid; grid-template-columns: 5rem 1fr; gap: .9rem; padding: 1rem; border-bottom: 1px solid var(--mm-borde); transition: opacity var(--mm-transicion); }
+.mm-linea:last-child { border-bottom: 0; }
+.mm-linea.mm-ocupada { opacity: .55; pointer-events: none; }
+.mm-linea-foto { display: block; width: 5rem; height: 5rem; border-radius: .6rem; overflow: hidden; background: var(--mm-primario-suave); }
+.mm-linea-foto img { width: 100%; height: 100%; object-fit: cover; }
+.mm-linea-nombre { font-weight: 600; color: var(--mm-oscuro); }
+.mm-linea-subtotal { grid-column: 2; margin: 0; font-weight: 800; color: var(--mm-primario); }
+.mm-cantidad { width: 8.2rem; flex-wrap: nowrap; }
+.mm-cantidad input { -moz-appearance: textfield; appearance: textfield; }
+.mm-cantidad input::-webkit-outer-spin-button, .mm-cantidad input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+@media (min-width: 576px) {
+  .mm-linea { grid-template-columns: 6rem 1fr auto; align-items: center; }
+  .mm-linea-foto { width: 6rem; height: 6rem; }
+  .mm-linea-subtotal { grid-column: 3; text-align: right; min-width: 7.5rem; }
+}
+
+.mm-totales { margin: 0 0 1rem; }
+.mm-totales > div { display: flex; justify-content: space-between; gap: 1rem; padding: .3rem 0; }
+.mm-totales dt { font-weight: 500; }
+.mm-totales dd { margin: 0; font-weight: 600; text-align: right; }
+.mm-totales .mm-total { margin-top: .4rem; padding-top: .7rem; border-top: 1px solid var(--mm-borde); font-size: 1.25rem; }
+.mm-totales .mm-total dt, .mm-totales .mm-total dd { font-weight: 800; color: var(--mm-oscuro); }
+.mm-totales.mm-cargando { opacity: .5; }
+.mm-resumen-lineas li { display: flex; justify-content: space-between; gap: 1rem; padding: .35rem 0; border-bottom: 1px dashed var(--mm-borde); font-size: .93rem; }
+.mm-resumen-lineas li span:last-child { white-space: nowrap; font-weight: 600; }
+
+.mm-paso { display: inline-grid; place-items: center; width: 1.8rem; height: 1.8rem; margin-right: .55rem; border-radius: 50%; background: var(--mm-primario); color: #fff; font-size: .9rem; font-weight: 700; }
+.mm-paso-compra .mm-paso { margin-bottom: .7rem; }
+.mm-opcion { display: flex; align-items: center; gap: .75rem; height: 100%; padding: .85rem 1rem; border: 2px solid var(--mm-borde); border-radius: .7rem; cursor: pointer; font-weight: 600; transition: border-color var(--mm-transicion), background-color var(--mm-transicion); }
+.mm-opcion i { font-size: 1.4rem; color: var(--mm-primario); }
+.mm-opcion small { display: block; font-weight: 400; color: var(--mm-texto-suave); }
+.mm-opcion:hover { border-color: #b9c9d9; }
+.btn-check:checked + .mm-opcion { border-color: var(--mm-primario); background: var(--mm-primario-suave); }
+.btn-check:focus-visible + .mm-opcion { box-shadow: 0 0 0 .2rem rgba(15, 76, 129, .25); }
+.mm-cuenta { padding: .9rem 1rem; border: 1px solid var(--mm-borde); border-radius: .7rem; background: var(--mm-fondo); }
+.mm-cuenta-numero { font-size: 1.15rem; font-weight: 800; letter-spacing: .03em; color: var(--mm-oscuro); user-select: all; }
+.mm-lista li { margin-bottom: .5rem; }
+/* Honeypot: fuera de la pantalla para personas, visible para bots. */
+.mm-campo-extra { position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden; }
+
+/* --- Confirmacion ------------------------------------------------------- */
+.mm-icono-estado { font-size: 3.5rem; line-height: 1; }
+.mm-numero-pedido { font-size: 1.7rem; font-weight: 800; letter-spacing: .03em; color: var(--mm-oscuro); margin-bottom: .5rem; user-select: all; }
+.mm-btn-enviar { padding-block: .9rem; font-size: 1.15rem; box-shadow: 0 8px 22px rgba(37, 211, 102, .35); }
+.mm-btn-enviar.mm-llamar { animation: mm-pulso 1.4s ease 3; }
+@keyframes mm-pulso { 50% { transform: scale(1.03); box-shadow: 0 10px 30px rgba(37, 211, 102, .55); } }
+.mm-estado { font-size: .85rem; padding: .45em .8em; }
+.mm-estado-pendiente { background: #f0a500; }
+.mm-estado-pagado { background: #1f7ae0; }
+.mm-estado-listo { background: #7a4fd6; }
+.mm-estado-enviado { background: #0e9aa7; }
+.mm-estado-entregado { background: var(--mm-exito); }
+.mm-estado-cancelado { background: var(--mm-peligro); }
+.mm-datos dt { font-weight: 600; color: var(--mm-texto-suave); }
+
+/* --- Pie y WhatsApp flotante -------------------------------------------- */
+.mm-pie { background: var(--mm-oscuro); color: #c9d6e3; }
+.mm-pie h2 { color: #fff; }
+.mm-pie a { color: #c9d6e3; }
+.mm-pie a:hover { color: #fff; }
+.mm-pie li { padding: .15rem 0; }
+.mm-logo-pie { color: #fff; }
+.mm-pie-legal { border-top: 1px solid rgba(255, 255, 255, .1); color: #93a6b9; }
+.mm-whatsapp-flotante { position: fixed; right: 1rem; bottom: 1rem; z-index: 1030; display: grid; place-items: center; width: 3.5rem; height: 3.5rem; border-radius: 50%; background: var(--mm-whatsapp); color: #fff; font-size: 1.8rem; box-shadow: 0 6px 20px rgba(0, 0, 0, .25); transition: transform var(--mm-transicion), background-color var(--mm-transicion); }
+.mm-whatsapp-flotante:hover { transform: scale(1.08); background: var(--mm-whatsapp-oscuro); color: #fff; text-decoration: none; }
+
+/* --- Animacion al hacer scroll y alternativas sin JavaScript ------------- */
+.js .revelar { opacity: 0; transform: translateY(18px); transition: opacity .55s ease, transform .55s ease, box-shadow var(--mm-transicion); }
+.js .revelar.visible { opacity: 1; transform: none; }
+.js .mm-tarjeta.revelar.visible:hover { transform: translateY(-4px); }
+html:not(.js) .solo-con-js { display: none !important; }
+.js .solo-sin-js { display: none !important; }
+.js .mm-oculto { display: none !important; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+  .js .revelar { opacity: 1; transform: none; }
+}

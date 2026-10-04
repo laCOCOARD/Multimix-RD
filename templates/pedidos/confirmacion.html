@@ -1,0 +1,108 @@
+{% extends 'base.html' %}
+{% load moneda static %}
+
+{% block titulo %}Pedido {{ pedido.numero }} · {{ tienda.nombre }}{% endblock %}
+{% block meta %}<meta name="robots" content="noindex, nofollow"><meta name="referrer" content="no-referrer">{% endblock %}
+
+{% block contenido %}
+<div class="container py-4" id="confirmacion" data-abrir="{% if abrir_whatsapp %}1{% else %}0{% endif %}" data-token="{{ pedido.token }}">
+  <div class="row justify-content-center">
+    <div class="col-lg-8">
+
+      <div class="mm-panel text-center mb-4">
+        {% if pedido.estado == 'cancelado' %}
+          <i class="bi bi-x-circle-fill mm-icono-estado text-danger"></i>
+          <h1 class="h3 mt-2">Pedido cancelado</h1>
+        {% else %}
+          <i class="bi bi-check-circle-fill mm-icono-estado text-success"></i>
+          <h1 class="h3 mt-2">¡Recibimos tu pedido!</h1>
+        {% endif %}
+        <p class="mb-1">Número de pedido</p>
+        <p class="mm-numero-pedido">{{ pedido.numero }}</p>
+        <p class="mb-3"><span class="badge mm-estado mm-estado-{{ pedido.estado }}">{{ pedido.get_estado_display }}</span></p>
+
+        {% if pedido.estado == 'pendiente' %}
+          <p class="text-muted">Falta un paso: envíanos el pedido por WhatsApp para confirmarlo.</p>
+          <a class="btn btn-whatsapp btn-lg w-100 mm-btn-enviar" id="enviar-whatsapp" href="{{ enlace_whatsapp }}" target="_blank" rel="noopener">
+            <i class="bi bi-whatsapp me-2"></i>Enviar pedido por WhatsApp
+          </a>
+          <p class="small text-muted mt-2 mb-0" id="ayuda-whatsapp">Si WhatsApp no se abre solo, toca el botón.</p>
+        {% endif %}
+      </div>
+
+      {% if pedido.paga_por_transferencia and pedido.estado == 'pendiente' %}
+        <div class="mm-panel mb-4">
+          <h2 class="h5 mb-3"><i class="bi bi-bank me-2"></i>Datos para la transferencia</h2>
+          <p>Transfiere <strong>{{ pedido.total|moneda }}</strong> a cualquiera de estas cuentas e indica tu número de pedido.</p>
+          {% include 'includes/cuentas_bancarias.html' %}
+
+          {% if pedido.transferencia_realizada %}
+            <p class="alert alert-success mt-3 mb-0">
+              <i class="bi bi-check2 me-1"></i>Nos avisaste que ya transferiste{% if pedido.referencia_transferencia %} (Ref.: {{ pedido.referencia_transferencia }}){% endif %}. Lo verificaremos y te confirmamos.
+            </p>
+          {% elif puede_avisar_transferencia %}
+            <form class="mt-3" method="post" action="{% url 'pedidos:avisar_transferencia' pedido.token %}">
+              {% csrf_token %}
+              <label class="form-label" for="referencia-transferencia">¿Ya transferiste? Escribe la referencia (opcional)</label>
+              <div class="input-group">
+                <input class="form-control" type="text" id="referencia-transferencia" name="referencia_transferencia" maxlength="60">
+                <button class="btn btn-outline-primary" type="submit">Ya hice la transferencia</button>
+              </div>
+            </form>
+          {% endif %}
+        </div>
+      {% endif %}
+
+      <div class="mm-panel mb-4">
+        <h2 class="h5 mb-3">Resumen del pedido</h2>
+        <ul class="list-unstyled mm-resumen-lineas">
+          {% for detalle in pedido.detalles.all %}
+            <li>
+              <span>{{ detalle.cantidad }} × {{ detalle.nombre_producto }}</span>
+              <span>{{ detalle.subtotal|moneda }}</span>
+            </li>
+          {% endfor %}
+        </ul>
+        <dl class="mm-totales mb-0">
+          <div><dt>Subtotal</dt><dd>{{ pedido.subtotal|moneda }}</dd></div>
+          {% if pedido.descuento %}
+            <div class="text-success"><dt>Cupón {{ pedido.codigo_cupon }}</dt><dd>-{{ pedido.descuento|moneda }}</dd></div>
+          {% endif %}
+          <div>
+            <dt>{% if pedido.recoge_en_tienda %}Recoger en tienda{% else %}Envío ({{ pedido.zona.nombre }}){% endif %}</dt>
+            <dd>{% if pedido.recoge_en_tienda %}Gratis{% else %}{{ pedido.costo_envio|moneda }}{% endif %}</dd>
+          </div>
+          <div class="mm-total"><dt>Total</dt><dd>{{ pedido.total|moneda }}</dd></div>
+        </dl>
+      </div>
+
+      <div class="mm-panel mb-4">
+        <h2 class="h5 mb-3">Datos del pedido</h2>
+        <dl class="row mb-0 mm-datos">
+          <dt class="col-sm-4">Fecha</dt><dd class="col-sm-8">{{ pedido.creado|date:"j \d\e F \d\e Y, g:i a" }}</dd>
+          <dt class="col-sm-4">Cliente</dt><dd class="col-sm-8">{{ pedido.nombre }}</dd>
+          <dt class="col-sm-4">Teléfono</dt><dd class="col-sm-8">{{ pedido.telefono|telefono }}</dd>
+          {% if pedido.correo %}<dt class="col-sm-4">Correo</dt><dd class="col-sm-8">{{ pedido.correo }}</dd>{% endif %}
+          <dt class="col-sm-4">Entrega</dt>
+          <dd class="col-sm-8">
+            {{ pedido.get_metodo_entrega_display }}
+            {% if pedido.recoge_en_tienda %}
+              {% if tienda.direccion_tienda %}<br><span class="text-muted">{{ tienda.direccion_tienda }}</span>{% endif %}
+              {% if tienda.horario %}<br><span class="text-muted">{{ tienda.horario }}</span>{% endif %}
+            {% else %}
+              <br><span class="text-muted">{{ pedido.direccion }}{% if pedido.referencia %} · {{ pedido.referencia }}{% endif %}</span>
+            {% endif %}
+          </dd>
+          <dt class="col-sm-4">Forma de pago</dt><dd class="col-sm-8">{{ pedido.get_metodo_pago_display }}</dd>
+          {% if pedido.notas_cliente %}<dt class="col-sm-4">Notas</dt><dd class="col-sm-8">{{ pedido.notas_cliente|linebreaksbr }}</dd>{% endif %}
+        </dl>
+      </div>
+
+      <p class="small text-muted text-center">Guarda este enlace para consultar tu pedido. Los productos quedan reservados por {{ tienda.horas_vencimiento_pedido }} horas mientras confirmamos el pago.</p>
+      <p class="text-center"><a class="btn btn-outline-primary" href="{% url 'catalogo:lista' %}">Seguir comprando</a></p>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}<script src="{% static 'js/confirmacion.js' %}" defer></script>{% endblock %}

@@ -1,0 +1,145 @@
+{% load static %}<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block titulo %}{{ tienda.nombre }}{% endblock %}</title>
+  <meta name="description" content="{% block descripcion %}{{ tienda.banner_subtitulo|default:'Tienda en línea con productos de todas las categorías.' }}{% endblock %}">
+  {% block meta %}
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="{{ tienda.nombre }}">
+  <meta property="og:title" content="{{ tienda.nombre }}">
+  <meta property="og:description" content="{{ tienda.banner_subtitulo }}">
+  <meta property="og:url" content="{{ request.build_absolute_uri }}">
+  <meta property="og:locale" content="es_DO">
+  {% endblock %}
+  <meta name="theme-color" content="#0f4c81">
+  <link rel="preconnect" href="https://cdn.jsdelivr.net">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <link rel="stylesheet" href="{% static 'css/tienda.css' %}">
+  <script>document.documentElement.classList.add('js');</script>
+</head>
+<body class="d-flex flex-column min-vh-100">
+  <a class="visually-hidden-focusable" href="#contenido">Saltar al contenido</a>
+
+  <header class="mm-cabecera sticky-top">
+    <nav class="navbar navbar-expand-lg">
+      <div class="container">
+        <a class="navbar-brand mm-logo" href="{% url 'catalogo:inicio' %}">
+          {% if tienda.logo %}
+            <img src="{{ tienda.logo.url }}" alt="{{ tienda.nombre }}" height="40">
+          {% else %}
+            <span class="mm-logo-texto">{{ tienda.nombre }}</span>
+          {% endif %}
+        </a>
+
+        <div class="d-flex align-items-center gap-2 order-lg-3">
+          <a class="btn mm-btn-carrito position-relative" href="{% url 'carrito:detalle' %}" aria-label="Ver carrito">
+            <i class="bi bi-bag"></i>
+            <span class="badge rounded-pill mm-contador js-contador-carrito{% if not carrito_cantidad %} d-none{% endif %}">{{ carrito_cantidad }}</span>
+          </a>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#menu-principal"
+                  aria-controls="menu-principal" aria-expanded="false" aria-label="Abrir menú">
+            <span class="navbar-toggler-icon"></span>
+          </button>
+        </div>
+
+        <div class="collapse navbar-collapse order-lg-2" id="menu-principal">
+          <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+            <li class="nav-item"><a class="nav-link" href="{% url 'catalogo:lista' %}">Catálogo</a></li>
+            <li class="nav-item dropdown">
+              <a class="nav-link dropdown-toggle" href="{% url 'catalogo:lista' %}" role="button" data-bs-toggle="dropdown" aria-expanded="false">Categorías</a>
+              <ul class="dropdown-menu">
+                {% for categoria in categorias_menu %}
+                  <li><a class="dropdown-item" href="{{ categoria.get_absolute_url }}">{{ categoria.nombre }}</a></li>
+                {% empty %}
+                  <li><span class="dropdown-item-text text-muted">Aún no hay categorías</span></li>
+                {% endfor %}
+              </ul>
+            </li>
+            <li class="nav-item"><a class="nav-link" href="{% url 'catalogo:lista' %}?oferta=on">Ofertas</a></li>
+            <li class="nav-item"><a class="nav-link" href="{% url 'core:como_comprar' %}">Cómo comprar</a></li>
+            <li class="nav-item"><a class="nav-link" href="{% url 'core:envios' %}">Envíos y retiros</a></li>
+          </ul>
+          <form class="d-flex mm-buscador" role="search" action="{% url 'catalogo:lista' %}" method="get">
+            <input class="form-control" type="search" name="q" placeholder="Buscar productos" aria-label="Buscar productos"
+                   value="{{ filtros.q|default:'' }}" maxlength="80">
+            <button class="btn btn-primary" type="submit" aria-label="Buscar"><i class="bi bi-search"></i></button>
+          </form>
+        </div>
+      </div>
+    </nav>
+  </header>
+
+  <main id="contenido" class="flex-grow-1">
+    {% if messages %}
+      <div class="container mt-3">
+        {% for mensaje in messages %}
+          <div class="alert alert-{% if mensaje.tags == 'error' %}danger{% else %}{{ mensaje.tags }}{% endif %} alert-dismissible fade show" role="alert">
+            {{ mensaje }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
+          </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+    {% block contenido %}{% endblock %}
+  </main>
+
+  <footer class="mm-pie mt-5">
+    <div class="container py-5">
+      <div class="row g-4">
+        <div class="col-md-4">
+          <p class="mm-logo-texto mm-logo-pie mb-2">{{ tienda.nombre }}</p>
+          <p class="mb-0 small">{{ tienda.banner_subtitulo }}</p>
+        </div>
+        <div class="col-6 col-md-2">
+          <h2 class="h6">Tienda</h2>
+          <ul class="list-unstyled small mb-0">
+            <li><a href="{% url 'catalogo:lista' %}">Catálogo</a></li>
+            <li><a href="{% url 'catalogo:lista' %}?oferta=on">Ofertas</a></li>
+            <li><a href="{% url 'carrito:detalle' %}">Mi carrito</a></li>
+          </ul>
+        </div>
+        <div class="col-6 col-md-2">
+          <h2 class="h6">Ayuda</h2>
+          <ul class="list-unstyled small mb-0">
+            <li><a href="{% url 'core:como_comprar' %}">Cómo comprar</a></li>
+            <li><a href="{% url 'core:envios' %}">Envíos y retiros</a></li>
+          </ul>
+        </div>
+        <div class="col-md-4">
+          <h2 class="h6">Contacto</h2>
+          <ul class="list-unstyled small mb-2">
+            {% if tienda.direccion_tienda %}<li><i class="bi bi-geo-alt me-2"></i>{{ tienda.direccion_tienda }}</li>{% endif %}
+            {% if tienda.telefono %}<li><i class="bi bi-telephone me-2"></i>{{ tienda.telefono }}</li>{% endif %}
+            {% if tienda.correo %}<li><i class="bi bi-envelope me-2"></i><a href="mailto:{{ tienda.correo }}">{{ tienda.correo }}</a></li>{% endif %}
+            {% if tienda.horario %}<li><i class="bi bi-clock me-2"></i>{{ tienda.horario }}</li>{% endif %}
+          </ul>
+          <div class="d-flex gap-3 fs-5">
+            {% if tienda.facebook %}<a href="{{ tienda.facebook }}" target="_blank" rel="noopener" aria-label="Facebook"><i class="bi bi-facebook"></i></a>{% endif %}
+            {% if tienda.instagram %}<a href="{{ tienda.instagram }}" target="_blank" rel="noopener" aria-label="Instagram"><i class="bi bi-instagram"></i></a>{% endif %}
+            {% if tienda.tiktok %}<a href="{{ tienda.tiktok }}" target="_blank" rel="noopener" aria-label="TikTok"><i class="bi bi-tiktok"></i></a>{% endif %}
+            {% if enlace_whatsapp_tienda %}<a href="{{ enlace_whatsapp_tienda }}" target="_blank" rel="noopener" aria-label="WhatsApp"><i class="bi bi-whatsapp"></i></a>{% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="mm-pie-legal py-3 small text-center">
+      © {% now "Y" %} {{ tienda.nombre }}. Precios en pesos dominicanos (RD$).
+    </div>
+  </footer>
+
+  {% if enlace_whatsapp_tienda %}
+    <a class="mm-whatsapp-flotante" href="{{ enlace_whatsapp_tienda }}" target="_blank" rel="noopener" aria-label="Escríbenos por WhatsApp">
+      <i class="bi bi-whatsapp"></i>
+    </a>
+  {% endif %}
+
+  <div class="toast-container position-fixed bottom-0 start-50 translate-middle-x p-3" id="avisos" aria-live="polite"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" defer></script>
+  <script src="{% static 'js/tienda.js' %}" defer></script>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,138 @@
+{% extends 'base.html' %}
+{% load moneda %}
+
+{% block titulo %}{{ producto.nombre }} · {{ tienda.nombre }}{% endblock %}
+{% block descripcion %}{{ producto.descripcion|default:producto.nombre|truncatechars:155 }}{% endblock %}
+
+{% block meta %}
+<meta property="og:type" content="product">
+<meta property="og:site_name" content="{{ tienda.nombre }}">
+<meta property="og:title" content="{{ producto.nombre }} · {{ producto.precio_final|moneda }}">
+<meta property="og:description" content="{{ producto.descripcion|default:producto.nombre|truncatechars:155 }}">
+<meta property="og:url" content="{{ url_absoluta }}">
+<meta property="og:locale" content="es_DO">
+{% if og_imagen %}
+<meta property="og:image" content="{{ og_imagen }}">
+<meta property="og:image:alt" content="{{ producto.nombre }}">
+<meta name="twitter:card" content="summary_large_image">
+{% endif %}
+<meta property="product:price:amount" content="{{ producto.precio_final|stringformat:'.2f' }}">
+<meta property="product:price:currency" content="DOP">
+<meta property="product:availability" content="{% if producto.agotado %}out of stock{% else %}in stock{% endif %}">
+<link rel="canonical" href="{{ url_absoluta }}">
+{% endblock %}
+
+{% block contenido %}
+<div class="container py-4">
+  <nav aria-label="Ruta de navegación">
+    <ol class="breadcrumb small">
+      <li class="breadcrumb-item"><a href="{% url 'catalogo:inicio' %}">Inicio</a></li>
+      <li class="breadcrumb-item"><a href="{{ producto.categoria.get_absolute_url }}">{{ producto.categoria.nombre }}</a></li>
+      <li class="breadcrumb-item active" aria-current="page">{{ producto.nombre }}</li>
+    </ol>
+  </nav>
+
+  <div class="row g-4 g-lg-5">
+    <div class="col-md-6">
+      <div class="mm-galeria">
+        <div class="mm-galeria-principal">
+          {% if fotos %}
+            <img id="foto-principal" src="{{ fotos.0.imagen.url }}" alt="{{ producto.nombre }}" width="800" height="800">
+          {% else %}
+            <span class="mm-sin-foto"><i class="bi bi-image"></i></span>
+          {% endif %}
+          <span class="mm-etiquetas">
+            {% if producto.agotado %}<span class="badge mm-etiqueta-agotado">Agotado</span>{% endif %}
+            {% if producto.en_oferta %}<span class="badge mm-etiqueta-oferta">Oferta -{{ producto.porcentaje_descuento }}%</span>{% endif %}
+            {% if producto.es_nuevo %}<span class="badge mm-etiqueta-nuevo">Nuevo</span>{% endif %}
+            {% if producto.destacado %}<span class="badge mm-etiqueta-destacado">Destacado</span>{% endif %}
+          </span>
+        </div>
+        {% if fotos|length > 1 %}
+          <div class="mm-galeria-miniaturas">
+            {% for foto in fotos %}
+              <a class="mm-miniatura{% if forloop.first %} activa{% endif %} js-miniatura" href="{{ foto.imagen.url }}" target="_blank" rel="noopener">
+                <img src="{{ foto.imagen.url }}" alt="Foto {{ forloop.counter }} de {{ producto.nombre }}" loading="lazy" decoding="async" width="90" height="90">
+              </a>
+            {% endfor %}
+          </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="col-md-6">
+      <p class="mm-tarjeta-categoria mb-1">{{ producto.categoria.nombre }} · SKU {{ producto.sku }}</p>
+      <h1 class="h2">{{ producto.nombre }}</h1>
+
+      <p class="mm-precio mm-precio-grande my-3">
+        <span class="mm-precio-final">{{ producto.precio_final|moneda }}</span>
+        {% if producto.en_oferta %}
+          <s class="mm-precio-anterior">{{ producto.precio|moneda }}</s>
+          <span class="badge mm-etiqueta-oferta">-{{ producto.porcentaje_descuento }}%</span>
+        {% endif %}
+      </p>
+
+      <p class="mm-disponibilidad">
+        {% if producto.agotado %}
+          <span class="text-danger"><i class="bi bi-x-circle-fill me-1"></i>Agotado</span>
+        {% elif producto.stock_bajo %}
+          <span class="text-warning-emphasis"><i class="bi bi-exclamation-circle-fill me-1"></i>¡Quedan {{ producto.stock_disponible }}!</span>
+        {% elif tienda.mostrar_cantidad_exacta %}
+          <span class="text-success"><i class="bi bi-check-circle-fill me-1"></i>{{ producto.stock_disponible }} disponibles</span>
+        {% else %}
+          <span class="text-success"><i class="bi bi-check-circle-fill me-1"></i>Disponible</span>
+        {% endif %}
+      </p>
+
+      {% if producto.agotado %}
+        <button class="btn btn-secondary btn-lg w-100 mb-2" type="button" disabled>Agotado</button>
+      {% else %}
+        <form class="js-agregar mb-2" method="post" action="{% url 'carrito:agregar' %}">
+          {% csrf_token %}
+          <input type="hidden" name="producto_id" value="{{ producto.pk }}">
+          <input type="hidden" name="next" value="{{ request.get_full_path }}">
+          <div class="row g-2 align-items-end">
+            <div class="col-4 col-sm-3">
+              <label class="form-label small mb-1" for="cantidad">Cantidad</label>
+              <input class="form-control form-control-lg text-center" type="number" id="cantidad" name="cantidad"
+                     value="1" min="1" max="{{ cantidad_maxima }}" step="1" inputmode="numeric" required>
+            </div>
+            <div class="col">
+              <button class="btn btn-primary btn-lg w-100" type="submit"><i class="bi bi-bag-plus me-1"></i>Agregar al carrito</button>
+            </div>
+          </div>
+        </form>
+      {% endif %}
+
+      {% if enlace_consulta %}
+        <a class="btn btn-whatsapp btn-lg w-100" href="{{ enlace_consulta }}" target="_blank" rel="noopener">
+          <i class="bi bi-whatsapp me-1"></i>Preguntar por WhatsApp
+        </a>
+      {% endif %}
+
+      {% if producto.descripcion %}
+        <h2 class="h5 mt-4">Descripción</h2>
+        <div class="mm-descripcion">{{ producto.descripcion|linebreaks }}</div>
+      {% endif %}
+
+      <ul class="list-unstyled mm-garantias mt-4 mb-0">
+        <li><i class="bi bi-truck"></i>Envío a domicilio o retiro en tienda. <a href="{% url 'core:envios' %}">Ver zonas y tarifas</a></li>
+        <li><i class="bi bi-bank"></i>Paga por transferencia{% if tienda.permitir_contra_entrega %}, contra entrega{% endif %} o en efectivo al recoger.</li>
+      </ul>
+    </div>
+  </div>
+
+  {% if relacionados %}
+    <section class="mm-seccion px-0">
+      <div class="mm-seccion-cabecera">
+        <h2>También te puede interesar</h2>
+      </div>
+      <div class="row g-3">
+        {% for producto in relacionados %}
+          <div class="col-6 col-md-4 col-lg-3">{% include 'includes/tarjeta_producto.html' %}</div>
+        {% endfor %}
+      </div>
+    </section>
+  {% endif %}
+</div>
+{% endblock %}

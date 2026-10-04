@@ -1,0 +1,68 @@
+{% extends 'base.html' %}
+
+{% block contenido %}
+<section class="mm-banner{% if tienda.banner_imagen %} mm-banner-con-imagen{% endif %}"
+         {% if tienda.banner_imagen %}style="background-image: linear-gradient(90deg, rgba(11,34,57,.88), rgba(11,34,57,.45)), url('{{ tienda.banner_imagen.url }}');"{% endif %}>
+  <div class="container">
+    <div class="row">
+      <div class="col-lg-7">
+        <h1 class="mm-banner-titulo">{{ tienda.banner_titulo }}</h1>
+        {% if tienda.banner_subtitulo %}<p class="mm-banner-subtitulo">{{ tienda.banner_subtitulo }}</p>{% endif %}
+        <div class="d-flex flex-wrap gap-2">
+          <a class="btn btn-acento btn-lg" href="{% url 'catalogo:lista' %}">{{ tienda.banner_texto_boton|default:'Ver catálogo' }}</a>
+          <a class="btn btn-outline-light btn-lg" href="{% url 'core:como_comprar' %}">Cómo comprar</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="container mm-ventajas">
+  <div class="row g-3">
+    <div class="col-6 col-lg-3"><div class="mm-ventaja revelar"><i class="bi bi-truck"></i><span>Envíos a todo el país</span></div></div>
+    <div class="col-6 col-lg-3"><div class="mm-ventaja revelar"><i class="bi bi-shop"></i><span>Retiro en tienda</span></div></div>
+    <div class="col-6 col-lg-3"><div class="mm-ventaja revelar"><i class="bi bi-bank"></i><span>Paga por transferencia</span></div></div>
+    <div class="col-6 col-lg-3"><div class="mm-ventaja revelar"><i class="bi bi-whatsapp"></i><span>Atención por WhatsApp</span></div></div>
+  </div>
+</section>
+
+{% if categorias %}
+<section class="container mm-seccion">
+  <div class="mm-seccion-cabecera">
+    <h2><i class="bi bi-grid-fill me-2"></i>Categorías</h2>
+  </div>
+  <div class="row g-3">
+    {% for categoria in categorias %}
+      <div class="col-6 col-md-4 col-lg-3">
+        <a class="mm-categoria revelar" href="{{ categoria.get_absolute_url }}">
+          {% if categoria.imagen %}
+            <img src="{{ categoria.imagen.url }}" alt="" loading="lazy" decoding="async">
+          {% else %}
+            <span class="mm-categoria-sin-foto"><i class="bi bi-box-seam"></i></span>
+          {% endif %}
+          <span class="mm-categoria-nombre">{{ categoria.nombre }}</span>
+        </a>
+      </div>
+    {% endfor %}
+  </div>
+</section>
+{% endif %}
+
+{% for seccion in secciones %}
+<section class="container mm-seccion">
+  <div class="mm-seccion-cabecera">
+    <h2><i class="bi {{ seccion.icono }} me-2"></i>{{ seccion.titulo }}</h2>
+    <a href="{% url 'catalogo:lista' %}{{ seccion.enlace }}">Ver todo <i class="bi bi-arrow-right"></i></a>
+  </div>
+  <div class="row g-3">
+    {% for producto in seccion.productos %}
+      <div class="col-6 col-md-4 col-lg-3">{% include 'includes/tarjeta_producto.html' %}</div>
+    {% endfor %}
+  </div>
+</section>
+{% empty %}
+<section class="container mm-seccion text-center">
+  <p class="lead text-muted">Pronto verás aquí nuestros productos.</p>
+</section>
+{% endfor %}
+{% endblock %}

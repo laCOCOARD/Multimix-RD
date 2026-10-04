@@ -1,0 +1,127 @@
+{% extends 'base.html' %}
+
+{% block titulo %}{% if categoria %}{{ categoria.nombre }}{% else %}Catálogo{% endif %} · {{ tienda.nombre }}{% endblock %}
+{% block descripcion %}{% if categoria and categoria.descripcion %}{{ categoria.descripcion|truncatechars:155 }}{% else %}Catálogo de productos de {{ tienda.nombre }}.{% endif %}{% endblock %}
+
+{% block contenido %}
+<div class="container py-4">
+  <nav aria-label="Ruta de navegación">
+    <ol class="breadcrumb small">
+      <li class="breadcrumb-item"><a href="{% url 'catalogo:inicio' %}">Inicio</a></li>
+      {% if categoria %}
+        <li class="breadcrumb-item"><a href="{% url 'catalogo:lista' %}">Catálogo</a></li>
+        <li class="breadcrumb-item active" aria-current="page">{{ categoria.nombre }}</li>
+      {% else %}
+        <li class="breadcrumb-item active" aria-current="page">Catálogo</li>
+      {% endif %}
+    </ol>
+  </nav>
+
+  <div class="d-flex flex-wrap justify-content-between align-items-end gap-2 mb-3">
+    <div>
+      <h1 class="h3 mb-1">{% if categoria %}{{ categoria.nombre }}{% else %}Catálogo{% endif %}</h1>
+      <p class="text-muted mb-0">
+        {{ pagina.paginator.count }} producto{{ pagina.paginator.count|pluralize }}
+        {% if filtros.q %} para «{{ filtros.q }}»{% endif %}
+      </p>
+    </div>
+    <button class="btn btn-outline-primary d-lg-none" type="button" data-bs-toggle="collapse" data-bs-target="#filtros"
+            aria-expanded="false" aria-controls="filtros"><i class="bi bi-sliders me-1"></i>Filtros</button>
+  </div>
+
+  <div class="row g-4">
+    <aside class="col-lg-3">
+      <form class="mm-filtros collapse d-lg-block" id="filtros" method="get"
+            action="{% if categoria %}{{ categoria.get_absolute_url }}{% else %}{% url 'catalogo:lista' %}{% endif %}">
+        <div class="mb-3">
+          <label class="form-label" for="filtro-q">Buscar</label>
+          <input class="form-control" type="search" id="filtro-q" name="q" value="{{ filtros.q|default:'' }}" maxlength="80">
+        </div>
+
+        <div class="mb-3">
+          <span class="form-label d-block">Categoría</span>
+          <div class="list-group list-group-flush mm-lista-categorias">
+            <a class="list-group-item list-group-item-action{% if not categoria %} active{% endif %}"
+               href="{% url 'catalogo:lista' %}{% querystring pagina=None %}">Todas</a>
+            {% for item in categorias %}
+              <a class="list-group-item list-group-item-action{% if categoria.pk == item.pk %} active{% endif %}"
+                 href="{{ item.get_absolute_url }}{% querystring pagina=None %}">{{ item.nombre }}</a>
+            {% endfor %}
+          </div>
+        </div>
+
+        <div class="mb-3">
+          <span class="form-label d-block">Precio (RD$)</span>
+          <div class="input-group">
+            <input class="form-control" type="number" name="precio_min" min="0" step="1" placeholder="Mín."
+                   aria-label="Precio mínimo" value="{{ filtros.precio_min|default_if_none:''|floatformat:'0u' }}">
+            <input class="form-control" type="number" name="precio_max" min="0" step="1" placeholder="Máx."
+                   aria-label="Precio máximo" value="{{ filtros.precio_max|default_if_none:''|floatformat:'0u' }}">
+          </div>
+        </div>
+
+        <div class="form-check mb-2">
+          <input class="form-check-input" type="checkbox" id="filtro-oferta" name="oferta"{% if filtros.oferta %} checked{% endif %}>
+          <label class="form-check-label" for="filtro-oferta">Solo en oferta</label>
+        </div>
+        <div class="form-check mb-3">
+          <input class="form-check-input" type="checkbox" id="filtro-disponibles" name="disponibles"{% if filtros.disponibles %} checked{% endif %}>
+          <label class="form-check-label" for="filtro-disponibles">Solo disponibles</label>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label" for="filtro-orden">Ordenar por</label>
+          <select class="form-select" id="filtro-orden" name="orden">
+            {% for valor, etiqueta in ordenes %}
+              <option value="{{ valor }}"{% if valor == orden_actual %} selected{% endif %}>{{ etiqueta }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="d-grid gap-2">
+          <button class="btn btn-primary" type="submit">Aplicar filtros</button>
+          {% if hay_filtros %}
+            <a class="btn btn-link" href="{% if categoria %}{{ categoria.get_absolute_url }}{% else %}{% url 'catalogo:lista' %}{% endif %}">Limpiar filtros</a>
+          {% endif %}
+        </div>
+      </form>
+    </aside>
+
+    <div class="col-lg-9">
+      {% if pagina.object_list %}
+        <div class="row g-3">
+          {% for producto in pagina %}
+            <div class="col-6 col-md-4">{% include 'includes/tarjeta_producto.html' %}</div>
+          {% endfor %}
+        </div>
+
+        {% if pagina.has_other_pages %}
+          <nav class="mt-4" aria-label="Páginas del catálogo">
+            <ul class="pagination justify-content-center flex-wrap">
+              <li class="page-item{% if not pagina.has_previous %} disabled{% endif %}">
+                <a class="page-link" href="{% if pagina.has_previous %}{% querystring pagina=pagina.previous_page_number %}{% else %}#{% endif %}" aria-label="Anterior">&laquo;</a>
+              </li>
+              {% for numero in pagina.paginator.page_range %}
+                {% if numero == pagina.number %}
+                  <li class="page-item active" aria-current="page"><span class="page-link">{{ numero }}</span></li>
+                {% elif numero > pagina.number|add:'-3' and numero < pagina.number|add:'3' %}
+                  <li class="page-item"><a class="page-link" href="{% querystring pagina=numero %}">{{ numero }}</a></li>
+                {% endif %}
+              {% endfor %}
+              <li class="page-item{% if not pagina.has_next %} disabled{% endif %}">
+                <a class="page-link" href="{% if pagina.has_next %}{% querystring pagina=pagina.next_page_number %}{% else %}#{% endif %}" aria-label="Siguiente">&raquo;</a>
+              </li>
+            </ul>
+          </nav>
+        {% endif %}
+      {% else %}
+        <div class="mm-vacio">
+          <i class="bi bi-search"></i>
+          <p class="lead mb-2">No encontramos productos con esos filtros.</p>
+          <a class="btn btn-primary" href="{% url 'catalogo:lista' %}">Ver todo el catálogo</a>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

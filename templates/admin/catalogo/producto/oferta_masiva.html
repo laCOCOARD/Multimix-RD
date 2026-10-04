@@ -1,0 +1,50 @@
+{% extends "admin/base_site.html" %}
+{% load moneda %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+  <a href="{% url 'admin:index' %}">Inicio</a> &rsaquo;
+  <a href="{% url 'admin:catalogo_producto_changelist' %}">Productos</a> &rsaquo; Poner oferta
+</div>
+{% endblock %}
+
+{% block content %}
+<div id="content-main">
+  <form method="post">
+    {% csrf_token %}
+    <input type="hidden" name="action" value="poner_oferta">
+    {% for producto in productos %}<input type="hidden" name="_selected_action" value="{{ producto.pk }}">{% endfor %}
+
+    <fieldset class="module aligned">
+      <h2>Oferta para {{ productos|length }} producto{{ productos|length|pluralize }}</h2>
+      {% for campo in formulario %}
+        <div class="form-row{% if campo.errors %} errors{% endif %}">
+          {{ campo.errors }}
+          <div class="flex-container">
+            {{ campo.label_tag }}
+            {{ campo }}
+          </div>
+          {% if campo.help_text %}<div class="help">{{ campo.help_text }}</div>{% endif %}
+        </div>
+      {% endfor %}
+    </fieldset>
+
+    <div class="module">
+      <table>
+        <caption>Productos seleccionados</caption>
+        <thead><tr><th scope="col">Producto</th><th scope="col">SKU</th><th scope="col">Precio normal</th></tr></thead>
+        <tbody>
+          {% for producto in productos %}
+            <tr><th scope="row">{{ producto.nombre }}</th><td>{{ producto.sku }}</td><td>{{ producto.precio|moneda }}</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <div class="submit-row">
+      <input type="submit" name="aplicar" value="Aplicar oferta" class="default">
+      <a class="closelink" href="{% url 'admin:catalogo_producto_changelist' %}">Cancelar</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

@@ -1,0 +1,6 @@
+{% extends "admin/import_export/change_list_import_export.html" %}
+
+{% block object-tools-items %}
+  <li><a href="{% url 'admin:catalogo_producto_plantilla' %}" class="import_link">Plantilla de Excel</a></li>
+  {{ block.super }}
+{% endblock %}

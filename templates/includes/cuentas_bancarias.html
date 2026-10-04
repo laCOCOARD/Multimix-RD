@@ -1,0 +1,16 @@
+{% if cuentas %}
+  <div class="row g-3">
+    {% for cuenta in cuentas %}
+      <div class="col-md-6">
+        <div class="mm-cuenta h-100">
+          <p class="fw-semibold mb-1"><i class="bi bi-bank me-2"></i>{{ cuenta.banco }}</p>
+          <p class="small mb-0">Cuenta de {{ cuenta.get_tipo_cuenta_display|lower }}</p>
+          <p class="mm-cuenta-numero mb-1">{{ cuenta.numero }}</p>
+          <p class="small mb-0">{{ cuenta.titular }}{% if cuenta.cedula_rnc %} · {{ cuenta.cedula_rnc }}{% endif %}</p>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+{% else %}
+  <p class="text-muted mb-0">Te enviaremos los datos de la cuenta por WhatsApp.</p>
+{% endif %}

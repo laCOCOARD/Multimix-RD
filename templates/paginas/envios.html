@@ -1,0 +1,44 @@
+{% extends 'base.html' %}
+{% load moneda %}
+
+{% block titulo %}Envíos y retiros · {{ tienda.nombre }}{% endblock %}
+{% block descripcion %}Zonas de envío, tarifas y retiro en tienda de {{ tienda.nombre }}.{% endblock %}
+
+{% block contenido %}
+<div class="container py-4">
+  <h1 class="h3 mb-4">Envíos y retiros</h1>
+  <div class="row g-4">
+    <div class="col-lg-6">
+      <div class="mm-panel h-100">
+        <h2 class="h5"><i class="bi bi-shop me-2"></i>Retiro en tienda</h2>
+        <p>Sin costo. Te avisamos por WhatsApp cuando tu pedido esté listo para recoger.</p>
+        <ul class="list-unstyled mb-0">
+          {% if tienda.direccion_tienda %}<li><i class="bi bi-geo-alt me-2"></i>{{ tienda.direccion_tienda }}</li>{% endif %}
+          {% if tienda.horario %}<li><i class="bi bi-clock me-2"></i>{{ tienda.horario }}</li>{% endif %}
+          {% if tienda.telefono %}<li><i class="bi bi-telephone me-2"></i>{{ tienda.telefono }}</li>{% endif %}
+        </ul>
+      </div>
+    </div>
+    <div class="col-lg-6">
+      <div class="mm-panel h-100">
+        <h2 class="h5"><i class="bi bi-truck me-2"></i>Envío a domicilio</h2>
+        {% if zonas %}
+          <p>La tarifa depende de tu zona y se suma al total del pedido.</p>
+          <div class="table-responsive">
+            <table class="table align-middle mb-0">
+              <thead><tr><th scope="col">Zona</th><th scope="col" class="text-end">Tarifa</th></tr></thead>
+              <tbody>
+                {% for zona in zonas %}
+                  <tr><td>{{ zona.nombre }}</td><td class="text-end">{{ zona.tarifa|moneda }}</td></tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        {% else %}
+          <p class="mb-0">Por ahora solo ofrecemos retiro en tienda. Escríbenos si necesitas envío.</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

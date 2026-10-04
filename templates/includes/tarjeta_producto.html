@@ -1,0 +1,37 @@
+{% load moneda %}
+<article class="mm-tarjeta h-100 revelar">
+  <a class="mm-tarjeta-foto" href="{{ producto.get_absolute_url }}" tabindex="-1" aria-hidden="true">
+    {% with foto=producto.foto_principal %}
+      {% if foto %}
+        <img src="{{ foto.imagen.url }}" alt="" loading="lazy" decoding="async" width="400" height="400">
+      {% else %}
+        <span class="mm-sin-foto"><i class="bi bi-image"></i></span>
+      {% endif %}
+    {% endwith %}
+    <span class="mm-etiquetas">
+      {% if producto.agotado %}<span class="badge mm-etiqueta-agotado">Agotado</span>{% endif %}
+      {% if producto.en_oferta %}<span class="badge mm-etiqueta-oferta">Oferta -{{ producto.porcentaje_descuento }}%</span>{% endif %}
+      {% if producto.es_nuevo %}<span class="badge mm-etiqueta-nuevo">Nuevo</span>{% endif %}
+      {% if producto.destacado %}<span class="badge mm-etiqueta-destacado">Destacado</span>{% endif %}
+    </span>
+  </a>
+  <div class="mm-tarjeta-cuerpo">
+    <p class="mm-tarjeta-categoria">{{ producto.categoria.nombre }}</p>
+    <h3 class="mm-tarjeta-nombre"><a href="{{ producto.get_absolute_url }}">{{ producto.nombre }}</a></h3>
+    <p class="mm-precio mb-3">
+      <span class="mm-precio-final">{{ producto.precio_final|moneda }}</span>
+      {% if producto.en_oferta %}<s class="mm-precio-anterior">{{ producto.precio|moneda }}</s>{% endif %}
+    </p>
+    {% if producto.agotado %}
+      <button class="btn btn-outline-secondary w-100 mt-auto" type="button" disabled>Agotado</button>
+    {% else %}
+      <form class="mt-auto js-agregar" method="post" action="{% url 'carrito:agregar' %}">
+        {% csrf_token %}
+        <input type="hidden" name="producto_id" value="{{ producto.pk }}">
+        <input type="hidden" name="cantidad" value="1">
+        <input type="hidden" name="next" value="{{ request.get_full_path }}">
+        <button class="btn btn-primary w-100" type="submit"><i class="bi bi-bag-plus me-1"></i>Agregar</button>
+      </form>
+    {% endif %}
+  </div>
+</article>

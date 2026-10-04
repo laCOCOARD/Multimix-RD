@@ -1,0 +1,102 @@
+{% extends "admin/index.html" %}
+{% load moneda %}
+
+{% block content %}
+{% if resumen %}
+<section class="panel-resumen" aria-label="Resumen de la tienda">
+  <div class="panel-tarjetas">
+    <div class="panel-tarjeta">
+      <span class="panel-tarjeta-titulo">Ventas de hoy</span>
+      <strong class="panel-tarjeta-valor">{{ resumen.ventas_dia|moneda }}</strong>
+      <span class="panel-tarjeta-nota">Pedidos cobrados hoy</span>
+    </div>
+    <div class="panel-tarjeta">
+      <span class="panel-tarjeta-titulo">Ventas del mes</span>
+      <strong class="panel-tarjeta-valor">{{ resumen.ventas_mes|moneda }}</strong>
+      <span class="panel-tarjeta-nota">Pedidos cobrados este mes</span>
+    </div>
+    <a class="panel-tarjeta panel-tarjeta-aviso" href="{% url 'admin:pedidos_pedido_changelist' %}?estado__exact=pendiente">
+      <span class="panel-tarjeta-titulo">Pedidos pendientes</span>
+      <strong class="panel-tarjeta-valor">{{ resumen.pedidos_pendientes }}</strong>
+      <span class="panel-tarjeta-nota">{{ resumen.transferencias_por_verificar }} con transferencia por verificar</span>
+    </a>
+    <a class="panel-tarjeta panel-tarjeta-bajo" href="{% url 'admin:catalogo_producto_changelist' %}?stock=bajo">
+      <span class="panel-tarjeta-titulo">Stock bajo</span>
+      <strong class="panel-tarjeta-valor">{{ resumen.total_stock_bajo }}</strong>
+      <span class="panel-tarjeta-nota">Con {{ resumen.umbral_stock_bajo }} unidades o menos</span>
+    </a>
+    <a class="panel-tarjeta panel-tarjeta-agotado" href="{% url 'admin:catalogo_producto_changelist' %}?stock=agotado">
+      <span class="panel-tarjeta-titulo">Agotados</span>
+      <strong class="panel-tarjeta-valor">{{ resumen.total_agotados }}</strong>
+      <span class="panel-tarjeta-nota">Productos activos sin stock</span>
+    </a>
+  </div>
+
+  <div class="panel-columnas">
+    <div class="module">
+      <table>
+        <caption>Últimos pedidos</caption>
+        <thead><tr><th scope="col">Número</th><th scope="col">Cliente</th><th scope="col">Total</th><th scope="col">Estado</th></tr></thead>
+        <tbody>
+          {% for pedido in resumen.ultimos_pedidos %}
+            <tr>
+              <th scope="row"><a href="{% url 'admin:pedidos_pedido_change' pedido.pk %}">{{ pedido.numero }}</a><br><small>{{ pedido.creado|date:"j M, g:i a" }}</small></th>
+              <td>{{ pedido.nombre }}</td>
+              <td>{{ pedido.total|moneda }}</td>
+              <td><span class="panel-estado panel-estado-{{ pedido.estado }}">{{ pedido.get_estado_display }}</span></td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="4">Todavía no hay pedidos.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <div class="module">
+      <table>
+        <caption>Top 5 más vendidos</caption>
+        <thead><tr><th scope="col">Producto</th><th scope="col">Unidades</th><th scope="col">Ingresos</th></tr></thead>
+        <tbody>
+          {% for fila in resumen.mas_vendidos %}
+            <tr>
+              <th scope="row"><a href="{% url 'admin:catalogo_producto_change' fila.producto_id %}">{{ fila.producto__nombre }}</a></th>
+              <td>{{ fila.unidades }}</td>
+              <td>{{ fila.ingresos|moneda }}</td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="3">Aún no hay ventas confirmadas.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <div class="module">
+      <table>
+        <caption>Productos con stock bajo o agotados</caption>
+        <thead><tr><th scope="col">Producto</th><th scope="col">Almacén</th><th scope="col">Reservado</th><th scope="col">Disponible</th></tr></thead>
+        <tbody>
+          {% for producto in resumen.agotados %}
+            <tr>
+              <th scope="row"><a href="{% url 'admin:catalogo_producto_change' producto.pk %}">{{ producto.nombre }}</a></th>
+              <td>{{ producto.stock_almacen }}</td><td>{{ producto.stock_reservado }}</td>
+              <td><span class="panel-etiqueta panel-agotado">Agotado</span></td>
+            </tr>
+          {% endfor %}
+          {% for producto in resumen.stock_bajo %}
+            <tr>
+              <th scope="row"><a href="{% url 'admin:catalogo_producto_change' producto.pk %}">{{ producto.nombre }}</a></th>
+              <td>{{ producto.stock_almacen }}</td><td>{{ producto.stock_reservado }}</td>
+              <td><span class="panel-etiqueta panel-bajo">{{ producto.disponible }}</span></td>
+            </tr>
+          {% endfor %}
+          {% if not resumen.agotados and not resumen.stock_bajo %}
+            <tr><td colspan="4">Todo el inventario está en buen nivel.</td></tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+{% endif %}
+{{ block.super }}
+{% endblock %}
