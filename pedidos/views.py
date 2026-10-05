@@ -1,3 +1,6 @@
+import os
+from ipaddress import ip_address
+
 from django.conf import settings
 from django.contrib import messages
 from django.http import JsonResponse
@@ -19,10 +22,25 @@ SESION_PEDIDO_NUEVO = 'pedido_nuevo'
 
 def _ip_cliente(request):
     if settings.CONFIAR_IP_PROXY:
-        real = request.META.get('HTTP_X_REAL_IP', '').strip()
-        if real:
-            return real
-    return request.META.get('REMOTE_ADDR') or None
+        candidatos = [
+            request.META.get('HTTP_X_REAL_IP', '').strip(),
+            request.META.get('HTTP_X_FORWARDED_FOR', '').split(',')[0].strip(),
+        ]
+        for candidato in candidatos:
+            try:
+                return str(ip_address(candidato))
+            except ValueError:
+                continue
+
+        # Render may expose the client IP only through its forwarded headers.
+        # Never rate-limit every visitor together by the platform proxy address.
+        if os.getenv('RENDER_EXTERNAL_HOSTNAME'):
+            return None
+
+    try:
+        return str(ip_address(request.META.get('REMOTE_ADDR', '')))
+    except ValueError:
+        return None
 
 
 def _zona_elegida(valor):
