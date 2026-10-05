@@ -1,5 +1,7 @@
 Django>=5.2,<5.3
 Pillow>=11.0
+# Generación de códigos QR para la verificación de facturas.
+qrcode[pil]>=8.0,<9
 # El extra [xlsx] instala openpyxl, necesario para importar/exportar Excel.
 django-import-export[xlsx]>=4.3,<5
 python-dotenv>=1.0

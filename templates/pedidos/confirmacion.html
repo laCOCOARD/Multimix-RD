@@ -98,6 +98,13 @@
         </dl>
       </div>
 
+      <div class="mm-panel mb-4 text-center">
+        <a class="btn btn-outline-primary btn-lg" href="{% url 'pedidos:factura' pedido.token %}" target="_blank" rel="noopener">
+          <i class="bi bi-receipt me-2"></i>Factura
+        </a>
+        <p class="small text-muted mt-2 mb-0">Abre la imagen para guardarla o compartirla. Incluye un código QR único para verificar el pedido.</p>
+      </div>
+
       <p class="small text-muted text-center">Guarda este enlace para consultar tu pedido. Los productos quedan reservados por {{ tienda.horas_vencimiento_pedido }} horas mientras confirmamos el pago.</p>
       <p class="text-center"><a class="btn btn-outline-primary" href="{% url 'catalogo:lista' %}">Seguir comprando</a></p>
     </div>

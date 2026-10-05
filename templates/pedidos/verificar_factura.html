@@ -1,0 +1,26 @@
+{% extends 'base.html' %}
+{% load moneda %}
+
+{% block titulo %}Verificación del pedido {{ pedido.numero }} · {{ tienda.nombre }}{% endblock %}
+{% block meta %}<meta name="robots" content="noindex, nofollow"><meta name="referrer" content="no-referrer">{% endblock %}
+
+{% block contenido %}
+<div class="container py-4">
+  <div class="row justify-content-center">
+    <div class="col-lg-7">
+      <section class="mm-panel text-center">
+        <i class="bi bi-patch-check-fill mm-icono-estado text-success"></i>
+        <h1 class="h3 mt-3">Pedido verificado</h1>
+        <p class="text-muted">Este código corresponde a un pedido registrado en {{ tienda.nombre }}.</p>
+        <dl class="row text-start mt-4 mb-0 mm-datos">
+          <dt class="col-sm-4">Número</dt><dd class="col-sm-8">{{ pedido.numero }}</dd>
+          <dt class="col-sm-4">Fecha</dt><dd class="col-sm-8">{{ pedido.creado|date:"j \d\e F \d\e Y, g:i a" }}</dd>
+          <dt class="col-sm-4">Total</dt><dd class="col-sm-8 fw-bold">{{ pedido.total|moneda }}</dd>
+          <dt class="col-sm-4">Estado actual</dt><dd class="col-sm-8">{{ pedido.get_estado_display }}</dd>
+        </dl>
+        <p class="alert alert-info mt-4 mb-0">La verificación confirma el pedido, pero no acredita que el pago haya sido recibido.</p>
+      </section>
+    </div>
+  </div>
+</div>
+{% endblock %}
