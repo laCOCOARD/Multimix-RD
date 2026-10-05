@@ -260,6 +260,54 @@ html:not(.js) .solo-con-js { display: none !important; }
 .js .solo-sin-js { display: none !important; }
 .js .mm-oculto { display: none !important; }
 
+/* --- Ajustes para pantallas pequeñas ------------------------------------ */
+@media (max-width: 991.98px) {
+  .mm-resumen { position: static; }
+  .mm-cabecera .navbar-collapse { padding-bottom: .75rem; }
+  .mm-buscador { width: 100%; min-width: 0; }
+}
+
+@media (max-width: 575.98px) {
+  .mm-cabecera .container { column-gap: .35rem; }
+  .mm-cabecera .navbar-brand { min-width: 0; max-width: calc(100% - 6.5rem); margin-right: 0; }
+  .mm-logo-texto { font-size: clamp(1rem, 5vw, 1.3rem); overflow-wrap: anywhere; }
+  .mm-cabecera .navbar-brand img { max-width: 100%; object-fit: contain; }
+
+  .mm-banner { padding: 3rem 0; }
+  .mm-banner .btn { flex: 1 1 auto; }
+  .mm-ventaja { min-height: 4.5rem; padding: .7rem; gap: .5rem; font-size: .82rem; }
+  .mm-ventaja i { flex: 0 0 auto; font-size: 1.2rem; }
+  .mm-seccion { padding-top: 2.25rem; }
+  .mm-seccion-cabecera { align-items: flex-start; flex-wrap: wrap; }
+  .mm-seccion-cabecera h2 { font-size: 1.25rem; }
+  .mm-seccion-cabecera a { margin-left: auto; }
+
+  .breadcrumb { flex-wrap: wrap; }
+  .breadcrumb-item { overflow-wrap: anywhere; }
+  .mm-panel { padding: 1rem; }
+  .mm-linea {
+    grid-template-columns: 4rem minmax(0, 1fr);
+    gap: .65rem;
+    padding: .8rem;
+  }
+  .mm-linea-foto { width: 4rem; height: 4rem; }
+  .mm-linea-datos { min-width: 0; }
+  .mm-linea-nombre,
+  .mm-linea-datos .small { overflow-wrap: anywhere; }
+  .mm-linea-subtotal { grid-column: 2; }
+  .mm-cantidad { width: min(8.2rem, 100%); }
+  .mm-resumen-lineas li { align-items: flex-start; }
+  .mm-resumen-lineas li span:first-child { min-width: 0; overflow-wrap: anywhere; }
+  .mm-resumen-lineas li span:last-child { white-space: normal; text-align: right; }
+  .mm-cuenta-numero { font-size: 1rem; overflow-wrap: anywhere; }
+  .mm-numero-pedido { font-size: clamp(1.35rem, 6vw, 1.7rem); overflow-wrap: anywhere; }
+  .mm-garantias li { align-items: flex-start; }
+  .mm-garantias li i { flex: 0 0 auto; }
+
+  .mm-pie .container { padding-top: 2.5rem !important; padding-bottom: 2.5rem !important; }
+  .mm-whatsapp-flotante { right: .75rem; bottom: .75rem; width: 3.1rem; height: 3.1rem; font-size: 1.6rem; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }
   .js .revelar { opacity: 1; transform: none; }
