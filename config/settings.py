@@ -29,10 +29,10 @@ if not SECRET_KEY:
 DEBUG = env_bool('DEBUG', False)
 ALLOWED_HOSTS = env_lista('ALLOWED_HOSTS')
 CSRF_TRUSTED_ORIGINS = env_lista('CSRF_TRUSTED_ORIGINS')
-render_hostname = os.getenv('RENDER_EXTERNAL_HOSTNAME')
-if render_hostname:
-    ALLOWED_HOSTS.append(render_hostname)
-    CSRF_TRUSTED_ORIGINS.append(f'https://{render_hostname}')
+RENDER_EXTERNAL_HOSTNAME = os.getenv('RENDER_EXTERNAL_HOSTNAME', '').strip()
+if RENDER_EXTERNAL_HOSTNAME:
+    ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
+    CSRF_TRUSTED_ORIGINS.append(f'https://{RENDER_EXTERNAL_HOSTNAME}')
 ADMIN_URL = os.getenv('ADMIN_URL', 'panel').strip('/') or 'panel'
 
 INSTALLED_APPS = [
@@ -100,7 +100,7 @@ elif DB_ENGINE == 'sqlite':
             'NAME': BASE_DIR / os.getenv('DB_NAME', 'db.sqlite3'),
             # IMMEDIATE toma el bloqueo de escritura al abrir la transaccion; asi
             # las operaciones de stock quedan serializadas tambien en SQLite,
-            # donde select_for_update no tiene efecto.
+            # donde select_for_update no hace nada.
             'OPTIONS': {'transaction_mode': 'IMMEDIATE', 'timeout': 20},
         }
     }
@@ -154,8 +154,49 @@ USE_TZ = True
 STATIC_URL = 'static/'
 STATICFILES_DIRS = [BASE_DIR / 'static']
 STATIC_ROOT = BASE_DIR / 'staticfiles'
+MEDIA_STORAGE = os.getenv('MEDIA_STORAGE', 'local').strip().lower()
+if MEDIA_STORAGE not in ('local', 'supabase'):
+    raise ImproperlyConfigured('MEDIA_STORAGE debe ser local o supabase')
+
+storage_default = {'BACKEND': 'django.core.files.storage.FileSystemStorage'}
+if MEDIA_STORAGE == 'supabase' and not EN_TESTS:
+    supabase_url = os.getenv('SUPABASE_URL', '').rstrip('/')
+    supabase_endpoint = os.getenv('SUPABASE_S3_ENDPOINT', '').rstrip('/')
+    supabase_region = os.getenv('SUPABASE_S3_REGION', '').strip()
+    supabase_bucket = os.getenv('SUPABASE_S3_BUCKET', '').strip()
+    supabase_access_key = os.getenv('SUPABASE_S3_ACCESS_KEY_ID', '').strip()
+    supabase_secret_key = os.getenv('SUPABASE_S3_SECRET_ACCESS_KEY', '').strip()
+    supabase_values = (
+        supabase_url, supabase_endpoint, supabase_region, supabase_bucket,
+        supabase_access_key, supabase_secret_key,
+    )
+    if not all(supabase_values):
+        raise ImproperlyConfigured('Falta configurar una o mas variables de Supabase Storage')
+    if not supabase_url.startswith('https://') or not supabase_endpoint.startswith('https://'):
+        raise ImproperlyConfigured('Las URL de Supabase Storage deben usar HTTPS')
+    if not supabase_endpoint.endswith('/storage/v1/s3'):
+        raise ImproperlyConfigured('SUPABASE_S3_ENDPOINT debe terminar en /storage/v1/s3')
+
+    storage_default = {
+        'BACKEND': 'storages.backends.s3.S3Storage',
+        'OPTIONS': {
+            'access_key': supabase_access_key,
+            'secret_key': supabase_secret_key,
+            'bucket_name': supabase_bucket,
+            'endpoint_url': supabase_endpoint,
+            'region_name': supabase_region,
+            'addressing_style': 'path',
+            'querystring_auth': False,
+            'custom_domain': (
+                f"{supabase_url.removeprefix('https://')}/storage/v1/object/public/{supabase_bucket}"
+            ),
+            'file_overwrite': False,
+            'object_parameters': {'CacheControl': 'public, max-age=31536000, immutable'},
+        },
+    }
+
 STORAGES = {
-    'default': {'BACKEND': 'django.core.files.storage.FileSystemStorage'},
+    'default': storage_default,
     'staticfiles': {
         'BACKEND': (
             'django.contrib.staticfiles.storage.StaticFilesStorage' if EN_TESTS
