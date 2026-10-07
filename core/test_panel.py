@@ -5,6 +5,7 @@ from io import BytesIO, StringIO
 import tablib
 from django.conf import settings
 from django.contrib.auth import get_user_model
+from django.contrib.auth.models import Permission
 from django.core.management import call_command
 from django.test import TestCase
 from django.urls import reverse
@@ -94,11 +95,45 @@ class PedidoAdminTests(PanelBase):
         self.assertContains(detalle, 'Lámpara')
         self.assertEqual(detalle.context['transiciones'], [('pagado', 'Pagado'), ('cancelado', 'Cancelado')])
 
-    def test_no_se_crean_ni_se_borran_desde_el_panel(self):
-        pedido = pedido_de_prueba(self.producto, 1)
+    def test_no_se_crean_desde_el_panel(self):
         self.assertEqual(self.client.get(reverse('admin:pedidos_pedido_add')).status_code, 403)
+
+    def test_eliminar_desde_el_detalle(self):
+        pedido = pedido_de_prueba(self.producto, 2)
+        borrar = reverse('admin:pedidos_pedido_delete', args=[pedido.pk])
+        self.assertContains(self.client.get(reverse('admin:pedidos_pedido_change', args=[pedido.pk])), borrar)
+        self.assertContains(self.client.get(borrar), 'no se puede deshacer')
+        self.assertTrue(Pedido.objects.filter(pk=pedido.pk).exists())
+
+        respuesta = self.client.post(borrar, {'post': 'yes'})
+        self.assertRedirects(respuesta, reverse('admin:pedidos_pedido_changelist'))
+        self.assertFalse(Pedido.objects.exists())
+        self.producto.refresh_from_db()
+        self.assertEqual((self.producto.stock_almacen, self.producto.stock_reservado), (10, 0))
+
+    def test_eliminar_varios_desde_la_lista(self):
+        entregado = cambiar_estado(pedido_de_prueba(self.producto, 2), Estado.PAGADO)
+        entregado = cambiar_estado(entregado, Estado.ENTREGADO)
+        pendiente = pedido_de_prueba(self.producto, 1)
+        self.assertContains(self.accion('delete_selected', entregado, pendiente), 'no se puede deshacer')
+        self.assertEqual(Pedido.objects.count(), 2)
+
+        self.client.post(reverse('admin:pedidos_pedido_changelist'), {
+            'action': 'delete_selected', '_selected_action': [entregado.pk, pendiente.pk], 'post': 'yes',
+        })
+        self.assertFalse(Pedido.objects.exists())
+        self.producto.refresh_from_db()
+        self.assertEqual((self.producto.stock_almacen, self.producto.stock_reservado), (8, 0))
+
+    def test_sin_permiso_no_elimina(self):
+        pedido = pedido_de_prueba(self.producto, 1)
+        empleado = get_user_model().objects.create_user('vendedor', password='clave-segura-123', is_staff=True)
+        empleado.user_permissions.add(*Permission.objects.filter(codename__in=['view_pedido', 'change_pedido']))
+        self.client.force_login(empleado)
         borrar = reverse('admin:pedidos_pedido_delete', args=[pedido.pk])
         self.assertEqual(self.client.post(borrar, {'post': 'yes'}).status_code, 403)
+        self.assertNotContains(self.client.get(reverse('admin:pedidos_pedido_change', args=[pedido.pk])), borrar)
+        self.assertTrue(Pedido.objects.filter(pk=pedido.pk).exists())
 
     def test_el_estado_no_se_edita_a_mano(self):
         pedido = pedido_de_prueba(self.producto, 1)

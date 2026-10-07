@@ -155,7 +155,11 @@ Los cambios pueden tardar hasta un minuto en verse en la tienda.
 - Se puede cancelar desde Pendiente, Pagado o Listo para recoger: se libera el stock y se devuelve el
   uso del cupón.
 - Al pasar a Enviado o Entregado el stock sale del almacén (una sola vez).
-- El teléfono del cliente abre un chat de WhatsApp con él. Los pedidos no se borran: se cancelan.
+- El teléfono del cliente abre un chat de WhatsApp con él.
+- Se pueden eliminar del historial, en cualquier estado, con el botón **Eliminar** del detalle o la acción
+  "Eliminar pedidos seleccionados" de la lista; ambos piden confirmación. Si el pedido seguía pendiente,
+  pagado o listo para recoger, primero se cancela (libera el stock y el uso del cupón). Uno enviado o
+  entregado se borra sin devolver unidades al almacén. Lo eliminado deja de contar en las ventas del panel.
 
 **Cupones, zonas de envío, categorías y cuentas bancarias** se administran desde sus secciones. Los
 cupones muestran sus usos (`usados / máximo`).

@@ -66,7 +66,10 @@ Al cerrar cada modulo: check, makemigrations, migrate, test y commit.
 - Busqueda sin tildes: `Producto.texto_busqueda` (nombre + SKU + descripcion normalizados en `save()`).
   Ojo: `queryset.update()` de nombre/descripcion no lo refresca.
 - Correo del cliente opcional en el checkout (el contacto es por WhatsApp).
-- Los pedidos no se crean ni se borran desde el panel; en su formulario solo se editan las notas internas.
+- Los pedidos no se crean desde el panel; en su formulario solo se editan las notas internas.
+- Los pedidos si se eliminan desde el panel (boton del detalle y accion de la lista), siempre con
+  `pedidos.services.eliminar_pedido`: si aun se podia cancelar lo cancela primero (reserva y cupon); lo
+  enviado o entregado no devuelve stock. El numero no se reutiliza y el pedido sale de las ventas del panel.
 - Importacion Excel: `catalogo/resources.py`, identifica por `sku`, crea categorias que no existan y valida
   con `full_clean`. No importa fotos ni `stock_reservado`.
 - Acciones del admin: las descripciones pasan por formato `%`, asi que un `%` literal se escribe `%%`.

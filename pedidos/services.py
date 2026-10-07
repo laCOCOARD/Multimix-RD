@@ -297,6 +297,22 @@ def cambiar_estado(pedido, nuevo_estado):
     return pedido
 
 
+@transaction.atomic
+def eliminar_pedido(pedido):
+    """Borra el pedido del historial y devuelve su numero.
+
+    Si todavia se podia cancelar, antes lo cancela: asi libera su reserva y el uso del cupon.
+    Lo enviado o entregado ya salio del almacen y se borra sin devolver stock.
+    """
+    pedido = Pedido.objects.select_for_update().get(pk=pedido.pk)
+    numero, estado = pedido.numero, pedido.estado
+    if Estado.CANCELADO in transiciones_permitidas(pedido):
+        pedido = cambiar_estado(pedido, Estado.CANCELADO)
+    pedido.delete()
+    logger.info('Pedido %s eliminado (estaba %s)', numero, estado)
+    return numero
+
+
 def cancelar_pedidos_vencidos():
     """Cancela los pendientes mas viejos que las horas configuradas. Devuelve sus numeros."""
     horas = ConfiguracionTienda.obtener().horas_vencimiento_pedido

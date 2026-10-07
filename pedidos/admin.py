@@ -92,9 +92,14 @@ class PedidoAdmin(admin.ModelAdmin):
     def has_add_permission(self, request):
         return False
 
-    def has_delete_permission(self, request, obj=None):
-        # Los pedidos no se borran: se cancelan, para que el stock y el cupon queden bien.
-        return False
+    # Eliminar tambien pasa por la capa de servicios, para que el stock y el cupon queden bien.
+
+    def delete_model(self, request, obj):
+        services.eliminar_pedido(obj)
+
+    def delete_queryset(self, request, queryset):
+        for pedido in queryset.order_by('creado'):
+            services.eliminar_pedido(pedido)
 
     def get_urls(self):
         propias = [

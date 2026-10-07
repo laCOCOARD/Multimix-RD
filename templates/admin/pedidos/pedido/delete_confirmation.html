@@ -1,0 +1,6 @@
+{% extends "admin/delete_confirmation.html" %}
+
+{% block delete_confirm %}
+{% include "admin/pedidos/pedido/aviso_eliminar.html" %}
+{{ block.super }}
+{% endblock %}

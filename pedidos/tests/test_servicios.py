@@ -10,7 +10,7 @@ from catalogo.models import Producto
 from catalogo.tests.test_modelos import crear_producto
 from core.models import ConfiguracionTienda
 from pedidos import services
-from pedidos.models import Pedido
+from pedidos.models import DetallePedido, Pedido
 from pedidos.services import PedidoError, StockInsuficiente, TransicionInvalida, cambiar_estado, crear_pedido
 from promociones.models import Cupon
 
@@ -278,6 +278,52 @@ class TransicionesTests(BaseServicios):
         with self.assertRaises(TransicionInvalida):
             cambiar_estado(pedido, Estado.PAGADO)
         self.assertEqual(self.stock(), (10, 0))
+
+
+class EliminarPedidoTests(BaseServicios):
+    def test_pedido_activo_libera_reserva_y_devuelve_cupon(self):
+        cupon = Cupon.objects.create(codigo='DIEZ', tipo=Cupon.Tipo.PORCENTAJE, valor=Decimal('10'))
+        for previos in ([], [Estado.PAGADO], [Estado.PAGADO, Estado.LISTO]):
+            pedido = pedido_de_prueba(self.producto, 2, cupon='DIEZ')
+            for estado in previos:
+                pedido = cambiar_estado(pedido, estado)
+            self.assertEqual(services.eliminar_pedido(pedido), pedido.numero)
+            self.assertFalse(Pedido.objects.exists())
+            self.assertEqual(self.stock(), (10, 0))
+            cupon.refresh_from_db()
+            self.assertEqual(cupon.usos_actuales, 0)
+
+    def test_enviado_o_entregado_no_devuelve_stock_ni_cupon(self):
+        cupon = Cupon.objects.create(codigo='DIEZ', tipo=Cupon.Tipo.PORCENTAJE, valor=Decimal('10'))
+        enviado = pedido_de_prueba(
+            self.producto, 2, cupon='DIEZ', metodo_entrega=Entrega.ENVIO, zona=self.zona, direccion='Calle 1',
+        )
+        enviado = cambiar_estado(cambiar_estado(enviado, Estado.PAGADO), Estado.ENVIADO)
+        entregado = cambiar_estado(pedido_de_prueba(self.producto, 1, cupon='DIEZ'), Estado.PAGADO)
+        entregado = cambiar_estado(entregado, Estado.ENTREGADO)
+        self.assertEqual(self.stock(), (7, 0))
+
+        services.eliminar_pedido(enviado)
+        services.eliminar_pedido(entregado)
+
+        self.assertFalse(Pedido.objects.exists())
+        self.assertFalse(DetallePedido.objects.exists())
+        self.assertEqual(self.stock(), (7, 0))
+        cupon.refresh_from_db()
+        self.assertEqual(cupon.usos_actuales, 2)
+
+    def test_cancelado_no_libera_la_reserva_otra_vez(self):
+        otro = pedido_de_prueba(self.producto, 3)
+        cancelado = cambiar_estado(pedido_de_prueba(self.producto, 2), Estado.CANCELADO)
+        services.eliminar_pedido(cancelado)
+        self.assertEqual(self.stock(), (10, 3))
+        self.assertEqual(list(Pedido.objects.all()), [otro])
+
+    def test_el_numero_eliminado_no_se_reutiliza(self):
+        primero = pedido_de_prueba(self.producto, 1)
+        services.eliminar_pedido(primero)
+        segundo = pedido_de_prueba(self.producto, 1)
+        self.assertEqual(int(segundo.numero[-5:]), int(primero.numero[-5:]) + 1)
 
 
 class PedidosVencidosTests(BaseServicios):
