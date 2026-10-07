@@ -7,9 +7,9 @@
 <div class="container py-4">
   <nav aria-label="Ruta de navegación">
     <ol class="breadcrumb small">
-      <li class="breadcrumb-item"><a href="{% url 'catalogo:inicio' %}">Inicio</a></li>
+      <li class="breadcrumb-item"><a href="{% url 'catalogo:inicio' tienda.slug %}">Inicio</a></li>
       {% if categoria %}
-        <li class="breadcrumb-item"><a href="{% url 'catalogo:lista' %}">Catálogo</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'catalogo:lista' tienda.slug %}">Catálogo</a></li>
         <li class="breadcrumb-item active" aria-current="page">{{ categoria.nombre }}</li>
       {% else %}
         <li class="breadcrumb-item active" aria-current="page">Catálogo</li>
@@ -32,7 +32,7 @@
   <div class="row g-4">
     <aside class="col-lg-3">
       <form class="mm-filtros collapse d-lg-block" id="filtros" method="get"
-            action="{% if categoria %}{{ categoria.get_absolute_url }}{% else %}{% url 'catalogo:lista' %}{% endif %}">
+            action="{% if categoria %}{% url 'catalogo:categoria' tienda.slug categoria.slug %}{% else %}{% url 'catalogo:lista' tienda.slug %}{% endif %}">
         <div class="mb-3">
           <label class="form-label" for="filtro-q">Buscar</label>
           <input class="form-control" type="search" id="filtro-q" name="q" value="{{ filtros.q|default:'' }}" maxlength="80">
@@ -42,10 +42,10 @@
           <span class="form-label d-block">Categoría</span>
           <div class="list-group list-group-flush mm-lista-categorias">
             <a class="list-group-item list-group-item-action{% if not categoria %} active{% endif %}"
-               href="{% url 'catalogo:lista' %}{% querystring pagina=None %}">Todas</a>
+               href="{% url 'catalogo:lista' tienda.slug %}{% querystring pagina=None %}">Todas</a>
             {% for item in categorias %}
               <a class="list-group-item list-group-item-action{% if categoria.pk == item.pk %} active{% endif %}"
-                 href="{{ item.get_absolute_url }}{% querystring pagina=None %}">{{ item.nombre }}</a>
+                 href="{% url 'catalogo:categoria' tienda.slug item.slug %}{% querystring pagina=None %}">{{ item.nombre }}</a>
             {% endfor %}
           </div>
         </div>
@@ -81,7 +81,7 @@
         <div class="d-grid gap-2">
           <button class="btn btn-primary" type="submit">Aplicar filtros</button>
           {% if hay_filtros %}
-            <a class="btn btn-link" href="{% if categoria %}{{ categoria.get_absolute_url }}{% else %}{% url 'catalogo:lista' %}{% endif %}">Limpiar filtros</a>
+            <a class="btn btn-link" href="{% if categoria %}{% url 'catalogo:categoria' tienda.slug categoria.slug %}{% else %}{% url 'catalogo:lista' tienda.slug %}{% endif %}">Limpiar filtros</a>
           {% endif %}
         </div>
       </form>
@@ -95,30 +95,12 @@
           {% endfor %}
         </div>
 
-        {% if pagina.has_other_pages %}
-          <nav class="mt-4" aria-label="Páginas del catálogo">
-            <ul class="pagination justify-content-center flex-wrap">
-              <li class="page-item{% if not pagina.has_previous %} disabled{% endif %}">
-                <a class="page-link" href="{% if pagina.has_previous %}{% querystring pagina=pagina.previous_page_number %}{% else %}#{% endif %}" aria-label="Anterior">&laquo;</a>
-              </li>
-              {% for numero in pagina.paginator.page_range %}
-                {% if numero == pagina.number %}
-                  <li class="page-item active" aria-current="page"><span class="page-link">{{ numero }}</span></li>
-                {% elif numero > pagina.number|add:'-3' and numero < pagina.number|add:'3' %}
-                  <li class="page-item"><a class="page-link" href="{% querystring pagina=numero %}">{{ numero }}</a></li>
-                {% endif %}
-              {% endfor %}
-              <li class="page-item{% if not pagina.has_next %} disabled{% endif %}">
-                <a class="page-link" href="{% if pagina.has_next %}{% querystring pagina=pagina.next_page_number %}{% else %}#{% endif %}" aria-label="Siguiente">&raquo;</a>
-              </li>
-            </ul>
-          </nav>
-        {% endif %}
+        {% include 'includes/paginacion.html' %}
       {% else %}
         <div class="mm-vacio">
           <i class="bi bi-search"></i>
           <p class="lead mb-2">No encontramos productos con esos filtros.</p>
-          <a class="btn btn-primary" href="{% url 'catalogo:lista' %}">Ver todo el catálogo</a>
+          <a class="btn btn-primary" href="{% url 'catalogo:lista' tienda.slug %}">Ver todo el catálogo</a>
         </div>
       {% endif %}
     </div>

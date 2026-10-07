@@ -1,0 +1,63 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block contenido %}
+<section class="mm-banner{% if plataforma.banner_imagen %} mm-banner-con-imagen{% endif %}"
+         {% if plataforma.banner_imagen %}style="background-image: linear-gradient(90deg, rgba(8,42,92,.9), rgba(8,42,92,.5)), url('{{ plataforma.banner_imagen.url }}');"{% endif %}>
+  <div class="container">
+    <div class="row">
+      <div class="col-lg-7">
+        <h1 class="mm-banner-titulo">{{ plataforma.banner_titulo }}</h1>
+        {% if plataforma.banner_subtitulo %}<p class="mm-banner-subtitulo">{{ plataforma.banner_subtitulo }}</p>{% endif %}
+        <div class="d-flex flex-wrap gap-2">
+          <a class="btn btn-acento btn-lg" href="#tiendas">Ver tiendas</a>
+          <a class="btn btn-outline-light btn-lg" href="{% url 'tiendas:buscar' %}">{{ plataforma.banner_texto_boton|default:'Ver catálogo' }}</a>
+        </div>
+      </div>
+      {% if not plataforma.banner_imagen %}
+        <div class="col-lg-5 d-none d-lg-flex align-items-center justify-content-center">
+          <div class="mm-banner-marca"><img src="{% static 'img/logo-simbolo.webp' %}" alt="" width="393" height="300"></div>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</section>
+
+<section class="container mm-seccion" id="tiendas">
+  <div class="mm-seccion-cabecera">
+    <h2><i class="bi bi-shop me-2"></i>Tiendas</h2>
+    <a href="{% url 'tiendas:buscar' %}">Ver todos los productos <i class="bi bi-arrow-right"></i></a>
+  </div>
+  <p class="text-muted">Entra a una tienda para ver su catálogo y comprar. Cada tienda tiene su propio carrito, sus formas de pago y su WhatsApp.</p>
+
+  <div class="row g-3">
+    {% for item in tiendas %}
+      <div class="col-sm-6 col-lg-4">
+        <a class="mm-tienda revelar" href="{{ item.get_absolute_url }}">
+          <span class="mm-tienda-portada"
+                {% if item.banner_imagen %}style="background-image: linear-gradient(rgba(8,42,92,.35), rgba(8,42,92,.55)), url('{{ item.banner_imagen.url }}');"{% endif %}>
+            <span class="mm-tienda-logo">
+              {% if item.logo %}<img src="{{ item.logo.url }}" alt="" loading="lazy" decoding="async">{% else %}{{ item.nombre|slice:':1'|upper }}{% endif %}
+            </span>
+          </span>
+          <span class="mm-tienda-cuerpo">
+            <span class="mm-tienda-nombre">{{ item.nombre }}</span>
+            {% if item.banner_subtitulo %}<span class="mm-tienda-descripcion">{{ item.banner_subtitulo }}</span>{% endif %}
+            <span class="mm-tienda-pie">
+              <span>{{ item.total_productos }} producto{{ item.total_productos|pluralize }}</span>
+              <strong>Entrar <i class="bi bi-arrow-right"></i></strong>
+            </span>
+          </span>
+        </a>
+      </div>
+    {% empty %}
+      <div class="col-12">
+        <div class="mm-vacio">
+          <i class="bi bi-shop"></i>
+          <p class="lead mb-0">Pronto verás aquí nuestras tiendas.</p>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+</section>
+{% endblock %}

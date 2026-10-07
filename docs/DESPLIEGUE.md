@@ -8,10 +8,10 @@ los tuyos.
 
 En el panel de tu proveedor de dominio crea dos registros que apunten a la IP pública del VPS:
 
-| Tipo | Nombre | Valor |
-| --- | --- | --- |
-| A | `@` | IP del VPS |
-| A | `www` | IP del VPS |
+| Tipo | Nombre | Valor      |
+| ---- | ------ | ---------- |
+| A    | `@`    | IP del VPS |
+| A    | `www`  | IP del VPS |
 
 Comprueba que ya propagó antes de pedir el certificado: `dig +short multimixrd.com`.
 
@@ -78,10 +78,35 @@ DB_USER=multimix
 DB_PASSWORD=una-clave-larga-y-unica
 DB_HOST=localhost
 DB_PORT=5432
+
+# Opcional: fotos en Supabase Storage
+MEDIA_STORAGE=local
+# Para activar Supabase, cambia MEDIA_STORAGE a supabase y completa estos valores:
+# SUPABASE_URL=https://<project-ref>.supabase.co
+# SUPABASE_S3_ENDPOINT=https://<project-ref>.storage.supabase.co/storage/v1/s3
+# SUPABASE_S3_REGION=<region mostrada en Storage > S3 Connection>
+# SUPABASE_S3_BUCKET=<nombre del bucket publico>
+# SUPABASE_S3_ACCESS_KEY_ID=<clave S3>
+# SUPABASE_S3_SECRET_ACCESS_KEY=<secreto S3>
 ```
 
 Usa una `ADMIN_URL` que no sea obvia. Con `DEBUG=False` la aplicación exige HTTPS, marca las cookies
 como seguras y envía HSTS.
+
+El bucket debe ser público para que las fotos del catálogo se muestren sin URLs firmadas. Las
+credenciales S3 se usan solo en el servidor y dan acceso amplio al Storage. Para pasar las imágenes
+locales antes de activar Supabase, instala AWS CLI en una máquina que tenga acceso a `media/` y ejecuta
+la sincronización con `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` y `AWS_DEFAULT_REGION` configuradas
+con los valores de la conexión S3 de Supabase:
+
+```bash
+aws --endpoint-url "$SUPABASE_S3_ENDPOINT" s3 sync media/ "s3://$SUPABASE_S3_BUCKET/"
+```
+
+La sincronización mantiene las rutas relativas que ya están en la base de datos. Después de comprobar
+que las imágenes abren desde las URLs públicas, cambia `MEDIA_STORAGE=supabase` y reinicia Gunicorn.
+Si eliges Supabase, puedes quitar la ubicación `/media/` de Nginx y excluir `media/` del respaldo local;
+configura el respaldo de los objetos según el plan y las necesidades de la tienda.
 
 ## 6. Migraciones, estáticos y administrador
 
@@ -93,6 +118,9 @@ como seguras y envía HSTS.
 mkdir -p media
 exit   # vuelve a tu usuario con sudo
 ```
+
+El usuario de `createsuperuser` es el administrador principal: crea las tiendas y los usuarios de los
+vendedores desde el panel (ver "Tiendas y vendedores" en el README).
 
 Las tablas las crea `migrate`; `docs/esquema.sql` es solo de referencia. No ejecutes `cargar_demo` en
 producción salvo que quieras los productos de ejemplo.
@@ -262,6 +290,10 @@ sudo systemctl restart multimix.service
 ```
 
 Haz un respaldo (`/srv/multimix/respaldar.sh`) antes de una actualización que traiga migraciones.
+
+La actualización que trae las subtiendas convierte sola la tienda que ya existía en la primera tienda del
+sitio: conserva sus productos, pedidos, cupones, zonas, cuentas y la numeración `MMX`. Al terminar, revisa
+en el panel **Tiendas** (marca y contactos de esa tienda) y **Configuración general** (los del sitio).
 
 ## Lista de comprobación
 

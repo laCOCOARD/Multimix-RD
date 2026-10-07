@@ -1,6 +1,6 @@
 import os
 from ipaddress import ip_address
-
+from io import BytesIO
 from django.conf import settings
 from django.contrib import messages
 from django.http import JsonResponse
@@ -8,9 +8,10 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
 
 from carrito.carrito import Carrito
-from core.models import ConfiguracionTienda, CuentaBancaria
+from core.models import CuentaBancaria
 from core.templatetags.moneda import formatear_monto
 from promociones.services import CuponInvalido
+from tiendas.decoradores import de_tienda
 
 from . import services
 from .forms import AvisoTransferenciaForm, CheckoutForm
@@ -43,37 +44,44 @@ def _ip_cliente(request):
         return None
 
 
-def _zona_elegida(valor):
+def _zona_elegida(valor, tienda):
     try:
-        return services.zonas_activas().filter(pk=int(valor)).first()
+        return services.zonas_activas(tienda).filter(pk=int(valor)).first()
     except (TypeError, ValueError):
         return None
 
 
+def _cuentas_de(tienda):
+    return CuentaBancaria.objects.filter(tienda=tienda, activa=True)
+
+
 def _contexto_checkout(request, carrito, formulario):
+    tienda = carrito.tienda
     entrega = formulario['metodo_entrega'].value() or Pedido.Entrega.RECOGER
-    zona = _zona_elegida(formulario['zona'].value()) if entrega == Pedido.Entrega.ENVIO else None
+    zona = _zona_elegida(formulario['zona'].value(), tienda) if entrega == Pedido.Entrega.ENVIO else None
     return {
         'formulario': formulario,
         'lineas': carrito.lineas(),
         'totales': services.calcular_totales(carrito, entrega, zona),
-        'zonas': services.zonas_activas(),
-        'cuentas': CuentaBancaria.objects.filter(activa=True),
-        'pagos_recoger': services.metodos_pago_disponibles(Pedido.Entrega.RECOGER),
-        'pagos_envio': services.metodos_pago_disponibles(Pedido.Entrega.ENVIO),
+        'zonas': services.zonas_activas(tienda),
+        'cuentas': _cuentas_de(tienda),
+        'pagos_recoger': services.metodos_pago_disponibles(Pedido.Entrega.RECOGER, tienda),
+        'pagos_envio': services.metodos_pago_disponibles(Pedido.Entrega.ENVIO, tienda),
     }
 
 
+@de_tienda
 def checkout(request):
-    carrito = Carrito(request)
+    tienda = request.tienda
+    carrito = Carrito(request, tienda)
     if not carrito:
         messages.info(request, 'Tu carrito está vacío. Agrega productos para hacer tu pedido.')
-        return redirect('carrito:detalle')
+        return redirect('carrito:detalle', tienda.slug)
     avisos = carrito.sincronizar()
     if avisos:
         for aviso in avisos:
             messages.warning(request, aviso)
-        return redirect('carrito:detalle')
+        return redirect('carrito:detalle', tienda.slug)
 
     if request.method != 'POST':
         formulario = CheckoutForm(carrito=carrito, initial={
@@ -94,7 +102,7 @@ def checkout(request):
             except services.StockInsuficiente as error:
                 carrito.sincronizar()
                 messages.error(request, f'{error.mensaje} Revisa tu carrito y vuelve a confirmar.')
-                return redirect('carrito:detalle')
+                return redirect('carrito:detalle', tienda.slug)
             except services.PedidoError as error:
                 carrito.resumen()
                 formulario.add_error(None, error.mensaje)
@@ -106,9 +114,11 @@ def checkout(request):
 
 
 @require_POST
+@de_tienda
 def totales(request):
     """Totales del checkout calculados en el servidor para refrescar el resumen en vivo."""
-    carrito = Carrito(request)
+    tienda = request.tienda
+    carrito = Carrito(request, tienda)
     cupon_mensaje, cupon_ok = '', True
     if 'cupon' in request.POST:
         codigo = request.POST['cupon'].strip()
@@ -125,7 +135,7 @@ def totales(request):
     entrega = request.POST.get('metodo_entrega')
     if entrega not in Pedido.Entrega.values:
         entrega = Pedido.Entrega.RECOGER
-    zona = _zona_elegida(request.POST.get('zona')) if entrega == Pedido.Entrega.ENVIO else None
+    zona = _zona_elegida(request.POST.get('zona'), tienda) if entrega == Pedido.Entrega.ENVIO else None
     calculo = services.calcular_totales(carrito, entrega, zona)
     if calculo.aviso_cupon:
         cupon_mensaje, cupon_ok = calculo.aviso_cupon, False
@@ -147,19 +157,27 @@ def totales(request):
         'cupon': calculo.cupon.codigo if calculo.cupon else '',
         'cupon_ok': cupon_ok,
         'cupon_mensaje': cupon_mensaje,
-        'metodos_pago': services.metodos_pago_disponibles(entrega),
+        'metodos_pago': services.metodos_pago_disponibles(entrega, tienda),
     })
 
 
+def pedido_del_enlace(request, token, consulta=None):
+    """Pedido del enlace privado del cliente. La pagina se muestra con la marca de su tienda."""
+    consulta = Pedido.objects.all() if consulta is None else consulta
+    pedido = get_object_or_404(consulta.select_related('tienda'), token=token)
+    request.tienda = pedido.tienda
+    return pedido
+
+
 def confirmacion(request, token):
-    pedido = get_object_or_404(
-        Pedido.objects.select_related('zona').prefetch_related('detalles'), token=token,
+    pedido = pedido_del_enlace(
+        request, token, Pedido.objects.select_related('zona').prefetch_related('detalles'),
     )
-    tienda = ConfiguracionTienda.obtener()
+    tienda = pedido.tienda
     recien_creado = request.session.pop(SESION_PEDIDO_NUEVO, None) == str(pedido.token)
     return render(request, 'pedidos/confirmacion.html', {
         'pedido': pedido,
-        'cuentas': CuentaBancaria.objects.filter(activa=True) if pedido.paga_por_transferencia else [],
+        'cuentas': _cuentas_de(tienda) if pedido.paga_por_transferencia else [],
         'enlace_whatsapp': enlace_del_pedido(pedido, tienda.whatsapp),
         'abrir_whatsapp': recien_creado and bool(tienda.whatsapp),
         'puede_avisar_transferencia': (

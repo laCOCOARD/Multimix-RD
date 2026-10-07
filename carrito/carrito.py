@@ -1,4 +1,7 @@
-"""Carrito de compras guardado en la sesion: {'items': {id_producto: cantidad}, 'cupon': codigo}."""
+"""Carrito de compras guardado en la sesion. Hay uno por tienda y nunca se mezclan:
+
+{id_tienda: {'items': {id_producto: cantidad}, 'cupon': codigo}}
+"""
 from dataclasses import dataclass
 from decimal import Decimal
 
@@ -41,27 +44,43 @@ class ResumenCarrito:
         return self.subtotal - self.descuento
 
 
-def cantidad_en_sesion(session):
-    """Unidades en el carrito sin consultar la base; lo usa el contador del menu."""
-    datos = session.get(settings.CARRITO_SESSION_ID)
-    if not isinstance(datos, dict):
-        return 0
-    return sum(datos.get('items', {}).values())
+def _carritos(session):
+    """Carritos de la sesion por id de tienda. Descarta el formato de cuando habia un solo carrito."""
+    todos = session.get(settings.CARRITO_SESSION_ID)
+    if not isinstance(todos, dict) or 'items' in todos:
+        return {}
+    return todos
+
+
+def _carrito_de(session, tienda):
+    datos = _carritos(session).get(str(tienda.pk))
+    if not isinstance(datos, dict) or not isinstance(datos.get('items'), dict):
+        return None
+    return datos
+
+
+def cantidad_en_sesion(session, tienda):
+    """Unidades en el carrito de la tienda sin consultar la base; lo usa el contador del menu."""
+    datos = _carrito_de(session, tienda)
+    return sum(datos['items'].values()) if datos else 0
 
 
 class Carrito:
-    def __init__(self, request):
+    def __init__(self, request, tienda):
         self.session = request.session
-        datos = self.session.get(settings.CARRITO_SESSION_ID)
-        if not isinstance(datos, dict) or not isinstance(datos.get('items'), dict):
-            datos = {'items': {}, 'cupon': ''}
-        self.datos = datos
+        self.tienda = tienda
+        self.datos = _carrito_de(self.session, tienda) or {'items': {}, 'cupon': ''}
         self._lineas = None
 
     def _guardar(self):
-        self.session[settings.CARRITO_SESSION_ID] = self.datos
+        todos = _carritos(self.session)
+        todos[str(self.tienda.pk)] = self.datos
+        self.session[settings.CARRITO_SESSION_ID] = todos
         self.session.modified = True
         self._lineas = None
+
+    def _a_la_venta(self):
+        return Producto.objects.activos().filter(tienda=self.tienda)
 
     @property
     def items(self):
@@ -84,6 +103,8 @@ class Carrito:
 
         Devuelve (cantidad_final, ajustada). Lanza CarritoError si no se puede comprar.
         """
+        if producto.tienda_id != self.tienda.pk:
+            raise CarritoError('Ese producto es de otra tienda.')
         if not producto.activo or not producto.categoria.activa:
             raise CarritoError('Este producto ya no está disponible.')
         limite = self._limite(producto)
@@ -106,7 +127,7 @@ class Carrito:
 
     def lineas(self):
         if self._lineas is None:
-            productos = Producto.objects.activos().para_listado().in_bulk([int(pk) for pk in self.items])
+            productos = self._a_la_venta().para_listado().in_bulk([int(pk) for pk in self.items])
             self._lineas = [
                 LineaCarrito(productos[int(pk)], cantidad)
                 for pk, cantidad in self.items.items() if int(pk) in productos
@@ -118,7 +139,7 @@ class Carrito:
         avisos = []
         if not self.items:
             return avisos
-        productos = Producto.objects.activos().in_bulk([int(pk) for pk in self.items])
+        productos = self._a_la_venta().in_bulk([int(pk) for pk in self.items])
         for clave, cantidad in list(self.items.items()):
             producto = productos.get(int(clave))
             if producto is None:
@@ -145,8 +166,8 @@ class Carrito:
         return self.datos.get('cupon', '')
 
     def aplicar_cupon(self, codigo):
-        """Valida el cupon contra el subtotal actual y lo recuerda. Lanza CuponInvalido."""
-        cupon = validar_cupon(codigo, self.subtotal)
+        """Valida el cupon de la tienda contra el subtotal actual y lo recuerda. Lanza CuponInvalido."""
+        cupon = validar_cupon(codigo, self.subtotal, self.tienda)
         self.datos['cupon'] = cupon.codigo
         self._guardar()
         return cupon
@@ -163,7 +184,7 @@ class Carrito:
         if not codigo:
             return ResumenCarrito(subtotal, None, Decimal('0.00'))
         try:
-            cupon = validar_cupon(codigo, subtotal)
+            cupon = validar_cupon(codigo, subtotal, self.tienda)
         except CuponInvalido as error:
             self.quitar_cupon()
             return ResumenCarrito(subtotal, None, Decimal('0.00'), f'Quitamos el cupón {codigo}: {error.mensaje}')

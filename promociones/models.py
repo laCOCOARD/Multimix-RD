@@ -12,7 +12,8 @@ class Cupon(models.Model):
         PORCENTAJE = 'porcentaje', 'Porcentaje'
         MONTO_FIJO = 'monto_fijo', 'Monto fijo'
 
-    codigo = models.CharField('código', max_length=30, unique=True, help_text='Se guarda en mayúsculas.')
+    tienda = models.ForeignKey('tiendas.Tienda', on_delete=models.CASCADE, related_name='cupones')
+    codigo = models.CharField('código', max_length=30, help_text='Se guarda en mayúsculas.')
     tipo = models.CharField(max_length=12, choices=Tipo.choices, default=Tipo.PORCENTAJE)
     valor = models.DecimalField(
         max_digits=12, decimal_places=2, validators=[MinValueValidator(Decimal('0.01'))],
@@ -37,6 +38,10 @@ class Cupon(models.Model):
             models.CheckConstraint(
                 condition=~Q(tipo='porcentaje') | Q(valor__lte=100),
                 name='cupon_porcentaje_maximo_100',
+            ),
+            models.UniqueConstraint(
+                fields=['tienda', 'codigo'], name='cupon_codigo_unico_por_tienda',
+                violation_error_message='Ya tienes un cupón con ese código.',
             ),
         ]
 

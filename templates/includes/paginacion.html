@@ -1,0 +1,19 @@
+{% if pagina.has_other_pages %}
+  <nav class="mt-4" aria-label="Páginas de resultados">
+    <ul class="pagination justify-content-center flex-wrap">
+      <li class="page-item{% if not pagina.has_previous %} disabled{% endif %}">
+        <a class="page-link" href="{% if pagina.has_previous %}{% querystring pagina=pagina.previous_page_number %}{% else %}#{% endif %}" aria-label="Anterior">&laquo;</a>
+      </li>
+      {% for numero in pagina.paginator.page_range %}
+        {% if numero == pagina.number %}
+          <li class="page-item active" aria-current="page"><span class="page-link">{{ numero }}</span></li>
+        {% elif numero > pagina.number|add:'-3' and numero < pagina.number|add:'3' %}
+          <li class="page-item"><a class="page-link" href="{% querystring pagina=numero %}">{{ numero }}</a></li>
+        {% endif %}
+      {% endfor %}
+      <li class="page-item{% if not pagina.has_next %} disabled{% endif %}">
+        <a class="page-link" href="{% if pagina.has_next %}{% querystring pagina=pagina.next_page_number %}{% else %}#{% endif %}" aria-label="Siguiente">&raquo;</a>
+      </li>
+    </ul>
+  </nav>
+{% endif %}

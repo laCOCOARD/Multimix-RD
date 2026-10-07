@@ -6,13 +6,16 @@ from .validators import validar_imagen, validar_whatsapp
 
 
 class ConfiguracionTienda(models.Model):
-    """Ajustes generales de la tienda. Siempre existe una sola fila (pk=1)."""
+    """Ajustes generales del sitio que reune las tiendas. Siempre existe una sola fila (pk=1).
+
+    La marca, los contactos y la forma de cobrar de cada vendedor estan en tiendas.Tienda.
+    """
 
     CACHE_KEY = 'configuracion_tienda'
     # Corto a proposito: con varios procesos de Gunicorn cada uno tiene su propia cache.
     CACHE_SEGUNDOS = 60
 
-    nombre = models.CharField('nombre de la tienda', max_length=80, default='Multimix RD')
+    nombre = models.CharField('nombre del sitio', max_length=80, default='Multimix RD')
     logo = models.ImageField(
         upload_to='tienda/', blank=True, validators=[validar_imagen],
         help_text='Si no subes un logo se muestra el nombre en texto.',
@@ -23,10 +26,6 @@ class ConfiguracionTienda(models.Model):
     whatsapp = models.CharField(
         'número de WhatsApp', max_length=15, blank=True, validators=[validar_whatsapp],
         help_text='Solo dígitos, con código de país. Ej.: 18095551234',
-    )
-    direccion_tienda = models.CharField(
-        'dirección de la tienda', max_length=255, blank=True,
-        help_text='Se muestra a quien elige recoger en tienda.',
     )
     facebook = models.URLField(blank=True)
     instagram = models.URLField(blank=True)
@@ -55,11 +54,10 @@ class ConfiguracionTienda(models.Model):
         'mostrar la cantidad exacta disponible', default=False,
         help_text='Si está apagado solo se muestra "Disponible" o "Quedan X" cuando hay poco.',
     )
-    permitir_contra_entrega = models.BooleanField('permitir efectivo contra entrega', default=False)
 
     class Meta:
-        verbose_name = 'configuración de la tienda'
-        verbose_name_plural = 'configuración de la tienda'
+        verbose_name = 'configuración general'
+        verbose_name_plural = 'configuración general'
 
     def __str__(self):
         return f'Configuración de {self.nombre}'
@@ -86,6 +84,7 @@ class CuentaBancaria(models.Model):
         AHORROS = 'ahorros', 'Ahorros'
         CORRIENTE = 'corriente', 'Corriente'
 
+    tienda = models.ForeignKey('tiendas.Tienda', on_delete=models.CASCADE, related_name='cuentas_bancarias')
     banco = models.CharField(max_length=80)
     tipo_cuenta = models.CharField('tipo de cuenta', max_length=10, choices=Tipo.choices, default=Tipo.AHORROS)
     numero = models.CharField('número de cuenta', max_length=30)
@@ -99,7 +98,10 @@ class CuentaBancaria(models.Model):
         verbose_name_plural = 'cuentas bancarias'
         ordering = ['orden', 'banco']
         constraints = [
-            models.UniqueConstraint(fields=['banco', 'numero'], name='cuenta_banco_numero_unica'),
+            models.UniqueConstraint(
+                fields=['tienda', 'banco', 'numero'], name='cuenta_unica_por_tienda',
+                violation_error_message='Ya registraste esa cuenta de ese banco.',
+            ),
         ]
 
     def __str__(self):

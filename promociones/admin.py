@@ -3,19 +3,20 @@ from django.db.models import Count, Q
 from django.utils.html import format_html
 
 from pedidos.models import Pedido
+from tiendas.panel import AdminDeTienda
 
 from .models import Cupon
 
 
 @admin.register(Cupon)
-class CuponAdmin(admin.ModelAdmin):
+class CuponAdmin(AdminDeTienda, admin.ModelAdmin):
     list_display = ['codigo', 'descuento', 'compra_minima', 'vigente_desde', 'vigente_hasta', 'usos', 'estado', 'activo']
     list_editable = ['activo']
     list_filter = ['activo', 'tipo']
     search_fields = ['codigo']
     readonly_fields = ['usos_actuales', 'pedidos_con_cupon']
     fieldsets = [
-        (None, {'fields': ['codigo', 'tipo', 'valor', 'compra_minima', 'activo']}),
+        (None, {'fields': ['tienda', 'codigo', 'tipo', 'valor', 'compra_minima', 'activo']}),
         ('Vigencia y límite', {'fields': ['vigente_desde', 'vigente_hasta', 'usos_maximos']}),
         ('Usos', {'fields': ['usos_actuales', 'pedidos_con_cupon']}),
     ]

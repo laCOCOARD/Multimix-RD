@@ -13,8 +13,9 @@ from pedidos import services
 from pedidos.models import DetallePedido, Pedido
 from pedidos.services import PedidoError, StockInsuficiente, TransicionInvalida, cambiar_estado, crear_pedido
 from promociones.models import Cupon
+from tiendas.tests.utiles import tienda_de_prueba
 
-from .utiles import carrito_con, datos_pedido, pedido_de_prueba, zona_de_prueba
+from .utiles import carrito_con, cupon_de_prueba, datos_pedido, pedido_de_prueba, zona_de_prueba
 
 Estado = Pedido.Estado
 Entrega = Pedido.Entrega
@@ -24,6 +25,8 @@ Pago = Pedido.Pago
 class BaseServicios(TestCase):
     def setUp(self):
         self.producto = crear_producto(nombre='Lámpara', precio=Decimal('1000'), stock_almacen=10)
+        # La misma instancia que usa el carrito de las pruebas: los cambios se ven sin recargar.
+        self.tienda = self.producto.tienda
         self.zona = zona_de_prueba()
 
     def stock(self):
@@ -43,20 +46,20 @@ class TotalesTests(BaseServicios):
         self.assertEqual(totales.total, Decimal('2250.00'))
 
     def test_el_descuento_no_aplica_al_envio(self):
-        Cupon.objects.create(codigo='TODO', tipo=Cupon.Tipo.MONTO_FIJO, valor=Decimal('5000'))
+        cupon_de_prueba('TODO', tipo=Cupon.Tipo.MONTO_FIJO, valor=Decimal('5000'))
         totales = services.calcular_totales(carrito_con((self.producto, 1), cupon='TODO'), Entrega.ENVIO, self.zona)
         self.assertEqual(totales.descuento, Decimal('1000.00'))
         self.assertEqual(totales.total, Decimal('250.00'))
 
     def test_metodos_de_pago_segun_entrega(self):
-        config = ConfiguracionTienda.obtener()
+        tienda = self.tienda
         self.assertEqual(
-            services.metodos_pago_disponibles(Entrega.RECOGER, config), [Pago.TRANSFERENCIA, Pago.EFECTIVO_RECOGER],
+            services.metodos_pago_disponibles(Entrega.RECOGER, tienda), [Pago.TRANSFERENCIA, Pago.EFECTIVO_RECOGER],
         )
-        self.assertEqual(services.metodos_pago_disponibles(Entrega.ENVIO, config), [Pago.TRANSFERENCIA])
-        config.permitir_contra_entrega = True
+        self.assertEqual(services.metodos_pago_disponibles(Entrega.ENVIO, tienda), [Pago.TRANSFERENCIA])
+        tienda.permitir_contra_entrega = True
         self.assertEqual(
-            services.metodos_pago_disponibles(Entrega.ENVIO, config), [Pago.TRANSFERENCIA, Pago.CONTRA_ENTREGA],
+            services.metodos_pago_disponibles(Entrega.ENVIO, tienda), [Pago.TRANSFERENCIA, Pago.CONTRA_ENTREGA],
         )
 
 
@@ -124,6 +127,30 @@ class CrearPedidoTests(BaseServicios):
         self.assertEqual(pedido.costo_envio, Decimal('250.00'))
         self.assertEqual(pedido.total, Decimal('1250.00'))
 
+    def test_zona_y_productos_deben_ser_de_la_tienda_del_carrito(self):
+        otra = tienda_de_prueba('Otra tienda')
+        zona_ajena = zona_de_prueba('Lejos', tienda=otra)
+        ajeno = crear_producto(nombre='Ajeno', sku='A1', tienda=otra)
+        carrito = carrito_con((self.producto, 1))
+        with self.assertRaises(PedidoError):
+            crear_pedido(carrito, datos_pedido(metodo_entrega=Entrega.ENVIO, zona=zona_ajena, direccion='Calle 1'))
+        # Aunque alguien altere la sesion, un producto de otra tienda no entra al pedido ni reserva stock.
+        carrito.items[str(ajeno.pk)] = 1
+        with self.assertRaises(PedidoError):
+            crear_pedido(carrito, datos_pedido())
+        self.assertEqual(Pedido.objects.count(), 0)
+        ajeno.refresh_from_db()
+        self.assertEqual((ajeno.stock_reservado, self.stock()), (0, (10, 0)))
+
+    def test_cada_tienda_lleva_su_numeracion(self):
+        otra = tienda_de_prueba('Fitnes RD')
+        ajeno = crear_producto(nombre='Pesas', sku='P1', tienda=otra)
+        anio = timezone.localdate().year
+        numeros = [pedido_de_prueba(producto, 1).numero for producto in (self.producto, ajeno, ajeno, self.producto)]
+        self.assertEqual(numeros, [
+            f'MMX-{anio}-00001', f'FIT-{anio}-00001', f'FIT-{anio}-00002', f'MMX-{anio}-00002',
+        ])
+
     def test_recoger_ignora_zona_y_direccion(self):
         pedido = pedido_de_prueba(self.producto, 1, zona=self.zona, direccion='Calle 1')
         self.assertIsNone(pedido.zona)
@@ -137,14 +164,13 @@ class CrearPedidoTests(BaseServicios):
             crear_pedido(carrito, datos_pedido(metodo_pago=Pago.EFECTIVO_RECOGER, **envio))
         with self.assertRaises(PedidoError):
             crear_pedido(carrito, datos_pedido(metodo_pago=Pago.CONTRA_ENTREGA, **envio))
-        config = ConfiguracionTienda.obtener()
-        config.permitir_contra_entrega = True
-        config.save()
+        self.tienda.permitir_contra_entrega = True
+        self.tienda.save()
         pedido = crear_pedido(carrito, datos_pedido(metodo_pago=Pago.CONTRA_ENTREGA, **envio))
         self.assertEqual(pedido.metodo_pago, Pago.CONTRA_ENTREGA)
 
     def test_cupon_se_aplica_y_cuenta_el_uso(self):
-        cupon = Cupon.objects.create(codigo='DIEZ', tipo=Cupon.Tipo.PORCENTAJE, valor=Decimal('10'), usos_maximos=1)
+        cupon = cupon_de_prueba('DIEZ', usos_maximos=1)
         pedido = pedido_de_prueba(self.producto, 2, cupon='DIEZ')
         self.assertEqual((pedido.descuento, pedido.total, pedido.codigo_cupon),
                          (Decimal('200.00'), Decimal('1800.00'), 'DIEZ'))
@@ -152,7 +178,7 @@ class CrearPedidoTests(BaseServicios):
         self.assertEqual(cupon.usos_actuales, 1)
 
     def test_cupon_agotado_entre_carrito_y_checkout(self):
-        Cupon.objects.create(codigo='UNO', tipo=Cupon.Tipo.PORCENTAJE, valor=Decimal('10'), usos_maximos=1)
+        cupon_de_prueba('UNO', usos_maximos=1)
         carrito = carrito_con((self.producto, 1), cupon='UNO')
         pedido_de_prueba(self.producto, 1, cupon='UNO')
         with self.assertRaises(PedidoError):
@@ -236,9 +262,8 @@ class TransicionesTests(BaseServicios):
         self.assertEqual(self.stock(), (8, 0))
 
     def test_contra_entrega_puede_enviarse_sin_pagar(self):
-        config = ConfiguracionTienda.obtener()
-        config.permitir_contra_entrega = True
-        config.save()
+        self.tienda.permitir_contra_entrega = True
+        self.tienda.save()
         pedido = cambiar_estado(self.envio(metodo_pago=Pago.CONTRA_ENTREGA), Estado.ENVIADO)
         self.assertIsNone(pedido.fecha_pago)
         self.assertEqual(self.stock(), (8, 0))
@@ -246,7 +271,7 @@ class TransicionesTests(BaseServicios):
         self.assertIsNotNone(pedido.fecha_pago)
 
     def test_cancelar_libera_reserva_y_devuelve_cupon(self):
-        cupon = Cupon.objects.create(codigo='DIEZ', tipo=Cupon.Tipo.PORCENTAJE, valor=Decimal('10'))
+        cupon = cupon_de_prueba('DIEZ')
         for previos in ([], [Estado.PAGADO], [Estado.PAGADO, Estado.LISTO]):
             pedido = pedido_de_prueba(self.producto, 2, cupon='DIEZ')
             for estado in previos:
@@ -282,7 +307,7 @@ class TransicionesTests(BaseServicios):
 
 class EliminarPedidoTests(BaseServicios):
     def test_pedido_activo_libera_reserva_y_devuelve_cupon(self):
-        cupon = Cupon.objects.create(codigo='DIEZ', tipo=Cupon.Tipo.PORCENTAJE, valor=Decimal('10'))
+        cupon = cupon_de_prueba('DIEZ')
         for previos in ([], [Estado.PAGADO], [Estado.PAGADO, Estado.LISTO]):
             pedido = pedido_de_prueba(self.producto, 2, cupon='DIEZ')
             for estado in previos:
@@ -294,7 +319,7 @@ class EliminarPedidoTests(BaseServicios):
             self.assertEqual(cupon.usos_actuales, 0)
 
     def test_enviado_o_entregado_no_devuelve_stock_ni_cupon(self):
-        cupon = Cupon.objects.create(codigo='DIEZ', tipo=Cupon.Tipo.PORCENTAJE, valor=Decimal('10'))
+        cupon = cupon_de_prueba('DIEZ')
         enviado = pedido_de_prueba(
             self.producto, 2, cupon='DIEZ', metodo_entrega=Entrega.ENVIO, zona=self.zona, direccion='Calle 1',
         )

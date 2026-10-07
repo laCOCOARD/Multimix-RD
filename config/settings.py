@@ -44,6 +44,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'django.contrib.sitemaps',
     'import_export',
+    'tiendas',
     'core',
     'catalogo',
     'promociones',
@@ -100,7 +101,7 @@ elif DB_ENGINE == 'sqlite':
             'NAME': BASE_DIR / os.getenv('DB_NAME', 'db.sqlite3'),
             # IMMEDIATE toma el bloqueo de escritura al abrir la transaccion; asi
             # las operaciones de stock quedan serializadas tambien en SQLite,
-            # donde select_for_update no hace nada.
+            # donde select_for_update no tiene efecto.
             'OPTIONS': {'transaction_mode': 'IMMEDIATE', 'timeout': 20},
         }
     }
@@ -135,6 +136,10 @@ CACHES = {
         ),
     }
 }
+
+if EN_TESTS:
+    # Las pruebas crean muchos usuarios; el cifrado real de contraseñas las haria lentas.
+    PASSWORD_HASHERS = ['django.contrib.auth.hashers.MD5PasswordHasher']
 
 AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},

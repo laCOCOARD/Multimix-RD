@@ -11,7 +11,8 @@ from promociones.models import Cupon
 
 
 class ZonaEnvio(models.Model):
-    nombre = models.CharField(max_length=80, unique=True)
+    tienda = models.ForeignKey('tiendas.Tienda', on_delete=models.CASCADE, related_name='zonas_envio')
+    nombre = models.CharField(max_length=80)
     tarifa = models.DecimalField(max_digits=12, decimal_places=2, validators=[MinValueValidator(Decimal('0.00'))])
     activa = models.BooleanField(default=True)
     orden = models.PositiveSmallIntegerField(default=0)
@@ -22,24 +23,32 @@ class ZonaEnvio(models.Model):
         ordering = ['orden', 'nombre']
         constraints = [
             models.CheckConstraint(condition=Q(tarifa__gte=0), name='zona_tarifa_no_negativa'),
+            models.UniqueConstraint(
+                fields=['tienda', 'nombre'], name='zona_nombre_unico_por_tienda',
+                violation_error_message='Ya tienes una zona con ese nombre.',
+            ),
         ]
 
     def __str__(self):
         return self.nombre
 
 
-class SecuenciaPedido(models.Model):
-    """Contador por año para numerar los pedidos sin huecos ni duplicados."""
+class SecuenciaTienda(models.Model):
+    """Contador por tienda y año para numerar sus pedidos sin huecos ni duplicados."""
 
-    anio = models.PositiveSmallIntegerField(primary_key=True)
+    tienda = models.ForeignKey('tiendas.Tienda', on_delete=models.CASCADE, related_name='secuencias')
+    anio = models.PositiveSmallIntegerField('año')
     ultimo = models.PositiveIntegerField(default=0)
 
     class Meta:
         verbose_name = 'secuencia de pedidos'
         verbose_name_plural = 'secuencias de pedidos'
+        constraints = [
+            models.UniqueConstraint(fields=['tienda', 'anio'], name='secuencia_unica_por_tienda_y_anio'),
+        ]
 
     def __str__(self):
-        return f'{self.anio}: {self.ultimo}'
+        return f'{self.tienda_id} · {self.anio}: {self.ultimo}'
 
 
 class Pedido(models.Model):
@@ -63,6 +72,7 @@ class Pedido(models.Model):
     # Estados que cuentan como venta para "Más vendidos" y los reportes.
     ESTADOS_VENTA = (Estado.PAGADO, Estado.LISTO, Estado.ENVIADO, Estado.ENTREGADO)
 
+    tienda = models.ForeignKey('tiendas.Tienda', on_delete=models.PROTECT, related_name='pedidos', editable=False)
     numero = models.CharField('número', max_length=20, unique=True, editable=False)
     token = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
 
@@ -125,6 +135,7 @@ class Pedido(models.Model):
             ),
         ]
         indexes = [
+            models.Index(fields=['tienda', '-creado'], name='pedido_tienda_creado_idx'),
             models.Index(fields=['estado', '-creado'], name='pedido_estado_creado_idx'),
             models.Index(fields=['-creado'], name='pedido_creado_idx'),
             models.Index(fields=['fecha_pago'], name='pedido_fecha_pago_idx'),

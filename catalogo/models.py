@@ -10,26 +10,12 @@ from django.db.models.signals import post_delete
 from django.dispatch import receiver
 from django.urls import reverse
 from django.utils import timezone
-from django.utils.text import slugify
 
 from core.models import ConfiguracionTienda
-from core.texto import normalizar
+from core.texto import generar_slug_unico, normalizar
 from core.validators import validar_imagen
 
 from .imagenes import convertir_a_webp
-
-
-def generar_slug_unico(instancia, texto, largo=140):
-    """Slug a partir del texto; agrega -2, -3... si ya existe en el modelo."""
-    base = slugify(texto)[:largo] or 'item'
-    slug = base
-    existentes = type(instancia).objects.exclude(pk=instancia.pk)
-    numero = 2
-    while existentes.filter(slug=slug).exists():
-        sufijo = f'-{numero}'
-        slug = f'{base[:largo - len(sufijo)]}{sufijo}'
-        numero += 1
-    return slug
 
 
 def q_oferta_vigente(ahora=None):
@@ -43,6 +29,8 @@ def q_oferta_vigente(ahora=None):
 
 
 class Categoria(models.Model):
+    """Las categorias son de todo el sitio: las administra el dueño y las comparten las tiendas."""
+
     nombre = models.CharField(max_length=80, unique=True)
     slug = models.SlugField(max_length=100, unique=True, blank=True, help_text='Se genera solo si lo dejas vacío.')
     descripcion = models.TextField('descripción', blank=True)
@@ -63,13 +51,11 @@ class Categoria(models.Model):
             self.slug = generar_slug_unico(self, self.nombre, largo=100)
         super().save(*args, **kwargs)
 
-    def get_absolute_url(self):
-        return reverse('catalogo:categoria', args=[self.slug])
-
 
 class ProductoQuerySet(models.QuerySet):
     def activos(self):
-        return self.filter(activo=True, categoria__activa=True)
+        """A la venta: producto, categoria y tienda encendidos."""
+        return self.filter(activo=True, categoria__activa=True, tienda__activa=True)
 
     def con_datos_venta(self):
         """Anota precio_actual, oferta_vigente y disponible para filtrar y ordenar en la base."""
@@ -84,16 +70,17 @@ class ProductoQuerySet(models.QuerySet):
         )
 
     def para_listado(self):
-        return self.select_related('categoria').prefetch_related('fotos')
+        return self.select_related('categoria', 'tienda').prefetch_related('fotos')
 
 
 class Producto(models.Model):
+    tienda = models.ForeignKey('tiendas.Tienda', on_delete=models.PROTECT, related_name='productos')
     categoria = models.ForeignKey(
         Categoria, on_delete=models.PROTECT, related_name='productos', verbose_name='categoría',
     )
     nombre = models.CharField(max_length=150)
-    slug = models.SlugField(max_length=170, unique=True, blank=True, help_text='Se genera solo si lo dejas vacío.')
-    sku = models.CharField('SKU', max_length=40, unique=True)
+    slug = models.SlugField(max_length=170, blank=True, help_text='Se genera solo si lo dejas vacío.')
+    sku = models.CharField('SKU', max_length=40, help_text='Código del producto. No se repite dentro de la tienda.')
     descripcion = models.TextField('descripción', blank=True)
     precio = models.DecimalField(max_digits=12, decimal_places=2, validators=[MinValueValidator(Decimal('0.01'))])
     precio_oferta = models.DecimalField(
@@ -133,8 +120,17 @@ class Producto(models.Model):
                 condition=Q(stock_reservado__lte=F('stock_almacen')),
                 name='producto_reservado_no_supera_almacen',
             ),
+            models.UniqueConstraint(
+                fields=['tienda', 'sku'], name='producto_sku_unico_por_tienda',
+                violation_error_message='Ya tienes un producto con ese SKU.',
+            ),
+            models.UniqueConstraint(
+                fields=['tienda', 'slug'], name='producto_slug_unico_por_tienda',
+                violation_error_message='Ya tienes un producto con ese slug.',
+            ),
         ]
         indexes = [
+            models.Index(fields=['tienda', 'activo', '-creado'], name='producto_tienda_activo_idx'),
             models.Index(fields=['activo', '-creado'], name='producto_activo_creado_idx'),
             models.Index(fields=['activo', 'destacado'], name='producto_activo_destacado_idx'),
             models.Index(fields=['categoria', 'activo'], name='producto_categoria_activo_idx'),
@@ -160,7 +156,7 @@ class Producto(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.slug:
-            self.slug = generar_slug_unico(self, self.nombre, largo=170)
+            self.slug = generar_slug_unico(self, self.nombre, largo=170, tienda=self.tienda_id)
         if self.sku:
             self.sku = self.sku.strip().upper()
         self.texto_busqueda = normalizar(f'{self.nombre} {self.sku} {self.descripcion}')
@@ -170,7 +166,7 @@ class Producto(models.Model):
         super().save(*args, **kwargs)
 
     def get_absolute_url(self):
-        return reverse('catalogo:producto', args=[self.slug])
+        return reverse('catalogo:producto', args=[self.tienda.slug, self.slug])
 
     @property
     def stock_disponible(self):

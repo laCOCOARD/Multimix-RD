@@ -7,6 +7,7 @@ from django.urls import reverse
 from PIL import Image
 
 from catalogo.tests.test_modelos import crear_producto
+from pedidos import factura
 from pedidos.tests.utiles import pedido_de_prueba
 
 
@@ -39,6 +40,17 @@ class FacturaTests(TestCase):
         imagen = Image.open(BytesIO(respuesta.content))
         self.assertGreater(imagen.width, 0)
         self.assertGreater(imagen.height, imagen.width)
+
+    def test_sin_fuentes_del_sistema_escribe_sin_tildes(self):
+        # La fuente incluida en Pillow no trae tildes: en vez de recuadros, el texto sale sin ellas.
+        self.assertEqual(factura.sin_tildes('2 × Cupón ñandú'), '2 x Cupon nandu')
+        escritos = []
+        with patch.object(factura, 'FUENTES', []), \
+                patch('PIL.ImageDraw.ImageDraw.text', lambda dibujo, xy, texto, **opciones: escritos.append(texto)):
+            factura.generar_imagen_factura(self.pedido, 'Rincón Fitness', 'https://ejemplo.test/verificar/')
+        self.assertIn('Rincon Fitness', escritos)
+        self.assertNotIn('Rincón Fitness', escritos)
+        self.assertTrue(all(texto == factura.sin_tildes(texto) for texto in escritos))
 
     def test_qr_es_unico_y_apunta_a_verificacion_publica(self):
         otro_pedido = pedido_de_prueba(

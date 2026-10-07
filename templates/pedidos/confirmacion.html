@@ -17,6 +17,7 @@
           <i class="bi bi-check-circle-fill mm-icono-estado text-success"></i>
           <h1 class="h3 mt-2">¡Recibimos tu pedido!</h1>
         {% endif %}
+        <p class="text-muted mb-2">Compra en <strong>{{ tienda.nombre }}</strong></p>
         <p class="mb-1">Número de pedido</p>
         <p class="mm-numero-pedido">{{ pedido.numero }}</p>
         <p class="mb-3"><span class="badge mm-estado mm-estado-{{ pedido.estado }}">{{ pedido.get_estado_display }}</span></p>
@@ -105,8 +106,8 @@
         <p class="small text-muted mt-2 mb-0">Abre la imagen para guardarla o compartirla. Incluye un código QR único para verificar el pedido.</p>
       </div>
 
-      <p class="small text-muted text-center">Guarda este enlace para consultar tu pedido. Los productos quedan reservados por {{ tienda.horas_vencimiento_pedido }} horas mientras confirmamos el pago.</p>
-      <p class="text-center"><a class="btn btn-outline-primary" href="{% url 'catalogo:lista' %}">Seguir comprando</a></p>
+      <p class="small text-muted text-center">Guarda este enlace para consultar tu pedido. Los productos quedan reservados por {{ plataforma.horas_vencimiento_pedido }} horas mientras confirmamos el pago.</p>
+      <p class="text-center"><a class="btn btn-outline-primary" href="{% url 'catalogo:lista' tienda.slug %}">Seguir comprando</a></p>
     </div>
   </div>
 </div>

@@ -6,6 +6,7 @@ from decimal import Decimal
 
 from django.conf import settings
 from django.db import transaction
+from django.db.models import Count, Max, Q, Sum
 from django.utils import timezone
 
 from catalogo.models import Categoria, Producto
@@ -15,7 +16,7 @@ from promociones.services import (
     CuponInvalido, calcular_descuento, devolver_uso, normalizar_codigo, registrar_uso, validar_cupon,
 )
 
-from .models import DetallePedido, Pedido, SecuenciaPedido, ZonaEnvio
+from .models import DetallePedido, Pedido, SecuenciaTienda, ZonaEnvio
 
 logger = logging.getLogger('multimix.pedidos')
 
@@ -75,13 +76,12 @@ def calcular_totales(carrito, metodo_entrega=Entrega.RECOGER, zona=None):
     )
 
 
-def metodos_pago_disponibles(metodo_entrega, config=None):
-    """Formas de pago que aplican al metodo de entrega elegido."""
-    config = config or ConfiguracionTienda.obtener()
+def metodos_pago_disponibles(metodo_entrega, tienda):
+    """Formas de pago que la tienda acepta para el metodo de entrega elegido."""
     metodos = [Pago.TRANSFERENCIA]
     if metodo_entrega == Entrega.RECOGER:
         metodos.append(Pago.EFECTIVO_RECOGER)
-    elif metodo_entrega == Entrega.ENVIO and config.permitir_contra_entrega:
+    elif metodo_entrega == Entrega.ENVIO and tienda.permitir_contra_entrega:
         metodos.append(Pago.CONTRA_ENTREGA)
     return metodos
 
@@ -96,43 +96,46 @@ def supera_limite_por_ip(ip):
 
 # --- Creacion del pedido -------------------------------------------------------------
 
-def _siguiente_numero():
-    """MMX-AAAA-NNNNN. Debe llamarse dentro de una transaccion."""
+def _siguiente_numero(tienda):
+    """PREFIJO-AAAA-NNNNN, con un contador por tienda y año. Debe llamarse dentro de una transaccion."""
     anio = timezone.localdate().year
-    SecuenciaPedido.objects.get_or_create(anio=anio)
-    secuencia = SecuenciaPedido.objects.select_for_update().get(anio=anio)
+    SecuenciaTienda.objects.get_or_create(tienda=tienda, anio=anio)
+    secuencia = SecuenciaTienda.objects.select_for_update().get(tienda=tienda, anio=anio)
     secuencia.ultimo += 1
     secuencia.save(update_fields=['ultimo'])
-    return f'MMX-{anio}-{secuencia.ultimo:05d}'
+    return f'{tienda.prefijo}-{anio}-{secuencia.ultimo:05d}'
 
 
-def _validar_entrega_y_pago(datos):
+def _validar_entrega_y_pago(datos, tienda):
     metodo_entrega = datos.get('metodo_entrega')
     zona = datos.get('zona')
     if metodo_entrega not in Entrega.values:
         raise PedidoError('Elige cómo quieres recibir tu pedido.')
     if metodo_entrega == Entrega.ENVIO:
-        if zona is None or not zona.activa:
+        if zona is None or not zona.activa or zona.tienda_id != tienda.pk:
             raise PedidoError('Elige una zona de envío.')
         if not (datos.get('direccion') or '').strip():
             raise PedidoError('Escribe la dirección de entrega.')
-    if datos.get('metodo_pago') not in metodos_pago_disponibles(metodo_entrega):
+    if datos.get('metodo_pago') not in metodos_pago_disponibles(metodo_entrega, tienda):
         raise PedidoError('Esa forma de pago no está disponible para la entrega elegida.')
 
 
 @transaction.atomic
 def crear_pedido(carrito, datos, ip=None):
-    """Crea el pedido con los precios actuales, reserva el stock y registra el uso del cupon.
+    """Crea el pedido de la tienda del carrito con los precios actuales, reserva el stock y cuenta el cupon.
 
-    `datos` trae los campos ya validados del checkout. Ningun monto viene del cliente.
+    `datos` trae los campos ya validados del checkout. Ningun monto viene del cliente. Productos,
+    zona y cupon deben ser de esa misma tienda.
     """
+    tienda = carrito.tienda
     cantidades = {int(pk): cantidad for pk, cantidad in carrito.items.items() if cantidad > 0}
     if not cantidades:
         raise PedidoError('Tu carrito está vacío.')
-    _validar_entrega_y_pago(datos)
+    _validar_entrega_y_pago(datos, tienda)
 
     productos = {
-        p.pk: p for p in Producto.objects.select_for_update().filter(pk__in=cantidades).order_by('pk')
+        p.pk: p for p in
+        Producto.objects.select_for_update().filter(tienda=tienda, pk__in=cantidades).order_by('pk')
     }
     categorias_activas = set(
         Categoria.objects.filter(pk__in={p.categoria_id for p in productos.values()}, activa=True)
@@ -159,7 +162,7 @@ def crear_pedido(carrito, datos, ip=None):
     codigo = normalizar_codigo(carrito.codigo_cupon)
     if codigo:
         try:
-            cupon = validar_cupon(codigo, subtotal, bloquear=True)
+            cupon = validar_cupon(codigo, subtotal, tienda, bloquear=True)
         except CuponInvalido as error:
             raise PedidoError(f'El cupón {codigo} ya no se puede usar: {error.mensaje}') from error
     descuento = calcular_descuento(cupon, subtotal)
@@ -171,7 +174,8 @@ def crear_pedido(carrito, datos, ip=None):
     por_transferencia = datos['metodo_pago'] == Pago.TRANSFERENCIA
 
     pedido = Pedido.objects.create(
-        numero=_siguiente_numero(),
+        tienda=tienda,
+        numero=_siguiente_numero(tienda),
         nombre=datos['nombre'],
         telefono=datos['telefono'],
         correo=datos.get('correo') or '',
@@ -328,5 +332,51 @@ def cancelar_pedidos_vencidos():
     return cancelados
 
 
-def zonas_activas():
-    return ZonaEnvio.objects.filter(activa=True)
+def zonas_activas(tienda):
+    return ZonaEnvio.objects.filter(tienda=tienda, activa=True)
+
+
+# --- Clientes ------------------------------------------------------------------------
+
+def clientes(pedidos, busqueda=''):
+    """Clientes de esos pedidos: una fila por tienda y telefono, de la compra mas reciente a la mas antigua.
+
+    No hay tabla de clientes: salen de los pedidos. Quien compra en dos tiendas aparece en cada una.
+    `comprado` suma lo cobrado (con fecha de pago y sin cancelar), igual que las ventas del panel.
+    """
+    busqueda = (busqueda or '').strip()
+    if busqueda:
+        digitos = ''.join(c for c in busqueda if c.isdigit())
+        filtro = Q(nombre__icontains=busqueda)
+        if digitos:
+            filtro |= Q(telefono__contains=digitos)
+        pedidos = pedidos.filter(filtro)
+    vigente = ~Q(estado=Estado.CANCELADO)
+    return (
+        pedidos.order_by().values('tienda_id', 'telefono')
+        .annotate(
+            total_pedidos=Count('id', filter=vigente),
+            comprado=Sum('total', filter=vigente & Q(fecha_pago__isnull=False)),
+            ultima_compra=Max('creado'),
+        )
+        .order_by('-ultima_compra', 'telefono')
+    )
+
+
+def completar_clientes(filas, pedidos):
+    """Agrega a cada fila de `clientes` el nombre y correo de su pedido mas reciente y el nombre de la tienda."""
+    filas = list(filas)
+    recientes = {}
+    datos = (
+        pedidos.filter(telefono__in={fila['telefono'] for fila in filas})
+        .order_by('creado', 'id').values_list('tienda_id', 'telefono', 'nombre', 'correo', 'tienda__nombre')
+    )
+    for tienda_id, telefono, nombre, correo, tienda in datos:
+        anterior = recientes.get((tienda_id, telefono), {})
+        recientes[tienda_id, telefono] = {
+            'nombre': nombre, 'correo': correo or anterior.get('correo', ''), 'tienda': tienda,
+        }
+    for fila in filas:
+        fila.update(recientes.get((fila['tienda_id'], fila['telefono']), {}))
+        fila['comprado'] = fila['comprado'] or CERO
+    return filas

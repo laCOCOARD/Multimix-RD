@@ -3,11 +3,16 @@ from io import BytesIO
 from textwrap import wrap
 
 import qrcode
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageDraw
 from django.utils import timezone
 
+from core.fuentes import cargar_fuente
 from core.templatetags.moneda import formatear_monto
+from core.texto import quitar_tildes
 
+
+# Fuentes del sistema que si traen tildes; si no hay ninguna se usa la de Pillow y se escribe sin ellas.
+FUENTES = ['segoeui.ttf', 'arial.ttf', 'DejaVuSans.ttf', 'LiberationSans-Regular.ttf', 'Arial.ttf']
 
 ANCHO = 900
 MARGEN = 56
@@ -15,6 +20,26 @@ COLOR_TINTA = '#0b2239'
 COLOR_AZUL = '#0f4c81'
 COLOR_SUAVE = '#5b6b7c'
 COLOR_BORDE = '#e3e8ee'
+
+
+def sin_tildes(texto):
+    return quitar_tildes(str(texto)).replace('×', 'x')
+
+
+class _DibujoSinTildes:
+    """Envuelve a ImageDraw para escribir sin tildes cuando la fuente no las trae."""
+
+    def __init__(self, dibujo):
+        self._dibujo = dibujo
+
+    def __getattr__(self, nombre):
+        return getattr(self._dibujo, nombre)
+
+    def text(self, xy, texto, **opciones):
+        return self._dibujo.text(xy, sin_tildes(texto), **opciones)
+
+    def textlength(self, texto, **opciones):
+        return self._dibujo.textlength(sin_tildes(texto), **opciones)
 
 
 def _texto_envuelto(dibujo, texto, xy, fuente, ancho_maximo, color, interlineado=8):
@@ -39,11 +64,10 @@ def _texto_envuelto(dibujo, texto, xy, fuente, ancho_maximo, color, interlineado
 
 
 def generar_imagen_factura(pedido, nombre_tienda, url_verificacion):
-    fuente_normal = ImageFont.load_default(size=23)
-    fuente_pequena = ImageFont.load_default(size=18)
-    fuente_seccion = ImageFont.load_default(size=28)
-    fuente_titulo = ImageFont.load_default(size=48)
-    fuente_total = ImageFont.load_default(size=34)
+    fuente_normal, con_tildes = cargar_fuente(23, FUENTES)
+    fuente_pequena, fuente_seccion, fuente_titulo, fuente_total = (
+        cargar_fuente(tamano, FUENTES)[0] for tamano in (18, 28, 48, 34)
+    )
 
     renglones = []
     for detalle in pedido.detalles.all():
@@ -55,6 +79,8 @@ def generar_imagen_factura(pedido, nombre_tienda, url_verificacion):
     alto = 1120 + alto_tabla
     imagen = Image.new('RGB', (ANCHO, alto), '#f5f7fa')
     dibujo = ImageDraw.Draw(imagen)
+    if not con_tildes:
+        dibujo = _DibujoSinTildes(dibujo)
 
     dibujo.rectangle((0, 0, ANCHO, 185), fill=COLOR_TINTA)
     dibujo.text((MARGEN, 28), nombre_tienda, font=fuente_seccion, fill='#ffffff')

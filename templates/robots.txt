@@ -1,5 +1,6 @@
 User-agent: *
-Disallow: /carrito/
+Disallow: /tienda/*/carrito/
+Disallow: /tienda/*/pedido/
 Disallow: /pedido/
 Allow: /
 

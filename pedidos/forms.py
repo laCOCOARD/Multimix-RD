@@ -32,7 +32,7 @@ class CheckoutForm(forms.Form):
     def __init__(self, *args, carrito, **kwargs):
         super().__init__(*args, **kwargs)
         self.carrito = carrito
-        self.fields['zona'].queryset = zonas_activas()
+        self.fields['zona'].queryset = zonas_activas(carrito.tienda)
 
     def clean_nombre(self):
         return ' '.join(self.cleaned_data['nombre'].split())
@@ -68,7 +68,7 @@ class CheckoutForm(forms.Form):
                 self.add_error('direccion', 'Escribe la dirección de entrega.')
 
         pago = datos.get('metodo_pago')
-        if entrega and pago and pago not in metodos_pago_disponibles(entrega):
+        if entrega and pago and pago not in metodos_pago_disponibles(entrega, self.carrito.tienda):
             self.add_error('metodo_pago', 'Esa forma de pago no está disponible para la entrega elegida.')
         return datos
 

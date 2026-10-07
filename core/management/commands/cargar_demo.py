@@ -1,4 +1,4 @@
-"""Carga datos de demostracion para ver la tienda funcionando. Se puede ejecutar varias veces."""
+"""Carga datos de demostracion para ver el sitio funcionando con dos tiendas. Se puede ejecutar varias veces."""
 import textwrap
 from datetime import timedelta
 from decimal import Decimal
@@ -11,17 +11,19 @@ from django.core.files.base import ContentFile
 from django.core.management.base import BaseCommand
 from django.db import transaction
 from django.utils import timezone
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageDraw
 
 from carrito.carrito import Carrito
 from catalogo.imagenes import convertir_a_webp
 from catalogo.models import Categoria, FotoProducto, Producto
-from catalogo.services import CACHE_MAS_VENDIDOS
+from catalogo.services import clave_mas_vendidos
+from core.fuentes import cargar_fuente
 from core.models import ConfiguracionTienda, CuentaBancaria
 from core.texto import quitar_tildes
 from pedidos.models import Pedido, ZonaEnvio
 from pedidos.services import cambiar_estado, crear_pedido
 from promociones.models import Cupon
+from tiendas.models import Tienda
 
 # (nombre, descripcion, color principal, color secundario)
 CATEGORIAS = [
@@ -82,18 +84,61 @@ ZONAS = [
     ('Santo Domingo Oeste', '250'), ('Santiago', '350'), ('Interior del país', '450'),
 ]
 
+# Segunda tienda, para ver como conviven varias: su catalogo, sus zonas, su cuenta y sus pedidos son aparte.
+PRODUCTOS_FITNESS = [
+    ('FIT-001', 'Deportes', 'Bandas de resistencia (set de 5)', '1290', '990', 30, True,
+     'Cinco niveles de resistencia con agarres, anclaje para puerta y bolsa de transporte.'),
+    ('FIT-002', 'Deportes', 'Cuerda para saltar con contador', '650', None, 40, False,
+     'Cable de acero ajustable y contador de saltos en el mango.'),
+    ('FIT-003', 'Deportes', 'Rodillo de espuma para masaje', '1450', None, 12, True,
+     'Alivia la tensión muscular después de entrenar. 45 cm de largo.'),
+    ('FIT-004', 'Belleza', 'Proteína vegetal sabor vainilla 1 lb', '2350', None, 18, False,
+     'Mezcla de proteína de arveja y arroz, sin azúcar añadida.'),
+]
+
+ZONAS_FITNESS = [('Santiago', '150'), ('Resto del país', '400')]
+
+# Datos de cada tienda de demostracion. `productos` y `zonas` se cargan solo en esa tienda.
+TIENDAS = [
+    {
+        'nombre': 'Multimix RD', 'prefijo': 'MMX', 'productos': PRODUCTOS, 'zonas': ZONAS, 'cupon': 'BIENVENIDO10',
+        'cuenta': ('Banco Popular Dominicano', '812-345678-9', 'Multimix RD, SRL', '1-31-12345-6'),
+        'datos': {
+            'banner_titulo': 'Tu tienda de bienestar',
+            'banner_subtitulo': 'Salud, belleza y equilibrio: vitaminas, cuidado personal y más, con entrega en todo el país.',
+            'whatsapp': '18095550123', 'telefono': '809-555-0123', 'correo': 'ventas@multimixrd.com',
+            'horario': 'Lunes a sábado, 9:00 a.m. a 6:00 p.m.',
+            'direccion_tienda': 'Av. Winston Churchill #100, Plaza Central, local 12, Santo Domingo',
+            'instagram': 'https://www.instagram.com/multimixrd',
+            'facebook': 'https://www.facebook.com/multimixrd',
+        },
+        'pedidos': [
+            ('María Rodríguez', '8095550101', [('TEC-001', 2), ('HOG-001', 1)], True, 'transferencia',
+             ['pagado', 'enviado', 'entregado']),
+            ('José Martínez', '8295550102', [('DEP-002', 3), ('TEC-001', 1)], False, 'efectivo_recoger',
+             ['listo', 'entregado']),
+            ('Carla Jiménez', '8495550103', [('MOD-001', 1), ('HOG-001', 2)], False, 'transferencia', ['pagado']),
+            ('Luis Peña', '8095550104', [('JUG-002', 1), ('BEL-002', 2)], True, 'transferencia', []),
+        ],
+    },
+    {
+        'nombre': 'Rincón Fitness', 'prefijo': 'FIT', 'productos': PRODUCTOS_FITNESS, 'zonas': ZONAS_FITNESS,
+        'cupon': 'FIT10', 'cuenta': ('Banreservas', '960-112233-4', 'Rincón Fitness', '402-1234567-8'),
+        'datos': {
+            'banner_subtitulo': 'Accesorios para entrenar en casa, con entrega desde Santiago.',
+            'whatsapp': '18295550456', 'telefono': '829-555-0456', 'correo': 'hola@rinconfitness.example',
+            'horario': 'Lunes a viernes, 10:00 a.m. a 7:00 p.m.',
+            'direccion_tienda': 'Calle del Sol #45, Santiago de los Caballeros',
+            'instagram': 'https://www.instagram.com/rinconfitness',
+        },
+        'pedidos': [
+            ('Ana Gómez', '8095550201', [('FIT-001', 1), ('FIT-002', 2)], True, 'transferencia', ['pagado']),
+        ],
+    },
+]
+
 
 FUENTES = ['segoeuib.ttf', 'arialbd.ttf', 'DejaVuSans-Bold.ttf', 'LiberationSans-Bold.ttf', 'Arial Bold.ttf']
-
-
-def cargar_fuente(tamano):
-    """Devuelve (fuente, tiene_tildes). La fuente incluida en Pillow no trae letras acentuadas."""
-    for nombre in FUENTES:
-        try:
-            return ImageFont.truetype(nombre, tamano), True
-        except OSError:
-            continue
-    return ImageFont.load_default(size=tamano), False
 
 
 def crear_imagen(texto, color_a, color_b, lado=1000, variante=0):
@@ -107,7 +152,7 @@ def crear_imagen(texto, color_a, color_b, lado=1000, variante=0):
     dibujo.ellipse((-lado * 0.25, lado * 0.6, lado * 0.4, lado * 1.25), fill=(255, 255, 255, 26))
     dibujo.rounded_rectangle((lado * 0.08, lado * 0.08, lado * 0.92, lado * 0.92), radius=40, outline=(255, 255, 255, 90), width=4)
 
-    fuente, con_tildes = cargar_fuente(lado // 13)
+    fuente, con_tildes = cargar_fuente(lado // 13, FUENTES)
     renglones = textwrap.wrap(texto if con_tildes else quitar_tildes(texto), width=16)
     alto = fuente.size * 1.25
     y = (lado - alto * len(renglones)) / 2
@@ -117,7 +162,7 @@ def crear_imagen(texto, color_a, color_b, lado=1000, variante=0):
         dibujo.text(((lado - ancho) / 2, y), renglon, font=fuente, fill=(255, 255, 255, 255))
         y += alto
     if texto:
-        marca, _ = cargar_fuente(lado // 30)
+        marca, _ = cargar_fuente(lado // 30, FUENTES)
         dibujo.text((lado * 0.12, lado * 0.85), 'MULTIMIX RD - DEMO', font=marca, fill=(255, 255, 255, 190))
 
     salida = BytesIO()
@@ -127,33 +172,37 @@ def crear_imagen(texto, color_a, color_b, lado=1000, variante=0):
 
 
 class Command(BaseCommand):
-    help = 'Crea categorías, productos con imágenes, cupón, zonas, cuenta bancaria y configuración de demostración.'
+    help = 'Crea dos tiendas de demostración con categorías, productos con imágenes, cupón, zonas, cuenta y pedidos.'
 
     @transaction.atomic
     def handle(self, *args, **options):
         self.configuracion()
-        self.cuenta_y_zonas()
         categorias = self.categorias()
-        creados = self.productos(categorias)
-        Cupon.objects.get_or_create(codigo='BIENVENIDO10', defaults={
-            'tipo': Cupon.Tipo.PORCENTAJE, 'valor': Decimal('10'), 'compra_minima': Decimal('1000'),
-        })
-        pedidos = self.pedidos()
-        cache.delete(CACHE_MAS_VENDIDOS)
+        creados = pedidos = 0
+        # La primera tienda que exista (la que ya tenia el sitio) recibe el catalogo principal.
+        existentes = [Tienda.objects.order_by('pk').first(), Tienda.objects.filter(prefijo='FIT').first()]
+        for existente, demo in zip(existentes, TIENDAS):
+            tienda = self.tienda(existente, demo)
+            self.cuenta_y_zonas(tienda, demo)
+            creados += self.productos(tienda, demo['productos'], categorias)
+            Cupon.objects.get_or_create(tienda=tienda, codigo=demo['cupon'], defaults={
+                'tipo': Cupon.Tipo.PORCENTAJE, 'valor': Decimal('10'), 'compra_minima': Decimal('1000'),
+            })
+            pedidos += self.pedidos(tienda, demo['pedidos'])
+            cache.delete(clave_mas_vendidos(tienda))
         self.stdout.write(self.style.SUCCESS(
-            f'Demo lista: {len(categorias)} categorías, {Producto.objects.count()} productos '
-            f'({creados} nuevos), {pedidos} pedidos de ejemplo, cupón BIENVENIDO10.'
+            f'Demo lista: {Tienda.objects.count()} tiendas, {len(categorias)} categorías, '
+            f'{Producto.objects.count()} productos ({creados} nuevos), {pedidos} pedidos de ejemplo.'
         ))
 
     def configuracion(self):
-        """Completa solo los datos que esten vacios, para no pisar lo que ya ajusto el dueño."""
+        """Contactos del sitio. Completa solo lo que este vacio, para no pisar lo que ya ajusto el dueño."""
         config = ConfiguracionTienda.obtener()
         demo = {
             'whatsapp': '18095550123',
             'telefono': '809-555-0123',
             'correo': 'ventas@multimixrd.com',
             'horario': 'Lunes a sábado, 9:00 a.m. a 6:00 p.m.',
-            'direccion_tienda': 'Av. Winston Churchill #100, Plaza Central, local 12, Santo Domingo',
             'instagram': 'https://www.instagram.com/multimixrd',
             'facebook': 'https://www.facebook.com/multimixrd',
         }
@@ -162,12 +211,25 @@ class Command(BaseCommand):
                 setattr(config, campo, valor)
         config.save()
 
-    def cuenta_y_zonas(self):
-        CuentaBancaria.objects.get_or_create(banco='Banco Popular Dominicano', numero='812-345678-9', defaults={
-            'tipo_cuenta': CuentaBancaria.Tipo.CORRIENTE, 'titular': 'Multimix RD, SRL', 'cedula_rnc': '1-31-12345-6',
+    def tienda(self, tienda, demo):
+        """Crea la tienda de demostracion o completa los datos vacios de la que ya existe."""
+        if tienda is None:
+            return Tienda.objects.create(nombre=demo['nombre'], prefijo=demo['prefijo'], **demo['datos'])
+        for campo, valor in demo['datos'].items():
+            if not getattr(tienda, campo):
+                setattr(tienda, campo, valor)
+        tienda.save()
+        return tienda
+
+    def cuenta_y_zonas(self, tienda, demo):
+        banco, numero, titular, documento = demo['cuenta']
+        CuentaBancaria.objects.get_or_create(tienda=tienda, banco=banco, numero=numero, defaults={
+            'tipo_cuenta': CuentaBancaria.Tipo.CORRIENTE, 'titular': titular, 'cedula_rnc': documento,
         })
-        for orden, (nombre, tarifa) in enumerate(ZONAS):
-            ZonaEnvio.objects.get_or_create(nombre=nombre, defaults={'tarifa': Decimal(tarifa), 'orden': orden})
+        for orden, (nombre, tarifa) in enumerate(demo['zonas']):
+            ZonaEnvio.objects.get_or_create(
+                tienda=tienda, nombre=nombre, defaults={'tarifa': Decimal(tarifa), 'orden': orden},
+            )
 
     def categorias(self):
         categorias = {}
@@ -182,12 +244,12 @@ class Command(BaseCommand):
             categorias[nombre] = (categoria, color_a, color_b)
         return categorias
 
-    def productos(self, categorias):
+    def productos(self, tienda, productos, categorias):
         creados = 0
         ahora = timezone.now()
-        for indice, (sku, cat, nombre, precio, oferta, stock, destacado, descripcion) in enumerate(PRODUCTOS):
+        for indice, (sku, cat, nombre, precio, oferta, stock, destacado, descripcion) in enumerate(productos):
             categoria, color_a, color_b = categorias[cat]
-            producto, nuevo = Producto.objects.get_or_create(sku=sku, defaults={
+            producto, nuevo = Producto.objects.get_or_create(tienda=tienda, sku=sku, defaults={
                 'categoria': categoria, 'nombre': nombre, 'descripcion': descripcion,
                 'precio': Decimal(precio), 'precio_oferta': Decimal(oferta) if oferta else None,
                 'oferta_fin': ahora + timedelta(days=30) if oferta else None,
@@ -205,29 +267,20 @@ class Command(BaseCommand):
                     FotoProducto.objects.create(producto=producto, imagen=archivo, orden=variante)
         return creados
 
-    def pedidos(self):
-        """Unos pedidos de ejemplo para que el panel y "Más vendidos" tengan datos."""
-        if Pedido.objects.exists():
+    def pedidos(self, tienda, ejemplos):
+        """Unos pedidos de ejemplo para que el panel y "Más vendidos" de la tienda tengan datos."""
+        if Pedido.objects.filter(tienda=tienda).exists():
             return 0
-        zona = ZonaEnvio.objects.get(nombre='Distrito Nacional')
-        Entrega, Pago, Estado = Pedido.Entrega, Pedido.Pago, Pedido.Estado
-        ejemplos = [
-            ('María Rodríguez', '8095550101', [('TEC-001', 2), ('HOG-001', 1)], Entrega.ENVIO, Pago.TRANSFERENCIA,
-             [Estado.PAGADO, Estado.ENVIADO, Estado.ENTREGADO]),
-            ('José Martínez', '8295550102', [('DEP-002', 3), ('TEC-001', 1)], Entrega.RECOGER, Pago.EFECTIVO_RECOGER,
-             [Estado.LISTO, Estado.ENTREGADO]),
-            ('Carla Jiménez', '8495550103', [('MOD-001', 1), ('HOG-001', 2)], Entrega.RECOGER, Pago.TRANSFERENCIA,
-             [Estado.PAGADO]),
-            ('Luis Peña', '8095550104', [('JUG-002', 1), ('BEL-002', 2)], Entrega.ENVIO, Pago.TRANSFERENCIA, []),
-        ]
-        for nombre, telefono, lineas, entrega, pago, estados in ejemplos:
-            carrito = Carrito(SimpleNamespace(session=SessionStore()))
+        zona = ZonaEnvio.objects.filter(tienda=tienda).first()
+        Entrega, Pago = Pedido.Entrega, Pedido.Pago
+        for nombre, telefono, lineas, a_domicilio, pago, estados in ejemplos:
+            carrito = Carrito(SimpleNamespace(session=SessionStore()), tienda)
             for sku, cantidad in lineas:
-                carrito.agregar(Producto.objects.select_related('categoria').get(sku=sku), cantidad)
-            a_domicilio = entrega == Entrega.ENVIO
+                carrito.agregar(Producto.objects.select_related('categoria').get(tienda=tienda, sku=sku), cantidad)
             pedido = crear_pedido(carrito, {
                 'nombre': nombre, 'telefono': telefono, 'correo': '',
-                'metodo_entrega': entrega, 'zona': zona if a_domicilio else None,
+                'metodo_entrega': Entrega.ENVIO if a_domicilio else Entrega.RECOGER,
+                'zona': zona if a_domicilio else None,
                 'direccion': 'Calle Principal #25, Ensanche Naco' if a_domicilio else '',
                 'referencia': 'Edificio azul, apto. 3B' if a_domicilio else '',
                 'metodo_pago': pago, 'transferencia_realizada': not estados and pago == Pago.TRANSFERENCIA,

@@ -1,0 +1,42 @@
+{% extends 'base.html' %}
+
+{% block titulo %}Términos del sitio · {{ plataforma.nombre }}{% endblock %}
+{% block descripcion %}Cómo funciona {{ plataforma.nombre }} y quién responde por cada compra.{% endblock %}
+
+{% block contenido %}
+<div class="container py-4">
+  <div class="row justify-content-center">
+    <div class="col-lg-9">
+      <h1 class="h3 mb-4">Términos del sitio</h1>
+
+      <div class="mm-panel mb-4">
+        <h2 class="h5">Qué es {{ plataforma.nombre }}</h2>
+        <p class="mb-0">{{ plataforma.nombre }} reúne tiendas de emprendedores independientes. Cada tienda publica sus propios productos y precios, atiende a sus clientes y cobra sus ventas directamente.</p>
+      </div>
+
+      <div class="mm-panel mb-4">
+        <h2 class="h5">Quién te vende</h2>
+        <ul class="mm-lista mb-0">
+          <li>Cada compra se hace dentro de una sola tienda, con el carrito de esa tienda. Si compras en dos tiendas son dos pedidos distintos.</li>
+          <li>El pedido se envía por WhatsApp a la tienda, y el pago (transferencia o efectivo) lo recibe esa tienda en sus propias cuentas. {{ plataforma.nombre }} no cobra ni guarda tu dinero.</li>
+          <li>La tienda que te vende responde por sus productos, precios, existencias, entregas, cambios y devoluciones. Sus datos de contacto están al pie de cada página de la tienda.</li>
+          <li>El comprobante que recibes es una constancia del pedido de esa tienda; no es un comprobante fiscal.</li>
+        </ul>
+      </div>
+
+      <div class="mm-panel mb-4">
+        <h2 class="h5">Tus datos</h2>
+        <ul class="mm-lista mb-0">
+          <li>Para hacer un pedido das tu nombre, tu teléfono y, si pides envío, tu dirección. Esos datos los recibe la tienda donde compras para atender tu pedido.</li>
+          <li>Una tienda no ve los pedidos ni los clientes de las demás. La administración de {{ plataforma.nombre }} puede ver los pedidos para dar soporte y mantener el sitio.</li>
+        </ul>
+      </div>
+
+      <div class="mm-panel">
+        <h2 class="h5">Si tienes un problema</h2>
+        <p class="mb-0">Escribe primero a la tienda donde compraste, con tu número de pedido. Si no te responde, cuéntanos{% if plataforma.correo %} en <a href="mailto:{{ plataforma.correo }}">{{ plataforma.correo }}</a>{% endif %}{% if plataforma.telefono %} o al {{ plataforma.telefono }}{% endif %}.</p>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

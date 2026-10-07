@@ -13,6 +13,22 @@
     {% csrf_token %}
     <fieldset class="module aligned">
       <h2>Subir fotos por SKU</h2>
+      {% if tiendas|length > 1 %}
+        <div class="form-row">
+          <div class="flex-container">
+            <label class="required" for="id_tienda">Tienda:</label>
+            <select name="tienda" id="id_tienda" required>
+              <option value="">---------</option>
+              {% for tienda in tiendas %}
+                <option value="{{ tienda.pk }}"{% if tienda.pk == tienda_elegida.pk %} selected{% endif %}>{{ tienda.nombre }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="help">Las fotos se buscan por SKU solo entre los productos de esta tienda.</div>
+        </div>
+      {% elif not tiendas %}
+        <p class="errornote">Tu usuario no tiene ninguna tienda asignada, así que no hay productos a los que subir fotos.</p>
+      {% endif %}
       <div class="form-row">
         <div class="flex-container">
           <label for="id_fotos">Fotos:</label>
@@ -92,6 +108,7 @@
         const datos = new FormData();
         datos.append('csrfmiddlewaretoken', token);
         datos.append('fotos', foto);
+        if (formulario.elements.tienda) datos.append('tienda', formulario.elements.tienda.value);
         if (formulario.elements.reemplazar.checked) datos.append('reemplazar', '1');
         try {
           const respuesta = await fetch(formulario.action, {

@@ -7,8 +7,10 @@ from django.test import TestCase
 from carrito.carrito import Carrito, CarritoError, cantidad_en_sesion
 from catalogo.models import Producto
 from catalogo.tests.test_modelos import crear_producto
+from pedidos.tests.utiles import cupon_de_prueba
 from promociones.models import Cupon
 from promociones.services import CuponInvalido
+from tiendas.tests.utiles import tienda_de_prueba
 
 
 class CarritoTests(TestCase):
@@ -17,8 +19,8 @@ class CarritoTests(TestCase):
         self.producto = crear_producto(nombre='Lámpara', precio=Decimal('1000'), stock_almacen=5)
         self.otro = crear_producto(nombre='Taza', precio=Decimal('250'), precio_oferta=Decimal('200'), stock_almacen=20)
 
-    def carrito(self):
-        return Carrito(self.request)
+    def carrito(self, tienda=None):
+        return Carrito(self.request, tienda or tienda_de_prueba())
 
     def test_agregar_suma_y_persiste_en_sesion(self):
         carrito = self.carrito()
@@ -28,7 +30,19 @@ class CarritoTests(TestCase):
         nuevo = self.carrito()
         self.assertEqual(len(nuevo), 4)
         self.assertEqual(nuevo.cantidad_de(self.producto.pk), 3)
-        self.assertEqual(cantidad_en_sesion(self.request.session), 4)
+        self.assertEqual(cantidad_en_sesion(self.request.session, tienda_de_prueba()), 4)
+
+    def test_cada_tienda_tiene_su_carrito_y_no_se_mezclan(self):
+        otra = tienda_de_prueba('Otra tienda')
+        ajeno = crear_producto(nombre='Ajeno', sku='A1', tienda=otra)
+        with self.assertRaises(CarritoError):
+            self.carrito().agregar(ajeno)
+        self.carrito().agregar(self.producto, 2)
+        self.carrito(otra).agregar(ajeno, 1)
+        self.assertEqual((len(self.carrito()), len(self.carrito(otra))), (2, 1))
+        self.assertEqual([linea.producto for linea in self.carrito(otra).lineas()], [ajeno])
+        self.carrito().vaciar()
+        self.assertEqual((len(self.carrito()), len(self.carrito(otra))), (0, 1))
 
     def test_subtotal_usa_el_precio_de_oferta(self):
         carrito = self.carrito()
@@ -82,7 +96,7 @@ class CarritoTests(TestCase):
         self.assertFalse(self.carrito())
 
     def test_cupon_aplicar_y_quitar(self):
-        Cupon.objects.create(codigo='DIEZ', tipo=Cupon.Tipo.PORCENTAJE, valor=Decimal('10'))
+        cupon_de_prueba('DIEZ')
         carrito = self.carrito()
         carrito.agregar(self.producto, 2)
         carrito.aplicar_cupon('diez')
@@ -101,7 +115,7 @@ class CarritoTests(TestCase):
         self.assertEqual(self.carrito().codigo_cupon, '')
 
     def test_cupon_se_quita_si_deja_de_cumplir_el_minimo(self):
-        Cupon.objects.create(codigo='MIN', tipo=Cupon.Tipo.MONTO_FIJO, valor=Decimal('100'), compra_minima=Decimal('2000'))
+        cupon_de_prueba('MIN', tipo=Cupon.Tipo.MONTO_FIJO, valor=Decimal('100'), compra_minima=Decimal('2000'))
         carrito = self.carrito()
         carrito.agregar(self.producto, 2)
         carrito.aplicar_cupon('MIN')

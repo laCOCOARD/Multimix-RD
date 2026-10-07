@@ -3,7 +3,7 @@
 
 {% block content %}
 {% if resumen %}
-<section class="panel-resumen" aria-label="Resumen de la tienda">
+<section class="panel-resumen" aria-label="Resumen de ventas, pedidos y stock">
   <div class="panel-tarjetas">
     <div class="panel-tarjeta">
       <span class="panel-tarjeta-titulo">Ventas de hoy</span>
@@ -32,7 +32,34 @@
     </a>
   </div>
 
+  <p class="panel-accesos">
+    <a class="button" href="{% url 'admin:pedidos_pedido_changelist' %}">Ver pedidos</a>
+    <a class="button" href="{% url 'admin:pedidos_pedido_clientes' %}">Ver clientes</a>
+  </p>
+
   <div class="panel-columnas">
+    {% if ventas_por_tienda %}
+    <div class="module">
+      <table>
+        <caption>Ventas del mes por tienda</caption>
+        <thead><tr><th scope="col">Tienda</th><th scope="col">Cobrado</th><th scope="col">Pedidos cobrados</th><th scope="col">Pendientes</th></tr></thead>
+        <tbody>
+          {% for fila in ventas_por_tienda %}
+            <tr>
+              <th scope="row">
+                <a href="{% url 'admin:pedidos_pedido_changelist' %}?tienda__id__exact={{ fila.pk }}">{{ fila.nombre }}</a>
+                {% if not fila.activa %}<span class="panel-etiqueta panel-inactiva">Apagada</span>{% endif %}
+              </th>
+              <td>{{ fila.ventas_mes|default:0|moneda }}</td>
+              <td>{{ fila.pedidos_mes }}</td>
+              <td>{{ fila.pendientes }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% endif %}
+
     <div class="module">
       <table>
         <caption>Últimos pedidos</caption>
@@ -40,7 +67,7 @@
         <tbody>
           {% for pedido in resumen.ultimos_pedidos %}
             <tr>
-              <th scope="row"><a href="{% url 'admin:pedidos_pedido_change' pedido.pk %}">{{ pedido.numero }}</a><br><small>{{ pedido.creado|date:"j M, g:i a" }}</small></th>
+              <th scope="row"><a href="{% url 'admin:pedidos_pedido_change' pedido.pk %}">{{ pedido.numero }}</a><br><small>{{ pedido.creado|date:"j M, g:i a" }}{% if ventas_por_tienda %} · {{ pedido.tienda.nombre }}{% endif %}</small></th>
               <td>{{ pedido.nombre }}</td>
               <td>{{ pedido.total|moneda }}</td>
               <td><span class="panel-estado panel-estado-{{ pedido.estado }}">{{ pedido.get_estado_display }}</span></td>

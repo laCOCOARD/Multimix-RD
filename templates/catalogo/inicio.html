@@ -7,16 +7,16 @@
   <div class="container">
     <div class="row">
       <div class="col-lg-7">
-        <h1 class="mm-banner-titulo">{{ tienda.banner_titulo }}</h1>
+        <h1 class="mm-banner-titulo">{{ tienda.banner_titulo|default:tienda.nombre }}</h1>
         {% if tienda.banner_subtitulo %}<p class="mm-banner-subtitulo">{{ tienda.banner_subtitulo }}</p>{% endif %}
         <div class="d-flex flex-wrap gap-2">
-          <a class="btn btn-acento btn-lg" href="{% url 'catalogo:lista' %}">{{ tienda.banner_texto_boton|default:'Ver catálogo' }}</a>
-          <a class="btn btn-outline-light btn-lg" href="{% url 'core:como_comprar' %}">Cómo comprar</a>
+          <a class="btn btn-acento btn-lg" href="{% url 'catalogo:lista' tienda.slug %}">{{ tienda.banner_texto_boton|default:'Ver catálogo' }}</a>
+          <a class="btn btn-outline-light btn-lg" href="{% url 'core:como_comprar' tienda.slug %}">Cómo comprar</a>
         </div>
       </div>
-      {% if not tienda.banner_imagen %}
+      {% if tienda.logo and not tienda.banner_imagen %}
         <div class="col-lg-5 d-none d-lg-flex align-items-center justify-content-center">
-          <div class="mm-banner-marca"><img src="{% static 'img/logo-simbolo.webp' %}" alt="" width="393" height="300"></div>
+          <div class="mm-banner-marca"><img src="{{ tienda.logo.url }}" alt=""></div>
         </div>
       {% endif %}
     </div>
@@ -25,7 +25,7 @@
 
 <section class="container mm-ventajas">
   <div class="row g-3">
-    <div class="col-6 col-lg-3"><div class="mm-ventaja revelar"><i class="bi bi-truck"></i><span>Envíos a todo el país</span></div></div>
+    <div class="col-6 col-lg-3"><div class="mm-ventaja revelar"><i class="bi bi-truck"></i><span>Envío a domicilio</span></div></div>
     <div class="col-6 col-lg-3"><div class="mm-ventaja revelar"><i class="bi bi-shop"></i><span>Retiro en tienda</span></div></div>
     <div class="col-6 col-lg-3"><div class="mm-ventaja revelar"><i class="bi bi-bank"></i><span>Paga por transferencia</span></div></div>
     <div class="col-6 col-lg-3"><div class="mm-ventaja revelar"><i class="bi bi-whatsapp"></i><span>Atención por WhatsApp</span></div></div>
@@ -40,7 +40,7 @@
   <div class="row g-3">
     {% for categoria in categorias %}
       <div class="col-6 col-md-4 col-lg-3">
-        <a class="mm-categoria revelar" href="{{ categoria.get_absolute_url }}">
+        <a class="mm-categoria revelar" href="{% url 'catalogo:categoria' tienda.slug categoria.slug %}">
           {% if categoria.url_portada %}
             <img{% if categoria.usa_foto_de_producto %} class="mm-categoria-producto"{% endif %} src="{{ categoria.url_portada }}" alt="" loading="lazy" decoding="async">
           {% else %}
@@ -58,7 +58,7 @@
 <section class="container mm-seccion">
   <div class="mm-seccion-cabecera">
     <h2><i class="bi {{ seccion.icono }} me-2"></i>{{ seccion.titulo }}</h2>
-    <a href="{% url 'catalogo:lista' %}{{ seccion.enlace }}">Ver todo <i class="bi bi-arrow-right"></i></a>
+    <a href="{% url 'catalogo:lista' tienda.slug %}{{ seccion.enlace }}">Ver todo <i class="bi bi-arrow-right"></i></a>
   </div>
   <div class="row g-3">
     {% for producto in seccion.productos %}

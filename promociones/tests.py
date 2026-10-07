@@ -5,20 +5,38 @@ from django.core.exceptions import ValidationError
 from django.test import TestCase
 from django.utils import timezone
 
+from tiendas.tests.utiles import tienda_de_prueba
+
 from .models import Cupon
 from .services import CuponInvalido, calcular_descuento, devolver_uso, registrar_uso, validar_cupon
 
 
 class CuponTests(TestCase):
+    def setUp(self):
+        self.tienda = tienda_de_prueba()
+
     def crear(self, **datos):
-        valores = {'codigo': 'PROMO', 'tipo': Cupon.Tipo.PORCENTAJE, 'valor': Decimal('10')}
+        valores = {'tienda': self.tienda, 'codigo': 'PROMO', 'tipo': Cupon.Tipo.PORCENTAJE, 'valor': Decimal('10')}
         valores.update(datos)
         return Cupon.objects.create(**valores)
 
     def test_codigo_en_mayusculas_y_busqueda_sin_distinguir(self):
         cupon = self.crear(codigo=' bienvenido10 ')
         self.assertEqual(cupon.codigo, 'BIENVENIDO10')
-        self.assertEqual(validar_cupon('bienvenido10', Decimal('500')), cupon)
+        self.assertEqual(validar_cupon('bienvenido10', Decimal('500'), self.tienda), cupon)
+
+    def test_cada_tienda_tiene_sus_cupones(self):
+        otra = tienda_de_prueba('Otra tienda')
+        propio = self.crear(codigo='VERANO')
+        ajeno = self.crear(codigo='VERANO', tienda=otra, valor=Decimal('50'))
+        self.crear(codigo='SOLO-AQUI')
+        self.assertEqual(validar_cupon('VERANO', Decimal('500'), self.tienda), propio)
+        self.assertEqual(validar_cupon('VERANO', Decimal('500'), otra), ajeno)
+        with self.assertRaises(CuponInvalido):
+            validar_cupon('SOLO-AQUI', Decimal('500'), otra)
+        repetido = Cupon(tienda=otra, codigo='VERANO', tipo=Cupon.Tipo.PORCENTAJE, valor=Decimal('5'))
+        with self.assertRaisesMessage(ValidationError, 'Ya tienes un cupón con ese código.'):
+            repetido.full_clean()
 
     def test_descuento_porcentaje(self):
         cupon = self.crear(valor=Decimal('10'))
@@ -35,7 +53,7 @@ class CuponTests(TestCase):
 
     def test_porcentaje_mayor_a_100_es_invalido(self):
         with self.assertRaises(ValidationError):
-            Cupon(codigo='X', tipo=Cupon.Tipo.PORCENTAJE, valor=Decimal('150')).full_clean()
+            Cupon(tienda=self.tienda, codigo='X', tipo=Cupon.Tipo.PORCENTAJE, valor=Decimal('150')).full_clean()
 
     def test_rechazos(self):
         ahora = timezone.now()
@@ -46,8 +64,8 @@ class CuponTests(TestCase):
         self.crear(codigo='MINIMO', compra_minima=Decimal('1000'))
         for codigo in ('', 'NOEXISTE', 'INACTIVO', 'FUTURO', 'VENCIDO', 'AGOTADO', 'MINIMO'):
             with self.assertRaises(CuponInvalido, msg=codigo):
-                validar_cupon(codigo, Decimal('500'))
-        self.assertEqual(validar_cupon('MINIMO', Decimal('1000')).codigo, 'MINIMO')
+                validar_cupon(codigo, Decimal('500'), self.tienda)
+        self.assertEqual(validar_cupon('MINIMO', Decimal('1000'), self.tienda).codigo, 'MINIMO')
 
     def test_registrar_y_devolver_uso(self):
         cupon = self.crear(usos_maximos=2)

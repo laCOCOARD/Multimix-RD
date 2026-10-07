@@ -1,0 +1,67 @@
+{% extends "admin/base_site.html" %}
+{% load moneda %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+  <a href="{% url 'admin:index' %}">Inicio</a> &rsaquo;
+  <a href="{% url 'admin:pedidos_pedido_changelist' %}">Pedidos</a> &rsaquo; Clientes
+</div>
+{% endblock %}
+
+{% block content %}
+<div id="content-main">
+  <p class="help">
+    Personas que han hecho pedidos{% if varias_tiendas %} en cada tienda{% endif %}, por número de teléfono.
+    «Comprado» suma los pedidos cobrados y no cancelados.
+  </p>
+
+  <form method="get" class="panel-busqueda">
+    <label for="buscar-cliente">Buscar por nombre o teléfono:</label>
+    <input type="search" name="q" id="buscar-cliente" value="{{ busqueda }}" maxlength="80">
+    <input type="submit" value="Buscar">
+    {% if busqueda %}<a href="{% url 'admin:pedidos_pedido_clientes' %}">Ver todos</a>{% endif %}
+  </form>
+
+  <div class="module">
+    <table>
+      <caption>{{ pagina.paginator.count }} cliente{{ pagina.paginator.count|pluralize }}</caption>
+      <thead>
+        <tr>
+          <th scope="col">Cliente</th>
+          <th scope="col">Teléfono</th>
+          <th scope="col">Correo</th>
+          {% if varias_tiendas %}<th scope="col">Tienda</th>{% endif %}
+          <th scope="col">Pedidos</th>
+          <th scope="col">Comprado</th>
+          <th scope="col">Último pedido</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for fila in filas %}
+          <tr>
+            <th scope="row">
+              <a href="{% url 'admin:pedidos_pedido_changelist' %}?q={{ fila.telefono }}{% if varias_tiendas %}&amp;tienda__id__exact={{ fila.tienda_id }}{% endif %}" title="Ver sus pedidos">{{ fila.nombre }}</a>
+            </th>
+            <td><a href="{{ fila.enlace_whatsapp }}" target="_blank" rel="noopener" title="Escribir por WhatsApp">{{ fila.telefono_formateado }} ↗</a></td>
+            <td>{{ fila.correo|default:'—' }}</td>
+            {% if varias_tiendas %}<td>{{ fila.tienda }}</td>{% endif %}
+            <td>{{ fila.total_pedidos }}</td>
+            <td>{{ fila.comprado|moneda }}</td>
+            <td>{{ fila.ultima_compra|date:"j M Y, g:i a" }}</td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="{% if varias_tiendas %}7{% else %}6{% endif %}">{% if busqueda %}Nadie coincide con esa búsqueda.{% else %}Todavía no hay clientes.{% endif %}</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {% if pagina.has_other_pages %}
+    <p class="paginator">
+      {% if pagina.has_previous %}<a href="?p={{ pagina.previous_page_number }}{% if busqueda %}&amp;q={{ busqueda|urlencode }}{% endif %}">&lsaquo; Anterior</a>{% endif %}
+      Página {{ pagina.number }} de {{ pagina.paginator.num_pages }}
+      {% if pagina.has_next %}<a href="?p={{ pagina.next_page_number }}{% if busqueda %}&amp;q={{ busqueda|urlencode }}{% endif %}">Siguiente &rsaquo;</a>{% endif %}
+    </p>
+  {% endif %}
+</div>
+{% endblock %}

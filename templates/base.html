@@ -3,13 +3,14 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>{% block titulo %}{{ tienda.nombre }}{% endblock %}</title>
-  <meta name="description" content="{% block descripcion %}{{ tienda.banner_subtitulo|default:'Tienda en línea con productos de todas las categorías.' }}{% endblock %}">
+  {# `tienda` es la subtienda en la que esta el visitante (o nada en las paginas del sitio); `marca` es quien firma la pagina. #}
+  <title>{% block titulo %}{{ marca.nombre }}{% endblock %}</title>
+  <meta name="description" content="{% block descripcion %}{{ marca.banner_subtitulo|default:'Tiendas en línea con productos de todas las categorías.' }}{% endblock %}">
   {% block meta %}
   <meta property="og:type" content="website">
-  <meta property="og:site_name" content="{{ tienda.nombre }}">
-  <meta property="og:title" content="{{ tienda.nombre }}">
-  <meta property="og:description" content="{{ tienda.banner_subtitulo }}">
+  <meta property="og:site_name" content="{{ marca.nombre }}">
+  <meta property="og:title" content="{{ marca.nombre }}">
+  <meta property="og:description" content="{{ marca.banner_subtitulo }}">
   <meta property="og:url" content="{{ request.build_absolute_uri }}">
   <meta property="og:locale" content="es_DO">
   <meta property="og:image" content="{{ request.scheme }}://{{ request.get_host }}{% static 'img/compartir.jpg' %}">
@@ -28,23 +29,37 @@
 <body class="d-flex flex-column min-vh-100">
   <a class="visually-hidden-focusable" href="#contenido">Saltar al contenido</a>
 
+  {% if tienda %}
+    <div class="mm-barra-sitio">
+      <div class="container">
+        <a href="{% url 'tiendas:portada' %}">
+          <i class="bi bi-arrow-left"></i>
+          <img src="{% static 'img/logo-simbolo.webp' %}" alt="" width="393" height="300">
+          <span>Todas las tiendas de {{ plataforma.nombre }}</span>
+        </a>
+      </div>
+    </div>
+  {% endif %}
+
   <header class="mm-cabecera sticky-top">
     <nav class="navbar navbar-expand-lg">
       <div class="container">
-        <a class="navbar-brand mm-logo" href="{% url 'catalogo:inicio' %}">
-          {% if tienda.logo %}
-            <img src="{{ tienda.logo.url }}" alt="{{ tienda.nombre }}" height="40">
+        <a class="navbar-brand mm-logo" href="{% if tienda %}{{ tienda.get_absolute_url }}{% else %}{% url 'tiendas:portada' %}{% endif %}">
+          {% if marca.logo %}
+            <img src="{{ marca.logo.url }}" alt="{{ marca.nombre }}" height="40">
           {% else %}
-            <img class="mm-logo-simbolo" src="{% static 'img/logo-simbolo.webp' %}" alt="" width="393" height="300">
-            <span class="mm-logo-texto">{{ tienda.nombre }}</span>
+            {% if not tienda %}<img class="mm-logo-simbolo" src="{% static 'img/logo-simbolo.webp' %}" alt="" width="393" height="300">{% endif %}
+            <span class="mm-logo-texto">{{ marca.nombre }}</span>
           {% endif %}
         </a>
 
         <div class="d-flex align-items-center gap-2 order-lg-3">
-          <a class="btn mm-btn-carrito position-relative" href="{% url 'carrito:detalle' %}" aria-label="Ver carrito">
-            <i class="bi bi-bag"></i>
-            <span class="badge rounded-pill mm-contador js-contador-carrito{% if not carrito_cantidad %} d-none{% endif %}">{{ carrito_cantidad }}</span>
-          </a>
+          {% if tienda %}
+            <a class="btn mm-btn-carrito position-relative" href="{% url 'carrito:detalle' tienda.slug %}" aria-label="Ver carrito de {{ tienda.nombre }}">
+              <i class="bi bi-bag"></i>
+              <span class="badge rounded-pill mm-contador js-contador-carrito{% if not carrito_cantidad %} d-none{% endif %}">{{ carrito_cantidad }}</span>
+            </a>
+          {% endif %}
           <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#menu-principal"
                   aria-controls="menu-principal" aria-expanded="false" aria-label="Abrir menú">
             <span class="navbar-toggler-icon"></span>
@@ -53,24 +68,32 @@
 
         <div class="collapse navbar-collapse order-lg-2" id="menu-principal">
           <ul class="navbar-nav me-auto mb-2 mb-lg-0">
-            <li class="nav-item"><a class="nav-link" href="{% url 'catalogo:lista' %}">Catálogo</a></li>
-            <li class="nav-item dropdown">
-              <a class="nav-link dropdown-toggle" href="{% url 'catalogo:lista' %}" role="button" data-bs-toggle="dropdown" aria-expanded="false">Categorías</a>
-              <ul class="dropdown-menu">
-                {% for categoria in categorias_menu %}
-                  <li><a class="dropdown-item" href="{{ categoria.get_absolute_url }}">{{ categoria.nombre }}</a></li>
-                {% empty %}
-                  <li><span class="dropdown-item-text text-muted">Aún no hay categorías</span></li>
-                {% endfor %}
-              </ul>
-            </li>
-            <li class="nav-item"><a class="nav-link" href="{% url 'catalogo:lista' %}?oferta=on">Ofertas</a></li>
-            <li class="nav-item"><a class="nav-link" href="{% url 'core:como_comprar' %}">Cómo comprar</a></li>
-            <li class="nav-item"><a class="nav-link" href="{% url 'core:envios' %}">Envíos y retiros</a></li>
+            {% if tienda %}
+              <li class="nav-item"><a class="nav-link" href="{% url 'catalogo:lista' tienda.slug %}">Catálogo</a></li>
+              <li class="nav-item dropdown">
+                <a class="nav-link dropdown-toggle" href="{% url 'catalogo:lista' tienda.slug %}" role="button" data-bs-toggle="dropdown" aria-expanded="false">Categorías</a>
+                <ul class="dropdown-menu">
+                  {% for categoria in categorias_menu %}
+                    <li><a class="dropdown-item" href="{% url 'catalogo:categoria' tienda.slug categoria.slug %}">{{ categoria.nombre }}</a></li>
+                  {% empty %}
+                    <li><span class="dropdown-item-text text-muted">Aún no hay categorías</span></li>
+                  {% endfor %}
+                </ul>
+              </li>
+              <li class="nav-item"><a class="nav-link" href="{% url 'catalogo:lista' tienda.slug %}?oferta=on">Ofertas</a></li>
+              <li class="nav-item"><a class="nav-link" href="{% url 'core:como_comprar' tienda.slug %}">Cómo comprar</a></li>
+              <li class="nav-item"><a class="nav-link" href="{% url 'core:envios' tienda.slug %}">Envíos y retiros</a></li>
+            {% else %}
+              <li class="nav-item"><a class="nav-link" href="{% url 'tiendas:portada' %}#tiendas">Tiendas</a></li>
+              <li class="nav-item"><a class="nav-link" href="{% url 'tiendas:buscar' %}">Todos los productos</a></li>
+              <li class="nav-item"><a class="nav-link" href="{% url 'tiendas:buscar' %}?oferta=on">Ofertas</a></li>
+            {% endif %}
           </ul>
-          <form class="d-flex mm-buscador" role="search" action="{% url 'catalogo:lista' %}" method="get">
-            <input class="form-control" type="search" name="q" placeholder="Buscar productos" aria-label="Buscar productos"
-                   value="{{ filtros.q|default:'' }}" maxlength="80">
+          <form class="d-flex mm-buscador" role="search" method="get"
+                action="{% if tienda %}{% url 'catalogo:lista' tienda.slug %}{% else %}{% url 'tiendas:buscar' %}{% endif %}">
+            <input class="form-control" type="search" name="q" maxlength="80" value="{{ filtros.q|default:'' }}"
+                   placeholder="{% if tienda %}Buscar en esta tienda{% else %}Buscar productos{% endif %}"
+                   aria-label="{% if tienda %}Buscar en {{ tienda.nombre }}{% else %}Buscar en todas las tiendas{% endif %}">
             <button class="btn btn-primary" type="submit" aria-label="Buscar"><i class="bi bi-search"></i></button>
           </form>
         </div>
@@ -96,43 +119,60 @@
     <div class="container py-5">
       <div class="row g-4">
         <div class="col-md-4">
-          <p class="mm-logo-texto mm-logo-pie mb-2">{{ tienda.nombre }}</p>
-          <p class="mb-0 small">{{ tienda.banner_subtitulo }}</p>
+          <p class="mm-logo-texto mm-logo-pie mb-2">{{ marca.nombre }}</p>
+          <p class="mb-0 small">{{ marca.banner_subtitulo }}</p>
         </div>
         <div class="col-6 col-md-2">
-          <h2 class="h6">Tienda</h2>
-          <ul class="list-unstyled small mb-0">
-            <li><a href="{% url 'catalogo:lista' %}">Catálogo</a></li>
-            <li><a href="{% url 'catalogo:lista' %}?oferta=on">Ofertas</a></li>
-            <li><a href="{% url 'carrito:detalle' %}">Mi carrito</a></li>
-          </ul>
+          {% if tienda %}
+            <h2 class="h6">Tienda</h2>
+            <ul class="list-unstyled small mb-0">
+              <li><a href="{% url 'catalogo:lista' tienda.slug %}">Catálogo</a></li>
+              <li><a href="{% url 'catalogo:lista' tienda.slug %}?oferta=on">Ofertas</a></li>
+              <li><a href="{% url 'carrito:detalle' tienda.slug %}">Mi carrito</a></li>
+            </ul>
+          {% else %}
+            <h2 class="h6">Comprar</h2>
+            <ul class="list-unstyled small mb-0">
+              <li><a href="{% url 'tiendas:portada' %}#tiendas">Tiendas</a></li>
+              <li><a href="{% url 'tiendas:buscar' %}">Todos los productos</a></li>
+              <li><a href="{% url 'tiendas:buscar' %}?oferta=on">Ofertas</a></li>
+            </ul>
+          {% endif %}
         </div>
         <div class="col-6 col-md-2">
           <h2 class="h6">Ayuda</h2>
           <ul class="list-unstyled small mb-0">
-            <li><a href="{% url 'core:como_comprar' %}">Cómo comprar</a></li>
-            <li><a href="{% url 'core:envios' %}">Envíos y retiros</a></li>
+            {% if tienda %}
+              <li><a href="{% url 'core:como_comprar' tienda.slug %}">Cómo comprar</a></li>
+              <li><a href="{% url 'core:envios' tienda.slug %}">Envíos y retiros</a></li>
+            {% endif %}
+            <li><a href="{% url 'core:terminos' %}">Términos del sitio</a></li>
           </ul>
         </div>
         <div class="col-md-4">
           <h2 class="h6">Contacto</h2>
           <ul class="list-unstyled small mb-2">
             {% if tienda.direccion_tienda %}<li><i class="bi bi-geo-alt me-2"></i>{{ tienda.direccion_tienda }}</li>{% endif %}
-            {% if tienda.telefono %}<li><i class="bi bi-telephone me-2"></i>{{ tienda.telefono }}</li>{% endif %}
-            {% if tienda.correo %}<li><i class="bi bi-envelope me-2"></i><a href="mailto:{{ tienda.correo }}">{{ tienda.correo }}</a></li>{% endif %}
-            {% if tienda.horario %}<li><i class="bi bi-clock me-2"></i>{{ tienda.horario }}</li>{% endif %}
+            {% if marca.telefono %}<li><i class="bi bi-telephone me-2"></i>{{ marca.telefono }}</li>{% endif %}
+            {% if marca.correo %}<li><i class="bi bi-envelope me-2"></i><a href="mailto:{{ marca.correo }}">{{ marca.correo }}</a></li>{% endif %}
+            {% if marca.horario %}<li><i class="bi bi-clock me-2"></i>{{ marca.horario }}</li>{% endif %}
           </ul>
           <div class="d-flex gap-3 fs-5">
-            {% if tienda.facebook %}<a href="{{ tienda.facebook }}" target="_blank" rel="noopener" aria-label="Facebook"><i class="bi bi-facebook"></i></a>{% endif %}
-            {% if tienda.instagram %}<a href="{{ tienda.instagram }}" target="_blank" rel="noopener" aria-label="Instagram"><i class="bi bi-instagram"></i></a>{% endif %}
-            {% if tienda.tiktok %}<a href="{{ tienda.tiktok }}" target="_blank" rel="noopener" aria-label="TikTok"><i class="bi bi-tiktok"></i></a>{% endif %}
+            {% if marca.facebook %}<a href="{{ marca.facebook }}" target="_blank" rel="noopener" aria-label="Facebook"><i class="bi bi-facebook"></i></a>{% endif %}
+            {% if marca.instagram %}<a href="{{ marca.instagram }}" target="_blank" rel="noopener" aria-label="Instagram"><i class="bi bi-instagram"></i></a>{% endif %}
+            {% if marca.tiktok %}<a href="{{ marca.tiktok }}" target="_blank" rel="noopener" aria-label="TikTok"><i class="bi bi-tiktok"></i></a>{% endif %}
             {% if enlace_whatsapp_tienda %}<a href="{{ enlace_whatsapp_tienda }}" target="_blank" rel="noopener" aria-label="WhatsApp"><i class="bi bi-whatsapp"></i></a>{% endif %}
           </div>
         </div>
       </div>
     </div>
     <div class="mm-pie-legal py-3 small text-center">
-      © {% now "Y" %} {{ tienda.nombre }}. Precios en pesos dominicanos (RD$).
+      <div class="container">
+        © {% now "Y" %} {{ plataforma.nombre }}. Precios en pesos dominicanos (RD$).
+        {% if tienda %}
+          <br>{{ tienda.nombre }} vende y entrega sus productos por su cuenta, dentro de <a href="{% url 'tiendas:portada' %}">{{ plataforma.nombre }}</a>.
+        {% endif %}
+      </div>
     </div>
   </footer>
 

@@ -91,4 +91,3 @@ class ConfiguracionTests(TestCase):
         self.assertEqual(config.dias_producto_nuevo, 30)
         self.assertEqual(config.umbral_stock_bajo, 5)
         self.assertEqual(config.horas_vencimiento_pedido, 48)
-        self.assertFalse(config.permitir_contra_entrega)

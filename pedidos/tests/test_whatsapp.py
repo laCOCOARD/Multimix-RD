@@ -7,9 +7,8 @@ from catalogo.tests.test_modelos import crear_producto
 from pedidos.models import Pedido
 from pedidos.services import crear_pedido
 from pedidos.whatsapp import construir_enlace, construir_mensaje, enlace_al_cliente, enlace_del_pedido
-from promociones.models import Cupon
 
-from .utiles import carrito_con, datos_pedido, zona_de_prueba
+from .utiles import carrito_con, cupon_de_prueba, datos_pedido, zona_de_prueba
 
 
 class MensajeWhatsAppTests(TestCase):
@@ -18,7 +17,7 @@ class MensajeWhatsAppTests(TestCase):
         self.taza = crear_producto(nombre='Taza & plato', sku='T1', precio=Decimal('250.50'))
 
     def test_pedido_con_envio_cupon_y_transferencia(self):
-        Cupon.objects.create(codigo='BIENVENIDO10', tipo=Cupon.Tipo.PORCENTAJE, valor=Decimal('10'))
+        cupon_de_prueba('BIENVENIDO10')
         pedido = crear_pedido(
             carrito_con((self.lampara, 2), (self.taza, 1), cupon='BIENVENIDO10'),
             datos_pedido(

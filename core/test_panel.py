@@ -18,8 +18,9 @@ from catalogo.tests.test_modelos import crear_producto, imagen_de_prueba
 from core.models import ConfiguracionTienda
 from pedidos.models import Pedido
 from pedidos.services import cambiar_estado
-from pedidos.tests.utiles import pedido_de_prueba
+from pedidos.tests.utiles import cupon_de_prueba, pedido_de_prueba
 from promociones.models import Cupon
+from tiendas.models import Tienda
 
 Estado = Pedido.Estado
 
@@ -130,6 +131,7 @@ class PedidoAdminTests(PanelBase):
         pedido = pedido_de_prueba(self.producto, 1)
         empleado = get_user_model().objects.create_user('vendedor', password='clave-segura-123', is_staff=True)
         empleado.user_permissions.add(*Permission.objects.filter(codename__in=['view_pedido', 'change_pedido']))
+        self.producto.tienda.usuarios.add(empleado)
         self.client.force_login(empleado)
         borrar = reverse('admin:pedidos_pedido_delete', args=[pedido.pk])
         self.assertEqual(self.client.post(borrar, {'post': 'yes'}).status_code, 403)
@@ -247,7 +249,7 @@ class ProductoAdminTests(PanelBase):
         datos = tablib.Dataset(headers=COLUMNAS)
         datos.append(['l1', 'Lámpara renovada', 'General', '', '1200', '', '', '', 30, 1, 0, 1])
         datos.append(['N-1', 'Silla plegable', 'Muebles', 'Liviana', '2500', '1999', '', '', 8, 0, 1, 1])
-        resultado = ProductoResource().import_data(datos, dry_run=False)
+        resultado = ProductoResource(tienda=self.producto.tienda).import_data(datos, dry_run=False)
         self.assertFalse(resultado.has_errors() or resultado.has_validation_errors())
 
         self.producto.refresh_from_db()
@@ -261,7 +263,7 @@ class ProductoAdminTests(PanelBase):
     def test_importar_rechaza_filas_invalidas(self):
         datos = tablib.Dataset(headers=COLUMNAS)
         datos.append(['M-1', 'Oferta mayor al precio', 'General', '', '100', '150', '', '', 1, 0, 0, 1])
-        resultado = ProductoResource().import_data(datos, dry_run=True)
+        resultado = ProductoResource(tienda=self.producto.tienda).import_data(datos, dry_run=True)
         self.assertTrue(resultado.has_validation_errors())
         self.assertFalse(Producto.objects.filter(sku='M-1').exists())
 
@@ -330,8 +332,12 @@ class CargarDemoTests(TestCase):
         with tempfile.TemporaryDirectory() as media, self.settings(MEDIA_ROOT=media):
             call_command('cargar_demo', stdout=StringIO())
             totales = (Producto.objects.count(), Categoria.objects.count(), Pedido.objects.count())
-            self.assertEqual(totales, (20, 6, 4))
-            self.assertTrue(Cupon.objects.filter(codigo='BIENVENIDO10').exists())
+            self.assertEqual(totales, (24, 6, 5))
+            # Dos tiendas, cada una con su catalogo, su cupon y su numeracion de pedidos.
+            principal, fitness = Tienda.objects.order_by('pk')
+            self.assertEqual((principal.productos.count(), fitness.productos.count()), (20, 4))
+            self.assertTrue(Cupon.objects.filter(tienda=principal, codigo='BIENVENIDO10').exists())
+            self.assertTrue(fitness.pedidos.get().numero.startswith('FIT-'))
             self.assertTrue(all(p.foto_principal for p in Producto.objects.prefetch_related('fotos')))
             self.assertTrue(ConfiguracionTienda.obtener().whatsapp)
             self.assertEqual(self.client.get('/').status_code, 200)
@@ -344,7 +350,7 @@ class CargarDemoTests(TestCase):
 
 class OtrosAdminTests(PanelBase):
     def test_listas_cargan(self):
-        Cupon.objects.create(codigo='BIENVENIDO10', tipo=Cupon.Tipo.PORCENTAJE, valor=Decimal('10'), usos_maximos=5)
+        cupon_de_prueba('BIENVENIDO10', usos_maximos=5)
         for nombre in ('promociones_cupon', 'pedidos_zonaenvio', 'catalogo_categoria', 'core_cuentabancaria'):
             respuesta = self.client.get(reverse(f'admin:{nombre}_changelist'))
             self.assertEqual(respuesta.status_code, 200, nombre)

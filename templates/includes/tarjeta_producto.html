@@ -1,4 +1,5 @@
 {% load moneda %}
+{# Dentro de una tienda (`tienda`) se agrega al carrito de esa tienda; en el buscador del sitio la tarjeta lleva a la tienda del producto. #}
 <article class="mm-tarjeta h-100 revelar">
   <a class="mm-tarjeta-foto" href="{{ producto.get_absolute_url }}" tabindex="-1" aria-hidden="true">
     {% with foto=producto.foto_principal %}
@@ -16,16 +17,18 @@
     </span>
   </a>
   <div class="mm-tarjeta-cuerpo">
-    <p class="mm-tarjeta-categoria">{{ producto.categoria.nombre }}</p>
+    <p class="mm-tarjeta-categoria">{% if tienda %}{{ producto.categoria.nombre }}{% else %}<i class="bi bi-shop me-1"></i>{{ producto.tienda.nombre }}{% endif %}</p>
     <h3 class="mm-tarjeta-nombre"><a href="{{ producto.get_absolute_url }}">{{ producto.nombre }}</a></h3>
     <p class="mm-precio mb-3">
       <span class="mm-precio-final">{{ producto.precio_final|moneda }}</span>
       {% if producto.en_oferta %}<s class="mm-precio-anterior">{{ producto.precio|moneda }}</s>{% endif %}
     </p>
-    {% if producto.agotado %}
+    {% if not tienda %}
+      <a class="btn btn-outline-primary w-100 mt-auto" href="{{ producto.get_absolute_url }}">Ver en la tienda</a>
+    {% elif producto.agotado %}
       <button class="btn btn-outline-secondary w-100 mt-auto" type="button" disabled>Agotado</button>
     {% else %}
-      <form class="mt-auto js-agregar" method="post" action="{% url 'carrito:agregar' %}">
+      <form class="mt-auto js-agregar" method="post" action="{% url 'carrito:agregar' tienda.slug %}">
         {% csrf_token %}
         <input type="hidden" name="producto_id" value="{{ producto.pk }}">
         <input type="hidden" name="cantidad" value="1">

@@ -1,6 +1,6 @@
 {% extends 'base.html' %}
 
-{% block titulo %}Página no encontrada · {{ tienda.nombre }}{% endblock %}
+{% block titulo %}Página no encontrada · {{ marca.nombre }}{% endblock %}
 {% block meta %}<meta name="robots" content="noindex">{% endblock %}
 
 {% block contenido %}
@@ -10,8 +10,10 @@
     <h1 class="h3">No encontramos esa página</h1>
     <p class="text-muted">Puede que el producto ya no esté disponible o que el enlace esté mal escrito.</p>
     <div class="d-flex flex-wrap justify-content-center gap-2">
-      <a class="btn btn-primary" href="{% url 'catalogo:lista' %}">Ver el catálogo</a>
-      <a class="btn btn-outline-primary" href="{% url 'catalogo:inicio' %}">Ir al inicio</a>
+      {% if tienda %}
+        <a class="btn btn-primary" href="{% url 'catalogo:lista' tienda.slug %}">Ver el catálogo de {{ tienda.nombre }}</a>
+      {% endif %}
+      <a class="btn btn-outline-primary" href="{% url 'tiendas:portada' %}">Ver todas las tiendas</a>
     </div>
   </div>
 </div>

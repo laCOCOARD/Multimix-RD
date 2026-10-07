@@ -89,6 +89,8 @@ a.panel-tarjeta:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba
 .panel-columnas .module { margin-bottom: 0; overflow-x: auto; }
 .panel-columnas table { width: 100%; }
 .panel-columnas small { color: var(--body-quiet-color); }
+/* El admin da ancho completo a todos los th de la portada; en los encabezados eso parte el texto letra por letra. */
+.dashboard .panel-columnas thead th { width: auto; white-space: nowrap; word-break: normal; }
 
 /* --- Cambios de estado en el pedido -------------------------------------- */
 .panel-transiciones { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: 0 0 18px; padding: 14px 16px; border: 1px solid var(--hairline-color); border-radius: 10px; background: var(--darkened-bg); }
@@ -106,3 +108,9 @@ a.panel-tarjeta:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba
 
 /* --- Aviso al eliminar pedidos -------------------------------------------- */
 .panel-aviso-eliminar { margin: 0 0 18px; padding: 14px 16px; border: 1px solid var(--hairline-color); border-left: 5px solid #d23b3b; border-radius: 10px; background: var(--darkened-bg); }
+
+/* --- Accesos de la portada y lista de clientes ------------------------------ */
+.panel-accesos { display: flex; flex-wrap: wrap; gap: 10px; margin: 0 0 18px; }
+.panel-accesos .button { padding: 9px 16px; border-radius: 8px; font-weight: 700; }
+.panel-busqueda { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: 0 0 18px; padding: 14px 16px; border: 1px solid var(--hairline-color); border-radius: 10px; background: var(--darkened-bg); }
+.panel-busqueda input[type=search] { min-width: min(100%, 18rem); }

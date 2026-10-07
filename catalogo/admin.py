@@ -11,9 +11,13 @@ from django.shortcuts import render
 from django.urls import path
 from django.utils.html import format_html
 from import_export.admin import ImportExportModelAdmin
+from import_export.forms import ConfirmImportForm, ImportForm
 
 from core.models import ConfiguracionTienda
 from core.templatetags.moneda import formatear_monto
+from tiendas.models import Tienda
+from tiendas.panel import AdminDeTienda, preparar_campo_tienda, tiendas_del_panel
+from tiendas.services import ve_todas
 
 from . import services
 from .models import Categoria, FotoProducto, Producto, q_oferta_vigente
@@ -22,6 +26,8 @@ from .resources import COLUMNAS, FILA_DE_EJEMPLO, ProductoResource
 
 @admin.register(Categoria)
 class CategoriaAdmin(admin.ModelAdmin):
+    """Las categorias son comunes a todas las tiendas; las administra el administrador principal."""
+
     list_display = ['nombre', 'cantidad_productos', 'activa', 'orden']
     list_editable = ['activa', 'orden']
     list_filter = ['activa']
@@ -108,9 +114,21 @@ class OfertaMasivaForm(forms.Form):
         return datos
 
 
+class ImportarProductosForm(ImportForm):
+    tienda = forms.ModelChoiceField(
+        queryset=Tienda.objects.all(), help_text='Los productos del archivo se crean o actualizan en esta tienda.',
+    )
+
+
+class ConfirmarImportacionForm(ConfirmImportForm):
+    tienda = forms.ModelChoiceField(queryset=Tienda.objects.all(), widget=forms.HiddenInput)
+
+
 @admin.register(Producto)
-class ProductoAdmin(ImportExportModelAdmin):
+class ProductoAdmin(AdminDeTienda, ImportExportModelAdmin):
     resource_classes = [ProductoResource]
+    import_form_class = ImportarProductosForm
+    confirm_form_class = ConfirmarImportacionForm
     import_export_change_list_template = 'admin/catalogo/producto/change_list.html'
 
     list_display = [
@@ -127,7 +145,7 @@ class ProductoAdmin(ImportExportModelAdmin):
     inlines = [FotoProductoInline]
     actions = ['destacar', 'quitar_destacado', 'activar', 'desactivar', 'poner_oferta', 'quitar_oferta']
     fieldsets = [
-        (None, {'fields': ['nombre', 'slug', 'sku', 'categoria', 'descripcion']}),
+        (None, {'fields': ['tienda', 'nombre', 'slug', 'sku', 'categoria', 'descripcion']}),
         ('Precio', {'fields': ['precio', 'precio_oferta', 'oferta_inicio', 'oferta_fin']}),
         ('Inventario', {'fields': ['stock_almacen', 'stock_reservado', 'stock_disponible_actual']}),
         ('Visibilidad', {'fields': ['activo', 'destacado', 'nuevo', 'creado', 'actualizado']}),
@@ -149,14 +167,48 @@ class ProductoAdmin(ImportExportModelAdmin):
         ]
         return propias + super().get_urls()
 
+    # --- Importar: siempre dentro de una de las tiendas del usuario ---------------------
+
+    def create_import_form(self, request):
+        formulario = super().create_import_form(request)
+        preparar_campo_tienda(formulario.fields['tienda'], request)
+        return formulario
+
+    def create_confirm_form(self, request, import_form=None):
+        formulario = super().create_confirm_form(request, import_form)
+        campo = formulario.fields['tienda']
+        campo.queryset = campo.queryset.filter(pk__in=[tienda.pk for tienda in tiendas_del_panel(request)])
+        return formulario
+
+    def get_confirm_form_initial(self, request, import_form):
+        inicial = super().get_confirm_form_initial(request, import_form)
+        if import_form is not None:
+            inicial['tienda'] = import_form.cleaned_data['tienda'].pk
+        return inicial
+
+    def get_import_resource_kwargs(self, request, **kwargs):
+        datos = getattr(kwargs.get('form'), 'cleaned_data', None) or {}
+        return {'tienda': datos.get('tienda'), 'crear_categorias': ve_todas(request.user)}
+
+    # --- Fotos por SKU ---------------------------------------------------------------
+
+    def _tienda_de_las_fotos(self, request):
+        """La tienda elegida en el formulario, o la unica del usuario. Nunca una ajena."""
+        tiendas = tiendas_del_panel(request)
+        if len(tiendas) == 1:
+            return tiendas[0]
+        elegida = request.POST.get('tienda', '')
+        return next((tienda for tienda in tiendas if str(tienda.pk) == elegida), None)
+
     def fotos_por_sku(self, request):
-        """Sube varias fotos a la vez: el nombre de cada archivo es el SKU de su producto."""
+        """Sube varias fotos a la vez: el nombre de cada archivo es el SKU de su producto en la tienda."""
         if not self.has_change_permission(request):
             raise PermissionDenied
         procesado = request.method == 'POST'
         reemplazar = bool(request.POST.get('reemplazar'))
+        tienda = self._tienda_de_las_fotos(request)
         resultados = [
-            services.asignar_foto_por_sku(archivo, reemplazar) for archivo in request.FILES.getlist('fotos')
+            services.asignar_foto_por_sku(archivo, tienda, reemplazar) for archivo in request.FILES.getlist('fotos')
         ]
         # La pagina envia las fotos una por una con fetch para no agotar el tiempo del servidor.
         if procesado and request.headers.get('X-Requested-With') == 'fetch':
@@ -164,6 +216,8 @@ class ProductoAdmin(ImportExportModelAdmin):
         return render(request, 'admin/catalogo/producto/fotos_por_sku.html', {
             **self.admin_site.each_context(request),
             'title': 'Subir fotos por SKU',
+            'tiendas': tiendas_del_panel(request),
+            'tienda_elegida': tienda,
             'procesado': procesado,
             'asignadas': sum(resultado.asignada for resultado in resultados),
             'rechazadas': [resultado for resultado in resultados if not resultado.asignada],

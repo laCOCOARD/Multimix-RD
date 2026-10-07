@@ -13,10 +13,13 @@ from PIL import Image
 
 from catalogo.models import Categoria, FotoProducto, Producto
 from core.models import ConfiguracionTienda
+from tiendas.tests.utiles import tienda_de_prueba
 
 
 def crear_producto(**datos):
+    """Producto de la tienda de prueba, salvo que se pase otra `tienda`."""
     categoria = datos.pop('categoria', None) or Categoria.objects.get_or_create(nombre='General')[0]
+    tienda = datos.pop('tienda', None) or tienda_de_prueba()
     valores = {
         'nombre': 'Producto de prueba',
         'sku': f'SKU-{Producto.objects.count() + 1}',
@@ -24,7 +27,7 @@ def crear_producto(**datos):
         'stock_almacen': 10,
     }
     valores.update(datos)
-    return Producto.objects.create(categoria=categoria, **valores)
+    return Producto.objects.create(tienda=tienda, categoria=categoria, **valores)
 
 
 def imagen_de_prueba(nombre='foto.png', formato='PNG', tamano=(2000, 1000)):
@@ -93,6 +96,18 @@ class ProductoPropiedadesTests(TestCase):
         self.assertEqual(uno.slug, 'audifonos-pro')
         self.assertEqual(dos.slug, 'audifonos-pro-2')
         self.assertEqual(uno.sku, 'AUD-1')
+
+    def test_sku_y_slug_se_repiten_entre_tiendas_pero_no_dentro_de_una(self):
+        otra = tienda_de_prueba('Otra tienda')
+        uno = crear_producto(nombre='Audífonos Pro', sku='AUD-1')
+        dos = crear_producto(nombre='Audífonos Pro', sku='AUD-1', tienda=otra)
+        self.assertEqual((uno.slug, dos.slug), ('audifonos-pro', 'audifonos-pro'))
+        self.assertNotEqual(uno.get_absolute_url(), dos.get_absolute_url())
+        with self.assertRaises(IntegrityError), transaction.atomic():
+            crear_producto(sku='aud-1')
+        repetido = Producto(tienda=otra, categoria=uno.categoria, nombre='Otro', sku='AUD-1', precio=Decimal('10'))
+        with self.assertRaisesMessage(ValidationError, 'Ya tienes un producto con ese SKU.'):
+            repetido.full_clean()
 
 
 class ProductoRestriccionesTests(TestCase):

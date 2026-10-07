@@ -10,7 +10,7 @@
   <div class="row g-3 mb-5">
     <div class="col-md-6 col-lg-3"><div class="mm-panel mm-paso-compra h-100 revelar">
       <span class="mm-paso">1</span><h2 class="h6">Elige tus productos</h2>
-      <p class="mb-0 small">Explora el <a href="{% url 'catalogo:lista' %}">catálogo</a> y agrega al carrito lo que quieras.</p>
+      <p class="mb-0 small">Explora el <a href="{% url 'catalogo:lista' tienda.slug %}">catálogo</a> y agrega al carrito lo que quieras.</p>
     </div></div>
     <div class="col-md-6 col-lg-3"><div class="mm-panel mm-paso-compra h-100 revelar">
       <span class="mm-paso">2</span><h2 class="h6">Completa tus datos</h2>
@@ -34,7 +34,7 @@
         <li><strong>Efectivo al recoger.</strong> Disponible si retiras tu pedido en la tienda.</li>
         {% if tienda.permitir_contra_entrega %}<li><strong>Efectivo contra entrega.</strong> Pagas al recibir tu pedido a domicilio.</li>{% endif %}
       </ul>
-      <p class="small text-muted">Los pedidos pendientes de pago se reservan por {{ tienda.horas_vencimiento_pedido }} horas. Pasado ese tiempo se cancelan y los productos vuelven a estar disponibles.</p>
+      <p class="small text-muted">Los pedidos pendientes de pago se reservan por {{ plataforma.horas_vencimiento_pedido }} horas. Pasado ese tiempo se cancelan y los productos vuelven a estar disponibles.</p>
     </div>
     <div class="col-lg-6">
       <h2 class="h5">Cuentas para transferencia</h2>

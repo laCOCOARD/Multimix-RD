@@ -6,26 +6,28 @@ from django.urls import reverse
 
 from catalogo.models import Producto
 from catalogo.tests.test_modelos import crear_producto
-from core.models import ConfiguracionTienda, CuentaBancaria
+from core.models import CuentaBancaria
 from pedidos.models import Pedido
 from pedidos.whatsapp import construir_mensaje
-from promociones.models import Cupon
+from tiendas.tests.utiles import ruta, tienda_de_prueba
 
-from .utiles import zona_de_prueba
+from .utiles import cupon_de_prueba, zona_de_prueba
 
 
 class CheckoutTests(TestCase):
     def setUp(self):
-        config = ConfiguracionTienda.obtener()
-        config.whatsapp = '18095550000'
-        config.save()
+        self.tienda = tienda_de_prueba()
+        self.tienda.whatsapp = '18095550000'
+        self.tienda.save()
         self.producto = crear_producto(nombre='Lámpara', precio=Decimal('1000'), stock_almacen=5)
         self.zona = zona_de_prueba()
-        CuentaBancaria.objects.create(banco='Banco Popular', numero='123456789', titular='Multimix RD SRL')
-        self.url = reverse('pedidos:checkout')
+        CuentaBancaria.objects.create(
+            tienda=self.tienda, banco='Banco Popular', numero='123456789', titular='Multimix RD SRL',
+        )
+        self.url = ruta('pedidos:checkout')
 
     def llenar_carrito(self, cantidad=2):
-        self.client.post(reverse('carrito:agregar'), {'producto_id': self.producto.pk, 'cantidad': cantidad})
+        self.client.post(ruta('carrito:agregar'), {'producto_id': self.producto.pk, 'cantidad': cantidad})
 
     def datos(self, **cambios):
         datos = {
@@ -41,8 +43,8 @@ class CheckoutTests(TestCase):
         return respuesta.context['formulario'].errors
 
     def test_carrito_vacio_redirige(self):
-        self.assertRedirects(self.client.get(self.url), reverse('carrito:detalle'))
-        self.assertRedirects(self.client.post(self.url, self.datos()), reverse('carrito:detalle'))
+        self.assertRedirects(self.client.get(self.url), ruta('carrito:detalle'))
+        self.assertRedirects(self.client.post(self.url, self.datos()), ruta('carrito:detalle'))
 
     def test_muestra_el_formulario_con_cuentas(self):
         self.llenar_carrito()
@@ -75,7 +77,7 @@ class CheckoutTests(TestCase):
         self.assertEqual(parse_qs(urlparse(enlace).query)['text'], [construir_mensaje(pedido)])
 
         # El carrito queda vacio y WhatsApp solo se abre solo la primera vez.
-        self.assertEqual(self.client.get(reverse('carrito:detalle')).context['lineas'], [])
+        self.assertEqual(self.client.get(ruta('carrito:detalle')).context['lineas'], [])
         self.assertContains(self.client.get(respuesta.url), 'data-abrir="0"')
 
     def test_los_montos_enviados_por_el_navegador_se_ignoran(self):
@@ -115,9 +117,8 @@ class CheckoutTests(TestCase):
         self.assertEqual(Pedido.objects.count(), 0)
 
     def test_contra_entrega_cuando_esta_activado(self):
-        config = ConfiguracionTienda.obtener()
-        config.permitir_contra_entrega = True
-        config.save()
+        self.tienda.permitir_contra_entrega = True
+        self.tienda.save()
         self.llenar_carrito(1)
         self.assertContains(self.client.get(self.url), 'pago-contra_entrega')
         self.client.post(self.url, self.datos(
@@ -147,8 +148,23 @@ class CheckoutTests(TestCase):
         self.assertContains(respuesta, 'varios pedidos desde tu conexión')
         self.assertEqual(Pedido.objects.count(), 1)
 
+    @override_settings(CONFIAR_IP_PROXY=True, PEDIDOS_MAX_POR_IP=1)
+    def test_usa_ip_del_cliente_en_x_forwarded_for(self):
+        self.llenar_carrito(1)
+        primera = self.client.post(
+            self.url, self.datos(), HTTP_X_FORWARDED_FOR='203.0.113.10, 10.0.0.1',
+        )
+        self.assertEqual(primera.status_code, 302)
+
+        self.llenar_carrito(1)
+        segunda = self.client.post(
+            self.url, self.datos(), HTTP_X_FORWARDED_FOR='203.0.113.11, 10.0.0.1',
+        )
+        self.assertEqual(segunda.status_code, 302)
+        self.assertEqual(Pedido.objects.count(), 2)
+
     def test_cupon_en_el_checkout(self):
-        Cupon.objects.create(codigo='BIENVENIDO10', tipo=Cupon.Tipo.PORCENTAJE, valor=Decimal('10'))
+        cupon_de_prueba('BIENVENIDO10')
         self.llenar_carrito(2)
         respuesta = self.client.post(self.url, self.datos(cupon='falso'))
         self.assertIn('cupon', self.errores(respuesta))
@@ -161,15 +177,15 @@ class CheckoutTests(TestCase):
         self.llenar_carrito(4)
         Producto.objects.filter(pk=self.producto.pk).update(stock_almacen=1)
         respuesta = self.client.post(self.url, self.datos(), follow=True)
-        self.assertRedirects(respuesta, reverse('carrito:detalle'))
+        self.assertRedirects(respuesta, ruta('carrito:detalle'))
         self.assertContains(respuesta, 'Solo quedan 1')
         self.assertEqual(Pedido.objects.count(), 0)
         self.assertEqual(respuesta.context['lineas'][0].cantidad, 1)
 
     def test_totales_en_vivo(self):
-        Cupon.objects.create(codigo='DIEZ', tipo=Cupon.Tipo.PORCENTAJE, valor=Decimal('10'))
+        cupon_de_prueba('DIEZ')
         self.llenar_carrito(2)
-        url = reverse('pedidos:totales')
+        url = ruta('pedidos:totales')
         datos = self.client.post(url, {'metodo_entrega': 'recoger'}).json()
         self.assertEqual((datos['envio'], datos['total']), ('Gratis', 'RD$ 2,000.00'))
         self.assertEqual(datos['metodos_pago'], ['transferencia', 'efectivo_recoger'])

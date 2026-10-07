@@ -10,7 +10,7 @@
 
   {% if lineas %}
   <div class="row g-4" id="carrito"
-       data-url-actualizar="{% url 'carrito:actualizar' %}" data-url-eliminar="{% url 'carrito:eliminar' %}">
+       data-url-actualizar="{% url 'carrito:actualizar' tienda.slug %}" data-url-eliminar="{% url 'carrito:eliminar' tienda.slug %}">
     <div class="col-lg-8">
       <div class="mm-panel p-0">
         {% for linea in lineas %}
@@ -28,7 +28,7 @@
                 {% if linea.producto.en_oferta %}<s class="ms-1">{{ linea.producto.precio|moneda }}</s>{% endif %}
               </p>
               <div class="d-flex flex-wrap align-items-center gap-2">
-                <form class="d-flex align-items-center gap-2 js-form-cantidad" method="post" action="{% url 'carrito:actualizar' %}">
+                <form class="d-flex align-items-center gap-2 js-form-cantidad" method="post" action="{% url 'carrito:actualizar' tienda.slug %}">
                   {% csrf_token %}
                   <input type="hidden" name="producto_id" value="{{ linea.producto.pk }}">
                   <div class="input-group mm-cantidad">
@@ -40,7 +40,7 @@
                   </div>
                   <button class="btn btn-sm btn-outline-primary solo-sin-js" type="submit">Actualizar</button>
                 </form>
-                <form class="js-form-eliminar" method="post" action="{% url 'carrito:eliminar' %}">
+                <form class="js-form-eliminar" method="post" action="{% url 'carrito:eliminar' tienda.slug %}">
                   {% csrf_token %}
                   <input type="hidden" name="producto_id" value="{{ linea.producto.pk }}">
                   <button class="btn btn-sm btn-link text-danger" type="submit"><i class="bi bi-trash me-1"></i>Eliminar</button>
@@ -51,7 +51,7 @@
           </div>
         {% endfor %}
       </div>
-      <a class="btn btn-link px-0 mt-3" href="{% url 'catalogo:lista' %}"><i class="bi bi-arrow-left me-1"></i>Seguir comprando</a>
+      <a class="btn btn-link px-0 mt-3" href="{% url 'catalogo:lista' tienda.slug %}"><i class="bi bi-arrow-left me-1"></i>Seguir comprando</a>
     </div>
 
     <div class="col-lg-4">
@@ -59,13 +59,13 @@
         <h2 class="h5 mb-3">Resumen</h2>
 
         {% if resumen.cupon %}
-          <form class="d-flex justify-content-between align-items-center mb-3" method="post" action="{% url 'carrito:cupon_quitar' %}">
+          <form class="d-flex justify-content-between align-items-center mb-3" method="post" action="{% url 'carrito:cupon_quitar' tienda.slug %}">
             {% csrf_token %}
             <span><i class="bi bi-ticket-perforated me-1"></i>Cupón <strong>{{ resumen.cupon.codigo }}</strong></span>
             <button class="btn btn-sm btn-outline-danger" type="submit">Quitar</button>
           </form>
         {% else %}
-          <form class="mb-3" method="post" action="{% url 'carrito:cupon_aplicar' %}">
+          <form class="mb-3" method="post" action="{% url 'carrito:cupon_aplicar' tienda.slug %}">
             {% csrf_token %}
             <label class="form-label small" for="codigo-cupon">¿Tienes un cupón?</label>
             <div class="input-group">
@@ -83,7 +83,7 @@
           <div class="mm-total"><dt>Total</dt><dd class="js-total">{{ resumen.total|moneda }}</dd></div>
         </dl>
         <p class="small text-muted">El envío se calcula en el siguiente paso.</p>
-        <a class="btn btn-primary btn-lg w-100" href="{% url 'pedidos:checkout' %}">Continuar con el pedido</a>
+        <a class="btn btn-primary btn-lg w-100" href="{% url 'pedidos:checkout' tienda.slug %}">Continuar con el pedido</a>
       </div>
     </div>
   </div>
@@ -91,7 +91,7 @@
     <div class="mm-vacio">
       <i class="bi bi-bag"></i>
       <p class="lead mb-2">Tu carrito está vacío.</p>
-      <a class="btn btn-primary" href="{% url 'catalogo:lista' %}">Ver el catálogo</a>
+      <a class="btn btn-primary" href="{% url 'catalogo:lista' tienda.slug %}">Ver el catálogo</a>
     </div>
   {% endif %}
 </div>

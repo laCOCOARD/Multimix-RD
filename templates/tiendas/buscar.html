@@ -1,0 +1,66 @@
+{% extends 'base.html' %}
+
+{% block titulo %}{% if filtros.q %}{{ filtros.q }} · {% endif %}Todos los productos · {{ plataforma.nombre }}{% endblock %}
+{% block descripcion %}Productos de todas las tiendas de {{ plataforma.nombre }}.{% endblock %}
+
+{% block contenido %}
+<div class="container py-4">
+  <nav aria-label="Ruta de navegación">
+    <ol class="breadcrumb small">
+      <li class="breadcrumb-item"><a href="{% url 'tiendas:portada' %}">Inicio</a></li>
+      <li class="breadcrumb-item active" aria-current="page">Todos los productos</li>
+    </ol>
+  </nav>
+
+  <h1 class="h3 mb-1">Todos los productos</h1>
+  <p class="text-muted">
+    {{ pagina.paginator.count }} producto{{ pagina.paginator.count|pluralize }}{% if filtros.q %} para «{{ filtros.q }}»{% endif %} entre todas las tiendas.
+    Cada producto se compra dentro de su tienda.
+  </p>
+
+  <form class="mm-filtros mb-4" method="get" action="{% url 'tiendas:buscar' %}">
+    <div class="row g-3 align-items-end">
+      <div class="col-md-5">
+        <label class="form-label" for="buscar-q">Buscar</label>
+        <input class="form-control" type="search" id="buscar-q" name="q" value="{{ filtros.q|default:'' }}" maxlength="80">
+      </div>
+      <div class="col-md-3">
+        <label class="form-label" for="buscar-orden">Ordenar por</label>
+        <select class="form-select" id="buscar-orden" name="orden">
+          {% for valor, etiqueta in ordenes %}
+            <option value="{{ valor }}"{% if valor == orden_actual %} selected{% endif %}>{{ etiqueta }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-2">
+        <div class="form-check">
+          <input class="form-check-input" type="checkbox" id="buscar-oferta" name="oferta"{% if filtros.oferta %} checked{% endif %}>
+          <label class="form-check-label" for="buscar-oferta">En oferta</label>
+        </div>
+        <div class="form-check">
+          <input class="form-check-input" type="checkbox" id="buscar-disponibles" name="disponibles"{% if filtros.disponibles %} checked{% endif %}>
+          <label class="form-check-label" for="buscar-disponibles">Disponibles</label>
+        </div>
+      </div>
+      <div class="col-md-2 d-grid">
+        <button class="btn btn-primary" type="submit">Buscar</button>
+      </div>
+    </div>
+  </form>
+
+  {% if pagina.object_list %}
+    <div class="row g-3">
+      {% for producto in pagina %}
+        <div class="col-6 col-md-4 col-lg-3">{% include 'includes/tarjeta_producto.html' %}</div>
+      {% endfor %}
+    </div>
+    {% include 'includes/paginacion.html' %}
+  {% else %}
+    <div class="mm-vacio">
+      <i class="bi bi-search"></i>
+      <p class="lead mb-2">No encontramos productos con esa búsqueda.</p>
+      <a class="btn btn-primary" href="{% url 'tiendas:portada' %}#tiendas">Ver las tiendas</a>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

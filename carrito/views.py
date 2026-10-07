@@ -8,6 +8,7 @@ from django.views.decorators.http import require_GET, require_POST
 from catalogo.models import Producto
 from core.templatetags.moneda import formatear_monto
 from promociones.services import CuponInvalido
+from tiendas.decoradores import de_tienda
 
 from .carrito import Carrito, CarritoError
 
@@ -41,7 +42,11 @@ def _estado_json(carrito):
     }
 
 
-def _responder(request, carrito, ok, mensaje, destino='carrito:detalle'):
+def _producto_de_la_tienda(request, producto_id):
+    return Producto.objects.select_related('categoria').filter(tienda=request.tienda, pk=producto_id).first()
+
+
+def _responder(request, carrito, ok, mensaje):
     """JSON para las llamadas con fetch; mensaje y redireccion para el envio normal del formulario."""
     if _es_fetch(request):
         return JsonResponse({'ok': ok, 'mensaje': mensaje, **_estado_json(carrito)}, status=200 if ok else 400)
@@ -50,12 +55,13 @@ def _responder(request, carrito, ok, mensaje, destino='carrito:detalle'):
     siguiente = request.POST.get('next', '')
     if url_has_allowed_host_and_scheme(siguiente, allowed_hosts={request.get_host()}, require_https=request.is_secure()):
         return redirect(siguiente)
-    return redirect(destino)
+    return redirect('carrito:detalle', request.tienda.slug)
 
 
 @require_GET
+@de_tienda
 def detalle(request):
-    carrito = Carrito(request)
+    carrito = Carrito(request, request.tienda)
     for aviso in carrito.sincronizar():
         messages.warning(request, aviso)
     resumen = carrito.resumen()
@@ -69,11 +75,10 @@ def detalle(request):
 
 
 @require_POST
+@de_tienda
 def agregar(request):
-    carrito = Carrito(request)
-    producto = (
-        Producto.objects.select_related('categoria').filter(pk=_entero(request.POST.get('producto_id'), 0)).first()
-    )
+    carrito = Carrito(request, request.tienda)
+    producto = _producto_de_la_tienda(request, _entero(request.POST.get('producto_id'), 0))
     if producto is None:
         return _responder(request, carrito, False, 'Ese producto no existe.')
     cantidad = max(_entero(request.POST.get('cantidad')), 1)
@@ -89,14 +94,15 @@ def agregar(request):
 
 
 @require_POST
+@de_tienda
 def actualizar(request):
-    carrito = Carrito(request)
+    carrito = Carrito(request, request.tienda)
     producto_id = _entero(request.POST.get('producto_id'), 0)
     cantidad = _entero(request.POST.get('cantidad'))
     if cantidad <= 0:
         carrito.eliminar(producto_id)
         return _responder(request, carrito, True, 'Producto eliminado del carrito.')
-    producto = Producto.objects.select_related('categoria').filter(pk=producto_id).first()
+    producto = _producto_de_la_tienda(request, producto_id)
     if producto is None or not carrito.cantidad_de(producto_id):
         return _responder(request, carrito, False, 'Ese producto no está en tu carrito.')
     try:
@@ -109,15 +115,17 @@ def actualizar(request):
 
 
 @require_POST
+@de_tienda
 def eliminar(request):
-    carrito = Carrito(request)
+    carrito = Carrito(request, request.tienda)
     carrito.eliminar(_entero(request.POST.get('producto_id'), 0))
     return _responder(request, carrito, True, 'Producto eliminado del carrito.')
 
 
 @require_POST
+@de_tienda
 def cupon_aplicar(request):
-    carrito = Carrito(request)
+    carrito = Carrito(request, request.tienda)
     try:
         cupon = carrito.aplicar_cupon(request.POST.get('codigo', ''))
     except CuponInvalido as error:
@@ -126,7 +134,8 @@ def cupon_aplicar(request):
 
 
 @require_POST
+@de_tienda
 def cupon_quitar(request):
-    carrito = Carrito(request)
+    carrito = Carrito(request, request.tienda)
     carrito.quitar_cupon()
     return _responder(request, carrito, True, 'Cupón quitado.')

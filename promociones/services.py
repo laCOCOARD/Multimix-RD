@@ -22,8 +22,8 @@ def normalizar_codigo(codigo):
     return (codigo or '').strip().upper()
 
 
-def validar_cupon(codigo, subtotal, bloquear=False):
-    """Devuelve el cupon si aplica al subtotal; si no, lanza CuponInvalido.
+def validar_cupon(codigo, subtotal, tienda, bloquear=False):
+    """Devuelve el cupon de la tienda si aplica al subtotal; si no, lanza CuponInvalido.
 
     Con bloquear=True toma la fila con select_for_update (requiere una transaccion abierta).
     """
@@ -31,7 +31,7 @@ def validar_cupon(codigo, subtotal, bloquear=False):
     if not codigo:
         raise CuponInvalido('Escribe el código del cupón.')
     cupones = Cupon.objects.select_for_update() if bloquear else Cupon.objects
-    cupon = cupones.filter(codigo=codigo).first()
+    cupon = cupones.filter(tienda=tienda, codigo=codigo).first()
     if cupon is None or not cupon.activo:
         raise CuponInvalido('Ese cupón no existe o no está activo.')
     ahora = timezone.now()

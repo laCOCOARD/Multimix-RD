@@ -3,15 +3,14 @@ from datetime import timedelta
 from decimal import Decimal
 
 from django.test import TestCase
-from django.urls import reverse
 from django.utils import timezone
 
 from catalogo import services
 from catalogo.models import Categoria, FotoProducto, Producto
-from core.models import ConfiguracionTienda
 from pedidos.models import Pedido
 from pedidos.services import cambiar_estado
 from pedidos.tests.utiles import pedido_de_prueba
+from tiendas.tests.utiles import ruta, tienda_de_prueba
 
 from .test_modelos import crear_producto, imagen_de_prueba
 
@@ -35,7 +34,7 @@ class CatalogoVistasTests(TestCase):
         return [p.nombre for p in respuesta.context['pagina']]
 
     def test_inicio_muestra_secciones(self):
-        respuesta = self.client.get(reverse('catalogo:inicio'))
+        respuesta = self.client.get(ruta('catalogo:inicio'))
         self.assertEqual(respuesta.status_code, 200)
         titulos = [s['titulo'] for s in respuesta.context['secciones']]
         self.assertEqual(titulos, ['Ofertas', 'Destacados', 'Nuevos'])
@@ -44,7 +43,7 @@ class CatalogoVistasTests(TestCase):
         self.assertNotContains(respuesta, 'Producto oculto')
 
     def test_inicio_lleva_la_marca(self):
-        respuesta = self.client.get(reverse('catalogo:inicio'))
+        respuesta = self.client.get(ruta('catalogo:inicio'))
         self.assertContains(respuesta, 'img/logo-simbolo.webp')
         self.assertContains(respuesta, 'img/favicon.png')
         self.assertContains(respuesta, 'property="og:image" content="http://testserver/static/img/compartir.jpg"')
@@ -54,25 +53,25 @@ class CatalogoVistasTests(TestCase):
         with tempfile.TemporaryDirectory() as media, self.settings(MEDIA_ROOT=media):
             foto = FotoProducto.objects.create(producto=self.lampara, imagen=imagen_de_prueba())
             FotoProducto.objects.create(producto=self.oculto, imagen=imagen_de_prueba())
-            portada = {c.nombre: c for c in services.categorias_de_portada()}
+            portada = {c.nombre: c for c in services.categorias_de_portada(tienda_de_prueba())}
             self.assertEqual(portada['Hogar'].url_portada, foto.imagen.url)
             self.assertTrue(portada['Hogar'].usa_foto_de_producto)
             self.assertEqual(portada['Tecnología'].url_portada, '')
-            respuesta = self.client.get(reverse('catalogo:inicio'))
+            respuesta = self.client.get(ruta('catalogo:inicio'))
             self.assertContains(respuesta, f'class="mm-categoria-producto" src="{foto.imagen.url}"')
 
     def test_lista_excluye_inactivos(self):
-        respuesta = self.client.get(reverse('catalogo:lista'))
+        respuesta = self.client.get(ruta('catalogo:lista'))
         self.assertCountEqual(self.nombres(respuesta), ['Lámpara de mesa', 'Taza térmica', 'Audífonos'])
 
     def test_categoria_inactiva_oculta_sus_productos(self):
         Categoria.objects.filter(pk=self.tecnologia.pk).update(activa=False)
-        self.assertNotIn('Audífonos', self.nombres(self.client.get(reverse('catalogo:lista'))))
-        self.assertEqual(self.client.get(self.tecnologia.get_absolute_url()).status_code, 404)
+        self.assertNotIn('Audífonos', self.nombres(self.client.get(ruta('catalogo:lista'))))
+        self.assertEqual(self.client.get(ruta('catalogo:categoria', self.tecnologia.slug)).status_code, 404)
         self.assertEqual(self.client.get(self.audifonos.get_absolute_url()).status_code, 404)
 
     def test_filtros(self):
-        url = reverse('catalogo:lista')
+        url = ruta('catalogo:lista')
         self.assertEqual(self.nombres(self.client.get(url, {'q': 'taza'})), ['Taza térmica'])
         # La busqueda ignora tildes y mayusculas, y exige todas las palabras.
         self.assertEqual(self.nombres(self.client.get(url, {'q': 'AUDIFONOS'})), ['Audífonos'])
@@ -87,16 +86,17 @@ class CatalogoVistasTests(TestCase):
         self.assertEqual(self.nombres(self.client.get(url, {'precio_max': '500'})), ['Taza térmica'])
         self.assertEqual(self.nombres(self.client.get(url, {'precio_min': '2000'})), ['Audífonos'])
         self.assertCountEqual(
-            self.nombres(self.client.get(self.hogar.get_absolute_url())), ['Lámpara de mesa', 'Taza térmica'],
+            self.nombres(self.client.get(ruta('catalogo:categoria', self.hogar.slug))),
+            ['Lámpara de mesa', 'Taza térmica'],
         )
 
     def test_filtros_invalidos_no_rompen(self):
-        respuesta = self.client.get(reverse('catalogo:lista'), {'precio_min': 'abc', 'orden': 'x', 'pagina': 'zz'})
+        respuesta = self.client.get(ruta('catalogo:lista'), {'precio_min': 'abc', 'orden': 'x', 'pagina': 'zz'})
         self.assertEqual(respuesta.status_code, 200)
         self.assertEqual(len(self.nombres(respuesta)), 3)
 
     def test_orden_por_precio_y_mas_vendidos(self):
-        url = reverse('catalogo:lista')
+        url = ruta('catalogo:lista')
         self.assertEqual(
             self.nombres(self.client.get(url, {'orden': 'precio_asc'})),
             ['Taza térmica', 'Lámpara de mesa', 'Audífonos'],
@@ -105,27 +105,27 @@ class CatalogoVistasTests(TestCase):
         cambiar_estado(pedido_de_prueba(self.lampara, 3), Pedido.Estado.PAGADO)
         pedido_de_prueba(self.taza, 5)  # pendiente: no cuenta como venta
         self.assertEqual(self.nombres(self.client.get(url, {'orden': 'vendidos'}))[0], 'Lámpara de mesa')
-        self.assertEqual(services.mas_vendidos(), [self.lampara])
+        self.assertEqual(services.mas_vendidos(tienda_de_prueba()), [self.lampara])
 
     def test_paginacion(self):
         for numero in range(15):
             crear_producto(categoria=self.hogar, nombre=f'Extra {numero}', sku=f'X{numero}')
-        respuesta = self.client.get(reverse('catalogo:lista'))
+        respuesta = self.client.get(ruta('catalogo:lista'))
         self.assertEqual(len(respuesta.context['pagina']), 12)
         self.assertEqual(respuesta.context['pagina'].paginator.num_pages, 2)
-        respuesta = self.client.get(reverse('catalogo:lista'), {'pagina': 2, 'orden': 'precio_asc'})
+        respuesta = self.client.get(ruta('catalogo:lista'), {'pagina': 2, 'orden': 'precio_asc'})
         self.assertEqual(len(respuesta.context['pagina']), 6)
 
     def test_nuevos_por_fecha_o_marca(self):
         Producto.objects.update(creado=timezone.now() - timedelta(days=40))
-        self.assertEqual(services.nuevos(), [])
+        self.assertEqual(services.nuevos(tienda_de_prueba()), [])
         Producto.objects.filter(pk=self.taza.pk).update(nuevo=True)
-        self.assertEqual(services.nuevos(), [self.taza])
+        self.assertEqual(services.nuevos(tienda_de_prueba()), [self.taza])
 
     def test_detalle_con_open_graph_y_relacionados(self):
-        config = ConfiguracionTienda.obtener()
-        config.whatsapp = '18095550000'
-        config.save()
+        tienda = tienda_de_prueba()
+        tienda.whatsapp = '18095550000'
+        tienda.save()
         respuesta = self.client.get(self.taza.get_absolute_url())
         self.assertEqual(respuesta.status_code, 200)
         self.assertContains(respuesta, 'property="og:title" content="Taza térmica · RD$ 450.00"')
@@ -149,7 +149,7 @@ class CatalogoVistasTests(TestCase):
 
     def test_paginas_informativas_sitemap_y_robots(self):
         for nombre in ('core:como_comprar', 'core:envios'):
-            self.assertEqual(self.client.get(reverse(nombre)).status_code, 200)
+            self.assertEqual(self.client.get(ruta(nombre)).status_code, 200)
         sitemap = self.client.get('/sitemap.xml')
         self.assertContains(sitemap, self.taza.get_absolute_url())
         self.assertNotContains(sitemap, self.oculto.get_absolute_url())

@@ -1,4 +1,4 @@
-"""Catalogo: secciones automaticas de la portada, filtros del listado y carga de fotos por SKU."""
+"""Catalogo: secciones de la portada de cada tienda, filtros del listado y carga de fotos por SKU."""
 from dataclasses import dataclass
 from datetime import timedelta
 from pathlib import Path
@@ -19,38 +19,43 @@ from pedidos.models import DetallePedido, Pedido
 
 from .models import Categoria, FotoProducto, Producto, q_oferta_vigente
 
-CACHE_MAS_VENDIDOS = 'catalogo_ids_mas_vendidos'
+
+def clave_mas_vendidos(tienda):
+    return f'catalogo_ids_mas_vendidos_{tienda.pk}'
 
 
-def _base():
-    return Producto.objects.activos().para_listado()
+def _base(tienda=None):
+    """Productos a la venta de una tienda; sin tienda, los de todas las tiendas activas."""
+    productos = Producto.objects.activos().para_listado()
+    return productos if tienda is None else productos.filter(tienda=tienda)
 
 
-def ids_mas_vendidos(limite=40):
-    """Ids de productos ordenados por unidades vendidas. Se guarda en cache unos minutos."""
-    ids = cache.get(CACHE_MAS_VENDIDOS)
+def ids_mas_vendidos(tienda, limite=40):
+    """Ids de productos de la tienda ordenados por unidades vendidas. Se guarda en cache unos minutos."""
+    clave = clave_mas_vendidos(tienda)
+    ids = cache.get(clave)
     if ids is None:
         ids = list(
-            DetallePedido.objects.filter(pedido__estado__in=Pedido.ESTADOS_VENTA)
+            DetallePedido.objects.filter(pedido__tienda=tienda, pedido__estado__in=Pedido.ESTADOS_VENTA)
             .values('producto_id').annotate(unidades=Sum('cantidad'))
             .order_by('-unidades', 'producto_id').values_list('producto_id', flat=True)[:40]
         )
-        cache.set(CACHE_MAS_VENDIDOS, ids, settings.MAS_VENDIDOS_CACHE_SEGUNDOS)
+        cache.set(clave, ids, settings.MAS_VENDIDOS_CACHE_SEGUNDOS)
     return ids[:limite]
 
 
-def mas_vendidos(limite=8):
-    ids = ids_mas_vendidos()
-    productos = _base().in_bulk(ids)
+def mas_vendidos(tienda, limite=8):
+    ids = ids_mas_vendidos(tienda)
+    productos = _base(tienda).in_bulk(ids)
     return [productos[pk] for pk in ids if pk in productos][:limite]
 
 
-def en_oferta(limite=8):
-    return list(_base().filter(q_oferta_vigente()).order_by('-actualizado')[:limite])
+def en_oferta(tienda, limite=8):
+    return list(_base(tienda).filter(q_oferta_vigente()).order_by('-actualizado')[:limite])
 
 
-def destacados(limite=8):
-    return list(_base().filter(destacado=True)[:limite])
+def destacados(tienda, limite=8):
+    return list(_base(tienda).filter(destacado=True)[:limite])
 
 
 def q_nuevos():
@@ -58,17 +63,24 @@ def q_nuevos():
     return Q(nuevo=True) | Q(creado__gte=timezone.now() - timedelta(days=dias))
 
 
-def nuevos(limite=8):
-    return list(_base().filter(q_nuevos())[:limite])
+def nuevos(tienda, limite=8):
+    return list(_base(tienda).filter(q_nuevos())[:limite])
 
 
-def categorias_de_portada():
-    """Categorias activas para la portada. La que no tiene imagen muestra la foto de uno de sus productos."""
+def categorias_de(tienda):
+    """Categorias activas en las que la tienda tiene productos activos."""
+    return Categoria.objects.filter(activa=True, productos__tienda=tienda, productos__activo=True).distinct()
+
+
+def categorias_de_portada(tienda):
+    """Categorias de la tienda para su portada. La que no tiene imagen muestra la foto de uno de sus productos."""
     foto = (
-        FotoProducto.objects.filter(producto__categoria=OuterRef('pk'), producto__activo=True, principal=True)
+        FotoProducto.objects.filter(
+            producto__categoria=OuterRef('pk'), producto__tienda=tienda, producto__activo=True, principal=True,
+        )
         .order_by('-producto__destacado', '-producto__creado', '-producto__id').values('imagen')[:1]
     )
-    categorias = list(Categoria.objects.filter(activa=True).annotate(foto_de_producto=Subquery(foto)))
+    categorias = list(categorias_de(tienda).annotate(foto_de_producto=Subquery(foto)))
     for categoria in categorias:
         categoria.usa_foto_de_producto = not categoria.imagen and bool(categoria.foto_de_producto)
         if categoria.imagen:
@@ -81,12 +93,19 @@ def categorias_de_portada():
 
 
 def relacionados(producto, limite=4):
-    return list(_base().filter(categoria_id=producto.categoria_id).exclude(pk=producto.pk)[:limite])
+    """Otros productos de la misma tienda y categoria."""
+    return list(
+        _base().filter(tienda_id=producto.tienda_id, categoria_id=producto.categoria_id)
+        .exclude(pk=producto.pk)[:limite]
+    )
 
 
-def filtrar_catalogo(filtros, categoria=None):
-    """Aplica los filtros ya validados (FiltroCatalogoForm.cleaned_data) y el orden elegido."""
-    productos = _base().con_datos_venta()
+def filtrar_catalogo(filtros, categoria=None, tienda=None):
+    """Aplica los filtros ya validados (FiltroCatalogoForm.cleaned_data) y el orden elegido.
+
+    Con `tienda` lista su catalogo; sin ella busca en todas las tiendas activas (buscador del sitio).
+    """
+    productos = _base(tienda).con_datos_venta()
     if categoria is not None:
         productos = productos.filter(categoria=categoria)
 
@@ -136,13 +155,13 @@ def _es_imagen(archivo):
     return True
 
 
-def asignar_foto_por_sku(archivo, reemplazar=False):
-    """Pone el archivo como foto principal del producto cuyo SKU es el nombre del archivo.
+def asignar_foto_por_sku(archivo, tienda, reemplazar=False):
+    """Pone el archivo como foto principal del producto de la tienda cuyo SKU es el nombre del archivo.
 
     `123785.jpg` va al producto con SKU 123785. Con `reemplazar` se borran las fotos que ya tenia.
     """
     sku = Path(archivo.name).stem.strip().upper()
-    producto = Producto.objects.filter(sku=sku).first()
+    producto = Producto.objects.filter(tienda=tienda, sku=sku).first() if tienda else None
     if producto is None:
         return FotoPorSku(archivo.name, sku, False, 'No hay ningún producto con ese SKU.')
     try:

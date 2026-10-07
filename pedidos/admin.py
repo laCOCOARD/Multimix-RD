@@ -1,24 +1,27 @@
 from django.contrib import admin, messages
 from django.contrib.admin.utils import unquote
 from django.core.exceptions import PermissionDenied
+from django.core.paginator import Paginator
 from django.http import Http404
-from django.shortcuts import redirect
+from django.shortcuts import redirect, render
 from django.urls import path, reverse
 from django.utils.html import format_html
 from django.views.decorators.http import require_POST
 
-from core.telefonos import formatear_telefono
+from core.telefonos import formatear_telefono, telefono_internacional
 from core.templatetags.moneda import formatear_monto
+from tiendas.panel import AdminDeTienda, maneja_varias_tiendas
 
 from . import services
 from .models import DetallePedido, Pedido, ZonaEnvio
-from .whatsapp import enlace_al_cliente
+from .whatsapp import construir_enlace, enlace_al_cliente
 
 Estado = Pedido.Estado
+CLIENTES_POR_PAGINA = 50
 
 
 @admin.register(ZonaEnvio)
-class ZonaEnvioAdmin(admin.ModelAdmin):
+class ZonaEnvioAdmin(AdminDeTienda, admin.ModelAdmin):
     list_display = ['nombre', 'tarifa', 'activa', 'orden']
     list_editable = ['tarifa', 'activa', 'orden']
     list_filter = ['activa']
@@ -56,14 +59,19 @@ def _accion_de_estado(estado, descripcion):
 
 
 @admin.register(Pedido)
-class PedidoAdmin(admin.ModelAdmin):
+class PedidoAdmin(AdminDeTienda, admin.ModelAdmin):
     change_form_template = 'admin/pedidos/pedido/change_form.html'
+    change_list_template = 'admin/pedidos/pedido/change_list.html'
     date_hierarchy = 'creado'
     list_display = [
         'numero', 'creado', 'nombre', 'whatsapp_cliente', 'metodo_entrega', 'metodo_pago',
         'total_formateado', 'estado_con_color', 'aviso_transferencia',
     ]
-    list_filter = ['estado', 'metodo_entrega', 'metodo_pago', 'transferencia_realizada', 'zona', 'creado']
+    # La zona se filtra solo entre las que aparecen en los pedidos que el usuario puede ver.
+    list_filter = [
+        'estado', 'metodo_entrega', 'metodo_pago', 'transferencia_realizada',
+        ('zona', admin.RelatedOnlyFieldListFilter), 'creado',
+    ]
     search_fields = ['numero', 'nombre', 'telefono', 'correo', 'referencia_transferencia']
     list_select_related = ['zona']
     list_per_page = 40
@@ -76,7 +84,9 @@ class PedidoAdmin(admin.ModelAdmin):
         _accion_de_estado(Estado.CANCELADO, 'Marcar como Cancelado'),
     ]
     fieldsets = [
-        ('Pedido', {'fields': ['numero', 'estado_con_color', 'creado', 'fecha_pago', 'fecha_entrega', 'enlace_publico']}),
+        ('Pedido', {'fields': [
+            'numero', 'tienda', 'estado_con_color', 'creado', 'fecha_pago', 'fecha_entrega', 'enlace_publico',
+        ]}),
         ('Cliente', {'fields': ['nombre', 'whatsapp_cliente', 'correo']}),
         ('Entrega', {'fields': ['metodo_entrega', 'zona', 'direccion', 'referencia']}),
         ('Pago', {'fields': ['metodo_pago', 'transferencia_realizada', 'referencia_transferencia']}),
@@ -107,8 +117,32 @@ class PedidoAdmin(admin.ModelAdmin):
                 '<path:object_id>/estado/', self.admin_site.admin_view(require_POST(self.cambiar_estado_vista)),
                 name='pedidos_pedido_estado',
             ),
+            path('clientes/', self.admin_site.admin_view(self.clientes_vista), name='pedidos_pedido_clientes'),
         ]
         return propias + super().get_urls()
+
+    # --- Clientes: salen de los pedidos que el usuario puede ver --------------------
+
+    def clientes_vista(self, request):
+        if not self.has_view_permission(request):
+            raise PermissionDenied
+        pedidos = self.get_queryset(request)
+        busqueda = request.GET.get('q', '')
+        pagina = Paginator(services.clientes(pedidos, busqueda), CLIENTES_POR_PAGINA).get_page(request.GET.get('p'))
+        filas = services.completar_clientes(pagina.object_list, pedidos)
+        for fila in filas:
+            saludo = f'Hola {fila.get("nombre", "")}, te escribimos de {fila.get("tienda", "la tienda")}.'
+            fila['enlace_whatsapp'] = construir_enlace(telefono_internacional(fila['telefono']), saludo)
+            fila['telefono_formateado'] = formatear_telefono(fila['telefono'])
+        return render(request, 'admin/pedidos/pedido/clientes.html', {
+            **self.admin_site.each_context(request),
+            'title': 'Clientes',
+            'filas': filas,
+            'pagina': pagina,
+            'busqueda': busqueda,
+            'varias_tiendas': maneja_varias_tiendas(request),
+            'opts': self.model._meta,
+        })
 
     # --- Cambios de estado (siempre por la capa de servicios) -----------------------
 
@@ -128,11 +162,12 @@ class PedidoAdmin(admin.ModelAdmin):
             )
 
     def cambiar_estado_vista(self, request, object_id):
+        if not self.has_change_permission(request):
+            raise PermissionDenied
+        # get_object solo encuentra pedidos de las tiendas del usuario.
         pedido = self.get_object(request, unquote(object_id))
         if pedido is None:
             raise Http404
-        if not self.has_change_permission(request, pedido):
-            raise PermissionDenied
         try:
             pedido = services.cambiar_estado(pedido, request.POST.get('estado', ''))
         except services.PedidoError as error:
