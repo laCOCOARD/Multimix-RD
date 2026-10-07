@@ -6,14 +6,15 @@ import tablib
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Permission
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.core.management import call_command
 from django.test import TestCase
 from django.urls import reverse
 from openpyxl import load_workbook
 
-from catalogo.models import Categoria, Producto
+from catalogo.models import Categoria, FotoProducto, Producto
 from catalogo.resources import COLUMNAS, ProductoResource
-from catalogo.tests.test_modelos import crear_producto
+from catalogo.tests.test_modelos import crear_producto, imagen_de_prueba
 from core.models import ConfiguracionTienda
 from pedidos.models import Pedido
 from pedidos.services import cambiar_estado
@@ -268,6 +269,60 @@ class ProductoAdminTests(PanelBase):
         exportado = ProductoResource().export()
         self.assertEqual(exportado.headers, COLUMNAS)
         self.assertEqual(exportado.dict[0]['sku'], 'L1')
+
+
+class FotosPorSkuTests(PanelBase):
+    def setUp(self):
+        super().setUp()
+        media = tempfile.TemporaryDirectory()
+        self.addCleanup(media.cleanup)
+        ajuste = self.settings(MEDIA_ROOT=media.name)
+        ajuste.enable()
+        self.addCleanup(ajuste.disable)
+        self.url = reverse('admin:catalogo_producto_fotos_por_sku')
+
+    def test_el_nombre_del_archivo_es_el_sku(self):
+        self.assertContains(self.client.get(reverse('admin:catalogo_producto_changelist')), self.url)
+        self.assertContains(self.client.get(self.url), 'Subir fotos por SKU')
+
+        respuesta = self.client.post(self.url, {'fotos': [imagen_de_prueba('l1.png'), imagen_de_prueba('NOEXISTE.png')]})
+        self.assertContains(respuesta, '1 foto(s) asignadas, 1 sin asignar.')
+        self.assertContains(respuesta, 'NOEXISTE.png')
+        foto = self.producto.fotos.get()
+        self.assertTrue(foto.principal)
+        self.assertTrue(foto.imagen.name.endswith('.webp'))
+
+    def test_con_fetch_responde_json(self):
+        respuesta = self.client.post(self.url, {'fotos': imagen_de_prueba('L1.jpg', 'JPEG')}, HTTP_X_REQUESTED_WITH='fetch')
+        self.assertEqual(respuesta.json()['resultados'], [
+            {'archivo': 'L1.jpg', 'sku': 'L1', 'asignada': True, 'detalle': 'Lámpara'},
+        ])
+
+    def test_conserva_o_reemplaza_las_fotos_anteriores(self):
+        anterior = FotoProducto.objects.create(producto=self.producto, imagen=imagen_de_prueba())
+        self.client.post(self.url, {'fotos': imagen_de_prueba('L1.png')})
+        anterior.refresh_from_db()
+        self.assertFalse(anterior.principal)
+        self.assertEqual(self.producto.fotos.count(), 2)
+
+        self.client.post(self.url, {'fotos': imagen_de_prueba('L1.png'), 'reemplazar': '1'})
+        self.assertEqual(self.producto.fotos.filter(principal=True).count(), 1)
+        self.assertEqual(self.producto.fotos.count(), 1)
+
+    def test_rechaza_lo_que_no_es_una_imagen(self):
+        falsa = SimpleUploadedFile('L1.jpg', b'esto no es una foto')
+        gif = SimpleUploadedFile('L1.gif', b'GIF89a')
+        respuesta = self.client.post(self.url, {'fotos': [falsa, gif]}, HTTP_X_REQUESTED_WITH='fetch')
+        self.assertEqual([r['asignada'] for r in respuesta.json()['resultados']], [False, False])
+        self.assertFalse(self.producto.fotos.exists())
+
+    def test_sin_permiso_no_sube_fotos(self):
+        empleado = get_user_model().objects.create_user('lector', password='clave-segura-123', is_staff=True)
+        empleado.user_permissions.add(Permission.objects.get(codename='view_producto'))
+        self.client.force_login(empleado)
+        self.assertEqual(self.client.post(self.url, {'fotos': imagen_de_prueba('L1.png')}).status_code, 403)
+        self.assertNotContains(self.client.get(reverse('admin:catalogo_producto_changelist')), self.url)
+        self.assertFalse(self.producto.fotos.exists())
 
 
 class CargarDemoTests(TestCase):

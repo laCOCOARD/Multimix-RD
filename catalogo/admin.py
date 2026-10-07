@@ -1,10 +1,12 @@
+from dataclasses import asdict
 from decimal import ROUND_HALF_UP, Decimal
 
 import tablib
 from django import forms
 from django.contrib import admin, messages
+from django.core.exceptions import PermissionDenied
 from django.db.models import Count, F
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
 from django.shortcuts import render
 from django.urls import path
 from django.utils.html import format_html
@@ -13,6 +15,7 @@ from import_export.admin import ImportExportModelAdmin
 from core.models import ConfiguracionTienda
 from core.templatetags.moneda import formatear_monto
 
+from . import services
 from .models import Categoria, FotoProducto, Producto, q_oferta_vigente
 from .resources import COLUMNAS, FILA_DE_EJEMPLO, ProductoResource
 
@@ -139,8 +142,38 @@ class ProductoAdmin(ImportExportModelAdmin):
                 'plantilla-excel/', self.admin_site.admin_view(self.descargar_plantilla),
                 name='catalogo_producto_plantilla',
             ),
+            path(
+                'fotos-por-sku/', self.admin_site.admin_view(self.fotos_por_sku),
+                name='catalogo_producto_fotos_por_sku',
+            ),
         ]
         return propias + super().get_urls()
+
+    def fotos_por_sku(self, request):
+        """Sube varias fotos a la vez: el nombre de cada archivo es el SKU de su producto."""
+        if not self.has_change_permission(request):
+            raise PermissionDenied
+        procesado = request.method == 'POST'
+        reemplazar = bool(request.POST.get('reemplazar'))
+        resultados = [
+            services.asignar_foto_por_sku(archivo, reemplazar) for archivo in request.FILES.getlist('fotos')
+        ]
+        # La pagina envia las fotos una por una con fetch para no agotar el tiempo del servidor.
+        if procesado and request.headers.get('X-Requested-With') == 'fetch':
+            return JsonResponse({'resultados': [asdict(resultado) for resultado in resultados]})
+        return render(request, 'admin/catalogo/producto/fotos_por_sku.html', {
+            **self.admin_site.each_context(request),
+            'title': 'Subir fotos por SKU',
+            'procesado': procesado,
+            'asignadas': sum(resultado.asignada for resultado in resultados),
+            'rechazadas': [resultado for resultado in resultados if not resultado.asignada],
+            'opts': self.model._meta,
+            'media': self.media,
+        })
+
+    def changelist_view(self, request, extra_context=None):
+        contexto = {'puede_subir_fotos': self.has_change_permission(request), **(extra_context or {})}
+        return super().changelist_view(request, contexto)
 
     def descargar_plantilla(self, request):
         """Excel con las columnas esperadas y una fila de ejemplo."""

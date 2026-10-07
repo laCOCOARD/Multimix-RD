@@ -2,5 +2,8 @@
 
 {% block object-tools-items %}
   <li><a href="{% url 'admin:catalogo_producto_plantilla' %}" class="import_link">Plantilla de Excel</a></li>
+  {% if puede_subir_fotos %}
+    <li><a href="{% url 'admin:catalogo_producto_fotos_por_sku' %}" class="import_link">Fotos por SKU</a></li>
+  {% endif %}
   {{ block.super }}
 {% endblock %}

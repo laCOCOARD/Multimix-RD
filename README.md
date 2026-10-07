@@ -144,6 +144,9 @@ Los cambios pueden tardar hasta un minuto en verse en la tienda.
 - *Stock reservado* lo maneja el sistema: sube cuando entra un pedido y baja cuando se entrega o se
   cancela. El almacén no puede quedar por debajo de lo reservado.
 - Las fotos se suben en JPG, PNG o WebP (hasta 5 MB); se ajustan a 1200 px y se guardan en WebP.
+- **Fotos por SKU** (botón de la lista): sube muchas fotos a la vez. El nombre de cada archivo es el SKU
+  del producto (`123785.jpg`) y la foto queda como principal; al terminar lista las que no encontraron
+  producto. Se puede elegir reemplazar las fotos que ya tenía cada producto.
 - Acciones masivas: destacar, activar/desactivar, poner oferta de X % con fechas y quitar oferta.
 
 **Pedidos.**

@@ -72,6 +72,9 @@ Al cerrar cada modulo: check, makemigrations, migrate, test y commit.
   enviado o entregado no devuelve stock. El numero no se reutiliza y el pedido sale de las ventas del panel.
 - Importacion Excel: `catalogo/resources.py`, identifica por `sku`, crea categorias que no existan y valida
   con `full_clean`. No importa fotos ni `stock_reservado`.
+- Fotos por SKU: `catalogo.services.asignar_foto_por_sku` usa el nombre del archivo como SKU y deja la foto
+  como principal. La pagina del panel las envia una por una con `fetch` (cada foto se convierte y se sube al
+  almacenamiento; en una sola peticion se agotaria el tiempo de Gunicorn). Sin JavaScript funciona con un POST normal.
 - Acciones del admin: las descripciones pasan por formato `%`, asi que un `%` literal se escribe `%%`.
 - `docs/esquema.sql` se genera con `sqlmigrate` sobre SQLite; regenerarlo si cambian las migraciones.
 

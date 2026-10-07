@@ -1,17 +1,22 @@
-"""Consultas del catalogo: secciones automaticas de la portada y filtros del listado."""
+"""Catalogo: secciones automaticas de la portada, filtros del listado y carga de fotos por SKU."""
+from dataclasses import dataclass
 from datetime import timedelta
+from pathlib import Path
 
 from django.conf import settings
 from django.core.cache import cache
+from django.core.exceptions import ValidationError
 from django.db.models import Q, Sum
 from django.db.models.functions import Coalesce
 from django.utils import timezone
+from PIL import Image
 
 from core.models import ConfiguracionTienda
 from core.texto import normalizar
+from core.validators import validar_imagen
 from pedidos.models import DetallePedido, Pedido
 
-from .models import Producto, q_oferta_vigente
+from .models import FotoProducto, Producto, q_oferta_vigente
 
 CACHE_MAS_VENDIDOS = 'catalogo_ids_mas_vendidos'
 
@@ -89,3 +94,48 @@ def filtrar_catalogo(filtros, categoria=None):
         )
         return productos.annotate(vendidos=vendidos).order_by('-vendidos', '-creado', '-id')
     return productos.order_by('-creado', '-id')
+
+
+# --- Fotos por SKU ---------------------------------------------------------------------
+
+@dataclass
+class FotoPorSku:
+    archivo: str
+    sku: str
+    asignada: bool
+    detalle: str
+
+
+def _es_imagen(archivo):
+    try:
+        with Image.open(archivo) as imagen:
+            imagen.verify()
+    except Exception:
+        return False
+    finally:
+        archivo.seek(0)
+    return True
+
+
+def asignar_foto_por_sku(archivo, reemplazar=False):
+    """Pone el archivo como foto principal del producto cuyo SKU es el nombre del archivo.
+
+    `123785.jpg` va al producto con SKU 123785. Con `reemplazar` se borran las fotos que ya tenia.
+    """
+    sku = Path(archivo.name).stem.strip().upper()
+    producto = Producto.objects.filter(sku=sku).first()
+    if producto is None:
+        return FotoPorSku(archivo.name, sku, False, 'No hay ningún producto con ese SKU.')
+    try:
+        validar_imagen(archivo)
+    except ValidationError as error:
+        return FotoPorSku(archivo.name, sku, False, ' '.join(error.messages))
+    if not _es_imagen(archivo):
+        return FotoPorSku(archivo.name, sku, False, 'El archivo no es una imagen válida.')
+
+    nueva = FotoProducto.objects.create(producto=producto, imagen=archivo, principal=True)
+    if reemplazar:
+        # Se borran una a una para que tambien se elimine el archivo de cada foto.
+        for anterior in producto.fotos.exclude(pk=nueva.pk):
+            anterior.delete()
+    return FotoPorSku(archivo.name, sku, True, producto.nombre)

@@ -1,0 +1,121 @@
+{% extends "admin/base_site.html" %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+  <a href="{% url 'admin:index' %}">Inicio</a> &rsaquo;
+  <a href="{% url 'admin:catalogo_producto_changelist' %}">Productos</a> &rsaquo; Fotos por SKU
+</div>
+{% endblock %}
+
+{% block content %}
+<div id="content-main">
+  <form method="post" enctype="multipart/form-data" id="fotos-por-sku">
+    {% csrf_token %}
+    <fieldset class="module aligned">
+      <h2>Subir fotos por SKU</h2>
+      <div class="form-row">
+        <div class="flex-container">
+          <label for="id_fotos">Fotos:</label>
+          <input type="file" name="fotos" id="id_fotos" multiple required accept=".jpg,.jpeg,.png,.webp">
+        </div>
+        <div class="help">
+          El nombre de cada archivo debe ser el SKU del producto, por ejemplo <strong>123785.jpg</strong>.
+          JPG, PNG o WebP de hasta 5 MB. La foto queda como principal del producto.
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="flex-container checkbox-row">
+          <input type="checkbox" name="reemplazar" id="id_reemplazar" value="1">
+          <label class="vCheckboxLabel" for="id_reemplazar">Reemplazar las fotos que ya tenga cada producto</label>
+        </div>
+        <div class="help">Sin marcar, las fotos anteriores se conservan como secundarias.</div>
+      </div>
+    </fieldset>
+
+    <div class="submit-row">
+      <input type="submit" value="Subir fotos" class="default">
+      <a class="closelink" href="{% url 'admin:catalogo_producto_changelist' %}">Volver a productos</a>
+    </div>
+  </form>
+
+  <div class="module" id="fotos-resultado"{% if not procesado %} hidden{% endif %}>
+    <h2>Resultado</h2>
+    <p class="panel-fotos-resumen" id="fotos-resumen" role="status">
+      {% if procesado %}{{ asignadas }} foto(s) asignadas, {{ rechazadas|length }} sin asignar.{% endif %}
+    </p>
+    <table id="fotos-rechazadas"{% if not rechazadas %} hidden{% endif %}>
+      <caption>Fotos sin asignar</caption>
+      <thead><tr><th scope="col">Archivo</th><th scope="col">SKU</th><th scope="col">Motivo</th></tr></thead>
+      <tbody>
+        {% for foto in rechazadas %}
+          <tr><th scope="row">{{ foto.archivo }}</th><td>{{ foto.sku }}</td><td>{{ foto.detalle }}</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+  // Envia las fotos una por una: asi no importa cuantas sean ni cuanto tarde cada una.
+  (() => {
+    const formulario = document.getElementById('fotos-por-sku');
+    const resumen = document.getElementById('fotos-resumen');
+    const tabla = document.getElementById('fotos-rechazadas');
+    const boton = formulario.querySelector('[type=submit]');
+
+    const anotarRechazo = (archivo, sku, motivo) => {
+      const fila = tabla.tBodies[0].insertRow();
+      const celda = document.createElement('th');
+      celda.scope = 'row';
+      celda.textContent = archivo;
+      fila.append(celda);
+      fila.insertCell().textContent = sku;
+      fila.insertCell().textContent = motivo;
+      tabla.hidden = false;
+    };
+
+    formulario.addEventListener('submit', async (evento) => {
+      evento.preventDefault();
+      const fotos = Array.from(formulario.elements.fotos.files);
+      if (!fotos.length) return;
+      const token = formulario.elements.csrfmiddlewaretoken.value;
+      let asignadas = 0;
+      let rechazadas = 0;
+
+      boton.disabled = true;
+      tabla.tBodies[0].replaceChildren();
+      tabla.hidden = true;
+      document.getElementById('fotos-resultado').hidden = false;
+
+      for (const [indice, foto] of fotos.entries()) {
+        resumen.textContent = `Subiendo ${indice + 1} de ${fotos.length}: ${foto.name}`;
+        const datos = new FormData();
+        datos.append('csrfmiddlewaretoken', token);
+        datos.append('fotos', foto);
+        if (formulario.elements.reemplazar.checked) datos.append('reemplazar', '1');
+        try {
+          const respuesta = await fetch(formulario.action, {
+            method: 'POST', body: datos, headers: { 'X-Requested-With': 'fetch' },
+          });
+          if (!respuesta.ok) throw new Error(`Error ${respuesta.status}`);
+          for (const resultado of (await respuesta.json()).resultados) {
+            if (resultado.asignada) {
+              asignadas += 1;
+            } else {
+              rechazadas += 1;
+              anotarRechazo(resultado.archivo, resultado.sku, resultado.detalle);
+            }
+          }
+        } catch (error) {
+          rechazadas += 1;
+          anotarRechazo(foto.name, '', `No se pudo subir (${error.message}).`);
+        }
+      }
+
+      resumen.textContent = `${asignadas} foto(s) asignadas, ${rechazadas} sin asignar.`;
+      boton.disabled = false;
+      formulario.reset();
+    });
+  })();
+</script>
+{% endblock %}

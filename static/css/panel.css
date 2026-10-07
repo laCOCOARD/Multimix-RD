@@ -101,5 +101,8 @@ a.panel-tarjeta:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba
 .panel-boton-cancelado { background: #d23b3b; }
 .panel-boton-estado:hover { filter: brightness(.9); }
 
+/* --- Fotos por SKU --------------------------------------------------------- */
+.panel-fotos-resumen { margin: 0; padding: 12px 14px; font-weight: 700; }
+
 /* --- Aviso al eliminar pedidos -------------------------------------------- */
 .panel-aviso-eliminar { margin: 0 0 18px; padding: 14px 16px; border: 1px solid var(--hairline-color); border-left: 5px solid #d23b3b; border-radius: 10px; background: var(--darkened-bg); }
