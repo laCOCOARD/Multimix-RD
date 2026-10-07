@@ -1,9 +1,9 @@
 /* Panel de administracion de Multimix RD: colores de la marca sobre el admin de Django. */
 
 :root {
-  --primary: #0f4c81;
-  --secondary: #0b2239;
-  --accent: #ff7a1a;
+  --primary: #0a5fb4;
+  --secondary: #082a5c;
+  --accent: #6db523;
   --primary-fg: #fff;
 
   --header-color: #fff;
@@ -15,20 +15,20 @@
   --breadcrumbs-link-fg: #fff;
   --breadcrumbs-bg: var(--primary);
 
-  --link-fg: #0f4c81;
-  --link-hover-color: #e56300;
-  --link-selected-fg: #0b3a63;
+  --link-fg: #0a5fb4;
+  --link-hover-color: #196a21;
+  --link-selected-fg: #083b8a;
 
   --button-fg: #fff;
   --button-bg: var(--primary);
-  --button-hover-bg: #0b3a63;
+  --button-hover-bg: #083b8a;
   --default-button-bg: var(--secondary);
-  --default-button-hover-bg: #07182a;
+  --default-button-hover-bg: #051c40;
   --object-tools-bg: var(--primary);
   --object-tools-hover-bg: var(--secondary);
 
-  --selected-row: #fff3e8;
-  --selected-bg: #e8f0f8;
+  --selected-row: #eef7e4;
+  --selected-bg: #e8f2fb;
 }
 
 /* En modo oscuro se aclaran los enlaces para que se lean sobre el fondo. */
@@ -36,7 +36,7 @@
   :root:not([data-theme="light"]) {
     --link-fg: #7fb6ea;
     --link-selected-fg: #a9cff3;
-    --link-hover-color: #ffa35c;
+    --link-hover-color: #a8dc72;
     --selected-row: #24313f;
     --selected-bg: #1b2a3a;
   }
@@ -44,7 +44,7 @@
 html[data-theme="dark"] {
   --link-fg: #7fb6ea;
   --link-selected-fg: #a9cff3;
-  --link-hover-color: #ffa35c;
+  --link-hover-color: #a8dc72;
   --selected-row: #24313f;
   --selected-bg: #1b2a3a;
 }
@@ -54,7 +54,7 @@ html[data-theme="dark"] {
 .panel-marca-sub { font-size: .7em; font-weight: 400; opacity: .75; margin-left: .3em; }
 .login #header { justify-content: center; }
 .module h2, .module caption, .inline-group h2 { background: var(--primary); }
-div.breadcrumbs a:hover { color: #ffd2ad; }
+div.breadcrumbs a:hover { color: #d6f0b8; }
 
 /* --- Etiquetas de color ------------------------------------------------- */
 .panel-etiqueta, .panel-estado { display: inline-block; padding: .2em .65em; border-radius: 999px; font-size: .78rem; font-weight: 700; white-space: nowrap; color: #fff; }
@@ -78,12 +78,12 @@ div.breadcrumbs a:hover { color: #ffd2ad; }
 .panel-resumen { margin-bottom: 24px; }
 .panel-tarjetas { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 14px; margin-bottom: 20px; }
 .panel-tarjeta { display: flex; flex-direction: column; gap: 4px; padding: 16px 18px; border-radius: 12px; border: 1px solid var(--hairline-color); border-left: 5px solid var(--primary); background: var(--body-bg); color: var(--body-fg); text-decoration: none; transition: transform .2s ease, box-shadow .2s ease; }
-a.panel-tarjeta:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(11, 34, 57, .15); color: var(--body-fg); }
+a.panel-tarjeta:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(8, 42, 92, .15); color: var(--body-fg); }
 .panel-tarjeta-titulo { font-size: .8rem; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--body-quiet-color); }
 .panel-tarjeta-valor { font-size: 1.6rem; line-height: 1.2; }
 .panel-tarjeta-nota { font-size: .8rem; color: var(--body-quiet-color); }
 .panel-tarjeta-aviso { border-left-color: #e08a00; }
-.panel-tarjeta-bajo { border-left-color: var(--accent); }
+.panel-tarjeta-bajo { border-left-color: #e08a00; }
 .panel-tarjeta-agotado { border-left-color: #d23b3b; }
 .panel-columnas { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 18px; align-items: start; }
 .panel-columnas .module { margin-bottom: 0; overflow-x: auto; }

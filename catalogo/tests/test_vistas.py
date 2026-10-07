@@ -1,3 +1,4 @@
+import tempfile
 from datetime import timedelta
 from decimal import Decimal
 
@@ -6,13 +7,13 @@ from django.urls import reverse
 from django.utils import timezone
 
 from catalogo import services
-from catalogo.models import Categoria, Producto
+from catalogo.models import Categoria, FotoProducto, Producto
 from core.models import ConfiguracionTienda
 from pedidos.models import Pedido
 from pedidos.services import cambiar_estado
 from pedidos.tests.utiles import pedido_de_prueba
 
-from .test_modelos import crear_producto
+from .test_modelos import crear_producto, imagen_de_prueba
 
 
 class CatalogoVistasTests(TestCase):
@@ -41,6 +42,24 @@ class CatalogoVistasTests(TestCase):
         self.assertContains(respuesta, 'Multimix RD')
         self.assertContains(respuesta, 'RD$ 450.00')
         self.assertNotContains(respuesta, 'Producto oculto')
+
+    def test_inicio_lleva_la_marca(self):
+        respuesta = self.client.get(reverse('catalogo:inicio'))
+        self.assertContains(respuesta, 'img/logo-simbolo.webp')
+        self.assertContains(respuesta, 'img/favicon.png')
+        self.assertContains(respuesta, 'property="og:image" content="http://testserver/static/img/compartir.jpg"')
+        self.assertContains(respuesta, 'Tu tienda de bienestar')
+
+    def test_categoria_sin_imagen_usa_la_foto_de_un_producto(self):
+        with tempfile.TemporaryDirectory() as media, self.settings(MEDIA_ROOT=media):
+            foto = FotoProducto.objects.create(producto=self.lampara, imagen=imagen_de_prueba())
+            FotoProducto.objects.create(producto=self.oculto, imagen=imagen_de_prueba())
+            portada = {c.nombre: c for c in services.categorias_de_portada()}
+            self.assertEqual(portada['Hogar'].url_portada, foto.imagen.url)
+            self.assertTrue(portada['Hogar'].usa_foto_de_producto)
+            self.assertEqual(portada['Tecnología'].url_portada, '')
+            respuesta = self.client.get(reverse('catalogo:inicio'))
+            self.assertContains(respuesta, f'class="mm-categoria-producto" src="{foto.imagen.url}"')
 
     def test_lista_excluye_inactivos(self):
         respuesta = self.client.get(reverse('catalogo:lista'))

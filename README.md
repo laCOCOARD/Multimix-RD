@@ -210,10 +210,16 @@ python manage.py test
 Cubren carrito, cupones, costo de envío, reserva/descuento/liberación de stock, transiciones de
 estado, mensaje de WhatsApp, checkout y panel.
 
-## Personalizar los colores
+## Marca y colores
 
-- Tienda: variables al inicio de `static/css/tienda.css` (`--mm-primario`, `--mm-acento`, ...).
-- Panel: variables al inicio de `static/css/panel.css`.
+- Colores de la tienda: variables al inicio de `static/css/tienda.css` (`--mm-primario`, `--mm-acento`, ...).
+  Hoy son el azul y el verde del logo.
+- Colores del panel: variables al inicio de `static/css/panel.css`.
+- Recursos de la marca en `static/img/`: `logo-simbolo.webp` (encabezado y portada), `favicon.png`,
+  `apple-touch-icon.png` y `compartir.jpg` (la imagen que aparece al compartir un enlace de la tienda).
+- Si en Configuración se sube un logo, ese reemplaza al símbolo con el nombre del encabezado. Si se sube
+  una imagen de banner, reemplaza el fondo de la portada.
+- En la portada, la categoría que no tiene imagen muestra la foto de uno de sus productos.
 
 ## Estructura
 

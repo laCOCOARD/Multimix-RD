@@ -1,6 +1,11 @@
+import tempfile
 from decimal import Decimal
+from importlib import import_module
 
+from django.apps import apps
 from django.core.exceptions import ValidationError
+from django.core.files.base import ContentFile
+from django.core.files.storage import default_storage
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import SimpleTestCase, TestCase
 
@@ -65,8 +70,24 @@ class ConfiguracionTests(TestCase):
         ConfiguracionTienda.obtener().delete()
         self.assertEqual(ConfiguracionTienda.objects.count(), 1)
 
+    def test_migracion_de_marca_actualiza_textos_y_quita_imagenes_perdidas(self):
+        aplicar_marca = import_module('core.migrations.0002_textos_de_marca').aplicar_marca
+        with tempfile.TemporaryDirectory() as media, self.settings(MEDIA_ROOT=media):
+            ConfiguracionTienda.objects.update_or_create(pk=1, defaults={
+                'banner_titulo': 'Todo lo que buscas, en un solo lugar', 'banner_subtitulo': 'Un texto propio',
+                'logo': 'tienda/perdido.png',
+                'banner_imagen': default_storage.save('tienda/banner.png', ContentFile(b'imagen')),
+            })
+            aplicar_marca(apps, None)
+            config = ConfiguracionTienda.objects.get(pk=1)
+            self.assertEqual(config.banner_titulo, 'Tu tienda de bienestar')
+            self.assertEqual(config.banner_subtitulo, 'Un texto propio')
+            self.assertFalse(config.logo)
+            self.assertEqual(config.banner_imagen.name, 'tienda/banner.png')
+
     def test_valores_por_defecto(self):
         config = ConfiguracionTienda.obtener()
+        self.assertEqual(config.banner_titulo, 'Tu tienda de bienestar')
         self.assertEqual(config.dias_producto_nuevo, 30)
         self.assertEqual(config.umbral_stock_bajo, 5)
         self.assertEqual(config.horas_vencimiento_pedido, 48)

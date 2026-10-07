@@ -21,7 +21,7 @@ def inicio(request):
     ]
     return render(request, 'catalogo/inicio.html', {
         'secciones': [s for s in secciones if s['productos']],
-        'categorias': Categoria.objects.filter(activa=True),
+        'categorias': services.categorias_de_portada(),
     })
 
 

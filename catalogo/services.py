@@ -6,7 +6,8 @@ from pathlib import Path
 from django.conf import settings
 from django.core.cache import cache
 from django.core.exceptions import ValidationError
-from django.db.models import Q, Sum
+from django.core.files.storage import default_storage
+from django.db.models import OuterRef, Q, Subquery, Sum
 from django.db.models.functions import Coalesce
 from django.utils import timezone
 from PIL import Image
@@ -16,7 +17,7 @@ from core.texto import normalizar
 from core.validators import validar_imagen
 from pedidos.models import DetallePedido, Pedido
 
-from .models import FotoProducto, Producto, q_oferta_vigente
+from .models import Categoria, FotoProducto, Producto, q_oferta_vigente
 
 CACHE_MAS_VENDIDOS = 'catalogo_ids_mas_vendidos'
 
@@ -59,6 +60,24 @@ def q_nuevos():
 
 def nuevos(limite=8):
     return list(_base().filter(q_nuevos())[:limite])
+
+
+def categorias_de_portada():
+    """Categorias activas para la portada. La que no tiene imagen muestra la foto de uno de sus productos."""
+    foto = (
+        FotoProducto.objects.filter(producto__categoria=OuterRef('pk'), producto__activo=True, principal=True)
+        .order_by('-producto__destacado', '-producto__creado', '-producto__id').values('imagen')[:1]
+    )
+    categorias = list(Categoria.objects.filter(activa=True).annotate(foto_de_producto=Subquery(foto)))
+    for categoria in categorias:
+        categoria.usa_foto_de_producto = not categoria.imagen and bool(categoria.foto_de_producto)
+        if categoria.imagen:
+            categoria.url_portada = categoria.imagen.url
+        elif categoria.foto_de_producto:
+            categoria.url_portada = default_storage.url(categoria.foto_de_producto)
+        else:
+            categoria.url_portada = ''
+    return categorias
 
 
 def relacionados(producto, limite=4):

@@ -1,8 +1,9 @@
 {% extends 'base.html' %}
+{% load static %}
 
 {% block contenido %}
 <section class="mm-banner{% if tienda.banner_imagen %} mm-banner-con-imagen{% endif %}"
-         {% if tienda.banner_imagen %}style="background-image: linear-gradient(90deg, rgba(11,34,57,.88), rgba(11,34,57,.45)), url('{{ tienda.banner_imagen.url }}');"{% endif %}>
+         {% if tienda.banner_imagen %}style="background-image: linear-gradient(90deg, rgba(8,42,92,.9), rgba(8,42,92,.5)), url('{{ tienda.banner_imagen.url }}');"{% endif %}>
   <div class="container">
     <div class="row">
       <div class="col-lg-7">
@@ -13,6 +14,11 @@
           <a class="btn btn-outline-light btn-lg" href="{% url 'core:como_comprar' %}">Cómo comprar</a>
         </div>
       </div>
+      {% if not tienda.banner_imagen %}
+        <div class="col-lg-5 d-none d-lg-flex align-items-center justify-content-center">
+          <div class="mm-banner-marca"><img src="{% static 'img/logo-simbolo.webp' %}" alt="" width="393" height="300"></div>
+        </div>
+      {% endif %}
     </div>
   </div>
 </section>
@@ -35,8 +41,8 @@
     {% for categoria in categorias %}
       <div class="col-6 col-md-4 col-lg-3">
         <a class="mm-categoria revelar" href="{{ categoria.get_absolute_url }}">
-          {% if categoria.imagen %}
-            <img src="{{ categoria.imagen.url }}" alt="" loading="lazy" decoding="async">
+          {% if categoria.url_portada %}
+            <img{% if categoria.usa_foto_de_producto %} class="mm-categoria-producto"{% endif %} src="{{ categoria.url_portada }}" alt="" loading="lazy" decoding="async">
           {% else %}
             <span class="mm-categoria-sin-foto"><i class="bi bi-box-seam"></i></span>
           {% endif %}

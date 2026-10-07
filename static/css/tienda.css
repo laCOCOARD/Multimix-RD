@@ -4,12 +4,14 @@
    ========================================================================== */
 
 :root {
-  --mm-primario: #0f4c81;
-  --mm-primario-oscuro: #0b3a63;
-  --mm-primario-suave: #e8f0f8;
-  --mm-acento: #ff7a1a;
-  --mm-acento-oscuro: #e56300;
-  --mm-oscuro: #0b2239;
+  /* Azul y verde del logo. El acento es un verde mas oscuro que el de la hoja para que el texto blanco se lea. */
+  --mm-primario: #0a5fb4;
+  --mm-primario-oscuro: #083b8a;
+  --mm-primario-suave: #e8f2fb;
+  --mm-acento: #24832b;
+  --mm-acento-oscuro: #196a21;
+  --mm-hoja: #6db523;
+  --mm-oscuro: #082a5c;
   --mm-texto: #1d2b3a;
   --mm-texto-suave: #5b6b7c;
   --mm-fondo: #f5f7fa;
@@ -20,16 +22,16 @@
   --mm-whatsapp: #25d366;
   --mm-whatsapp-oscuro: #1da851;
   --mm-radio: .9rem;
-  --mm-sombra: 0 1px 2px rgba(11, 34, 57, .06), 0 6px 18px rgba(11, 34, 57, .06);
-  --mm-sombra-alta: 0 10px 30px rgba(11, 34, 57, .14);
+  --mm-sombra: 0 1px 2px rgba(8, 42, 92, .06), 0 6px 18px rgba(8, 42, 92, .06);
+  --mm-sombra-alta: 0 10px 30px rgba(8, 42, 92, .14);
   --mm-transicion: .25s ease;
 
   --bs-primary: var(--mm-primario);
-  --bs-primary-rgb: 15, 76, 129;
+  --bs-primary-rgb: 10, 95, 180;
   --bs-link-color: var(--mm-primario);
-  --bs-link-color-rgb: 15, 76, 129;
+  --bs-link-color-rgb: 10, 95, 180;
   --bs-link-hover-color: var(--mm-primario-oscuro);
-  --bs-link-hover-color-rgb: 11, 58, 99;
+  --bs-link-hover-color-rgb: 8, 59, 138;
   --bs-body-color: var(--mm-texto);
   --bs-body-bg: var(--mm-fondo);
   --bs-border-radius: .6rem;
@@ -87,17 +89,18 @@ img { max-width: 100%; height: auto; }
 }
 .form-control:focus, .form-select:focus, .form-check-input:focus {
   border-color: var(--mm-primario);
-  box-shadow: 0 0 0 .2rem rgba(15, 76, 129, .18);
+  box-shadow: 0 0 0 .2rem rgba(10, 95, 180, .18);
 }
 .form-check-input:checked { background-color: var(--mm-primario); border-color: var(--mm-primario); }
 .page-link { color: var(--mm-primario); }
 .active > .page-link { background-color: var(--mm-primario); border-color: var(--mm-primario); }
 
 /* --- Cabecera ----------------------------------------------------------- */
-.mm-cabecera { background: var(--mm-superficie); border-bottom: 1px solid var(--mm-borde); box-shadow: 0 1px 8px rgba(11, 34, 57, .05); }
+.mm-cabecera { background: var(--mm-superficie); border-bottom: 1px solid var(--mm-borde); box-shadow: 0 1px 8px rgba(8, 42, 92, .05); }
+.mm-logo { display: inline-flex; align-items: center; gap: .55rem; }
 .mm-logo:hover { text-decoration: none; }
+.mm-logo-simbolo { height: 2.75rem; width: auto; }
 .mm-logo-texto { font-size: 1.45rem; font-weight: 800; letter-spacing: -.03em; color: var(--mm-primario); }
-.mm-logo-texto::after { content: ""; display: inline-block; width: .45rem; height: .45rem; margin-left: .2rem; border-radius: 50%; background: var(--mm-acento); }
 .mm-cabecera .nav-link { font-weight: 600; color: var(--mm-texto); }
 .mm-cabecera .nav-link:hover { color: var(--mm-primario); text-decoration: none; }
 .mm-buscador { gap: .4rem; min-width: min(100%, 17rem); }
@@ -112,14 +115,17 @@ img { max-width: 100%; height: auto; }
 .mm-banner {
   padding: clamp(3rem, 9vw, 6.5rem) 0;
   color: #fff;
-  background: radial-gradient(circle at 85% 20%, rgba(255, 122, 26, .35), transparent 45%),
-              linear-gradient(120deg, var(--mm-oscuro), var(--mm-primario));
+  background: radial-gradient(circle at 88% 15%, rgba(109, 181, 35, .42), transparent 42%),
+              linear-gradient(120deg, var(--mm-oscuro), var(--mm-primario) 70%, #0b80cd);
   background-size: cover;
   background-position: center;
 }
 .mm-banner-titulo { color: #fff; font-size: clamp(2rem, 5.5vw, 3.4rem); font-weight: 800; line-height: 1.1; animation: mm-aparecer .7s ease both; }
 .mm-banner-subtitulo { font-size: clamp(1rem, 2.2vw, 1.25rem); opacity: .92; margin: 1rem 0 1.75rem; max-width: 34rem; animation: mm-aparecer .7s .1s ease both; }
 @keyframes mm-aparecer { from { opacity: 0; transform: translateY(14px); } }
+/* El simbolo de la marca sobre un disco blanco, solo en pantallas anchas y sin imagen de banner. */
+.mm-banner-marca { display: grid; place-items: center; width: min(17rem, 100%); aspect-ratio: 1; border-radius: 50%; background: #fff; box-shadow: 0 18px 50px rgba(4, 22, 52, .35); animation: mm-aparecer .7s .15s ease both; }
+.mm-banner-marca img { width: 74%; height: auto; }
 
 .mm-ventajas { margin-top: -1.75rem; position: relative; }
 .mm-ventaja { display: flex; align-items: center; gap: .7rem; height: 100%; padding: .9rem 1rem; background: var(--mm-superficie); border-radius: var(--mm-radio); box-shadow: var(--mm-sombra); font-weight: 600; font-size: .92rem; }
@@ -129,14 +135,16 @@ img { max-width: 100%; height: auto; }
 .mm-seccion { padding-top: 3rem; }
 .mm-seccion-cabecera { display: flex; justify-content: space-between; align-items: baseline; gap: 1rem; margin-bottom: 1.1rem; }
 .mm-seccion-cabecera h2 { font-size: 1.45rem; margin: 0; }
-.mm-seccion-cabecera h2 i { color: var(--mm-acento); }
+.mm-seccion-cabecera h2 i { color: var(--mm-hoja); }
 .mm-seccion-cabecera a { font-weight: 600; white-space: nowrap; }
 
 .mm-categoria { position: relative; display: block; aspect-ratio: 4 / 3; overflow: hidden; border-radius: var(--mm-radio); background: var(--mm-primario-suave); box-shadow: var(--mm-sombra); }
 .mm-categoria img { width: 100%; height: 100%; object-fit: cover; transition: transform .5s ease; }
 .mm-categoria:hover img { transform: scale(1.07); }
+/* Foto de producto (fondo blanco) usada como imagen de la categoria: se muestra entera. */
+.mm-categoria img.mm-categoria-producto { object-fit: contain; padding: .5rem .5rem 2.4rem; background: var(--mm-superficie); }
 .mm-categoria-sin-foto { display: grid; place-items: center; height: 100%; font-size: 2.5rem; color: var(--mm-primario); }
-.mm-categoria-nombre { position: absolute; inset: auto 0 0 0; padding: 1.6rem .9rem .7rem; color: #fff; font-weight: 700; background: linear-gradient(transparent, rgba(11, 34, 57, .85)); }
+.mm-categoria-nombre { position: absolute; inset: auto 0 0 0; padding: 1.6rem .9rem .7rem; color: #fff; font-weight: 700; background: linear-gradient(transparent, rgba(8, 42, 92, .88)); }
 
 /* --- Tarjeta de producto ------------------------------------------------ */
 .mm-tarjeta { display: flex; flex-direction: column; background: var(--mm-superficie); border: 1px solid var(--mm-borde); border-radius: var(--mm-radio); overflow: hidden; transition: transform var(--mm-transicion), box-shadow var(--mm-transicion); }
@@ -149,7 +157,7 @@ img { max-width: 100%; height: auto; }
 .mm-etiquetas .badge, .mm-precio .badge { font-size: .7rem; font-weight: 700; padding: .35em .6em; }
 .mm-etiqueta-oferta { background: var(--mm-peligro); }
 .mm-etiqueta-nuevo { background: var(--mm-exito); }
-.mm-etiqueta-destacado { background: var(--mm-acento); }
+.mm-etiqueta-destacado { background: var(--mm-primario); }
 .mm-etiqueta-agotado { background: #6b7785; }
 .mm-tarjeta-cuerpo { display: flex; flex-direction: column; flex: 1; padding: .85rem; }
 .mm-tarjeta-categoria { margin: 0 0 .15rem; font-size: .72rem; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; color: var(--mm-texto-suave); }
@@ -219,7 +227,7 @@ img { max-width: 100%; height: auto; }
 .mm-opcion small { display: block; font-weight: 400; color: var(--mm-texto-suave); }
 .mm-opcion:hover { border-color: #b9c9d9; }
 .btn-check:checked + .mm-opcion { border-color: var(--mm-primario); background: var(--mm-primario-suave); }
-.btn-check:focus-visible + .mm-opcion { box-shadow: 0 0 0 .2rem rgba(15, 76, 129, .25); }
+.btn-check:focus-visible + .mm-opcion { box-shadow: 0 0 0 .2rem rgba(10, 95, 180, .25); }
 .mm-cuenta { padding: .9rem 1rem; border: 1px solid var(--mm-borde); border-radius: .7rem; background: var(--mm-fondo); }
 .mm-cuenta-numero { font-size: 1.15rem; font-weight: 800; letter-spacing: .03em; color: var(--mm-oscuro); user-select: all; }
 .mm-lista li { margin-bottom: .5rem; }

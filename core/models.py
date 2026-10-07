@@ -32,10 +32,10 @@ class ConfiguracionTienda(models.Model):
     instagram = models.URLField(blank=True)
     tiktok = models.URLField(blank=True)
 
-    banner_titulo = models.CharField('título del banner', max_length=120, default='Todo lo que buscas, en un solo lugar')
+    banner_titulo = models.CharField('título del banner', max_length=120, default='Tu tienda de bienestar')
     banner_subtitulo = models.CharField(
         'subtítulo del banner', max_length=220, blank=True,
-        default='Productos de todas las categorías con entrega en todo el país.',
+        default='Salud, belleza y equilibrio: vitaminas, cuidado personal y más, con entrega en todo el país.',
     )
     banner_texto_boton = models.CharField('texto del botón del banner', max_length=40, default='Ver catálogo')
     banner_imagen = models.ImageField('imagen del banner', upload_to='tienda/', blank=True, validators=[validar_imagen])

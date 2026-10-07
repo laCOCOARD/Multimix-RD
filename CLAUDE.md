@@ -72,6 +72,12 @@ Al cerrar cada modulo: check, makemigrations, migrate, test y commit.
   enviado o entregado no devuelve stock. El numero no se reutiliza y el pedido sale de las ventas del panel.
 - Importacion Excel: `catalogo/resources.py`, identifica por `sku`, crea categorias que no existan y valida
   con `full_clean`. No importa fotos ni `stock_reservado`.
+- Marca: azul y verde del logo en las variables de `tienda.css` y `panel.css`; recursos en `static/img/`. El
+  encabezado muestra el simbolo estatico con `tienda.nombre` salvo que haya un logo subido en Configuracion.
+  El acento es un verde mas oscuro que el de la hoja (`--mm-hoja`, solo decorativo) para que el texto blanco se lea.
+- Portada: `catalogo.services.categorias_de_portada` da a cada categoria sin imagen la foto de uno de sus productos.
+- `core/migrations/0002` quita de la configuracion el logo o banner cuyo archivo ya no existe en el
+  almacenamiento (se perdieron los que se subieron cuando los archivos iban al disco de Render).
 - Fotos por SKU: `catalogo.services.asignar_foto_por_sku` usa el nombre del archivo como SKU y deja la foto
   como principal. La pagina del panel las envia una por una con `fetch` (cada foto se convierte y se sube al
   almacenamiento; en una sola peticion se agotaria el tiempo de Gunicorn). Sin JavaScript funciona con un POST normal.

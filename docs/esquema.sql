@@ -18,6 +18,12 @@ CREATE TABLE "core_cuentabancaria" ("id" integer NOT NULL PRIMARY KEY AUTOINCREM
 COMMIT;
 
 -- ============================================================
+-- core 0002
+-- ============================================================
+-- No cambia el esquema: solo los textos por defecto del banner y una correccion de datos
+-- (quita de la configuracion el logo o banner cuyo archivo ya no existe).
+
+-- ============================================================
 -- catalogo 0001
 -- ============================================================
 BEGIN;
