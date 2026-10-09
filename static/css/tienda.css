@@ -151,17 +151,32 @@ img { max-width: 100%; height: auto; }
 .mm-categoria-sin-foto { display: grid; place-items: center; height: 100%; font-size: 2.5rem; color: var(--mm-primario); }
 .mm-categoria-nombre { position: absolute; inset: auto 0 0 0; padding: 1.6rem .9rem .7rem; color: #fff; font-weight: 700; background: linear-gradient(transparent, rgba(8, 42, 92, .88)); }
 
-/* --- Directorio de tiendas ---------------------------------------------- */
-.mm-tienda { display: flex; flex-direction: column; height: 100%; background: var(--mm-superficie); border: 1px solid var(--mm-borde); border-radius: var(--mm-radio); overflow: hidden; color: var(--mm-texto); transition: transform var(--mm-transicion), box-shadow var(--mm-transicion); }
+/* --- Portada del sitio: directorio de tiendas --------------------------- */
+/* Clara y sin banner, para que no se confunda con el inicio de una tienda (que si lo lleva). */
+.mm-directorio { padding: clamp(2.25rem, 6vw, 4rem) 0 clamp(2rem, 5vw, 3rem); text-align: center; background: linear-gradient(180deg, var(--mm-superficie), var(--mm-primario-suave)); border-bottom: 1px solid var(--mm-borde); }
+.mm-directorio-titulo { font-size: clamp(1.7rem, 4.5vw, 2.6rem); font-weight: 800; line-height: 1.15; margin: 0 auto .6rem; max-width: 22ch; }
+.mm-directorio-texto { margin: 0 auto 1.5rem; max-width: 36rem; font-size: clamp(1rem, 2vw, 1.12rem); color: var(--mm-texto-suave); }
+.mm-directorio-buscador { display: flex; align-items: center; gap: .5rem; max-width: 36rem; margin: 0 auto; padding: .4rem .4rem .4rem 1.1rem; background: var(--mm-superficie); border: 1px solid var(--mm-borde); border-radius: 999px; box-shadow: var(--mm-sombra); }
+.mm-directorio-buscador:focus-within { border-color: var(--mm-primario); box-shadow: 0 0 0 .2rem rgba(10, 95, 180, .18); }
+.mm-directorio-buscador > i { color: var(--mm-texto-suave); }
+.mm-directorio-buscador input { flex: 1; min-width: 0; border: 0; outline: 0; background: transparent; font-size: 1rem; color: var(--mm-texto); }
+.mm-directorio-buscador .btn { border-radius: 999px; padding-inline: 1.3rem; }
+.mm-directorio-tiendas { padding-top: 2.5rem; }
+.mm-directorio-total { display: inline-block; margin-left: .35rem; padding: .1em .6em; border-radius: 999px; background: var(--mm-primario-suave); color: var(--mm-primario); font-size: .85rem; font-weight: 700; vertical-align: middle; }
+
+.mm-tienda { display: flex; flex-direction: column; height: 100%; background: var(--mm-superficie); border: 1px solid var(--mm-borde); border-radius: 1.1rem; overflow: hidden; color: var(--mm-texto); box-shadow: var(--mm-sombra); transition: transform var(--mm-transicion), box-shadow var(--mm-transicion); }
 .mm-tienda:hover { transform: translateY(-4px); box-shadow: var(--mm-sombra-alta); color: var(--mm-texto); text-decoration: none; }
-.mm-tienda-portada { display: grid; place-items: center; aspect-ratio: 16 / 7; background: linear-gradient(120deg, var(--mm-oscuro), var(--mm-primario) 75%, #0b80cd); background-size: cover; background-position: center; }
-.mm-tienda-logo { display: grid; place-items: center; width: 4.6rem; height: 4.6rem; border-radius: 50%; overflow: hidden; background: #fff; box-shadow: 0 6px 18px rgba(4, 22, 52, .3); font-size: 1.9rem; font-weight: 800; color: var(--mm-primario); }
-.mm-tienda-logo img { width: 100%; height: 100%; object-fit: contain; padding: .35rem; }
-.mm-tienda-cuerpo { display: flex; flex-direction: column; flex: 1; gap: .35rem; padding: 1rem; }
-.mm-tienda-nombre { font-size: 1.15rem; font-weight: 800; color: var(--mm-oscuro); }
-.mm-tienda-descripcion { font-size: .9rem; color: var(--mm-texto-suave); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-.mm-tienda-pie { display: flex; justify-content: space-between; align-items: center; gap: .75rem; margin-top: auto; padding-top: .5rem; font-size: .85rem; color: var(--mm-texto-suave); }
-.mm-tienda-pie strong { color: var(--mm-primario); white-space: nowrap; }
+/* La foto del banner de la tienda; si no tiene, una franja con los colores del sitio. */
+.mm-tienda-portada { display: block; aspect-ratio: 16 / 6; background: linear-gradient(120deg, var(--mm-primario-suave), #cfe6f8 55%, #dff1cf); background-size: cover; background-position: center; }
+.mm-tienda-cuerpo { display: flex; flex-direction: column; flex: 1; gap: .3rem; padding: 0 1.25rem 1.25rem; }
+/* El logo va a caballo entre la foto y el cuerpo, como la foto de un perfil. */
+.mm-tienda-logo { display: grid; place-items: center; width: 5rem; height: 5rem; margin-top: -2.5rem; margin-bottom: .35rem; border-radius: 50%; overflow: hidden; background: var(--mm-superficie); border: 4px solid var(--mm-superficie); box-shadow: 0 4px 14px rgba(8, 42, 92, .18); font-size: 2rem; font-weight: 800; color: var(--mm-primario); }
+.mm-tienda-logo img { width: 100%; height: 100%; object-fit: contain; }
+.mm-tienda-nombre { font-size: 1.25rem; font-weight: 800; color: var(--mm-oscuro); }
+.mm-tienda-descripcion { font-size: .93rem; color: var(--mm-texto-suave); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.mm-tienda-pie { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: .5rem .75rem; margin-top: auto; padding-top: .9rem; font-size: .87rem; color: var(--mm-texto-suave); }
+.mm-tienda-entrar { padding: .45rem 1rem; border-radius: 999px; background: var(--mm-primario); color: #fff; font-weight: 700; white-space: nowrap; transition: background-color var(--mm-transicion); }
+.mm-tienda:hover .mm-tienda-entrar { background: var(--mm-primario-oscuro); }
 
 /* --- Tarjeta de producto ------------------------------------------------ */
 .mm-tarjeta { display: flex; flex-direction: column; background: var(--mm-superficie); border: 1px solid var(--mm-borde); border-radius: var(--mm-radio); overflow: hidden; transition: transform var(--mm-transicion), box-shadow var(--mm-transicion); }

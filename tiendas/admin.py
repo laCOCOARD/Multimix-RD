@@ -4,13 +4,15 @@ from django.shortcuts import redirect
 from django.urls import reverse
 from django.utils.html import format_html
 
+from core.admin_avisos import AvisaImagenesSinGuardar
+
 from .models import Tienda
 from .panel import tiendas_del_panel
 from .services import dar_acceso_al_panel, ve_todas
 
 
 @admin.register(Tienda)
-class TiendaAdmin(admin.ModelAdmin):
+class TiendaAdmin(AvisaImagenesSinGuardar, admin.ModelAdmin):
     """El administrador principal crea, activa y asigna las tiendas; cada vendedor edita los datos de la suya."""
 
     list_display = ['nombre', 'enlace_publico', 'prefijo', 'productos_a_la_venta', 'vendedores', 'activa', 'orden']

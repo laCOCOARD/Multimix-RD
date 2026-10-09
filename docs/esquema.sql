@@ -542,3 +542,81 @@ DROP TABLE "promociones_cupon";
 ALTER TABLE "new__promociones_cupon" RENAME TO "promociones_cupon";
 CREATE INDEX "promociones_cupon_tienda_id_8162924a" ON "promociones_cupon" ("tienda_id");
 COMMIT;
+
+-- ============================================================
+-- core 0006
+-- ============================================================
+BEGIN;
+--
+-- Rename field banner_subtitulo on configuraciontienda to descripcion
+--
+ALTER TABLE "core_configuraciontienda" RENAME COLUMN "banner_subtitulo" TO "descripcion";
+--
+-- Remove field banner_titulo from configuraciontienda
+--
+ALTER TABLE "core_configuraciontienda" DROP COLUMN "banner_titulo";
+--
+-- Remove field banner_texto_boton from configuraciontienda
+--
+ALTER TABLE "core_configuraciontienda" DROP COLUMN "banner_texto_boton";
+--
+-- Remove field banner_imagen from configuraciontienda
+--
+ALTER TABLE "core_configuraciontienda" DROP COLUMN "banner_imagen";
+COMMIT;
+
+-- ============================================================
+-- core 0007
+-- ============================================================
+BEGIN;
+--
+-- Alter field descripcion on configuraciontienda
+--
+CREATE TABLE "new__core_configuraciontienda" ("id" integer NOT NULL PRIMARY KEY AUTOINCREMENT, "descripcion" varchar(220) NOT NULL, "nombre" varchar(80) NOT NULL, "logo" varchar(100) NOT NULL, "correo" varchar(254) NOT NULL, "telefono" varchar(20) NOT NULL, "horario" varchar(150) NOT NULL, "whatsapp" varchar(15) NOT NULL, "facebook" varchar(200) NOT NULL, "instagram" varchar(200) NOT NULL, "tiktok" varchar(200) NOT NULL, "dias_producto_nuevo" smallint unsigned NOT NULL CHECK ("dias_producto_nuevo" >= 0), "umbral_stock_bajo" smallint unsigned NOT NULL CHECK ("umbral_stock_bajo" >= 0), "horas_vencimiento_pedido" smallint unsigned NOT NULL CHECK ("horas_vencimiento_pedido" >= 0), "mostrar_cantidad_exacta" bool NOT NULL);
+INSERT INTO "new__core_configuraciontienda" ("id", "nombre", "logo", "correo", "telefono", "horario", "whatsapp", "facebook", "instagram", "tiktok", "dias_producto_nuevo", "umbral_stock_bajo", "horas_vencimiento_pedido", "mostrar_cantidad_exacta", "descripcion") SELECT "id", "nombre", "logo", "correo", "telefono", "horario", "whatsapp", "facebook", "instagram", "tiktok", "dias_producto_nuevo", "umbral_stock_bajo", "horas_vencimiento_pedido", "mostrar_cantidad_exacta", "descripcion" FROM "core_configuraciontienda";
+DROP TABLE "core_configuraciontienda";
+ALTER TABLE "new__core_configuraciontienda" RENAME TO "core_configuraciontienda";
+--
+-- Alter field logo on configuraciontienda
+--
+-- (no-op)
+--
+-- Alter field whatsapp on configuraciontienda
+--
+CREATE TABLE "new__core_configuraciontienda" ("id" integer NOT NULL PRIMARY KEY AUTOINCREMENT, "nombre" varchar(80) NOT NULL, "logo" varchar(100) NOT NULL, "correo" varchar(254) NOT NULL, "telefono" varchar(20) NOT NULL, "horario" varchar(150) NOT NULL, "facebook" varchar(200) NOT NULL, "instagram" varchar(200) NOT NULL, "tiktok" varchar(200) NOT NULL, "dias_producto_nuevo" smallint unsigned NOT NULL CHECK ("dias_producto_nuevo" >= 0), "umbral_stock_bajo" smallint unsigned NOT NULL CHECK ("umbral_stock_bajo" >= 0), "horas_vencimiento_pedido" smallint unsigned NOT NULL CHECK ("horas_vencimiento_pedido" >= 0), "mostrar_cantidad_exacta" bool NOT NULL, "descripcion" varchar(220) NOT NULL, "whatsapp" varchar(20) NOT NULL);
+INSERT INTO "new__core_configuraciontienda" ("id", "nombre", "logo", "correo", "telefono", "horario", "facebook", "instagram", "tiktok", "dias_producto_nuevo", "umbral_stock_bajo", "horas_vencimiento_pedido", "mostrar_cantidad_exacta", "descripcion", "whatsapp") SELECT "id", "nombre", "logo", "correo", "telefono", "horario", "facebook", "instagram", "tiktok", "dias_producto_nuevo", "umbral_stock_bajo", "horas_vencimiento_pedido", "mostrar_cantidad_exacta", "descripcion", "whatsapp" FROM "core_configuraciontienda";
+DROP TABLE "core_configuraciontienda";
+ALTER TABLE "new__core_configuraciontienda" RENAME TO "core_configuraciontienda";
+COMMIT;
+
+-- ============================================================
+-- core 0008
+-- ============================================================
+-- No cambia el esquema: reemplaza el lema de la tienda original por la descripcion del sitio y pone el
+-- codigo de pais a los WhatsApp guardados con 10 digitos.
+
+-- ============================================================
+-- tiendas 0003
+-- ============================================================
+BEGIN;
+--
+-- Alter field banner_imagen on tienda
+--
+-- (no-op)
+--
+-- Alter field logo on tienda
+--
+-- (no-op)
+--
+-- Alter field whatsapp on tienda
+--
+CREATE TABLE "new__tiendas_tienda" ("id" integer NOT NULL PRIMARY KEY AUTOINCREMENT, "nombre" varchar(80) NOT NULL UNIQUE, "slug" varchar(60) NOT NULL UNIQUE, "prefijo" varchar(5) NOT NULL UNIQUE, "activa" bool NOT NULL, "orden" smallint unsigned NOT NULL CHECK ("orden" >= 0), "logo" varchar(100) NOT NULL, "banner_titulo" varchar(120) NOT NULL, "banner_subtitulo" varchar(220) NOT NULL, "banner_texto_boton" varchar(40) NOT NULL, "banner_imagen" varchar(100) NOT NULL, "correo" varchar(254) NOT NULL, "telefono" varchar(20) NOT NULL, "horario" varchar(150) NOT NULL, "direccion_tienda" varchar(255) NOT NULL, "facebook" varchar(200) NOT NULL, "instagram" varchar(200) NOT NULL, "tiktok" varchar(200) NOT NULL, "permitir_contra_entrega" bool NOT NULL, "creada" datetime NOT NULL, "whatsapp" varchar(20) NOT NULL);
+INSERT INTO "new__tiendas_tienda" ("id", "nombre", "slug", "prefijo", "activa", "orden", "logo", "banner_titulo", "banner_subtitulo", "banner_texto_boton", "banner_imagen", "correo", "telefono", "horario", "direccion_tienda", "facebook", "instagram", "tiktok", "permitir_contra_entrega", "creada", "whatsapp") SELECT "id", "nombre", "slug", "prefijo", "activa", "orden", "logo", "banner_titulo", "banner_subtitulo", "banner_texto_boton", "banner_imagen", "correo", "telefono", "horario", "direccion_tienda", "facebook", "instagram", "tiktok", "permitir_contra_entrega", "creada", "whatsapp" FROM "tiendas_tienda";
+DROP TABLE "tiendas_tienda";
+ALTER TABLE "new__tiendas_tienda" RENAME TO "tiendas_tienda";
+COMMIT;
+
+-- ============================================================
+-- tiendas 0004
+-- ============================================================
+-- No cambia el esquema: pone el codigo de pais a los WhatsApp guardados con 10 digitos.

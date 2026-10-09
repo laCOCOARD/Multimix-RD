@@ -26,6 +26,15 @@ class TiendaTests(TestCase):
         with self.assertRaises(ValidationError):
             Tienda(nombre='Otra', prefijo='CJU').full_clean()
 
+    def test_acepta_el_prefijo_en_minusculas_y_el_whatsapp_como_se_escribe(self):
+        tienda = Tienda(nombre='MaxFit Proteínas', prefijo=' max ', whatsapp='(829) 555-1234')
+        tienda.full_clean()
+        tienda.save()
+        self.assertEqual((tienda.prefijo, tienda.whatsapp), ('MAX', '18295551234'))
+        with self.assertRaises(ValidationError):
+            Tienda(nombre='Otra', whatsapp='555-1234').full_clean()
+        self.assertEqual(tienda.descripcion, tienda.banner_subtitulo)
+
     def test_guardar_de_nuevo_no_cambia_la_direccion_ni_el_prefijo(self):
         tienda = Tienda.objects.create(nombre='Fitnes RD')
         tienda.nombre = 'Fitness República'

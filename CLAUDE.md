@@ -58,11 +58,19 @@ Al cerrar cada modulo: check, makemigrations, migrate, test y commit.
 - `django-import-export[xlsx]`: el extra instala openpyxl, necesario para Excel.
 - SQLite usa `transaction_mode=IMMEDIATE` para serializar escrituras (alli `select_for_update` no hace nada).
 - ConfiguracionTienda: `save()` fuerza `pk=1`, `delete()` no hace nada, `obtener()` la entrega con cache.
-  Guarda lo del sitio (nombre, banner de la portada, dias de "nuevo", umbral de stock, horas de vencimiento);
-  la marca, los contactos, la direccion para recoger y el contra entrega son de cada `Tienda`.
-- `Tienda` repite los nombres de campo de ConfiguracionTienda (`nombre`, `logo`, `whatsapp`, `banner_*`...).
-  En las plantillas `tienda` es la subtienda actual (o nada en las paginas del sitio), `plataforma` la
-  configuracion y `marca` la que firme la pagina (`tienda or plataforma`).
+  Guarda lo del sitio (nombre, logo, descripcion, contactos, dias de "nuevo", umbral de stock, horas de
+  vencimiento); el banner, la direccion para recoger y el contra entrega son de cada `Tienda`.
+- `Tienda` repite los nombres de campo de contacto de ConfiguracionTienda (`nombre`, `logo`, `whatsapp`,
+  redes...) y expone `descripcion` (su `banner_subtitulo`). En las plantillas `tienda` es la subtienda actual
+  (o nada en las paginas del sitio), `plataforma` la configuracion y `marca` la que firme la pagina
+  (`tienda or plataforma`).
+- La portada del sitio (directorio) no lleva banner ni boton de catalogo, a pedido del dueño: se veia igual
+  que el inicio de una tienda. El banner (`mm-banner`) es solo de las tiendas; la portada usa `mm-directorio`.
+- WhatsApp siempre con codigo de pais: `core.telefonos.normalizar_whatsapp` antepone el 1 a los numeros
+  dominicanos de 10 digitos. Se aplica al validar y guardar Tienda y ConfiguracionTienda y, por si acaso, al
+  armar cada enlace (`construir_enlace`). Sin el 1, wa.me abre un numero de otro pais.
+- Los ModelAdmin con imagenes heredan `core.admin_avisos.AvisaImagenesSinGuardar`: si el formulario vuelve
+  con errores, el navegador olvida los archivos elegidos y hay que avisarlo.
 - Rutas de tienda bajo `/tienda/<tienda_slug>/` (`tiendas.decoradores.RUTA_DE_TIENDA`). `pedidos` y `core`
   mezclan rutas de tienda y del sitio, por eso declaran las suyas completas y se incluyen en la raiz.
   Las paginas por token (confirmacion, factura) ponen `request.tienda = pedido.tienda`.

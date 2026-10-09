@@ -72,6 +72,11 @@ class MensajeWhatsAppTests(TestCase):
             self.assertNotIn(caracter, codificado)
         self.assertEqual(parse_qs(urlparse(enlace).query)['text'], ['Hola & adiós\n¿50% = RD$ 1,250.00?'])
 
+    def test_enlace_agrega_el_codigo_de_pais_que_falte(self):
+        # Un numero dominicano guardado con 10 digitos abriria el chat de otro pais.
+        self.assertTrue(construir_enlace('8295550000', 'Hola').startswith('https://wa.me/18295550000?text='))
+        self.assertTrue(construir_enlace('18295550000', 'Hola').startswith('https://wa.me/18295550000?text='))
+
     def test_enlace_del_pedido_lleva_el_mensaje_completo(self):
         pedido = crear_pedido(carrito_con((self.taza, 2)), datos_pedido())
         enlace = enlace_del_pedido(pedido, '18095550000')

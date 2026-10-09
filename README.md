@@ -5,7 +5,8 @@ Sitio de tiendas en línea hecho con Django 5.2, con precios en pesos dominicano
 pedidos. El cliente entra a una tienda, arma su carrito, confirma el pedido y lo envía por WhatsApp a
 esa tienda; el pago (transferencia o efectivo) lo recibe y lo confirma el vendedor desde su panel.
 
-- **Sitio:** portada con el directorio de tiendas y buscador de productos de todas las tiendas.
+- **Sitio:** portada con el directorio de tiendas (sin banner, para que no se confunda con una tienda) y
+  buscador de productos de todas las tiendas.
 - **Cada tienda:** inicio con ofertas, destacados, nuevos y más vendidos; catálogo con búsqueda y filtros;
   carrito propio; checkout con totales calculados en el servidor; confirmación con botón de WhatsApp.
 - **Panel:** resumen de ventas y stock, productos (con importación desde Excel), pedidos, clientes,
@@ -203,6 +204,14 @@ Para abrir una tienda nueva (solo el administrador principal):
 3. El vendedor completa su tienda desde el panel: logo, banner, WhatsApp, dirección para recoger, redes y
    si acepta contra entrega; y carga sus productos, zonas de envío, cuentas bancarias y cupones.
 
+Al llenar el formulario de una tienda:
+
+- **Logo e imagen del banner:** JPG, PNG o WebP de hasta 5 MB. Si al guardar aparece algún error, el
+  navegador olvida las imágenes elegidas: hay que corregir el error y **volver a elegirlas** (el panel lo
+  avisa arriba). También se pueden subir después, editando la tienda.
+- **WhatsApp:** se puede escribir como `829-555-1234`; a los números dominicanos se les agrega solo el `1`
+  del código de país, que WhatsApp necesita para abrir el chat correcto.
+
 - El enlace de la tienda es `/tienda/<dirección-web>/`. El prefijo (`FIT`) inicia sus números de pedido
   y no se puede cambiar después.
 - **Activa** apagada oculta la tienda y sus productos del sitio sin borrar nada.
@@ -216,9 +225,10 @@ Para abrir una tienda nueva (solo el administrador principal):
 o agotados, últimos pedidos y los 5 más vendidos. El vendedor ve los de su tienda; el administrador
 principal ve el total del sitio y las ventas del mes por tienda.
 
-**Configuración general** (administrador principal). Nombre del sitio, logo, contacto y banner de la
-portada, días en que un producto cuenta como nuevo, umbral de stock bajo, horas para vencer pedidos
-pendientes y si se muestra la cantidad exacta. Solo existe una configuración: no se puede crear otra ni
+**Configuración general** (administrador principal). Nombre del sitio, logo, descripción (sale al pie de
+la portada y en los buscadores), contacto, días en que un producto cuenta como nuevo, umbral de stock
+bajo, horas para vencer pedidos pendientes y si se muestra la cantidad exacta. La portada del sitio no
+tiene banner: el banner es de cada tienda. Solo existe una configuración: no se puede crear otra ni
 borrarla. Los cambios pueden tardar hasta un minuto en verse en el sitio.
 
 **Productos.**
@@ -312,7 +322,9 @@ panel) y la migración de una sola tienda a subtiendas. Usan una base temporal y
 - Recursos de la marca en `static/img/`: `logo-simbolo.webp` (encabezado y portada), `favicon.png`,
   `apple-touch-icon.png` y `compartir.jpg` (la imagen que aparece al compartir un enlace de la tienda).
 - Si en Configuración general se sube un logo, ese reemplaza al símbolo con el nombre en el encabezado del
-  sitio. Si se sube una imagen de banner, reemplaza el fondo de la portada.
+  sitio.
+- La portada del sitio es clara y sin banner: título, buscador y las tarjetas de las tiendas. Cada tarjeta
+  muestra la imagen del banner de la tienda arriba y su logo en un círculo (o su inicial si no tiene).
 - Cada tienda muestra su propio logo (o su nombre) y su banner; sobre su encabezado hay una franja para
   volver a "Todas las tiendas".
 - En el inicio de una tienda, la categoría que no tiene imagen muestra la foto de uno de sus productos.

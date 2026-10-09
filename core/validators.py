@@ -6,9 +6,10 @@ from django.core.validators import RegexValidator
 
 EXTENSIONES_IMAGEN = ('.jpg', '.jpeg', '.png', '.webp')
 
+# Se valida ya normalizado (core.telefonos.normalizar_whatsapp): solo digitos, con codigo de pais.
 validar_whatsapp = RegexValidator(
     r'^\d{10,15}$',
-    'Escribe solo dígitos, con el código de país. Ejemplo: 18095551234',
+    'Escribe el número completo, con su código de área. Ejemplo: 829-555-1234',
 )
 
 

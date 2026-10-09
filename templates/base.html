@@ -5,12 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   {# `tienda` es la subtienda en la que esta el visitante (o nada en las paginas del sitio); `marca` es quien firma la pagina. #}
   <title>{% block titulo %}{{ marca.nombre }}{% endblock %}</title>
-  <meta name="description" content="{% block descripcion %}{{ marca.banner_subtitulo|default:'Tiendas en línea con productos de todas las categorías.' }}{% endblock %}">
+  <meta name="description" content="{% block descripcion %}{{ marca.descripcion|default:'Tiendas en línea con productos de todas las categorías.' }}{% endblock %}">
   {% block meta %}
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="{{ marca.nombre }}">
   <meta property="og:title" content="{{ marca.nombre }}">
-  <meta property="og:description" content="{{ marca.banner_subtitulo }}">
+  <meta property="og:description" content="{{ marca.descripcion }}">
   <meta property="og:url" content="{{ request.build_absolute_uri }}">
   <meta property="og:locale" content="es_DO">
   <meta property="og:image" content="{{ request.scheme }}://{{ request.get_host }}{% static 'img/compartir.jpg' %}">
@@ -89,6 +89,7 @@
               <li class="nav-item"><a class="nav-link" href="{% url 'tiendas:buscar' %}?oferta=on">Ofertas</a></li>
             {% endif %}
           </ul>
+          {% block buscador_cabecera %}
           <form class="d-flex mm-buscador" role="search" method="get"
                 action="{% if tienda %}{% url 'catalogo:lista' tienda.slug %}{% else %}{% url 'tiendas:buscar' %}{% endif %}">
             <input class="form-control" type="search" name="q" maxlength="80" value="{{ filtros.q|default:'' }}"
@@ -96,6 +97,7 @@
                    aria-label="{% if tienda %}Buscar en {{ tienda.nombre }}{% else %}Buscar en todas las tiendas{% endif %}">
             <button class="btn btn-primary" type="submit" aria-label="Buscar"><i class="bi bi-search"></i></button>
           </form>
+          {% endblock %}
         </div>
       </div>
     </nav>
@@ -120,7 +122,7 @@
       <div class="row g-4">
         <div class="col-md-4">
           <p class="mm-logo-texto mm-logo-pie mb-2">{{ marca.nombre }}</p>
-          <p class="mb-0 small">{{ marca.banner_subtitulo }}</p>
+          <p class="mb-0 small">{{ marca.descripcion }}</p>
         </div>
         <div class="col-6 col-md-2">
           {% if tienda %}

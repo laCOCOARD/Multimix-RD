@@ -4,17 +4,17 @@ from django.urls import reverse
 
 from tiendas.panel import AdminDeTienda
 
+from .admin_avisos import AvisaImagenesSinGuardar
 from .models import ConfiguracionTienda, CuentaBancaria
 
 
 @admin.register(ConfiguracionTienda)
-class ConfiguracionTiendaAdmin(admin.ModelAdmin):
-    """Ajustes del sitio. La marca y los contactos de cada vendedor se editan en Tiendas."""
+class ConfiguracionTiendaAdmin(AvisaImagenesSinGuardar, admin.ModelAdmin):
+    """Ajustes del sitio. La marca, el banner y los contactos de cada vendedor se editan en Tiendas."""
 
     fieldsets = [
-        ('Sitio', {'fields': ['nombre', 'logo', 'correo', 'telefono', 'horario']}),
+        ('Sitio', {'fields': ['nombre', 'logo', 'descripcion', 'correo', 'telefono', 'horario']}),
         ('WhatsApp y redes', {'fields': ['whatsapp', 'facebook', 'instagram', 'tiktok']}),
-        ('Banner de la portada', {'fields': ['banner_titulo', 'banner_subtitulo', 'banner_texto_boton', 'banner_imagen']}),
         ('Catálogo y stock (todas las tiendas)', {
             'fields': ['dias_producto_nuevo', 'umbral_stock_bajo', 'mostrar_cantidad_exacta'],
         }),

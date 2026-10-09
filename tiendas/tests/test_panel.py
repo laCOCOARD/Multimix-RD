@@ -395,6 +395,31 @@ class TiendaAdminTests(PanelDeVendedores):
         self.assertEqual(self.lista('catalogo_producto'), [])
         self.assertEqual(self.lista('pedidos_pedido'), [])
 
+    def test_avisa_que_las_imagenes_no_se_guardaron_si_el_formulario_tiene_errores(self):
+        # El navegador olvida los archivos elegidos cuando el formulario vuelve con errores.
+        self.client.force_login(self.admin)
+        crear = reverse('admin:tiendas_tienda_add')
+        nueva = self.datos(nombre='MaxFit Proteínas', slug='', prefijo='', activa='on', orden='0')
+        with tempfile.TemporaryDirectory() as media, self.settings(MEDIA_ROOT=media):
+            respuesta = self.client.post(crear, {**nueva, 'whatsapp': '555', 'logo': imagen_de_prueba('logo.png')})
+            self.assertEqual(respuesta.status_code, 200)
+            self.assertContains(respuesta, 'vuelve a elegir las imágenes')
+            self.assertFalse(Tienda.objects.filter(nombre='MaxFit Proteínas').exists())
+            # Sin archivos no hay nada que avisar.
+            self.assertNotContains(self.client.post(crear, {**nueva, 'whatsapp': '555'}), 'vuelve a elegir las imágenes')
+
+            self.client.post(crear, {
+                **nueva, 'prefijo': 'max', 'whatsapp': '829-555-1234',
+                'logo': imagen_de_prueba('logo.png'), 'banner_imagen': imagen_de_prueba('banner.jpg', 'JPEG'),
+            })
+            tienda = Tienda.objects.get(nombre='MaxFit Proteínas')
+            self.assertEqual((tienda.prefijo, tienda.whatsapp), ('MAX', '18295551234'))
+            self.assertTrue(tienda.logo.name.startswith('tiendas/logo'))
+            self.assertTrue(tienda.banner_imagen.name.startswith('tiendas/banner'))
+            portada = self.client.get('/')
+            self.assertContains(portada, tienda.logo.url)
+            self.assertContains(portada, tienda.banner_imagen.url)
+
     def test_el_prefijo_no_cambia_despues_de_crear_la_tienda(self):
         self.client.force_login(self.admin)
         editar = reverse('admin:tiendas_tienda_change', args=[self.ajena.pk])

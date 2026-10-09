@@ -6,6 +6,8 @@ from django.db.migrations.executor import MigrationExecutor
 from django.test import TransactionTestCase
 from django.utils import timezone
 
+LEMA_DE_LA_TIENDA = 'Salud, belleza y equilibrio: vitaminas, cuidado personal y más, con entrega en todo el país.'
+
 # Estado de la base justo antes de que existieran las subtiendas.
 ANTES = [
     ('tiendas', None),
@@ -36,7 +38,7 @@ class DeUnaTiendaASubtiendasTests(TransactionTestCase):
         anio = timezone.localdate().year
         antes = migrar(ANTES)
         antes.get_model('core', 'ConfiguracionTienda').objects.create(
-            pk=1, nombre='Multimix RD', whatsapp='18095550123', horario='Lun a Sáb', logo='tienda/logo.png',
+            pk=1, nombre='Multimix RD', whatsapp='8295550123', horario='Lun a Sáb', logo='tienda/logo.png',
             direccion_tienda='Av. Winston Churchill #100', permitir_contra_entrega=True,
             banner_titulo='Tu tienda de bienestar',
         )
@@ -57,7 +59,7 @@ class DeUnaTiendaASubtiendasTests(TransactionTestCase):
 
         # A partir de aqui, los modelos de hoy.
         from catalogo.models import Producto
-        from core.models import ConfiguracionTienda, CuentaBancaria
+        from core.models import DESCRIPCION_DEL_SITIO, ConfiguracionTienda, CuentaBancaria
         from pedidos.models import Pedido, SecuenciaTienda, ZonaEnvio
         from pedidos.tests.utiles import pedido_de_prueba
         from promociones.models import Cupon
@@ -70,10 +72,14 @@ class DeUnaTiendaASubtiendasTests(TransactionTestCase):
         # La marca, los contactos y la forma de cobrar que eran del sitio quedan en la tienda.
         self.assertEqual(
             (tienda.whatsapp, tienda.horario, tienda.logo.name, tienda.direccion_tienda, tienda.banner_titulo),
-            ('18095550123', 'Lun a Sáb', 'tienda/logo.png', 'Av. Winston Churchill #100', 'Tu tienda de bienestar'),
+            ('18295550123', 'Lun a Sáb', 'tienda/logo.png', 'Av. Winston Churchill #100', 'Tu tienda de bienestar'),
         )
         self.assertTrue(tienda.permitir_contra_entrega)
-        self.assertEqual(ConfiguracionTienda.objects.get().whatsapp, '18095550123')
+        # El lema se queda en la tienda; el sitio pasa a tener su propia descripcion. Y el WhatsApp
+        # que estaba sin codigo de pais queda corregido en los dos lados.
+        config = ConfiguracionTienda.objects.get()
+        self.assertEqual(tienda.banner_subtitulo, LEMA_DE_LA_TIENDA)
+        self.assertEqual((config.descripcion, config.whatsapp), (DESCRIPCION_DEL_SITIO, '18295550123'))
 
         for modelo in (Producto, Pedido, ZonaEnvio, Cupon, CuentaBancaria):
             self.assertEqual(list(modelo.objects.values_list('tienda_id', flat=True)), [tienda.pk], modelo.__name__)

@@ -13,6 +13,7 @@ from django.utils.html import format_html
 from import_export.admin import ImportExportModelAdmin
 from import_export.forms import ConfirmImportForm, ImportForm
 
+from core.admin_avisos import AvisaImagenesSinGuardar
 from core.models import ConfiguracionTienda
 from core.templatetags.moneda import formatear_monto
 from tiendas.models import Tienda
@@ -25,7 +26,7 @@ from .resources import COLUMNAS, FILA_DE_EJEMPLO, ProductoResource
 
 
 @admin.register(Categoria)
-class CategoriaAdmin(admin.ModelAdmin):
+class CategoriaAdmin(AvisaImagenesSinGuardar, admin.ModelAdmin):
     """Las categorias son comunes a todas las tiendas; las administra el administrador principal."""
 
     list_display = ['nombre', 'cantidad_productos', 'activa', 'orden']
@@ -125,7 +126,7 @@ class ConfirmarImportacionForm(ConfirmImportForm):
 
 
 @admin.register(Producto)
-class ProductoAdmin(AdminDeTienda, ImportExportModelAdmin):
+class ProductoAdmin(AvisaImagenesSinGuardar, AdminDeTienda, ImportExportModelAdmin):
     resource_classes = [ProductoResource]
     import_form_class = ImportarProductosForm
     confirm_form_class = ConfirmarImportacionForm

@@ -1,7 +1,7 @@
 """Mensaje y enlaces de WhatsApp de un pedido."""
 from urllib.parse import quote
 
-from core.telefonos import formatear_telefono, telefono_internacional
+from core.telefonos import formatear_telefono, normalizar_whatsapp, telefono_internacional
 from core.templatetags.moneda import formatear_monto
 
 
@@ -51,9 +51,8 @@ def construir_mensaje(pedido):
 
 
 def construir_enlace(numero, mensaje):
-    """https://wa.me/<numero>?text=<mensaje codificado>. El numero va solo con digitos."""
-    digitos = ''.join(c for c in (numero or '') if c.isdigit())
-    return f'https://wa.me/{digitos}?text={quote(mensaje, safe="")}'
+    """https://wa.me/<numero>?text=<mensaje codificado>. El numero va solo con digitos y con codigo de pais."""
+    return f'https://wa.me/{normalizar_whatsapp(numero)}?text={quote(mensaje, safe="")}'
 
 
 def enlace_del_pedido(pedido, numero_tienda):

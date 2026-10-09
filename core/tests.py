@@ -1,16 +1,11 @@
-import tempfile
 from decimal import Decimal
-from importlib import import_module
 
-from django.apps import apps
 from django.core.exceptions import ValidationError
-from django.core.files.base import ContentFile
-from django.core.files.storage import default_storage
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import SimpleTestCase, TestCase
 
-from .models import ConfiguracionTienda
-from .telefonos import formatear_telefono, normalizar_telefono_rd, telefono_internacional
+from .models import DESCRIPCION_DEL_SITIO, ConfiguracionTienda
+from .telefonos import formatear_telefono, normalizar_telefono_rd, normalizar_whatsapp, telefono_internacional
 from .templatetags.moneda import formatear_monto
 from .validators import validar_imagen, validar_whatsapp
 
@@ -42,6 +37,14 @@ class TelefonoTests(SimpleTestCase):
         self.assertEqual(formatear_telefono('8095551234'), '809-555-1234')
         self.assertEqual(telefono_internacional('8095551234'), '18095551234')
 
+    def test_whatsapp_siempre_con_codigo_de_pais(self):
+        # wa.me necesita el codigo de pais: a los numeros dominicanos de 10 digitos se les antepone el 1.
+        for valor in ('8295551234', '829-555-1234', '(829) 555 1234', '+1 829 555 1234', '18295551234'):
+            self.assertEqual(normalizar_whatsapp(valor), '18295551234')
+        self.assertEqual(normalizar_whatsapp('+34 612 345 678'), '34612345678')
+        self.assertEqual(normalizar_whatsapp('3055551234'), '3055551234')
+        self.assertEqual(normalizar_whatsapp(''), '')
+
 
 class ValidadoresTests(SimpleTestCase):
     def test_whatsapp_solo_digitos(self):
@@ -70,24 +73,19 @@ class ConfiguracionTests(TestCase):
         ConfiguracionTienda.obtener().delete()
         self.assertEqual(ConfiguracionTienda.objects.count(), 1)
 
-    def test_migracion_de_marca_actualiza_textos_y_quita_imagenes_perdidas(self):
-        aplicar_marca = import_module('core.migrations.0002_textos_de_marca').aplicar_marca
-        with tempfile.TemporaryDirectory() as media, self.settings(MEDIA_ROOT=media):
-            ConfiguracionTienda.objects.update_or_create(pk=1, defaults={
-                'banner_titulo': 'Todo lo que buscas, en un solo lugar', 'banner_subtitulo': 'Un texto propio',
-                'logo': 'tienda/perdido.png',
-                'banner_imagen': default_storage.save('tienda/banner.png', ContentFile(b'imagen')),
-            })
-            aplicar_marca(apps, None)
-            config = ConfiguracionTienda.objects.get(pk=1)
-            self.assertEqual(config.banner_titulo, 'Tu tienda de bienestar')
-            self.assertEqual(config.banner_subtitulo, 'Un texto propio')
-            self.assertFalse(config.logo)
-            self.assertEqual(config.banner_imagen.name, 'tienda/banner.png')
+    def test_el_whatsapp_se_guarda_con_codigo_de_pais(self):
+        config = ConfiguracionTienda.obtener()
+        config.whatsapp = '829-555-1234'
+        config.full_clean()
+        config.save()
+        self.assertEqual(ConfiguracionTienda.objects.get().whatsapp, '18295551234')
+        config.whatsapp = '555-1234'
+        with self.assertRaises(ValidationError):
+            config.full_clean()
 
     def test_valores_por_defecto(self):
         config = ConfiguracionTienda.obtener()
-        self.assertEqual(config.banner_titulo, 'Tu tienda de bienestar')
+        self.assertEqual(config.descripcion, DESCRIPCION_DEL_SITIO)
         self.assertEqual(config.dias_producto_nuevo, 30)
         self.assertEqual(config.umbral_stock_bajo, 5)
         self.assertEqual(config.horas_vencimiento_pedido, 48)

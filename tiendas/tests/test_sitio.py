@@ -60,6 +60,20 @@ class DirectorioTests(DosTiendas):
         # En el sitio no hay carrito: se compra dentro de cada tienda.
         self.assertNotContains(respuesta, 'js-contador-carrito')
 
+    def test_la_portada_no_se_parece_al_inicio_de_una_tienda(self):
+        portada = self.client.get('/')
+        # Sin banner, sin boton de catalogo y sin el lema de ninguna tienda en su encabezado.
+        self.assertNotContains(portada, 'mm-banner')
+        self.assertNotContains(portada, 'Ver catálogo')
+        self.assertNotContains(portada, 'Tu tienda de bienestar')
+        self.assertContains(portada, 'Elige una tienda y empieza a comprar')
+        self.assertContains(portada, 'Busca un producto en todas las tiendas')
+        self.assertContains(portada, 'Tiendas de emprendedores en un solo lugar.')
+        # El inicio de cada tienda si conserva su banner.
+        tienda = self.client.get(self.multimix.get_absolute_url())
+        self.assertContains(tienda, 'mm-banner-titulo')
+        self.assertContains(tienda, 'Tu tienda de bienestar')
+
     def test_cada_tienda_lleva_su_marca_y_el_camino_de_regreso(self):
         respuesta = self.client.get(self.fitnes.get_absolute_url())
         self.assertContains(respuesta, '<span class="mm-logo-texto">Fitnes RD</span>', html=True)
