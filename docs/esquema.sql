@@ -620,3 +620,18 @@ COMMIT;
 -- tiendas 0004
 -- ============================================================
 -- No cambia el esquema: pone el codigo de pais a los WhatsApp guardados con 10 digitos.
+
+-- ============================================================
+-- catalogo 0006
+-- ============================================================
+-- No cambia el esquema: las imagenes pasan a guardarse con un nombre generado (core.archivos.NombreUnico).
+
+-- ============================================================
+-- core 0009
+-- ============================================================
+-- No cambia el esquema: las imagenes pasan a guardarse con un nombre generado (core.archivos.NombreUnico).
+
+-- ============================================================
+-- tiendas 0005
+-- ============================================================
+-- No cambia el esquema: las imagenes pasan a guardarse con un nombre generado (core.archivos.NombreUnico).

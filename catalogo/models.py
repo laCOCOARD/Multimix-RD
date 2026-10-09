@@ -11,6 +11,7 @@ from django.dispatch import receiver
 from django.urls import reverse
 from django.utils import timezone
 
+from core.archivos import NombreUnico
 from core.models import ConfiguracionTienda
 from core.texto import generar_slug_unico, normalizar
 from core.validators import validar_imagen
@@ -34,7 +35,7 @@ class Categoria(models.Model):
     nombre = models.CharField(max_length=80, unique=True)
     slug = models.SlugField(max_length=100, unique=True, blank=True, help_text='Se genera solo si lo dejas vacío.')
     descripcion = models.TextField('descripción', blank=True)
-    imagen = models.ImageField(upload_to='categorias/', blank=True, validators=[validar_imagen])
+    imagen = models.ImageField(upload_to=NombreUnico('categorias'), blank=True, validators=[validar_imagen])
     activa = models.BooleanField(default=True)
     orden = models.PositiveSmallIntegerField(default=0)
 

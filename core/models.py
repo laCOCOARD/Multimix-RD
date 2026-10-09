@@ -2,6 +2,7 @@ from django.core.cache import cache
 from django.core.validators import MinValueValidator
 from django.db import models
 
+from .archivos import NombreUnico
 from .telefonos import normalizar_whatsapp
 from .validators import validar_imagen, validar_whatsapp
 
@@ -20,7 +21,7 @@ class ConfiguracionTienda(models.Model):
 
     nombre = models.CharField('nombre del sitio', max_length=80, default='Multimix RD')
     logo = models.ImageField(
-        upload_to='tienda/', blank=True, validators=[validar_imagen],
+        upload_to=NombreUnico('tienda'), blank=True, validators=[validar_imagen],
         help_text='JPG, PNG o WebP de hasta 5 MB. Si no subes un logo se muestra el símbolo con el nombre.',
     )
     descripcion = models.CharField(

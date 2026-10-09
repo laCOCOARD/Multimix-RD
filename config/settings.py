@@ -179,6 +179,8 @@ if MEDIA_STORAGE == 'supabase' and not EN_TESTS:
         raise ImproperlyConfigured('Falta configurar una o mas variables de Supabase Storage')
     if not supabase_url.startswith('https://') or not supabase_endpoint.startswith('https://'):
         raise ImproperlyConfigured('Las URL de Supabase Storage deben usar HTTPS')
+    from botocore.config import Config
+
     if not supabase_endpoint.endswith('/storage/v1/s3'):
         raise ImproperlyConfigured('SUPABASE_S3_ENDPOINT debe terminar en /storage/v1/s3')
 
@@ -190,12 +192,19 @@ if MEDIA_STORAGE == 'supabase' and not EN_TESTS:
             'bucket_name': supabase_bucket,
             'endpoint_url': supabase_endpoint,
             'region_name': supabase_region,
-            'addressing_style': 'path',
+            # Si Supabase no contesta, que falle pronto y el panel lo avise: por defecto botocore espera
+            # 60 s y reintenta, y Gunicorn mataba antes la peticion (error 500 en blanco al subir un logo).
+            'client_config': Config(
+                s3={'addressing_style': 'path'}, connect_timeout=5, read_timeout=20,
+                retries={'total_max_attempts': 2},
+            ),
             'querystring_auth': False,
             'custom_domain': (
                 f"{supabase_url.removeprefix('https://')}/storage/v1/object/public/{supabase_bucket}"
             ),
-            'file_overwrite': False,
+            # Toda imagen se guarda con un nombre que no se repite (uuid): no hace falta preguntarle
+            # antes al almacenamiento si ya existe, que es una ida y vuelta mas por cada foto.
+            'file_overwrite': True,
             'object_parameters': {'CacheControl': 'public, max-age=31536000, immutable'},
         },
     }

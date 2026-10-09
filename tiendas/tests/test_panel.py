@@ -1,9 +1,11 @@
 """El panel de cada vendedor: ve y cambia solo lo de su tienda. El administrador principal ve todo."""
 import tempfile
 from decimal import Decimal
+from unittest import mock
 
 import tablib
 from django.contrib.auth import get_user_model
+from django.core.files.storage import FileSystemStorage
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase
 from django.urls import reverse
@@ -410,15 +412,28 @@ class TiendaAdminTests(PanelDeVendedores):
 
             self.client.post(crear, {
                 **nueva, 'prefijo': 'max', 'whatsapp': '829-555-1234',
-                'logo': imagen_de_prueba('logo.png'), 'banner_imagen': imagen_de_prueba('banner.jpg', 'JPEG'),
+                'logo': imagen_de_prueba('Logo MaxFit Proteínas.PNG'),
+                'banner_imagen': imagen_de_prueba('diseño banner.jpg', 'JPEG'),
             })
             tienda = Tienda.objects.get(nombre='MaxFit Proteínas')
             self.assertEqual((tienda.prefijo, tienda.whatsapp), ('MAX', '18295551234'))
-            self.assertTrue(tienda.logo.name.startswith('tiendas/logo'))
-            self.assertTrue(tienda.banner_imagen.name.startswith('tiendas/banner'))
+            # El nombre del archivo no se conserva: Supabase rechaza los que traen tildes o ñ.
+            self.assertRegex(tienda.logo.name, r'^tiendas/[0-9a-f]{32}\.png$')
+            self.assertRegex(tienda.banner_imagen.name, r'^tiendas/[0-9a-f]{32}\.jpg$')
             portada = self.client.get('/')
             self.assertContains(portada, tienda.logo.url)
             self.assertContains(portada, tienda.banner_imagen.url)
+
+    def test_si_el_almacenamiento_de_fotos_falla_avisa_y_no_guarda_nada(self):
+        editar = reverse('admin:tiendas_tienda_change', args=[self.propia.pk])
+        datos = self.datos(direccion_tienda='Calle nueva', logo=imagen_de_prueba('logo.png'))
+        with mock.patch.object(FileSystemStorage, '_save', side_effect=OSError('el almacenamiento no responde')):
+            with self.assertLogs('core.admin_avisos', level='ERROR'):
+                respuesta = self.client.post(editar, datos)
+        self.assertRedirects(respuesta, editar, fetch_redirect_response=False)
+        self.assertContains(self.client.get(editar), 'No se pudo guardar la imagen')
+        self.propia.refresh_from_db()
+        self.assertEqual((self.propia.logo.name, self.propia.direccion_tienda), ('', ''))
 
     def test_el_prefijo_no_cambia_despues_de_crear_la_tienda(self):
         self.client.force_login(self.admin)

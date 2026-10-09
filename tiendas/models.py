@@ -3,6 +3,7 @@ from django.core.validators import RegexValidator
 from django.db import models
 from django.urls import reverse
 
+from core.archivos import NombreUnico
 from core.telefonos import normalizar_whatsapp
 from core.texto import generar_slug_unico, quitar_tildes
 from core.validators import validar_imagen, validar_whatsapp
@@ -46,7 +47,7 @@ class Tienda(models.Model):
     )
 
     logo = models.ImageField(
-        upload_to='tiendas/', blank=True, validators=[validar_imagen],
+        upload_to=NombreUnico('tiendas'), blank=True, validators=[validar_imagen],
         help_text='JPG, PNG o WebP de hasta 5 MB. Si no subes un logo se muestra el nombre en texto.',
     )
     banner_titulo = models.CharField(
@@ -58,7 +59,7 @@ class Tienda(models.Model):
     )
     banner_texto_boton = models.CharField('texto del botón del banner', max_length=40, default='Ver catálogo')
     banner_imagen = models.ImageField(
-        'imagen del banner', upload_to='tiendas/', blank=True, validators=[validar_imagen],
+        'imagen del banner', upload_to=NombreUnico('tiendas'), blank=True, validators=[validar_imagen],
         help_text='JPG, PNG o WebP de hasta 5 MB. Es el fondo del banner de la tienda y de su tarjeta en la portada.',
     )
 

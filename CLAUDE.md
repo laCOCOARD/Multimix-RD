@@ -71,6 +71,14 @@ Al cerrar cada modulo: check, makemigrations, migrate, test y commit.
   armar cada enlace (`construir_enlace`). Sin el 1, wa.me abre un numero de otro pais.
 - Los ModelAdmin con imagenes heredan `core.admin_avisos.AvisaImagenesSinGuardar`: si el formulario vuelve
   con errores, el navegador olvida los archivos elegidos y hay que avisarlo.
+  El mismo mixin atrapa los fallos del almacenamiento (`core.archivos.ERRORES_DE_ALMACENAMIENTO`) y vuelve
+  al formulario con un mensaje en vez de un error 500.
+- Las imagenes se guardan con nombre generado: `core.archivos.NombreUnico('carpeta')` como `upload_to`
+  (logo y banner de tienda, logo del sitio, categorias) y uuid en `FotoProducto.save`. Supabase responde 400
+  a los nombres con tildes o ñ. Por eso el almacenamiento va con `file_overwrite=True` (no pregunta si el
+  archivo existe): una imagen nueva nunca debe guardarse con el nombre que trae del usuario.
+- Supabase lento: botocore con 5 s de conexion, 20 s de lectura y 2 intentos (`client_config`), y
+  `gunicorn.conf.py` con `timeout = 120`. Con los valores por defecto Gunicorn mataba la peticion a los 30 s.
 - Rutas de tienda bajo `/tienda/<tienda_slug>/` (`tiendas.decoradores.RUTA_DE_TIENDA`). `pedidos` y `core`
   mezclan rutas de tienda y del sitio, por eso declaran las suyas completas y se incluyen en la raiz.
   Las paginas por token (confirmacion, factura) ponen `request.tienda = pedido.tienda`.

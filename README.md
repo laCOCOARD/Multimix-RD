@@ -208,7 +208,9 @@ Al llenar el formulario de una tienda:
 
 - **Logo e imagen del banner:** JPG, PNG o WebP de hasta 5 MB. Si al guardar aparece algún error, el
   navegador olvida las imágenes elegidas: hay que corregir el error y **volver a elegirlas** (el panel lo
-  avisa arriba). También se pueden subir después, editando la tienda.
+  avisa arriba). También se pueden subir después, editando la tienda. El archivo puede llamarse como sea
+  (con tildes, ñ o espacios): se guarda con un nombre generado. Si el almacenamiento de fotos no responde,
+  el panel lo dice y no guarda nada; basta con intentarlo de nuevo.
 - **WhatsApp:** se puede escribir como `829-555-1234`; a los números dominicanos se les agrega solo el `1`
   del código de país, que WhatsApp necesita para abrir el chat correcto.
 
