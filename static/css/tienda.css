@@ -263,6 +263,11 @@ img { max-width: 100%; height: auto; }
 
 .mm-paso { display: inline-grid; place-items: center; width: 1.8rem; height: 1.8rem; margin-right: .55rem; border-radius: 50%; background: var(--mm-primario); color: #fff; font-size: .9rem; font-weight: 700; }
 .mm-paso-compra .mm-paso { margin-bottom: .7rem; }
+.mm-pago-pendiente { background: #8a6d1f; }
+.mm-pago-en_revision { background: #7a4fd6; }
+.mm-pago-aprobado { background: var(--mm-exito); }
+.mm-pago-rechazado, .mm-pago-cancelado { background: var(--mm-peligro); }
+.mm-pago-reembolsado { background: #6b7785; }
 .mm-pasos { display: flex; gap: .5rem; margin: 0 0 1.25rem; padding: 0; list-style: none; counter-reset: none; }
 .mm-pasos li { flex: 1; display: flex; align-items: center; gap: .1rem; padding: .55rem .7rem; border-radius: .7rem; background: var(--mm-superficie); border: 1px solid var(--mm-borde); font-weight: 600; font-size: .92rem; color: var(--mm-texto-suave); cursor: pointer; transition: border-color var(--mm-transicion), color var(--mm-transicion), background-color var(--mm-transicion); }
 .mm-pasos li .mm-paso { flex: 0 0 auto; background: #c5d1de; }

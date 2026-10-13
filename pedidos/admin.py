@@ -89,7 +89,7 @@ class PedidoAdmin(AdminDeTienda, admin.ModelAdmin):
         ]}),
         ('Cliente', {'fields': ['nombre', 'whatsapp_cliente', 'correo']}),
         ('Entrega', {'fields': ['metodo_entrega', 'zona', 'sector', 'direccion', 'referencia']}),
-        ('Pago', {'fields': ['metodo_pago', 'transferencia_realizada', 'referencia_transferencia']}),
+        ('Pago', {'fields': ['metodo_pago', 'transferencia_realizada', 'referencia_transferencia', 'pago_registrado']}),
         ('Montos', {'fields': [
             'subtotal_formateado', 'cupon_aplicado', 'itbis_formateado', 'envio_formateado', 'total_formateado',
         ]}),
@@ -233,6 +233,16 @@ class PedidoAdmin(AdminDeTienda, admin.ModelAdmin):
         if not pedido.codigo_cupon:
             return 'Sin cupón'
         return f'{pedido.codigo_cupon}: -{formatear_monto(pedido.descuento)}'
+
+    @admin.display(description='Pago y comprobante')
+    def pago_registrado(self, pedido):
+        pago = pedido.pagos.order_by('-id').first()
+        if pago is None:
+            return 'Sin pago registrado'
+        return format_html(
+            '<a href="{}">{} · {}{}</a>', reverse('admin:pagos_pago_change', args=[pago.pk]), pago.referencia,
+            pago.get_estado_display(), ' · con comprobante' if pago.comprobante else '',
+        )
 
     @admin.display(description='Página del cliente')
     def enlace_publico(self, pedido):

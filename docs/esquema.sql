@@ -845,3 +845,16 @@ CREATE INDEX "pedido_tienda_creado_idx" ON "pedidos_pedido" ("tienda_id", "cread
 -- catalogo 0012, core 0010 y 0011
 -- ============================================================
 -- No cambian el esquema: marca de los productos de Amway segun su linea y nueva descripcion del sitio.
+
+-- ============================================================
+-- pagos 0001
+-- ============================================================
+--
+-- Create model Pago
+--
+CREATE TABLE "pagos_pago" ("id" integer NOT NULL PRIMARY KEY AUTOINCREMENT, "referencia" varchar(40) NOT NULL UNIQUE, "metodo" varchar(20) NOT NULL, "proveedor" varchar(20) NOT NULL, "monto" decimal NOT NULL, "estado" varchar(12) NOT NULL, "comprobante" varchar(100) NOT NULL, "referencia_cliente" varchar(60) NOT NULL, "codigo_autorizacion" varchar(40) NOT NULL, "respuesta_proveedor" text NOT NULL CHECK ((JSON_VALID("respuesta_proveedor") OR "respuesta_proveedor" IS NULL)), "nota" varchar(255) NOT NULL, "creado" datetime NOT NULL, "actualizado" datetime NOT NULL, "revisado_en" datetime NULL, "pedido_id" bigint NOT NULL REFERENCES "pedidos_pedido" ("id") DEFERRABLE INITIALLY DEFERRED, "revisado_por_id" integer NULL REFERENCES "auth_user" ("id") DEFERRABLE INITIALLY DEFERRED, "tienda_id" bigint NOT NULL REFERENCES "tiendas_tienda" ("id") DEFERRABLE INITIALLY DEFERRED, CONSTRAINT "pago_monto_no_negativo" CHECK ("monto" >= '0'));
+CREATE UNIQUE INDEX "un_pago_aprobado_por_pedido" ON "pagos_pago" ("pedido_id") WHERE "estado" = 'aprobado';
+CREATE INDEX "pagos_pago_pedido_id_b527cca2" ON "pagos_pago" ("pedido_id");
+CREATE INDEX "pagos_pago_revisado_por_id_bf842120" ON "pagos_pago" ("revisado_por_id");
+CREATE INDEX "pagos_pago_tienda_id_0acba72a" ON "pagos_pago" ("tienda_id");
+CREATE INDEX "pago_tienda_estado_idx" ON "pagos_pago" ("tienda_id", "estado", "creado" DESC);

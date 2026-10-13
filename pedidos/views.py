@@ -1,3 +1,4 @@
+import logging
 import os
 from ipaddress import ip_address
 from io import BytesIO
@@ -8,8 +9,10 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
 
 from carrito.carrito import Carrito
+from core.archivos import ERRORES_DE_ALMACENAMIENTO
 from core.models import CuentaBancaria
 from core.templatetags.moneda import formatear_monto
+from pagos import services as pagos
 from promociones.services import CuponInvalido
 from tiendas.decoradores import de_tienda
 
@@ -17,6 +20,8 @@ from . import services
 from .forms import AvisoTransferenciaForm, CheckoutForm
 from .models import Pedido
 from .whatsapp import enlace_del_pedido
+
+logger = logging.getLogger('multimix.pedidos')
 
 
 def _ip_cliente(request):
@@ -175,6 +180,7 @@ def confirmacion(request, token):
     tienda = pedido.tienda
     return render(request, 'pedidos/confirmacion.html', {
         'pedido': pedido,
+        'pago': pagos.pago_vigente(pedido),
         'cuentas': _cuentas_de(tienda) if pedido.paga_por_transferencia else [],
         # WhatsApp ya no es un paso de la compra: queda como canal opcional para hablar con la tienda.
         'enlace_whatsapp': enlace_del_pedido(pedido, tienda.whatsapp) if tienda.whatsapp else '',
@@ -187,14 +193,19 @@ def confirmacion(request, token):
 @require_POST
 def avisar_transferencia(request, token):
     pedido = get_object_or_404(Pedido, token=token)
-    formulario = AvisoTransferenciaForm(request.POST)
+    formulario = AvisoTransferenciaForm(request.POST, request.FILES)
     if not formulario.is_valid():
-        messages.error(request, 'La referencia es demasiado larga.')
+        errores = [error for lista in formulario.errors.values() for error in lista]
+        messages.error(request, ' '.join(errores) or 'Revisa los datos de la transferencia.')
         return redirect(pedido)
+    datos = formulario.cleaned_data
     try:
-        services.marcar_transferencia(pedido, formulario.cleaned_data['referencia_transferencia'])
-    except services.PedidoError as error:
+        pagos.registrar_comprobante(pedido, datos['comprobante'], datos['referencia_transferencia'])
+    except (pagos.PagoError, services.PedidoError) as error:
         messages.error(request, error.mensaje)
+    except ERRORES_DE_ALMACENAMIENTO:
+        logger.exception('No se pudo guardar el comprobante del pedido %s', pedido.numero)
+        messages.error(request, 'No pudimos guardar tu comprobante. Espera un momento e inténtalo otra vez.')
     else:
-        messages.success(request, 'Gracias. Verificaremos tu transferencia; aquí mismo verás tu pedido como pagado.')
+        messages.success(request, 'Gracias. La tienda revisará tu transferencia; aquí mismo verás tu pago confirmado.')
     return redirect(pedido)

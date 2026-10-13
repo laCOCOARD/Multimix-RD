@@ -1,6 +1,7 @@
 from django import forms
 
 from core.telefonos import normalizar_telefono_rd
+from core.validators import validar_imagen
 from promociones.services import CuponInvalido
 
 from .models import Pedido
@@ -82,3 +83,5 @@ class CheckoutForm(forms.Form):
 
 class AvisoTransferenciaForm(forms.Form):
     referencia_transferencia = forms.CharField(max_length=60, required=False)
+    # forms.ImageField comprueba con Pillow que el archivo sea de verdad una imagen.
+    comprobante = forms.ImageField(required=False, validators=[validar_imagen])

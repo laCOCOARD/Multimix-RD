@@ -36,11 +36,13 @@ Al cerrar cada modulo: check, makemigrations, migrate, test y commit.
 - `promociones/` — Cupon y su validacion.
 - `carrito/` — carrito en sesion, uno por tienda (sin modelo).
 - `pedidos/` — ZonaEnvio, Pedido, DetallePedido, SecuenciaTienda; checkout, confirmacion, clientes, WhatsApp.
+- `pagos/` — Pago (un intento de pago por pedido), comprobantes de transferencia, conciliacion en el panel y
+  el contrato de las pasarelas de tarjeta (`proveedores.py`, ninguna conectada). Ver `docs/PAGOS.md`.
 - `templates/`, `static/` — plantillas y recursos de la tienda y del panel.
 - `docs/` — DESPLIEGUE.md y esquema.sql (referencia; las tablas las crea `migrate`).
 
 ## Reglas que no se rompen
-- Nada cruza de una tienda a otra. Producto, Pedido, Cupon, ZonaEnvio y CuentaBancaria llevan `tienda`.
+- Nada cruza de una tienda a otra. Producto, Pedido, Pago, Cupon, ZonaEnvio y CuentaBancaria llevan `tienda`.
   En el sitio toda vista de tienda usa `@de_tienda` y filtra por `request.tienda`; en el panel todo
   ModelAdmin con datos de tienda hereda `tiendas.panel.AdminDeTienda`. Un modelo o una pantalla nueva
   entra con su prueba de aislamiento (`tiendas/tests/`).
@@ -51,11 +53,18 @@ Al cerrar cada modulo: check, makemigrations, migrate, test y commit.
 - Lo que se puede comprar lo decide `Producto.se_puede_comprar` (o `q_comprable()` en consultas), nunca el
   stock a secas: casi ningun producto lleva inventario.
 - El estado del pedido solo cambia con `pedidos.services.cambiar_estado` (lo usa el panel).
-- El cliente nunca marca un pedido como pagado; solo "Ya hice la transferencia".
+- El cliente nunca marca un pedido como pagado; solo "Ya hice la transferencia" y su comprobante.
+- El pago de un pedido solo cambia con `pagos.services` (`registrar_comprobante`, `aprobar_pago`, `rechazar_pago`);
+  `cambiar_estado` lo mantiene de acuerdo con el pedido (`sincronizar_con_pedido`). Nunca se guardan datos de tarjeta.
 - Montos en plantillas con `{{ valor|moneda }}` -> `RD$ 1,250.00`.
 - Nada de `|safe` con datos de usuarios. Solo ORM.
 
 ## Decisiones tomadas
+- Pagos: `pedidos.services` importa `pagos.services` dentro de las funciones (pagos usa pedidos para cambiar el
+  estado). `pago_vigente(pedido)` abre el pago si falta, asi que los pedidos anteriores no necesitaron migracion.
+  Un comprobante rechazado deja el pago como historial y el siguiente aviso abre otro (`-P2`). Los comprobantes
+  se convierten a WebP y van a `comprobantes/` del mismo bucket publico de las fotos (nombre imposible de adivinar).
+  `PagoAdmin` da permiso de borrado solo para que el panel deje eliminar el pedido en cascada; no tiene boton ni accion.
 - ITBIS: los precios se publican sin impuesto y se suma al comprar. `core.impuestos.calcular_itbis` lo calcula
   sobre los productos no exentos (`Producto.exento_itbis`), despues del descuento y sin el envio, con
   `Tienda.itbis_porcentaje` (18 por defecto; 0 = la tienda no lo cobra). El pedido guarda `impuesto` y

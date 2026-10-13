@@ -1,0 +1,86 @@
+from django.conf import settings
+from django.db import models
+from django.db.models import Q
+from django.db.models.signals import post_delete
+from django.dispatch import receiver
+
+from core.archivos import NombreUnico
+from core.validators import validar_imagen
+from pedidos.models import Pedido
+
+
+class Pago(models.Model):
+    """Un intento de pago de un pedido: la transferencia con su comprobante, el efectivo o, mas adelante, la tarjeta.
+
+    Nunca guarda datos de tarjetas: del proveedor solo quedan la referencia y el codigo de autorizacion.
+    """
+
+    class Estado(models.TextChoices):
+        PENDIENTE = 'pendiente', 'Pendiente de pago'
+        EN_REVISION = 'en_revision', 'Pago en revisión'
+        APROBADO = 'aprobado', 'Pago confirmado'
+        RECHAZADO = 'rechazado', 'Rechazado'
+        CANCELADO = 'cancelado', 'Cancelado'
+        REEMBOLSADO = 'reembolsado', 'Reembolsado'
+
+    # Un pedido tiene un solo pago en curso; los rechazados y cancelados quedan como historial.
+    VIGENTES = (Estado.PENDIENTE, Estado.EN_REVISION, Estado.APROBADO)
+    POR_RESOLVER = (Estado.PENDIENTE, Estado.EN_REVISION)
+
+    tienda = models.ForeignKey('tiendas.Tienda', on_delete=models.PROTECT, related_name='pagos', editable=False)
+    pedido = models.ForeignKey(Pedido, on_delete=models.CASCADE, related_name='pagos', editable=False)
+    referencia = models.CharField(
+        max_length=40, unique=True, editable=False,
+        help_text='Identifica este intento de pago; no se repite aunque el pedido tenga varios.',
+    )
+    metodo = models.CharField('método de pago', max_length=20, choices=Pedido.Pago.choices)
+    proveedor = models.CharField(
+        max_length=20, blank=True, help_text='Pasarela que procesó el pago, si fue con tarjeta.',
+    )
+    monto = models.DecimalField(max_digits=12, decimal_places=2)
+    estado = models.CharField(max_length=12, choices=Estado.choices, default=Estado.PENDIENTE)
+
+    comprobante = models.ImageField(
+        upload_to=NombreUnico('comprobantes'), blank=True, validators=[validar_imagen],
+        help_text='Foto o captura de la transferencia que envió el cliente.',
+    )
+    referencia_cliente = models.CharField('referencia que dio el cliente', max_length=60, blank=True)
+    codigo_autorizacion = models.CharField('código de autorización', max_length=40, blank=True)
+    respuesta_proveedor = models.JSONField('respuesta del proveedor', default=dict, blank=True, editable=False)
+    nota = models.CharField('nota del vendedor', max_length=255, blank=True)
+
+    creado = models.DateTimeField('fecha de creación', auto_now_add=True)
+    actualizado = models.DateTimeField('última actualización', auto_now=True)
+    revisado_en = models.DateTimeField('fecha de revisión', null=True, blank=True)
+    revisado_por = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='pagos_revisados',
+        verbose_name='revisado por',
+    )
+
+    class Meta:
+        verbose_name = 'pago'
+        verbose_name_plural = 'pagos'
+        ordering = ['-creado', '-id']
+        constraints = [
+            models.CheckConstraint(condition=Q(monto__gte=0), name='pago_monto_no_negativo'),
+            # Un pedido no se cobra dos veces, aunque lleguen dos avisos de aprobacion a la vez.
+            models.UniqueConstraint(
+                fields=['pedido'], condition=Q(estado='aprobado'), name='un_pago_aprobado_por_pedido',
+            ),
+        ]
+        indexes = [
+            models.Index(fields=['tienda', 'estado', '-creado'], name='pago_tienda_estado_idx'),
+        ]
+
+    def __str__(self):
+        return self.referencia
+
+    @property
+    def por_resolver(self):
+        return self.estado in self.POR_RESOLVER
+
+
+@receiver(post_delete, sender=Pago)
+def borrar_comprobante(sender, instance, **kwargs):
+    if instance.comprobante:
+        instance.comprobante.delete(save=False)

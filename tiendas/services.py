@@ -22,6 +22,8 @@ PERMISOS_VENDEDOR = {
         'view_zonaenvio', 'add_zonaenvio', 'change_zonaenvio', 'delete_zonaenvio',
     ],
     'promociones': ['view_cupon', 'add_cupon', 'change_cupon', 'delete_cupon'],
+    # Los pagos se revisan (aprobar o rechazar); no se crean ni se borran a mano.
+    'pagos': ['view_pago', 'change_pago'],
     'core': ['view_cuentabancaria', 'add_cuentabancaria', 'change_cuentabancaria', 'delete_cuentabancaria'],
 }
 

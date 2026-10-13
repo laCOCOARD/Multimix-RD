@@ -50,6 +50,7 @@ INSTALLED_APPS = [
     'promociones',
     'carrito',
     'pedidos',
+    'pagos',
 ]
 
 MIDDLEWARE = [
@@ -240,6 +241,8 @@ CARRITO_MAX_POR_PRODUCTO = 99
 PEDIDOS_MAX_POR_IP = 5
 PEDIDOS_VENTANA_IP_MINUTOS = 60
 MAS_VENDIDOS_CACHE_SEGUNDOS = 300
+# Pasarela de tarjeta (codigo de un proveedor registrado en pagos/proveedores.py). Vacio = no se ofrece tarjeta.
+PAGOS_PROVEEDOR_TARJETA = os.getenv('PAGOS_PROVEEDOR_TARJETA', '').strip().lower()
 
 # --- Importar / exportar productos ---
 IMPORT_EXPORT_USE_TRANSACTIONS = True
