@@ -184,6 +184,23 @@ class MigracionDeDisponibilidadTests(TestCase):
         self.assertTrue(producto.se_puede_comprar)
 
 
+    def test_en_una_tienda_sin_pedidos_el_cero_no_es_un_agotado(self):
+        """La tienda cargo unidades a un producto antes de migrar: los demas no deben quedar agotados."""
+        nueva = tienda_de_prueba('Fitnes RD')
+        crear_producto(sku='CARGADO', stock_almacen=500, tienda=nueva)
+        crear_producto(sku='CERO', stock_almacen=0, tienda=nueva)
+        vendido = crear_producto(sku='VENDIDO', stock_almacen=2)
+        crear_producto(sku='AGOTADO', stock_almacen=0)
+        pedido_de_prueba(vendido, 1)
+
+        migracion = import_module('catalogo.migrations.0009_sin_inventario_si_nunca_se_cargo')
+        migracion.soltar_inventario_vacio(apps, None)
+
+        inventario = dict(Producto.objects.values_list('sku', 'controla_stock'))
+        self.assertEqual(inventario, {'CARGADO': True, 'CERO': False, 'VENDIDO': True, 'AGOTADO': True})
+        self.assertTrue(Producto.objects.get(sku='CERO').se_puede_comprar)
+
+
 class ImportarDisponibilidadTests(TestCase):
     def test_el_excel_trae_disponibilidad_e_inventario(self):
         tienda = tienda_de_prueba()

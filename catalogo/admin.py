@@ -161,6 +161,7 @@ class ProductoAdmin(AvisaImagenesSinGuardar, AdminDeTienda, ImportExportModelAdm
     actions = [
         'destacar', 'quitar_destacado', 'activar', 'desactivar', 'poner_oferta', 'quitar_oferta',
         *[_accion_de_disponibilidad(valor) for valor in Disponibilidad],
+        'llevar_inventario', 'no_llevar_inventario',
     ]
     fieldsets = [
         (None, {'fields': ['tienda', 'nombre', 'slug', 'sku', 'categoria', 'descripcion']}),
@@ -325,6 +326,15 @@ class ProductoAdmin(AvisaImagenesSinGuardar, AdminDeTienda, ImportExportModelAdm
     @admin.action(description='Desactivar')
     def desactivar(self, request, queryset):
         self.message_user(request, f'{queryset.update(activo=False)} productos desactivados.')
+
+    @admin.action(description='Llevar inventario (vender hasta agotar el stock)')
+    def llevar_inventario(self, request, queryset):
+        self.message_user(request, f'{queryset.update(controla_stock=True)} productos ahora llevan inventario.')
+
+    @admin.action(description='No llevar inventario (vender según la disponibilidad)')
+    def no_llevar_inventario(self, request, queryset):
+        # Lo apartado por pedidos en curso no cambia: esos pedidos lo liberan o lo descuentan al cerrarse.
+        self.message_user(request, f'{queryset.update(controla_stock=False)} productos ya no llevan inventario.')
 
     @admin.action(description='Quitar oferta')
     def quitar_oferta(self, request, queryset):

@@ -696,3 +696,8 @@ CREATE INDEX "pedidos_detallepedido_pedido_id_37ae55c6" ON "pedidos_detallepedid
 -- pedidos 0006
 -- ============================================================
 -- No cambia el esquema: las lineas de los pedidos que ya existian quedan con reserva_stock.
+
+-- ============================================================
+-- catalogo 0009
+-- ============================================================
+-- No cambia el esquema: en las tiendas sin pedidos, los productos en cero dejan de llevar inventario.
