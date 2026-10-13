@@ -26,8 +26,10 @@ from .utiles import tienda_de_prueba
 Estado = Pedido.Estado
 CSV = '1'  # posicion de CSV en IMPORT_EXPORT_FORMATS
 
-# Un Excel de antes de la disponibilidad (sin esas dos columnas) se sigue importando igual.
-COLUMNAS_ANTERIORES = [columna for columna in COLUMNAS if columna not in ('disponibilidad', 'controla_stock')]
+# Un Excel de antes de la disponibilidad y la marca (sin esas columnas) se sigue importando igual.
+COLUMNAS_ANTERIORES = [
+    columna for columna in COLUMNAS if columna not in ('disponibilidad', 'controla_stock', 'marca')
+]
 
 
 class PanelDeVendedores(TestCase):

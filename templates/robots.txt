@@ -2,6 +2,8 @@ User-agent: *
 Disallow: /tienda/*/carrito/
 Disallow: /tienda/*/pedido/
 Disallow: /pedido/
+Disallow: /sugerencias/
+Disallow: /tienda/*/sugerencias/
 Allow: /
 
 Sitemap: {{ sitemap }}

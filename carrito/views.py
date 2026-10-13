@@ -90,6 +90,11 @@ def agregar(request):
         mensaje = f'Solo hay {final} disponibles de "{producto.nombre}"; dejamos esa cantidad en tu carrito.'
     else:
         mensaje = f'"{producto.nombre}" se agregó al carrito.'
+    if request.POST.get('comprar') and not _es_fetch(request):
+        # "Comprar ahora": el producto queda en el carrito y el cliente va directo a confirmar.
+        if ajustada:
+            messages.warning(request, mensaje)
+        return redirect('pedidos:checkout', request.tienda.slug)
     return _responder(request, carrito, True, mensaje)
 
 

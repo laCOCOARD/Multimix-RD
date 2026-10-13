@@ -151,9 +151,9 @@ class ProductoAdmin(AvisaImagenesSinGuardar, AdminDeTienda, ImportExportModelAdm
     list_display_links = ['miniatura', 'nombre']
     list_editable = ['disponibilidad', 'destacado', 'nuevo', 'activo']
     list_filter = [
-        'categoria', 'activo', 'disponibilidad', EnOfertaFilter, 'controla_stock', StockFilter, 'destacado', 'nuevo',
+        'categoria', 'marca', 'activo', 'disponibilidad', EnOfertaFilter, 'controla_stock', StockFilter, 'destacado', 'nuevo',
     ]
-    search_fields = ['nombre', 'sku', 'texto_busqueda']
+    search_fields = ['nombre', 'sku', 'marca', 'texto_busqueda']
     list_per_page = 40
     prepopulated_fields = {'slug': ['nombre']}
     readonly_fields = ['stock_reservado', 'stock_disponible_actual', 'creado', 'actualizado']
@@ -164,7 +164,7 @@ class ProductoAdmin(AvisaImagenesSinGuardar, AdminDeTienda, ImportExportModelAdm
         'llevar_inventario', 'no_llevar_inventario',
     ]
     fieldsets = [
-        (None, {'fields': ['tienda', 'nombre', 'slug', 'sku', 'categoria', 'descripcion']}),
+        (None, {'fields': ['tienda', 'nombre', 'slug', 'sku', 'categoria', 'marca', 'descripcion']}),
         ('Precio', {'fields': ['precio', 'precio_oferta', 'oferta_inicio', 'oferta_fin']}),
         ('Disponibilidad', {'fields': ['disponibilidad']}),
         ('Inventario (opcional)', {

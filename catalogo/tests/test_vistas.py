@@ -130,7 +130,7 @@ class CatalogoVistasTests(TestCase):
         self.assertEqual(respuesta.status_code, 200)
         self.assertContains(respuesta, 'property="og:title" content="Taza térmica · RD$ 450.00"')
         self.assertContains(respuesta, 'property="product:price:currency" content="DOP"')
-        self.assertContains(respuesta, 'Preguntar por WhatsApp')
+        self.assertContains(respuesta, 'Pregunta por WhatsApp')
         self.assertContains(respuesta, 'https://wa.me/18095550000?text=')
         self.assertEqual(respuesta.context['relacionados'], [self.lampara])
 

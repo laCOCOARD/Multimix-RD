@@ -68,6 +68,8 @@
     const formulario = evento.target.closest('form.js-agregar');
     if (!formulario) return;
     if (!formulario.checkValidity()) return;
+    // "Comprar ahora" lleva al checkout: se envia de la forma normal.
+    if (evento.submitter && evento.submitter.name === 'comprar') return;
     evento.preventDefault();
     const boton = formulario.querySelector('[type="submit"]');
     boton.disabled = true;
@@ -81,6 +83,137 @@
       return;
     }
     boton.disabled = false;
+  });
+
+  // Compartir un producto: el menu del telefono si existe; si no, copia el enlace.
+  document.querySelectorAll('.js-compartir').forEach((boton) => {
+    boton.addEventListener('click', async () => {
+      const datos = { title: boton.dataset.titulo, url: boton.dataset.url };
+      try {
+        if (navigator.share) {
+          await navigator.share(datos);
+        } else {
+          await navigator.clipboard.writeText(datos.url);
+          avisar('Enlace copiado. Pégalo donde quieras compartirlo.');
+        }
+      } catch (error) {
+        if (error.name !== 'AbortError') avisar('No se pudo compartir. Copia el enlace de la barra de direcciones.', 'aviso');
+      }
+    });
+  });
+
+  // Buscador con sugerencias. Sin JavaScript sigue siendo un formulario normal.
+  document.querySelectorAll('form.js-buscador').forEach((formulario) => {
+    const campo = formulario.querySelector('input[name="q"]');
+    const origen = formulario.dataset.sugerencias;
+    if (!campo || !origen) return;
+
+    const lista = document.createElement('ul');
+    lista.className = 'mm-sugerencias';
+    lista.id = `sugerencias-${Math.random().toString(36).slice(2, 8)}`;
+    lista.setAttribute('role', 'listbox');
+    lista.hidden = true;
+    formulario.appendChild(lista);
+    campo.setAttribute('role', 'combobox');
+    campo.setAttribute('aria-autocomplete', 'list');
+    campo.setAttribute('aria-controls', lista.id);
+    campo.setAttribute('aria-expanded', 'false');
+
+    let espera = null;
+    let pedido = 0;
+    let activa = -1;
+
+    const opciones = () => Array.from(lista.querySelectorAll('a'));
+    const cerrar = () => {
+      lista.hidden = true;
+      activa = -1;
+      campo.setAttribute('aria-expanded', 'false');
+      campo.removeAttribute('aria-activedescendant');
+    };
+    const marcar = (indice) => {
+      const enlaces = opciones();
+      if (!enlaces.length) return;
+      activa = (indice + enlaces.length) % enlaces.length;
+      enlaces.forEach((enlace, i) => enlace.classList.toggle('activa', i === activa));
+      campo.setAttribute('aria-activedescendant', enlaces[activa].id);
+    };
+
+    function pintar(resultados, texto) {
+      lista.replaceChildren();
+      resultados.forEach((resultado, i) => {
+        const enlace = document.createElement('a');
+        enlace.href = resultado.url;
+        enlace.id = `${lista.id}-${i}`;
+        enlace.setAttribute('role', 'option');
+        if (resultado.foto) {
+          const foto = document.createElement('img');
+          foto.src = resultado.foto;
+          foto.alt = '';
+          foto.width = 44;
+          foto.height = 44;
+          enlace.appendChild(foto);
+        }
+        const cuerpo = document.createElement('span');
+        cuerpo.className = 'mm-sugerencia-cuerpo';
+        const nombre = document.createElement('span');
+        nombre.className = 'mm-sugerencia-nombre';
+        nombre.textContent = resultado.nombre;
+        const detalle = document.createElement('span');
+        detalle.className = 'mm-sugerencia-detalle';
+        detalle.textContent = resultado.tienda ? `${resultado.precio} · ${resultado.tienda}` : resultado.precio;
+        cuerpo.append(nombre, detalle);
+        enlace.appendChild(cuerpo);
+        const fila = document.createElement('li');
+        fila.setAttribute('role', 'none');
+        fila.appendChild(enlace);
+        lista.appendChild(fila);
+      });
+      if (resultados.length) {
+        const fila = document.createElement('li');
+        fila.setAttribute('role', 'none');
+        const todos = document.createElement('a');
+        todos.href = `${formulario.action}?q=${encodeURIComponent(texto)}`;
+        todos.id = `${lista.id}-todos`;
+        todos.className = 'mm-sugerencia-todos';
+        todos.setAttribute('role', 'option');
+        todos.textContent = `Ver todos los resultados de «${texto}»`;
+        fila.appendChild(todos);
+        lista.appendChild(fila);
+      }
+      activa = -1;
+      lista.hidden = !resultados.length;
+      campo.setAttribute('aria-expanded', String(!!resultados.length));
+    }
+
+    async function buscar() {
+      const texto = campo.value.trim();
+      if (texto.length < 2) { cerrar(); return; }
+      const turno = ++pedido;
+      try {
+        const respuesta = await fetch(`${origen}?q=${encodeURIComponent(texto)}`, { credentials: 'same-origin' });
+        if (!respuesta.ok) throw new Error('sin sugerencias');
+        const datos = await respuesta.json();
+        // Solo se pinta la respuesta de lo ultimo que se escribio.
+        if (turno === pedido) pintar(datos.resultados || [], texto);
+      } catch (error) {
+        cerrar();
+      }
+    }
+
+    campo.addEventListener('input', () => {
+      clearTimeout(espera);
+      espera = setTimeout(buscar, 220);
+    });
+    campo.addEventListener('keydown', (evento) => {
+      if (lista.hidden) return;
+      if (evento.key === 'ArrowDown') { evento.preventDefault(); marcar(activa + 1); }
+      else if (evento.key === 'ArrowUp') { evento.preventDefault(); marcar(activa - 1); }
+      else if (evento.key === 'Escape') { cerrar(); }
+      else if (evento.key === 'Enter' && activa >= 0) { evento.preventDefault(); opciones()[activa].click(); }
+    });
+    document.addEventListener('click', (evento) => {
+      if (!formulario.contains(evento.target)) cerrar();
+    });
   });
 
   // Galeria del producto: cambiar la foto grande al tocar una miniatura.

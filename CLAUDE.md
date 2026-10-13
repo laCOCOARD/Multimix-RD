@@ -122,7 +122,12 @@ Al cerrar cada modulo: check, makemigrations, migrate, test y commit.
   carrito) se descarta. El cupon vive ahi; el checkout lo revalida y `crear_pedido` lo bloquea y cuenta el uso.
   `crear_pedido` toma la tienda del carrito y exige que productos, zona y cupon sean de ella.
 - "Ya hice la transferencia" se marca en el checkout o en la pagina de confirmacion; nunca cambia el estado.
-- Busqueda sin tildes: `Producto.texto_busqueda` (nombre + SKU + descripcion normalizados en `save()`).
+- Marca del producto: texto libre (`Producto.marca`), sin modelo aparte; el filtro del catalogo la compara sin
+  mayusculas (`catalogo.services.marcas_de`). Asi el vendedor no depende del administrador para una marca nueva.
+- Buscador con sugerencias: `catalogo.services.sugerencias` (minimo 2 letras) en `/tienda/<slug>/sugerencias/` y
+  `/sugerencias/` (todo el sitio). El desplegable se arma en `tienda.js` con nodos, nunca con HTML del servidor.
+- "Comprar ahora" es el mismo POST de agregar al carrito con `comprar=1`: redirige al checkout.
+- Busqueda sin tildes: `Producto.texto_busqueda` (nombre + marca + SKU + descripcion normalizados en `save()`).
   Ojo: `queryset.update()` de nombre/descripcion no lo refresca.
 - Correo del cliente opcional en el checkout (el contacto es por WhatsApp).
 - Los pedidos no se crean desde el panel; en su formulario solo se editan las notas internas.

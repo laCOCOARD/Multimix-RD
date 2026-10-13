@@ -113,6 +113,9 @@ class Producto(models.Model):
     nombre = models.CharField(max_length=150)
     slug = models.SlugField(max_length=170, blank=True, help_text='Se genera solo si lo dejas vacío.')
     sku = models.CharField('SKU', max_length=40, help_text='Código del producto. No se repite dentro de la tienda.')
+    marca = models.CharField(
+        max_length=60, blank=True, help_text='Marca o fabricante. Los clientes pueden filtrar el catálogo por marca.',
+    )
     descripcion = models.TextField('descripción', blank=True)
     precio = models.DecimalField(max_digits=12, decimal_places=2, validators=[MinValueValidator(Decimal('0.01'))])
     precio_oferta = models.DecimalField(
@@ -140,7 +143,7 @@ class Producto(models.Model):
     activo = models.BooleanField(default=True)
     texto_busqueda = models.TextField(
         editable=False, default='',
-        help_text='Nombre, SKU y descripción sin tildes; lo usa el buscador.',
+        help_text='Nombre, marca, SKU y descripción sin tildes; lo usa el buscador.',
     )
     creado = models.DateTimeField('fecha de creación', auto_now_add=True)
     actualizado = models.DateTimeField('última actualización', auto_now=True)
@@ -201,9 +204,10 @@ class Producto(models.Model):
             self.slug = generar_slug_unico(self, self.nombre, largo=170, tienda=self.tienda_id)
         if self.sku:
             self.sku = self.sku.strip().upper()
-        self.texto_busqueda = normalizar(f'{self.nombre} {self.sku} {self.descripcion}')
+        self.marca = ' '.join((self.marca or '').split())
+        self.texto_busqueda = normalizar(f'{self.nombre} {self.marca} {self.sku} {self.descripcion}')
         campos = kwargs.get('update_fields')
-        if campos is not None and {'nombre', 'sku', 'descripcion'} & set(campos):
+        if campos is not None and {'nombre', 'marca', 'sku', 'descripcion'} & set(campos):
             kwargs['update_fields'] = {*campos, 'texto_busqueda'}
         super().save(*args, **kwargs)
 

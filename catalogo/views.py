@@ -1,5 +1,9 @@
 from django.core.paginator import Paginator
+from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, render
+from django.views.decorators.http import require_GET
+
+from core.templatetags.moneda import formatear_monto
 
 from pedidos.whatsapp import construir_enlace
 from tiendas.decoradores import de_tienda
@@ -36,12 +40,34 @@ def lista(request, slug=None):
     return render(request, 'catalogo/lista.html', {
         'categoria': categoria,
         'categorias': services.categorias_de(request.tienda),
+        'marcas': services.marcas_de(request.tienda, categoria),
         'filtros': filtros,
         'ordenes': ORDENES,
         'orden_actual': filtros.get('orden') or 'nuevos',
         'pagina': pagina,
-        'hay_filtros': any(filtros.get(c) for c in ('q', 'precio_min', 'precio_max', 'oferta', 'disponibles')),
+        'hay_filtros': any(filtros.get(c) for c in ('q', 'marca', 'precio_min', 'precio_max', 'oferta', 'disponibles')),
     })
+
+
+def respuesta_de_sugerencias(productos, con_tienda=False):
+    """JSON del desplegable del buscador. `con_tienda` agrega de que tienda es cada producto."""
+    resultados = []
+    for item in productos:
+        foto = item.foto_principal
+        resultados.append({
+            'nombre': item.nombre,
+            'url': item.get_absolute_url(),
+            'precio': formatear_monto(item.precio_final),
+            'foto': foto.imagen.url if foto else '',
+            'tienda': item.tienda.nombre if con_tienda else '',
+        })
+    return JsonResponse({'resultados': resultados})
+
+
+@require_GET
+@de_tienda
+def sugerencias(request):
+    return respuesta_de_sugerencias(services.sugerencias(request.GET.get('q', '')[:80], request.tienda))
 
 
 @de_tienda

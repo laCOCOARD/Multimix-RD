@@ -50,6 +50,18 @@
           </div>
         </div>
 
+        {% if marcas %}
+        <div class="mb-3">
+          <label class="form-label" for="filtro-marca">Marca</label>
+          <select class="form-select" id="filtro-marca" name="marca">
+            <option value="">Todas</option>
+            {% for marca in marcas %}
+              <option value="{{ marca }}"{% if marca|lower == filtros.marca|default:''|lower %} selected{% endif %}>{{ marca }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        {% endif %}
+
         <div class="mb-3">
           <span class="form-label d-block">Precio (RD$)</span>
           <div class="input-group">

@@ -90,9 +90,10 @@
             {% endif %}
           </ul>
           {% block buscador_cabecera %}
-          <form class="d-flex mm-buscador" role="search" method="get"
-                action="{% if tienda %}{% url 'catalogo:lista' tienda.slug %}{% else %}{% url 'tiendas:buscar' %}{% endif %}">
-            <input class="form-control" type="search" name="q" maxlength="80" value="{{ filtros.q|default:'' }}"
+          <form class="d-flex mm-buscador js-buscador" role="search" method="get"
+                action="{% if tienda %}{% url 'catalogo:lista' tienda.slug %}{% else %}{% url 'tiendas:buscar' %}{% endif %}"
+                data-sugerencias="{% if tienda %}{% url 'catalogo:sugerencias' tienda.slug %}{% else %}{% url 'tiendas:sugerencias' %}{% endif %}">
+            <input class="form-control" type="search" name="q" maxlength="80" value="{{ filtros.q|default:'' }}" autocomplete="off"
                    placeholder="{% if tienda %}Buscar en esta tienda{% else %}Buscar productos{% endif %}"
                    aria-label="{% if tienda %}Buscar en {{ tienda.nombre }}{% else %}Buscar en todas las tiendas{% endif %}">
             <button class="btn btn-primary" type="submit" aria-label="Buscar"><i class="bi bi-search"></i></button>

@@ -72,6 +72,29 @@ def categorias_de(tienda):
     return Categoria.objects.filter(activa=True, productos__tienda=tienda, productos__activo=True).distinct()
 
 
+def marcas_de(tienda, categoria=None):
+    """Marcas de los productos a la venta de la tienda (y de la categoria, si se pasa), en orden alfabetico."""
+    productos = Producto.objects.activos().filter(tienda=tienda).exclude(marca='')
+    if categoria is not None:
+        productos = productos.filter(categoria=categoria)
+    # Una misma marca escrita con otra capitalizacion cuenta una sola vez.
+    marcas = {}
+    for marca in productos.order_by('marca').values_list('marca', flat=True).distinct():
+        marcas.setdefault(marca.casefold(), marca)
+    return sorted(marcas.values(), key=str.casefold)
+
+
+def sugerencias(texto, tienda=None, limite=6):
+    """Productos para el desplegable del buscador: deben contener todas las palabras escritas."""
+    palabras = normalizar(texto).split()
+    if not palabras or max(len(palabra) for palabra in palabras) < 2:
+        return []
+    productos = _base(tienda)
+    for palabra in palabras:
+        productos = productos.filter(texto_busqueda__contains=palabra)
+    return list(productos.order_by('-destacado', '-creado', '-id')[:limite])
+
+
 def categorias_de_portada(tienda):
     """Categorias de la tienda para su portada. La que no tiene imagen muestra la foto de uno de sus productos."""
     foto = (
@@ -112,6 +135,8 @@ def filtrar_catalogo(filtros, categoria=None, tienda=None):
     # Busqueda sin tildes ni mayusculas: deben aparecer todas las palabras escritas.
     for palabra in normalizar(filtros.get('q')).split():
         productos = productos.filter(texto_busqueda__contains=palabra)
+    if filtros.get('marca'):
+        productos = productos.filter(marca__iexact=filtros['marca'].strip())
     if filtros.get('precio_min') is not None:
         productos = productos.filter(precio_actual__gte=filtros['precio_min'])
     if filtros.get('precio_max') is not None:

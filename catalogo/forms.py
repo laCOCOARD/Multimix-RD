@@ -10,6 +10,7 @@ ORDENES = [
 
 class FiltroCatalogoForm(forms.Form):
     q = forms.CharField(required=False, max_length=80)
+    marca = forms.CharField(required=False, max_length=60)
     precio_min = forms.DecimalField(required=False, min_value=0, max_digits=12, decimal_places=2)
     precio_max = forms.DecimalField(required=False, min_value=0, max_digits=12, decimal_places=2)
     oferta = forms.BooleanField(required=False)

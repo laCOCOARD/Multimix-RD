@@ -61,7 +61,9 @@
     </div>
 
     <div class="col-md-6">
-      <p class="mm-tarjeta-categoria mb-1">{{ producto.categoria.nombre }} · SKU {{ producto.sku }}</p>
+      <p class="mm-tarjeta-categoria mb-1">
+        {% if producto.marca %}<a href="{% url 'catalogo:lista' tienda.slug %}?marca={{ producto.marca|urlencode }}">{{ producto.marca }}</a> · {% endif %}{{ producto.categoria.nombre }} · SKU {{ producto.sku }}
+      </p>
       <h1 class="h2">{{ producto.nombre }}</h1>
 
       <p class="mm-precio mm-precio-grande my-3">
@@ -100,17 +102,25 @@
                      value="1" min="1" max="{{ cantidad_maxima }}" step="1" inputmode="numeric" required>
             </div>
             <div class="col">
-              <button class="btn btn-primary btn-lg w-100" type="submit"><i class="bi bi-bag-plus me-1"></i>Agregar al carrito</button>
+              <button class="btn btn-outline-primary btn-lg w-100" type="submit"><i class="bi bi-bag-plus me-1"></i>Agregar al carrito</button>
+            </div>
+            <div class="col-12">
+              <button class="btn btn-acento btn-lg w-100" type="submit" name="comprar" value="1"><i class="bi bi-lightning-charge-fill me-1"></i>Comprar ahora</button>
             </div>
           </div>
         </form>
       {% endif %}
 
       {% if enlace_consulta %}
-        <a class="btn btn-whatsapp btn-lg w-100" href="{{ enlace_consulta }}" target="_blank" rel="noopener">
-          <i class="bi bi-whatsapp me-1"></i>Preguntar por WhatsApp
+        <a class="btn btn-outline-success w-100" href="{{ enlace_consulta }}" target="_blank" rel="noopener">
+          <i class="bi bi-whatsapp me-1"></i>¿Dudas? Pregunta por WhatsApp
         </a>
       {% endif %}
+
+      <button class="btn btn-link px-0 mt-2 solo-con-js js-compartir" type="button"
+              data-titulo="{{ producto.nombre }}" data-url="{{ url_absoluta }}">
+        <i class="bi bi-share me-1"></i>Compartir este producto
+      </button>
 
       {% if producto.descripcion %}
         <h2 class="h5 mt-4">Descripción</h2>

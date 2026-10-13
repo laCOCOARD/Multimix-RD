@@ -4,7 +4,8 @@ from django.shortcuts import redirect, render
 from django.views.decorators.http import require_GET
 
 from catalogo.forms import ORDENES, FiltroCatalogoForm
-from catalogo.services import filtrar_catalogo
+from catalogo.services import filtrar_catalogo, sugerencias as sugerencias_de_productos
+from catalogo.views import respuesta_de_sugerencias
 
 from . import services
 
@@ -28,6 +29,13 @@ def buscar(request):
         'orden_actual': filtros.get('orden') or 'nuevos',
         'pagina': pagina,
     })
+
+
+@require_GET
+def sugerencias(request):
+    """Sugerencias del buscador del sitio: productos de todas las tiendas activas."""
+    productos = sugerencias_de_productos(request.GET.get('q', '')[:80])
+    return respuesta_de_sugerencias(productos, con_tienda=True)
 
 
 @require_GET
