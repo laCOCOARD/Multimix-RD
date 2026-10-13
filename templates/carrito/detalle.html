@@ -80,6 +80,9 @@
           <div class="text-success js-fila-descuento{% if not resumen.descuento %} d-none{% endif %}">
             <dt>Descuento</dt><dd>-<span class="js-descuento">{{ resumen.descuento|moneda }}</span></dd>
           </div>
+          <div class="js-fila-impuesto{% if not resumen.impuesto %} d-none{% endif %}">
+            <dt>ITBIS ({{ tienda.itbis_porcentaje|floatformat:'-2' }}%)</dt><dd class="js-impuesto">{{ resumen.impuesto|moneda }}</dd>
+          </div>
           <div class="mm-total"><dt>Total</dt><dd class="js-total">{{ resumen.total|moneda }}</dd></div>
         </dl>
         <p class="small text-muted">El envío se calcula en el siguiente paso.</p>

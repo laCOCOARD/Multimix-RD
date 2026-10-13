@@ -34,7 +34,7 @@ class CheckoutTests(TestCase):
             'nombre': 'Ana Pérez', 'telefono': '(809) 555-1234', 'correo': '',
             'metodo_entrega': 'recoger', 'zona': '', 'direccion': '', 'referencia': '',
             'metodo_pago': 'transferencia', 'referencia_transferencia': '', 'cupon': '', 'notas': '',
-            'sitio_web': '',
+            'sitio_web': '', 'acepta_terminos': 'on',
         }
         datos.update(cambios)
         return datos
@@ -69,16 +69,17 @@ class CheckoutTests(TestCase):
 
         pagina = self.client.get(respuesta.url)
         self.assertContains(pagina, pedido.numero)
-        self.assertContains(pagina, 'Enviar pedido por WhatsApp')
+        # La compra termina aqui: WhatsApp queda como una forma opcional de escribirle a la tienda.
+        self.assertContains(pagina, '¡Recibimos tu pedido!')
+        self.assertNotContains(pagina, 'Falta un paso')
+        self.assertNotContains(pagina, 'data-abrir')
+        self.assertContains(pagina, 'Escribir a la tienda por WhatsApp')
         self.assertContains(pagina, 'Banco Popular')
-        self.assertContains(pagina, 'data-abrir="1"')
         enlace = pagina.context['enlace_whatsapp']
         self.assertTrue(enlace.startswith('https://wa.me/18095550000?text='))
         self.assertEqual(parse_qs(urlparse(enlace).query)['text'], [construir_mensaje(pedido)])
 
-        # El carrito queda vacio y WhatsApp solo se abre solo la primera vez.
         self.assertEqual(self.client.get(ruta('carrito:detalle')).context['lineas'], [])
-        self.assertContains(self.client.get(respuesta.url), 'data-abrir="0"')
 
     def test_los_montos_enviados_por_el_navegador_se_ignoran(self):
         self.llenar_carrito(1)
@@ -91,10 +92,11 @@ class CheckoutTests(TestCase):
     def test_envio_a_domicilio_suma_la_tarifa(self):
         self.llenar_carrito(1)
         self.client.post(self.url, self.datos(
-            metodo_entrega='envio', zona=self.zona.pk, direccion='Calle 1 #5', referencia='Portón azul',
+            metodo_entrega='envio', zona=self.zona.pk, sector='Naco', direccion='Calle 1 #5', referencia='Portón azul',
         ))
         pedido = Pedido.objects.get()
         self.assertEqual((pedido.costo_envio, pedido.total), (Decimal('250.00'), Decimal('1250.00')))
+        self.assertEqual(pedido.direccion_completa, 'Calle 1 #5, Naco')
         self.assertEqual(pedido.zona, self.zona)
 
     def test_validaciones_del_servidor(self):
@@ -103,15 +105,15 @@ class CheckoutTests(TestCase):
         self.assertEqual(set(self.errores(respuesta)), {'nombre', 'telefono', 'correo'})
 
         respuesta = self.client.post(self.url, self.datos(metodo_entrega='envio'))
-        self.assertEqual(set(self.errores(respuesta)), {'zona', 'direccion'})
+        self.assertEqual(set(self.errores(respuesta)), {'zona', 'sector', 'direccion'})
 
         respuesta = self.client.post(self.url, self.datos(
-            metodo_entrega='envio', zona=self.zona.pk, direccion='Calle 1', metodo_pago='efectivo_recoger',
+            metodo_entrega='envio', zona=self.zona.pk, sector='Naco', direccion='Calle 1', metodo_pago='efectivo_recoger',
         ))
         self.assertEqual(set(self.errores(respuesta)), {'metodo_pago'})
 
         respuesta = self.client.post(self.url, self.datos(
-            metodo_entrega='envio', zona=self.zona.pk, direccion='Calle 1', metodo_pago='contra_entrega',
+            metodo_entrega='envio', zona=self.zona.pk, sector='Naco', direccion='Calle 1', metodo_pago='contra_entrega',
         ))
         self.assertEqual(set(self.errores(respuesta)), {'metodo_pago'})
         self.assertEqual(Pedido.objects.count(), 0)
@@ -122,7 +124,7 @@ class CheckoutTests(TestCase):
         self.llenar_carrito(1)
         self.assertContains(self.client.get(self.url), 'pago-contra_entrega')
         self.client.post(self.url, self.datos(
-            metodo_entrega='envio', zona=self.zona.pk, direccion='Calle 1', metodo_pago='contra_entrega',
+            metodo_entrega='envio', zona=self.zona.pk, sector='Naco', direccion='Calle 1', metodo_pago='contra_entrega',
         ))
         self.assertEqual(Pedido.objects.get().metodo_pago, Pedido.Pago.CONTRA_ENTREGA)
 

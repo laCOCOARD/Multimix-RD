@@ -18,8 +18,6 @@ from .forms import AvisoTransferenciaForm, CheckoutForm
 from .models import Pedido
 from .whatsapp import enlace_del_pedido
 
-SESION_PEDIDO_NUEVO = 'pedido_nuevo'
-
 
 def _ip_cliente(request):
     if settings.CONFIAR_IP_PROXY:
@@ -95,7 +93,7 @@ def checkout(request):
     if formulario.is_valid():
         ip = _ip_cliente(request)
         if services.supera_limite_por_ip(ip):
-            formulario.add_error(None, 'Recibimos varios pedidos desde tu conexión. Espera un rato o escríbenos por WhatsApp.')
+            formulario.add_error(None, 'Recibimos varios pedidos desde tu conexión. Espera un rato y vuelve a intentarlo.')
         else:
             try:
                 pedido = services.crear_pedido(carrito, formulario.cleaned_data, ip=ip)
@@ -108,7 +106,6 @@ def checkout(request):
                 formulario.add_error(None, error.mensaje)
             else:
                 carrito.vaciar()
-                request.session[SESION_PEDIDO_NUEVO] = str(pedido.token)
                 return redirect(pedido)
     return render(request, 'pedidos/checkout.html', _contexto_checkout(request, carrito, formulario))
 
@@ -152,6 +149,8 @@ def totales(request):
         'subtotal': formatear_monto(calculo.subtotal),
         'descuento': formatear_monto(calculo.descuento),
         'hay_descuento': calculo.descuento > 0,
+        'impuesto': formatear_monto(calculo.impuesto),
+        'hay_impuesto': calculo.impuesto > 0,
         'envio': envio_texto,
         'total': formatear_monto(calculo.total),
         'cupon': calculo.cupon.codigo if calculo.cupon else '',
@@ -174,12 +173,11 @@ def confirmacion(request, token):
         request, token, Pedido.objects.select_related('zona').prefetch_related('detalles'),
     )
     tienda = pedido.tienda
-    recien_creado = request.session.pop(SESION_PEDIDO_NUEVO, None) == str(pedido.token)
     return render(request, 'pedidos/confirmacion.html', {
         'pedido': pedido,
         'cuentas': _cuentas_de(tienda) if pedido.paga_por_transferencia else [],
-        'enlace_whatsapp': enlace_del_pedido(pedido, tienda.whatsapp),
-        'abrir_whatsapp': recien_creado and bool(tienda.whatsapp),
+        # WhatsApp ya no es un paso de la compra: queda como canal opcional para hablar con la tienda.
+        'enlace_whatsapp': enlace_del_pedido(pedido, tienda.whatsapp) if tienda.whatsapp else '',
         'puede_avisar_transferencia': (
             pedido.paga_por_transferencia and pedido.estado == Pedido.Estado.PENDIENTE
         ),
@@ -198,5 +196,5 @@ def avisar_transferencia(request, token):
     except services.PedidoError as error:
         messages.error(request, error.mensaje)
     else:
-        messages.success(request, 'Gracias. Verificaremos tu transferencia y te confirmaremos por WhatsApp.')
+        messages.success(request, 'Gracias. Verificaremos tu transferencia; aquí mismo verás tu pedido como pagado.')
     return redirect(pedido)

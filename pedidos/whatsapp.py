@@ -23,6 +23,8 @@ def construir_mensaje(pedido):
     lineas += ['', f'*Subtotal:* {formatear_monto(pedido.subtotal)}']
     if pedido.descuento > 0:
         lineas.append(f'*Cupón {pedido.codigo_cupon}:* -{formatear_monto(pedido.descuento)}')
+    if pedido.impuesto > 0:
+        lineas.append(f'*{pedido.etiqueta_impuesto}:* {formatear_monto(pedido.impuesto)}')
     if pedido.recoge_en_tienda:
         lineas.append('*Entrega:* Recoger en tienda')
     else:
@@ -39,7 +41,7 @@ def construir_mensaje(pedido):
 
     extras = []
     if not pedido.recoge_en_tienda:
-        extras.append(f'*Dirección:* {pedido.direccion}')
+        extras.append(f'*Dirección:* {pedido.direccion_completa}')
         if pedido.referencia:
             extras.append(f'*Referencia:* {pedido.referencia}')
     if pedido.notas_cliente:

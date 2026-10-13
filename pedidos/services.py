@@ -10,6 +10,7 @@ from django.db.models import Count, Max, Q, Sum
 from django.utils import timezone
 
 from catalogo.models import Categoria, Disponibilidad, Producto
+from core.impuestos import calcular_itbis
 from core.models import ConfiguracionTienda
 from promociones.models import Cupon
 from promociones.services import (
@@ -51,10 +52,11 @@ class Totales:
     costo_envio: Decimal
     cupon: Cupon | None = None
     aviso_cupon: str = ''
+    impuesto: Decimal = CERO
 
     @property
     def total(self):
-        return self.subtotal - self.descuento + self.costo_envio
+        return self.subtotal - self.descuento + self.impuesto + self.costo_envio
 
 
 def costo_de_envio(metodo_entrega, zona):
@@ -73,6 +75,7 @@ def calcular_totales(carrito, metodo_entrega=Entrega.RECOGER, zona=None):
         costo_envio=costo_de_envio(metodo_entrega, zona),
         cupon=resumen.cupon,
         aviso_cupon=resumen.aviso_cupon,
+        impuesto=resumen.impuesto,
     )
 
 
@@ -169,6 +172,9 @@ def crear_pedido(carrito, datos, ip=None):
         except CuponInvalido as error:
             raise PedidoError(f'El cupón {codigo} ya no se puede usar: {error.mensaje}') from error
     descuento = calcular_descuento(cupon, subtotal)
+    impuesto = calcular_itbis(
+        ((p.precio_final * cantidad, p.exento_itbis) for p, cantidad in lineas), descuento, tienda.itbis_porcentaje,
+    )
 
     metodo_entrega = datos['metodo_entrega']
     a_domicilio = metodo_entrega == Entrega.ENVIO
@@ -184,6 +190,7 @@ def crear_pedido(carrito, datos, ip=None):
         correo=datos.get('correo') or '',
         metodo_entrega=metodo_entrega,
         zona=zona,
+        sector=(datos.get('sector') or '').strip() if a_domicilio else '',
         direccion=(datos.get('direccion') or '').strip() if a_domicilio else '',
         referencia=(datos.get('referencia') or '').strip() if a_domicilio else '',
         metodo_pago=datos['metodo_pago'],
@@ -193,8 +200,10 @@ def crear_pedido(carrito, datos, ip=None):
         codigo_cupon=cupon.codigo if cupon else '',
         subtotal=subtotal,
         descuento=descuento,
+        impuesto=impuesto,
+        porcentaje_impuesto=tienda.itbis_porcentaje if impuesto else CERO,
         costo_envio=costo_envio,
-        total=subtotal - descuento + costo_envio,
+        total=subtotal - descuento + impuesto + costo_envio,
         notas_cliente=(datos.get('notas') or '').strip(),
         ip=ip,
     )

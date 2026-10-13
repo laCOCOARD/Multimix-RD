@@ -74,6 +74,10 @@
         {% endif %}
       </p>
 
+      {% if tienda.itbis_porcentaje and not producto.exento_itbis %}
+        <p class="small text-muted mt-n2">Precio sin ITBIS ({{ tienda.itbis_porcentaje|floatformat:'-2' }}%): se suma al confirmar tu pedido.</p>
+      {% endif %}
+
       <p class="mm-disponibilidad">
         {% if producto.agotado %}
           <span class="text-danger"><i class="bi bi-x-circle-fill me-1"></i>{{ producto.estado_venta.label }}</span>

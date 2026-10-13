@@ -35,6 +35,8 @@ def _estado_json(carrito):
         'subtotal': formatear_monto(resumen.subtotal),
         'descuento': formatear_monto(resumen.descuento),
         'hay_descuento': resumen.descuento > 0,
+        'impuesto': formatear_monto(resumen.impuesto),
+        'hay_impuesto': resumen.impuesto > 0,
         'total': formatear_monto(resumen.total),
         'cupon': resumen.cupon.codigo if resumen.cupon else '',
         'aviso_cupon': resumen.aviso_cupon,

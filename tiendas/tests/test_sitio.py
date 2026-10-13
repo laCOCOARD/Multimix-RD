@@ -43,7 +43,7 @@ class DosTiendas(TestCase):
         datos = {
             'nombre': 'Ana Pérez', 'telefono': '809-555-1234', 'correo': '', 'metodo_entrega': 'recoger',
             'zona': '', 'direccion': '', 'referencia': '', 'metodo_pago': 'transferencia',
-            'referencia_transferencia': '', 'cupon': '', 'notas': '', 'sitio_web': '',
+            'referencia_transferencia': '', 'cupon': '', 'notas': '', 'sitio_web': '', 'acepta_terminos': 'on',
         }
         datos.update(cambios)
         return self.client.post(ruta('pedidos:checkout', tienda=tienda), datos)
@@ -211,7 +211,6 @@ class PedidoPorTiendaTests(DosTiendas):
         self.assertContains(pagina, 'Banreservas')
         self.assertNotContains(pagina, 'Banco Popular')
         self.assertContains(pagina, 'Compra en <strong>Fitnes RD</strong>')
-        self.assertContains(pagina, 'data-abrir="1"')
 
     def test_cada_tienda_numera_sus_pedidos_por_separado(self):
         for tienda, producto in ((self.multimix, self.lampara), (self.fitnes, self.pesas), (self.fitnes, self.pesas)):
@@ -225,7 +224,7 @@ class PedidoPorTiendaTests(DosTiendas):
 
     def test_zona_y_cupon_de_otra_tienda_no_se_aceptan(self):
         self.agregar(self.pesas, self.fitnes)
-        envio = {'metodo_entrega': 'envio', 'direccion': 'Calle 1 #5'}
+        envio = {'metodo_entrega': 'envio', 'sector': 'Naco', 'direccion': 'Calle 1 #5'}
         respuesta = self.pedir(self.fitnes, zona=self.zona_multimix.pk, **envio)
         self.assertIn('zona', respuesta.context['formulario'].errors)
         respuesta = self.pedir(self.fitnes, cupon='MULTI10')

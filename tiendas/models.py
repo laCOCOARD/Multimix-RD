@@ -1,5 +1,7 @@
+from decimal import Decimal
+
 from django.conf import settings
-from django.core.validators import RegexValidator
+from django.core.validators import MaxValueValidator, MinValueValidator, RegexValidator
 from django.db import models
 from django.urls import reverse
 
@@ -80,6 +82,12 @@ class Tienda(models.Model):
     tiktok = models.URLField(blank=True)
 
     permitir_contra_entrega = models.BooleanField('permitir efectivo contra entrega', default=False)
+    itbis_porcentaje = models.DecimalField(
+        'ITBIS (%)', max_digits=5, decimal_places=2, default=Decimal('18.00'),
+        validators=[MinValueValidator(Decimal('0')), MaxValueValidator(Decimal('100'))],
+        help_text='Los precios se publican sin ITBIS y se suma al confirmar el pedido, sobre los productos y '
+                  'después del descuento (el envío no lo paga). Pon 0 si la tienda no lo cobra.',
+    )
     creada = models.DateTimeField('fecha de creación', auto_now_add=True)
 
     objects = TiendaQuerySet.as_manager()

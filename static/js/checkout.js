@@ -1,4 +1,4 @@
-/* Checkout: muestra los campos segun la entrega y el pago, valida y pide los totales al servidor. */
+/* Checkout: lo recorre paso a paso, muestra los campos segun la entrega y el pago y pide los totales al servidor. */
 (() => {
   'use strict';
 
@@ -11,6 +11,7 @@
   const bloqueTransferencia = formulario.querySelector('.js-bloque-transferencia');
   const totales = formulario.querySelector('.mm-totales');
   const mensajeCupon = document.getElementById('mensaje-cupon');
+  const botonConfirmar = document.getElementById('confirmar');
   const pagosPorEntrega = {
     recoger: formulario.dataset.pagosRecoger.split(','),
     envio: formulario.dataset.pagosEnvio.split(','),
@@ -25,6 +26,7 @@
     bloqueRecoger.classList.toggle('mm-oculto', esEnvio);
     bloqueEnvio.classList.toggle('mm-oculto', !esEnvio);
     campo('zona').required = esEnvio;
+    campo('sector').required = esEnvio;
     campo('direccion').required = esEnvio;
 
     // Solo se ofrecen las formas de pago validas para la entrega elegida.
@@ -66,6 +68,8 @@
       document.getElementById('total-subtotal').textContent = info.subtotal;
       document.getElementById('total-descuento').textContent = info.descuento;
       document.getElementById('fila-descuento').classList.toggle('d-none', !info.hay_descuento);
+      document.getElementById('total-impuesto').textContent = info.impuesto;
+      document.getElementById('fila-impuesto').classList.toggle('d-none', !info.hay_impuesto);
       document.getElementById('total-envio').textContent = info.envio;
       document.getElementById('total-total').textContent = info.total;
       if (conCupon || info.cupon_mensaje) {
@@ -91,6 +95,100 @@
     return valido;
   }
 
+  // --- Pasos ---------------------------------------------------------------------------
+  const pasos = Array.from(formulario.querySelectorAll('[data-paso]'));
+  const indicadores = Array.from(document.querySelectorAll('#pasos-checkout [data-ir]'));
+  let actual = 0;
+
+  const camposDe = (paso) => Array.from(paso.querySelectorAll('input, select, textarea')).filter((c) => !c.disabled);
+  const pasoDe = (elemento) => pasos.indexOf(elemento.closest('[data-paso]'));
+
+  function pasoValido(indice) {
+    validarTelefono();
+    const paso = pasos[indice];
+    const invalido = camposDe(paso).find((c) => !c.checkValidity());
+    paso.classList.toggle('was-validated', !!invalido);
+    if (invalido) invalido.focus();
+    return !invalido;
+  }
+
+  function texto(nodo, lineas) {
+    nodo.replaceChildren();
+    lineas.filter(Boolean).forEach((linea, i) => {
+      if (i) nodo.appendChild(document.createElement('br'));
+      nodo.appendChild(document.createTextNode(linea));
+    });
+  }
+
+  function pintarRevision() {
+    const revision = document.getElementById('revision');
+    if (!revision) return;
+    const etiqueta = (radio) => {
+      const nodo = radio && formulario.querySelector(`label[for="${radio.id}"] span`);
+      return nodo ? nodo.firstChild.textContent.trim() : '';
+    };
+    texto(revision.querySelector('[data-revision="cliente"]'), [
+      campo('nombre').value.trim(), campo('telefono').value.trim(), campo('correo').value.trim(),
+    ]);
+    const entrega = formulario.querySelector('.js-entrega:checked');
+    const lineasEntrega = [etiqueta(entrega)];
+    if (entregaElegida() === 'envio') {
+      const zona = campo('zona').selectedOptions[0];
+      lineasEntrega.push(
+        [campo('direccion').value.trim(), campo('sector').value.trim()].filter(Boolean).join(', '),
+        zona && zona.value ? zona.dataset.nombre : '',
+        campo('referencia').value.trim(),
+      );
+    }
+    texto(revision.querySelector('[data-revision="entrega"]'), lineasEntrega);
+    texto(revision.querySelector('[data-revision="pago"]'), [etiqueta(formulario.querySelector('.js-pago:checked'))]);
+  }
+
+  function mostrar(indice, enfocar) {
+    actual = Math.max(0, Math.min(indice, pasos.length - 1));
+    pasos.forEach((paso, i) => paso.classList.toggle('mm-oculto', i !== actual));
+    indicadores.forEach((indicador, i) => {
+      indicador.classList.toggle('activo', i === actual);
+      indicador.classList.toggle('hecho', i < actual);
+      if (i === actual) indicador.setAttribute('aria-current', 'step');
+      else indicador.removeAttribute('aria-current');
+    });
+    if (actual === pasos.length - 1) pintarRevision();
+    if (enfocar) {
+      const titulo = pasos[actual].querySelector('h2');
+      if (titulo) titulo.focus({ preventScroll: true });
+      document.getElementById('pasos-checkout').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }
+
+  /** Avanza hasta `destino` mientras los pasos anteriores esten completos. */
+  function irA(destino) {
+    if (destino <= actual) { mostrar(destino, true); return; }
+    for (let i = actual; i < destino; i += 1) {
+      if (!pasoValido(i)) { mostrar(i, false); return; }
+    }
+    mostrar(destino, true);
+  }
+
+  formulario.querySelectorAll('.js-siguiente').forEach((boton) => boton.addEventListener('click', () => irA(actual + 1)));
+  formulario.querySelectorAll('.js-anterior').forEach((boton) => boton.addEventListener('click', () => irA(actual - 1)));
+  indicadores.forEach((indicador, i) => {
+    indicador.tabIndex = 0;
+    indicador.setAttribute('role', 'button');
+    indicador.addEventListener('click', () => irA(i));
+    indicador.addEventListener('keydown', (evento) => {
+      if (evento.key === 'Enter' || evento.key === ' ') { evento.preventDefault(); irA(i); }
+    });
+  });
+  // Enter en un campo de texto avanza de paso en vez de enviar el pedido a medias.
+  formulario.addEventListener('keydown', (evento) => {
+    if (evento.key !== 'Enter' || actual === pasos.length - 1) return;
+    if (evento.target.matches('input:not([type="checkbox"]):not([type="radio"]), select') && evento.target.name !== 'cupon') {
+      evento.preventDefault();
+      irA(actual + 1);
+    }
+  });
+
   formulario.querySelectorAll('.js-entrega').forEach((radio) => radio.addEventListener('change', () => {
     ajustarCampos();
     pedirTotales(false);
@@ -107,25 +205,29 @@
   });
 
   formulario.addEventListener('submit', (evento) => {
-    validarTelefono();
-    if (!formulario.checkValidity()) {
-      evento.preventDefault();
-      formulario.classList.add('was-validated');
-      const primero = formulario.querySelector(':invalid');
-      if (primero) primero.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      return;
+    for (let i = 0; i < pasos.length; i += 1) {
+      if (!pasoValido(i)) {
+        evento.preventDefault();
+        mostrar(i, false);
+        return;
+      }
     }
-    const boton = document.getElementById('confirmar');
-    boton.disabled = true;
-    boton.textContent = 'Enviando pedido…';
+    botonConfirmar.disabled = true;
+    botonConfirmar.textContent = 'Creando tu pedido…';
   });
 
   // Si el navegador restaura la pagina desde su cache (boton Atras), se reactiva el boton.
   window.addEventListener('pageshow', () => {
-    const boton = document.getElementById('confirmar');
-    boton.disabled = false;
-    boton.innerHTML = '<i class="bi bi-check2-circle me-1"></i>Confirmar pedido';
+    botonConfirmar.disabled = false;
+    botonConfirmar.replaceChildren();
+    const icono = document.createElement('i');
+    icono.className = 'bi bi-check2-circle me-1';
+    botonConfirmar.append(icono, 'Confirmar pedido');
   });
 
   ajustarCampos();
+  // Si el servidor devolvio errores, se abre el paso que tiene el primero; si no, se empieza por el principio.
+  const conError = formulario.querySelector('[data-paso] .is-invalid, [data-paso] .text-danger');
+  if (conError) mostrar(pasoDe(conError), false);
+  else mostrar(formulario.dataset.enviado ? pasos.length - 1 : 0, false);
 })();

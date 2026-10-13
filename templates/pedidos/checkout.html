@@ -6,11 +6,20 @@
 
 {% block contenido %}
 <div class="container py-4">
-  <h1 class="h3 mb-4">Finalizar pedido</h1>
+  <h1 class="h3 mb-3">Finalizar pedido</h1>
+
+  {# Con JavaScript el formulario se recorre paso a paso; sin el, se ven todos los pasos seguidos y funciona igual. #}
+  <ol class="mm-pasos solo-con-js" id="pasos-checkout" aria-label="Pasos del pedido">
+    <li data-ir="1"><span class="mm-paso">1</span>Tus datos</li>
+    <li data-ir="2"><span class="mm-paso">2</span>Entrega</li>
+    <li data-ir="3"><span class="mm-paso">3</span>Pago</li>
+    <li data-ir="4"><span class="mm-paso">4</span>Confirmar</li>
+  </ol>
 
   <form method="post" action="{% url 'pedidos:checkout' tienda.slug %}" id="checkout" novalidate
         data-url-totales="{% url 'pedidos:totales' tienda.slug %}"
-        data-pagos-recoger="{{ pagos_recoger|join:',' }}" data-pagos-envio="{{ pagos_envio|join:',' }}">
+        data-pagos-recoger="{{ pagos_recoger|join:',' }}" data-pagos-envio="{{ pagos_envio|join:',' }}"
+        {% if formulario.is_bound %}data-enviado="1"{% endif %}>
     {% csrf_token %}
 
     {% if formulario.non_field_errors %}
@@ -22,8 +31,8 @@
     <div class="row g-4">
       <div class="col-lg-7">
 
-        <section class="mm-panel mb-4">
-          <h2 class="h5 mb-3"><span class="mm-paso">1</span>Tus datos</h2>
+        <section class="mm-panel mb-4" data-paso="1" aria-labelledby="titulo-paso-1">
+          <h2 class="h5 mb-3" id="titulo-paso-1" tabindex="-1"><span class="mm-paso solo-sin-js">1</span>Tus datos</h2>
           <div class="row g-3">
             <div class="col-12">
               <label class="form-label" for="id_nombre">{{ formulario.nombre.label }}</label>
@@ -45,10 +54,14 @@
               <div class="invalid-feedback">{{ formulario.correo.errors.0|default:'Escribe un correo válido.' }}</div>
             </div>
           </div>
+          <div class="mm-paso-botones solo-con-js">
+            <a class="btn btn-link" href="{% url 'carrito:detalle' tienda.slug %}">Volver al carrito</a>
+            <button class="btn btn-primary js-siguiente" type="button">Continuar<i class="bi bi-arrow-right ms-1"></i></button>
+          </div>
         </section>
 
-        <section class="mm-panel mb-4">
-          <h2 class="h5 mb-3"><span class="mm-paso">2</span>Entrega</h2>
+        <section class="mm-panel mb-4" data-paso="2" aria-labelledby="titulo-paso-2">
+          <h2 class="h5 mb-3" id="titulo-paso-2" tabindex="-1"><span class="mm-paso solo-sin-js">2</span>Entrega</h2>
           <div class="row g-2 mb-2">
             {% for valor, etiqueta in formulario.fields.metodo_entrega.choices %}
               <div class="col-sm-6">
@@ -65,28 +78,35 @@
 
           <div class="js-bloque-recoger mt-3">
             <p class="mb-0"><i class="bi bi-geo-alt me-1"></i>
-              {% if tienda.direccion_tienda %}Recoges en: <strong>{{ tienda.direccion_tienda }}</strong>{% else %}Te confirmaremos la dirección por WhatsApp.{% endif %}
+              {% if tienda.direccion_tienda %}Recoges en: <strong>{{ tienda.direccion_tienda }}</strong>{% else %}La tienda te confirmará dónde recoger tu pedido.{% endif %}
               {% if tienda.horario %}<br><span class="text-muted small">{{ tienda.horario }}</span>{% endif %}
             </p>
           </div>
 
           <div class="js-bloque-envio row g-3 mt-1">
-            <div class="col-12">
+            <div class="col-sm-6">
               <label class="form-label" for="id_zona">{{ formulario.zona.label }}</label>
               <select class="form-select{% if formulario.zona.errors %} is-invalid{% endif %}" id="id_zona" name="zona">
                 <option value="">Elige tu zona</option>
                 {% for zona in zonas %}
-                  <option value="{{ zona.pk }}"{% if formulario.zona.value|stringformat:'s' == zona.pk|stringformat:'s' %} selected{% endif %}>{{ zona.nombre }} — {{ zona.tarifa|moneda }}</option>
+                  <option value="{{ zona.pk }}" data-nombre="{{ zona.nombre }}"{% if formulario.zona.value|stringformat:'s' == zona.pk|stringformat:'s' %} selected{% endif %}>{{ zona.nombre }} — {{ zona.tarifa|moneda }}</option>
                 {% endfor %}
               </select>
               <div class="invalid-feedback">{{ formulario.zona.errors.0|default:'Elige tu zona de envío.' }}</div>
+              <div class="form-text">Por ahora entregamos solo en estas zonas.</div>
+            </div>
+            <div class="col-sm-6">
+              <label class="form-label" for="id_sector">{{ formulario.sector.label }}</label>
+              <input class="form-control{% if formulario.sector.errors %} is-invalid{% endif %}" type="text" id="id_sector" name="sector"
+                     value="{{ formulario.sector.value|default:'' }}" maxlength="80" autocomplete="address-level3" placeholder="Ej.: Naco">
+              <div class="invalid-feedback">{{ formulario.sector.errors.0|default:'Escribe tu sector.' }}</div>
             </div>
             <div class="col-12">
               <label class="form-label" for="id_direccion">{{ formulario.direccion.label }}</label>
               <input class="form-control{% if formulario.direccion.errors %} is-invalid{% endif %}" type="text" id="id_direccion" name="direccion"
-                     value="{{ formulario.direccion.value|default:'' }}" maxlength="255" autocomplete="street-address"
-                     placeholder="Calle, número, sector">
-              <div class="invalid-feedback">{{ formulario.direccion.errors.0|default:'Escribe la dirección de entrega.' }}</div>
+                     value="{{ formulario.direccion.value|default:'' }}" maxlength="255" autocomplete="address-line1"
+                     placeholder="Calle, número, edificio o apartamento">
+              <div class="invalid-feedback">{{ formulario.direccion.errors.0|default:'Escribe la calle y el número.' }}</div>
             </div>
             <div class="col-12">
               <label class="form-label" for="id_referencia">{{ formulario.referencia.label }}</label>
@@ -94,10 +114,14 @@
                      value="{{ formulario.referencia.value|default:'' }}" maxlength="255" placeholder="Ej.: frente al colmado, portón azul">
             </div>
           </div>
+          <div class="mm-paso-botones solo-con-js">
+            <button class="btn btn-link js-anterior" type="button"><i class="bi bi-arrow-left me-1"></i>Atrás</button>
+            <button class="btn btn-primary js-siguiente" type="button">Continuar<i class="bi bi-arrow-right ms-1"></i></button>
+          </div>
         </section>
 
-        <section class="mm-panel mb-4">
-          <h2 class="h5 mb-3"><span class="mm-paso">3</span>Pago</h2>
+        <section class="mm-panel mb-4" data-paso="3" aria-labelledby="titulo-paso-3">
+          <h2 class="h5 mb-3" id="titulo-paso-3" tabindex="-1"><span class="mm-paso solo-sin-js">3</span>Pago</h2>
           <div class="row g-2">
             {% for valor, etiqueta in formulario.fields.metodo_pago.choices %}
               {% if valor in pagos_recoger or valor in pagos_envio %}
@@ -115,7 +139,7 @@
           {% if formulario.metodo_pago.errors %}<p class="text-danger small mt-2 mb-0">{{ formulario.metodo_pago.errors.0 }}</p>{% endif %}
 
           <div class="js-bloque-transferencia mt-3">
-            <p class="small text-muted">Transfiere el total a cualquiera de estas cuentas. Tu pedido queda reservado y lo confirmamos al verificar el pago.</p>
+            <p class="small text-muted">Transfiere el total a cualquiera de estas cuentas. Tu pedido queda registrado y la tienda lo confirma al verificar el pago.</p>
             {% include 'includes/cuentas_bancarias.html' %}
             <div class="form-check mt-3">
               <input class="form-check-input" type="checkbox" id="id_transferencia_realizada" name="transferencia_realizada"
@@ -128,13 +152,39 @@
                      value="{{ formulario.referencia_transferencia.value|default:'' }}" maxlength="60">
             </div>
           </div>
+          <div class="mm-paso-botones solo-con-js">
+            <button class="btn btn-link js-anterior" type="button"><i class="bi bi-arrow-left me-1"></i>Atrás</button>
+            <button class="btn btn-primary js-siguiente" type="button">Revisar pedido<i class="bi bi-arrow-right ms-1"></i></button>
+          </div>
         </section>
 
-        <section class="mm-panel mb-4">
-          <h2 class="h5 mb-3"><span class="mm-paso">4</span>Notas</h2>
+        <section class="mm-panel mb-4" data-paso="4" aria-labelledby="titulo-paso-4">
+          <h2 class="h5 mb-3" id="titulo-paso-4" tabindex="-1"><span class="mm-paso solo-sin-js">4</span>Revisa y confirma</h2>
+
+          <dl class="row mm-datos solo-con-js" id="revision">
+            <dt class="col-sm-4">Cliente</dt><dd class="col-sm-8" data-revision="cliente"></dd>
+            <dt class="col-sm-4">Entrega</dt><dd class="col-sm-8" data-revision="entrega"></dd>
+            <dt class="col-sm-4">Forma de pago</dt><dd class="col-sm-8" data-revision="pago"></dd>
+          </dl>
+
           <label class="form-label" for="id_notas">{{ formulario.notas.label }}</label>
           <textarea class="form-control{% if formulario.notas.errors %} is-invalid{% endif %}" id="id_notas" name="notas" rows="3" maxlength="500">{{ formulario.notas.value|default:'' }}</textarea>
           <div class="invalid-feedback">{{ formulario.notas.errors.0 }}</div>
+
+          <div class="form-check mt-3">
+            <input class="form-check-input{% if formulario.acepta_terminos.errors %} is-invalid{% endif %}" type="checkbox" id="id_acepta_terminos" name="acepta_terminos"
+                   {% if formulario.acepta_terminos.value %}checked{% endif %} required>
+            <label class="form-check-label" for="id_acepta_terminos">
+              Acepto los <a href="{% url 'core:terminos' %}" target="_blank" rel="noopener">términos del sitio</a> y las condiciones de entrega de {{ tienda.nombre }}.
+            </label>
+            <div class="invalid-feedback">{{ formulario.acepta_terminos.errors.0|default:'Para confirmar el pedido debes aceptar los términos del sitio.' }}</div>
+          </div>
+
+          <div class="mm-paso-botones">
+            <button class="btn btn-link solo-con-js js-anterior" type="button"><i class="bi bi-arrow-left me-1"></i>Atrás</button>
+            <button class="btn btn-acento btn-lg" type="submit" id="confirmar"><i class="bi bi-check2-circle me-1"></i>Confirmar pedido</button>
+          </div>
+          <p class="small text-muted mt-2 mb-0">Al confirmar creamos tu pedido y te damos su número. No necesitas enviar nada más.</p>
         </section>
 
         <div class="mm-campo-extra" aria-hidden="true">
@@ -165,18 +215,18 @@
             {% if formulario.cupon.errors %}{{ formulario.cupon.errors.0 }}{% elif totales.cupon %}Cupón aplicado.{% endif %}
           </p>
 
-          <dl class="mm-totales">
+          <dl class="mm-totales" aria-live="polite">
             <div><dt>Subtotal</dt><dd id="total-subtotal">{{ totales.subtotal|moneda }}</dd></div>
             <div class="text-success{% if not totales.descuento %} d-none{% endif %}" id="fila-descuento">
               <dt>Descuento</dt><dd>-<span id="total-descuento">{{ totales.descuento|moneda }}</span></dd>
             </div>
+            <div class="{% if not totales.impuesto %}d-none{% endif %}" id="fila-impuesto">
+              <dt>ITBIS ({{ tienda.itbis_porcentaje|floatformat:'-2' }}%)</dt><dd id="total-impuesto">{{ totales.impuesto|moneda }}</dd>
+            </div>
             <div><dt>Envío</dt><dd id="total-envio">{% if formulario.metodo_entrega.value == 'envio' %}{{ totales.costo_envio|moneda }}{% else %}Gratis{% endif %}</dd></div>
             <div class="mm-total"><dt>Total</dt><dd id="total-total">{{ totales.total|moneda }}</dd></div>
           </dl>
-
-          <button class="btn btn-primary btn-lg w-100" type="submit" id="confirmar"><i class="bi bi-check2-circle me-1"></i>Confirmar pedido</button>
-          <p class="small text-muted mt-2 mb-0">Al confirmar reservamos tus productos y te llevamos a WhatsApp para enviar el pedido.</p>
-          <a class="btn btn-link w-100 mt-1" href="{% url 'carrito:detalle' tienda.slug %}">Volver al carrito</a>
+          <a class="btn btn-link w-100 solo-sin-js" href="{% url 'carrito:detalle' tienda.slug %}">Volver al carrito</a>
         </div>
       </div>
     </div>

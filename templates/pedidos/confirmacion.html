@@ -5,7 +5,7 @@
 {% block meta %}<meta name="robots" content="noindex, nofollow"><meta name="referrer" content="no-referrer">{% endblock %}
 
 {% block contenido %}
-<div class="container py-4" id="confirmacion" data-abrir="{% if abrir_whatsapp %}1{% else %}0{% endif %}" data-token="{{ pedido.token }}">
+<div class="container py-4" id="confirmacion">
   <div class="row justify-content-center">
     <div class="col-lg-8">
 
@@ -23,11 +23,15 @@
         <p class="mb-3"><span class="badge mm-estado mm-estado-{{ pedido.estado }}">{{ pedido.get_estado_display }}</span></p>
 
         {% if pedido.estado == 'pendiente' %}
-          <p class="text-muted">Falta un paso: envíanos el pedido por WhatsApp para confirmarlo.</p>
-          <a class="btn btn-whatsapp btn-lg w-100 mm-btn-enviar" id="enviar-whatsapp" href="{{ enlace_whatsapp }}" target="_blank" rel="noopener">
-            <i class="bi bi-whatsapp me-2"></i>Enviar pedido por WhatsApp
-          </a>
-          <p class="small text-muted mt-2 mb-0" id="ayuda-whatsapp">Si WhatsApp no se abre solo, toca el botón.</p>
+          <p class="text-muted mb-0">
+            {% if pedido.paga_por_transferencia %}
+              Tu pedido ya está registrado. Haz la transferencia con los datos de abajo y la tienda lo confirma al verificar el pago.
+            {% elif pedido.recoge_en_tienda %}
+              Tu pedido ya está registrado. La tienda lo prepara y pagas en efectivo al recogerlo.
+            {% else %}
+              Tu pedido ya está registrado. La tienda lo prepara y pagas en efectivo al recibirlo.
+            {% endif %}
+          </p>
         {% endif %}
       </div>
 
@@ -69,6 +73,9 @@
           {% if pedido.descuento %}
             <div class="text-success"><dt>Cupón {{ pedido.codigo_cupon }}</dt><dd>-{{ pedido.descuento|moneda }}</dd></div>
           {% endif %}
+          {% if pedido.impuesto %}
+            <div><dt>{{ pedido.etiqueta_impuesto }}</dt><dd>{{ pedido.impuesto|moneda }}</dd></div>
+          {% endif %}
           <div>
             <dt>{% if pedido.recoge_en_tienda %}Recoger en tienda{% else %}Envío ({{ pedido.zona.nombre }}){% endif %}</dt>
             <dd>{% if pedido.recoge_en_tienda %}Gratis{% else %}{{ pedido.costo_envio|moneda }}{% endif %}</dd>
@@ -91,7 +98,7 @@
               {% if tienda.direccion_tienda %}<br><span class="text-muted">{{ tienda.direccion_tienda }}</span>{% endif %}
               {% if tienda.horario %}<br><span class="text-muted">{{ tienda.horario }}</span>{% endif %}
             {% else %}
-              <br><span class="text-muted">{{ pedido.direccion }}{% if pedido.referencia %} · {{ pedido.referencia }}{% endif %}</span>
+              <br><span class="text-muted">{{ pedido.direccion_completa }}{% if pedido.referencia %} · {{ pedido.referencia }}{% endif %}</span>
             {% endif %}
           </dd>
           <dt class="col-sm-4">Forma de pago</dt><dd class="col-sm-8">{{ pedido.get_metodo_pago_display }}</dd>
@@ -106,11 +113,14 @@
         <p class="small text-muted mt-2 mb-0">Abre la imagen para guardarla o compartirla. Incluye un código QR único para verificar el pedido.</p>
       </div>
 
-      <p class="small text-muted text-center">Guarda este enlace para consultar tu pedido. Los productos quedan reservados por {{ plataforma.horas_vencimiento_pedido }} horas mientras confirmamos el pago.</p>
-      <p class="text-center"><a class="btn btn-outline-primary" href="{% url 'catalogo:lista' tienda.slug %}">Seguir comprando</a></p>
+      <p class="small text-muted text-center">Guarda este enlace: aquí verás el estado de tu pedido cuando la tienda lo actualice.{% if pedido.estado == 'pendiente' %} Un pedido sin pagar se cancela a las {{ plataforma.horas_vencimiento_pedido }} horas.{% endif %}</p>
+      <p class="text-center d-flex flex-wrap justify-content-center gap-2">
+        <a class="btn btn-outline-primary" href="{% url 'catalogo:lista' tienda.slug %}">Seguir comprando</a>
+        {% if enlace_whatsapp %}
+          <a class="btn btn-outline-success" href="{{ enlace_whatsapp }}" target="_blank" rel="noopener"><i class="bi bi-whatsapp me-1"></i>Escribir a la tienda por WhatsApp</a>
+        {% endif %}
+      </p>
     </div>
   </div>
 </div>
 {% endblock %}
-
-{% block scripts %}<script src="{% static 'js/confirmacion.js' %}" defer></script>{% endblock %}

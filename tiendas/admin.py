@@ -26,7 +26,7 @@ class TiendaAdmin(AvisaImagenesSinGuardar, admin.ModelAdmin):
         ('Marca', {'fields': ['logo', 'banner_titulo', 'banner_subtitulo', 'banner_texto_boton', 'banner_imagen']}),
         ('Contacto', {'fields': ['whatsapp', 'telefono', 'correo', 'horario', 'direccion_tienda']}),
         ('Redes', {'fields': ['facebook', 'instagram', 'tiktok']}),
-        ('Pedidos', {'fields': ['permitir_contra_entrega']}),
+        ('Pedidos', {'fields': ['permitir_contra_entrega', 'itbis_porcentaje']}),
     ]
 
     def get_queryset(self, request):

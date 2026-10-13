@@ -165,7 +165,7 @@ class ProductoAdmin(AvisaImagenesSinGuardar, AdminDeTienda, ImportExportModelAdm
     ]
     fieldsets = [
         (None, {'fields': ['tienda', 'nombre', 'slug', 'sku', 'categoria', 'marca', 'descripcion']}),
-        ('Precio', {'fields': ['precio', 'precio_oferta', 'oferta_inicio', 'oferta_fin']}),
+        ('Precio', {'fields': ['precio', 'exento_itbis', 'precio_oferta', 'oferta_inicio', 'oferta_fin']}),
         ('Disponibilidad', {'fields': ['disponibilidad']}),
         ('Inventario (opcional)', {
             'description': 'Déjalo sin marcar si no cuentas las unidades: el producto se vende según su disponibilidad.',

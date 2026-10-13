@@ -88,9 +88,11 @@ class PedidoAdmin(AdminDeTienda, admin.ModelAdmin):
             'numero', 'tienda', 'estado_con_color', 'creado', 'fecha_pago', 'fecha_entrega', 'enlace_publico',
         ]}),
         ('Cliente', {'fields': ['nombre', 'whatsapp_cliente', 'correo']}),
-        ('Entrega', {'fields': ['metodo_entrega', 'zona', 'direccion', 'referencia']}),
+        ('Entrega', {'fields': ['metodo_entrega', 'zona', 'sector', 'direccion', 'referencia']}),
         ('Pago', {'fields': ['metodo_pago', 'transferencia_realizada', 'referencia_transferencia']}),
-        ('Montos', {'fields': ['subtotal_formateado', 'cupon_aplicado', 'envio_formateado', 'total_formateado']}),
+        ('Montos', {'fields': [
+            'subtotal_formateado', 'cupon_aplicado', 'itbis_formateado', 'envio_formateado', 'total_formateado',
+        ]}),
         ('Notas', {'fields': ['notas_cliente', 'notas_internas']}),
     ]
     campos_editables = ['notas_internas']
@@ -215,6 +217,12 @@ class PedidoAdmin(AdminDeTienda, admin.ModelAdmin):
     @admin.display(description='Subtotal')
     def subtotal_formateado(self, pedido):
         return formatear_monto(pedido.subtotal)
+
+    @admin.display(description='ITBIS')
+    def itbis_formateado(self, pedido):
+        if not pedido.impuesto:
+            return 'No aplica'
+        return f'{formatear_monto(pedido.impuesto)} · {pedido.etiqueta_impuesto}'
 
     @admin.display(description='Costo de envío')
     def envio_formateado(self, pedido):

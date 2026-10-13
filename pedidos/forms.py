@@ -15,7 +15,8 @@ class CheckoutForm(forms.Form):
         label='¿Cómo quieres recibirlo?', choices=Pedido.Entrega.choices, widget=forms.RadioSelect,
     )
     zona = forms.ModelChoiceField(label='Zona de envío', queryset=None, required=False, empty_label='Elige tu zona')
-    direccion = forms.CharField(label='Dirección', max_length=255, required=False)
+    sector = forms.CharField(label='Sector', max_length=80, required=False)
+    direccion = forms.CharField(label='Calle y número', max_length=255, required=False)
     referencia = forms.CharField(label='Referencia (opcional)', max_length=255, required=False)
     metodo_pago = forms.ChoiceField(label='Forma de pago', choices=Pedido.Pago.choices, widget=forms.RadioSelect)
     transferencia_realizada = forms.BooleanField(label='Ya hice la transferencia', required=False)
@@ -25,6 +26,10 @@ class CheckoutForm(forms.Form):
     cupon = forms.CharField(label='Cupón', max_length=30, required=False)
     notas = forms.CharField(
         label='Notas (opcional)', max_length=500, required=False, widget=forms.Textarea(attrs={'rows': 3}),
+    )
+    acepta_terminos = forms.BooleanField(
+        label='Acepto los términos del sitio',
+        error_messages={'required': 'Para confirmar el pedido debes aceptar los términos del sitio.'},
     )
     # Honeypot: las personas no lo ven; los bots suelen llenarlo.
     sitio_web = forms.CharField(required=False)
@@ -64,8 +69,10 @@ class CheckoutForm(forms.Form):
         if entrega == Pedido.Entrega.ENVIO:
             if not datos.get('zona'):
                 self.add_error('zona', 'Elige tu zona de envío.')
+            if not (datos.get('sector') or '').strip():
+                self.add_error('sector', 'Escribe tu sector.')
             if not (datos.get('direccion') or '').strip():
-                self.add_error('direccion', 'Escribe la dirección de entrega.')
+                self.add_error('direccion', 'Escribe la calle y el número.')
 
         pago = datos.get('metodo_pago')
         if entrega and pago and pago not in metodos_pago_disponibles(entrega, self.carrito.tienda):

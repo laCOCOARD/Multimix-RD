@@ -1,8 +1,9 @@
 # Multimix RD
 
 Sitio de tiendas online (Django) con precios en pesos dominicanos. Reune varias subtiendas de vendedores
-independientes: cada una con su catalogo, carrito, WhatsApp, cuentas y pedidos. El pedido se cierra por
-WhatsApp con la tienda y el pago lo confirma a mano el vendedor desde el panel.
+independientes: cada una con su catalogo, carrito, cuentas y pedidos. La compra se completa en el sitio (checkout
+por pasos); WhatsApp es solo un canal opcional para escribirle a la tienda. El pago lo confirma a mano el vendedor
+desde el panel.
 
 ## Stack (fijo)
 - Python 3.13, Django 5.2 LTS, entorno virtual en `.venv`.
@@ -55,6 +56,14 @@ Al cerrar cada modulo: check, makemigrations, migrate, test y commit.
 - Nada de `|safe` con datos de usuarios. Solo ORM.
 
 ## Decisiones tomadas
+- ITBIS: los precios se publican sin impuesto y se suma al comprar. `core.impuestos.calcular_itbis` lo calcula
+  sobre los productos no exentos (`Producto.exento_itbis`), despues del descuento y sin el envio, con
+  `Tienda.itbis_porcentaje` (18 por defecto; 0 = la tienda no lo cobra). El pedido guarda `impuesto` y
+  `porcentaje_impuesto`. `tienda_de_prueba()` va con 0 para que los totales de las pruebas sean los de los productos.
+- Checkout por pasos: es un solo formulario y un solo POST; `checkout.js` muestra un paso a la vez y valida cada
+  uno. Sin JavaScript se ven todos seguidos. El cliente debe aceptar los terminos (`acepta_terminos`).
+- La entrega a domicilio pide zona (de las que la tienda tenga), sector, calle y referencia.
+- La confirmacion ya no abre WhatsApp ni lo pide: solo ofrece un boton para escribirle a la tienda.
 - Disponibilidad comercial: el negocio no cuenta unidades fiables, asi que cada producto se vende segun
   `Producto.disponibilidad` (disponible, bajo pedido, agotado, temporalmente no disponible). El inventario es
   opcional por producto (`controla_stock`, apagado por defecto): solo entonces valen `stock_almacen` y

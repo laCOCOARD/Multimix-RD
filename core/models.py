@@ -6,7 +6,9 @@ from .archivos import NombreUnico
 from .telefonos import normalizar_whatsapp
 from .validators import validar_imagen, validar_whatsapp
 
-DESCRIPCION_DEL_SITIO = 'Tiendas de emprendedores en un solo lugar. Compra directo a cada tienda por WhatsApp.'
+DESCRIPCION_DEL_SITIO = (
+    'Tiendas de emprendedores en un solo lugar. Compra en línea y recibe tu pedido en casa o recógelo en la tienda.'
+)
 
 
 class ConfiguracionTienda(models.Model):

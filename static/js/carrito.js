@@ -25,6 +25,8 @@
     carrito.querySelector('.js-subtotal').textContent = datos.subtotal;
     carrito.querySelector('.js-descuento').textContent = datos.descuento;
     carrito.querySelector('.js-fila-descuento').classList.toggle('d-none', !datos.hay_descuento);
+    carrito.querySelector('.js-impuesto').textContent = datos.impuesto;
+    carrito.querySelector('.js-fila-impuesto').classList.toggle('d-none', !datos.hay_impuesto);
     carrito.querySelector('.js-total').textContent = datos.total;
   }
 

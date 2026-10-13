@@ -8,6 +8,7 @@ from decimal import Decimal
 from django.conf import settings
 
 from catalogo.models import Disponibilidad, Producto
+from core.impuestos import calcular_itbis
 from promociones.models import Cupon
 from promociones.services import CuponInvalido, calcular_descuento, normalizar_codigo, validar_cupon
 
@@ -52,10 +53,12 @@ class ResumenCarrito:
     cupon: Cupon | None
     descuento: Decimal
     aviso_cupon: str = ''
+    impuesto: Decimal = Decimal('0.00')
 
     @property
     def total(self):
-        return self.subtotal - self.descuento
+        """Sin el envio, que se elige en el checkout."""
+        return self.subtotal - self.descuento + self.impuesto
 
 
 def _carritos(session):
@@ -192,14 +195,19 @@ class Carrito:
             self._guardar()
 
     def resumen(self):
-        """Subtotal y descuento calculados en el servidor. Si el cupon dejo de aplicar, lo quita y avisa."""
+        """Subtotal, descuento e ITBIS calculados en el servidor. Si el cupon dejo de aplicar, lo quita y avisa."""
         subtotal = self.subtotal
         codigo = normalizar_codigo(self.codigo_cupon)
-        if not codigo:
-            return ResumenCarrito(subtotal, None, Decimal('0.00'))
-        try:
-            cupon = validar_cupon(codigo, subtotal, self.tienda)
-        except CuponInvalido as error:
-            self.quitar_cupon()
-            return ResumenCarrito(subtotal, None, Decimal('0.00'), f'Quitamos el cupón {codigo}: {error.mensaje}')
-        return ResumenCarrito(subtotal, cupon, calcular_descuento(cupon, subtotal))
+        cupon, aviso = None, ''
+        if codigo:
+            try:
+                cupon = validar_cupon(codigo, subtotal, self.tienda)
+            except CuponInvalido as error:
+                self.quitar_cupon()
+                aviso = f'Quitamos el cupón {codigo}: {error.mensaje}'
+        descuento = calcular_descuento(cupon, subtotal)
+        impuesto = calcular_itbis(
+            ((linea.subtotal, linea.producto.exento_itbis) for linea in self.lineas()),
+            descuento, self.tienda.itbis_porcentaje,
+        )
+        return ResumenCarrito(subtotal, cupon, descuento, aviso, impuesto)

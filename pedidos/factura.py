@@ -127,6 +127,8 @@ def generar_imagen_factura(pedido, nombre_tienda, url_verificacion):
     ]
     if pedido.descuento:
         totales.append((f'Cupón {pedido.codigo_cupon}'.strip(), f'-{formatear_monto(pedido.descuento)}'))
+    if pedido.impuesto:
+        totales.append((pedido.etiqueta_impuesto, formatear_monto(pedido.impuesto)))
     totales.extend([
         ('Envío' if not pedido.recoge_en_tienda else 'Recogida en tienda', envio_texto),
         ('Total', formatear_monto(pedido.total)),

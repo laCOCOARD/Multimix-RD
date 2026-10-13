@@ -2,13 +2,14 @@
 
 Sitio de tiendas en línea hecho con Django 5.2, con precios en pesos dominicanos (RD$). Reúne varias
 **tiendas** de emprendedores: cada una tiene su catálogo, su carrito, su WhatsApp, sus cuentas y sus
-pedidos. El cliente entra a una tienda, arma su carrito, confirma el pedido y lo envía por WhatsApp a
-esa tienda; el pago (transferencia o efectivo) lo recibe y lo confirma el vendedor desde su panel.
+pedidos. El cliente entra a una tienda, arma su carrito y confirma el pedido en el sitio, paso a paso;
+WhatsApp queda como canal opcional de atención. El pago (transferencia o efectivo) lo recibe y lo confirma
+el vendedor desde su panel. Los precios se publican sin ITBIS, que se suma al confirmar.
 
 - **Sitio:** portada con el directorio de tiendas (sin banner, para que no se confunda con una tienda) y
   buscador de productos de todas las tiendas.
 - **Cada tienda:** inicio con ofertas, destacados, nuevos y más vendidos; catálogo con búsqueda y filtros;
-  carrito propio; checkout con totales calculados en el servidor; confirmación con botón de WhatsApp.
+  carrito propio; checkout por pasos con totales e ITBIS calculados en el servidor; confirmación con número de pedido.
 - **Panel:** resumen de ventas y stock, productos (con importación desde Excel), pedidos, clientes,
   cupones, zonas de envío y cuentas bancarias. Cada vendedor ve solo lo de su tienda; el administrador
   principal ve todo y además administra las tiendas, las categorías y la configuración general.
@@ -22,10 +23,10 @@ esa tienda; el pago (transferencia o efectivo) lo recibe y lo confirma el vended
    carritos no se mezclan. Puede aplicar un cupón de esa tienda.
 2. En el checkout elige recoger o envío a domicilio (por zona de la tienda) y la forma de pago:
    transferencia, efectivo al recoger o contra entrega. Los totales se calculan siempre en el servidor.
-3. Al confirmar se crea el pedido en estado **Pendiente** y se reserva el stock. Cada tienda numera sus
+3. Al confirmar se crea el pedido en estado **Pendiente** (y se reserva el stock de los productos que llevan inventario). Cada tienda numera sus
    pedidos aparte con su prefijo: `MMX-AAAA-NNNNN`, `FIT-AAAA-NNNNN`...
-4. La página de confirmación muestra las cuentas bancarias de la tienda y abre su WhatsApp con el pedido
-   ya escrito.
+4. La página de confirmación muestra el número de pedido y las cuentas bancarias de la tienda; el botón
+   de WhatsApp es opcional.
    También permite abrir la factura como imagen PNG con un QR único para verificar el pedido.
    La verificación no muestra datos personales ni acredita el pago. El cliente puede avisar
    "Ya hice la transferencia"; eso no cambia el estado.

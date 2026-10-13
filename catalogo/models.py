@@ -122,6 +122,9 @@ class Producto(models.Model):
         'precio de oferta', max_digits=12, decimal_places=2, null=True, blank=True,
         validators=[MinValueValidator(Decimal('0.01'))],
     )
+    exento_itbis = models.BooleanField(
+        'exento de ITBIS', default=False, help_text='Márcalo si este producto no paga ITBIS.',
+    )
     oferta_inicio = models.DateTimeField('inicio de la oferta', null=True, blank=True)
     oferta_fin = models.DateTimeField('fin de la oferta', null=True, blank=True)
     disponibilidad = models.CharField(

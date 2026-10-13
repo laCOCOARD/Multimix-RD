@@ -85,6 +85,7 @@ class Pedido(models.Model):
         ZonaEnvio, on_delete=models.PROTECT, null=True, blank=True, related_name='pedidos',
         verbose_name='zona de envío',
     )
+    sector = models.CharField(max_length=80, blank=True)
     direccion = models.CharField('dirección', max_length=255, blank=True)
     referencia = models.CharField('referencia de la dirección', max_length=255, blank=True)
 
@@ -99,6 +100,10 @@ class Pedido(models.Model):
 
     subtotal = models.DecimalField(max_digits=12, decimal_places=2)
     descuento = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal('0.00'))
+    impuesto = models.DecimalField('ITBIS', max_digits=12, decimal_places=2, default=Decimal('0.00'))
+    porcentaje_impuesto = models.DecimalField(
+        'ITBIS aplicado (%)', max_digits=5, decimal_places=2, default=Decimal('0.00'),
+    )
     costo_envio = models.DecimalField('costo de envío', max_digits=12, decimal_places=2, default=Decimal('0.00'))
     total = models.DecimalField(max_digits=12, decimal_places=2)
 
@@ -126,7 +131,7 @@ class Pedido(models.Model):
                 name='pedido_efectivo_recoger_solo_en_tienda',
             ),
             models.CheckConstraint(
-                condition=Q(subtotal__gte=0) & Q(costo_envio__gte=0) & Q(total__gte=0),
+                condition=Q(subtotal__gte=0) & Q(costo_envio__gte=0) & Q(total__gte=0) & Q(impuesto__gte=0),
                 name='pedido_montos_no_negativos',
             ),
             models.CheckConstraint(
@@ -156,6 +161,15 @@ class Pedido(models.Model):
     @property
     def recoge_en_tienda(self):
         return self.metodo_entrega == self.Entrega.RECOGER
+
+    @property
+    def etiqueta_impuesto(self):
+        """'ITBIS (18%)', con el porcentaje que se aplico al comprar."""
+        return f'ITBIS ({self.porcentaje_impuesto.normalize():f}%)'
+
+    @property
+    def direccion_completa(self):
+        return ', '.join(parte for parte in (self.direccion, self.sector) if parte)
 
     @property
     def esta_pagado(self):
