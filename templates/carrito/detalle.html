@@ -34,7 +34,7 @@
                   <div class="input-group mm-cantidad">
                     <button class="btn btn-outline-secondary solo-con-js js-menos" type="button" aria-label="Quitar una unidad">−</button>
                     <input class="form-control text-center js-cantidad" type="number" name="cantidad" value="{{ linea.cantidad }}"
-                           min="1" max="{% if linea.producto.stock_disponible < maximo_por_producto %}{{ linea.producto.stock_disponible }}{% else %}{{ maximo_por_producto }}{% endif %}"
+                           min="1" max="{{ linea.producto.limite_compra }}"
                            step="1" inputmode="numeric" aria-label="Cantidad de {{ linea.producto.nombre }}">
                     <button class="btn btn-outline-secondary solo-con-js js-mas" type="button" aria-label="Agregar una unidad">+</button>
                   </div>

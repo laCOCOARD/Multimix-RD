@@ -26,6 +26,9 @@ from .utiles import tienda_de_prueba
 Estado = Pedido.Estado
 CSV = '1'  # posicion de CSV en IMPORT_EXPORT_FORMATS
 
+# Un Excel de antes de la disponibilidad (sin esas dos columnas) se sigue importando igual.
+COLUMNAS_ANTERIORES = [columna for columna in COLUMNAS if columna not in ('disponibilidad', 'controla_stock')]
+
 
 class PanelDeVendedores(TestCase):
     """Dos tiendas, cada una con su vendedor y con un producto, cupon, zona, cuenta y pedido propios."""
@@ -158,7 +161,7 @@ class CrearYEditarTests(PanelDeVendedores):
         datos = {
             'tienda': self.propia.pk, 'nombre': 'Taza', 'slug': '', 'sku': 'T1',
             'categoria': self.lampara.categoria_id, 'descripcion': '', 'precio': '300', 'stock_almacen': '5',
-            'activo': 'on', 'fotos-TOTAL_FORMS': 0, 'fotos-INITIAL_FORMS': 0,
+            'disponibilidad': 'disponible', 'activo': 'on', 'fotos-TOTAL_FORMS': 0, 'fotos-INITIAL_FORMS': 0,
         }
         datos.update(cambios)
         return datos
@@ -212,7 +215,7 @@ class CrearYEditarTests(PanelDeVendedores):
 
 class ImportarYFotosTests(PanelDeVendedores):
     def importar(self, filas, tienda):
-        datos = tablib.Dataset(*filas, headers=COLUMNAS)
+        datos = tablib.Dataset(*filas, headers=COLUMNAS_ANTERIORES)
         archivo = SimpleUploadedFile('productos.csv', datos.export('csv').encode(), content_type='text/csv')
         respuesta = self.client.post(reverse('admin:catalogo_producto_import'), {
             'import_file': archivo, 'format': CSV, 'resource': '0', 'tienda': tienda.pk,

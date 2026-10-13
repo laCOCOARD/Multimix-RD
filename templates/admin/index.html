@@ -28,7 +28,7 @@
     <a class="panel-tarjeta panel-tarjeta-agotado" href="{% url 'admin:catalogo_producto_changelist' %}?stock=agotado">
       <span class="panel-tarjeta-titulo">Agotados</span>
       <strong class="panel-tarjeta-valor">{{ resumen.total_agotados }}</strong>
-      <span class="panel-tarjeta-nota">Productos activos sin stock</span>
+      <span class="panel-tarjeta-nota">Marcados como agotados o sin stock</span>
     </a>
   </div>
 
@@ -105,7 +105,7 @@
           {% for producto in resumen.agotados %}
             <tr>
               <th scope="row"><a href="{% url 'admin:catalogo_producto_change' producto.pk %}">{{ producto.nombre }}</a></th>
-              <td>{{ producto.stock_almacen }}</td><td>{{ producto.stock_reservado }}</td>
+              {% if producto.controla_stock %}<td>{{ producto.stock_almacen }}</td><td>{{ producto.stock_reservado }}</td>{% else %}<td>—</td><td>—</td>{% endif %}
               <td><span class="panel-etiqueta panel-agotado">Agotado</span></td>
             </tr>
           {% endfor %}

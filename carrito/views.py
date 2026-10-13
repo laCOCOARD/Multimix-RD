@@ -1,4 +1,3 @@
-from django.conf import settings
 from django.contrib import messages
 from django.http import JsonResponse
 from django.shortcuts import redirect, render
@@ -10,7 +9,7 @@ from core.templatetags.moneda import formatear_monto
 from promociones.services import CuponInvalido
 from tiendas.decoradores import de_tienda
 
-from .carrito import Carrito, CarritoError
+from .carrito import Carrito, CarritoError, aviso_de_limite
 
 
 def _es_fetch(request):
@@ -70,7 +69,6 @@ def detalle(request):
     return render(request, 'carrito/detalle.html', {
         'lineas': carrito.lineas(),
         'resumen': resumen,
-        'maximo_por_producto': settings.CARRITO_MAX_POR_PRODUCTO,
     })
 
 
@@ -86,7 +84,9 @@ def agregar(request):
         final, ajustada = carrito.agregar(producto, cantidad)
     except CarritoError as error:
         return _responder(request, carrito, False, error.mensaje)
-    if ajustada:
+    if ajustada and not producto.controla_stock:
+        mensaje = f'Puedes llevar hasta {final} de "{producto.nombre}" por pedido; dejamos esa cantidad en tu carrito.'
+    elif ajustada:
         mensaje = f'Solo hay {final} disponibles de "{producto.nombre}"; dejamos esa cantidad en tu carrito.'
     else:
         mensaje = f'"{producto.nombre}" se agregó al carrito.'
@@ -110,7 +110,7 @@ def actualizar(request):
     except CarritoError as error:
         carrito.eliminar(producto_id)
         return _responder(request, carrito, False, f'{error.mensaje} Lo quitamos del carrito.')
-    mensaje = f'Solo quedan {final} de "{producto.nombre}"; ajustamos la cantidad.' if ajustada else ''
+    mensaje = aviso_de_limite(producto, final) if ajustada else ''
     return _responder(request, carrito, True, mensaje)
 
 

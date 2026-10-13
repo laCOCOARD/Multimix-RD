@@ -7,7 +7,7 @@ from decimal import Decimal
 
 from django.conf import settings
 
-from catalogo.models import Producto
+from catalogo.models import Disponibilidad, Producto
 from promociones.models import Cupon
 from promociones.services import CuponInvalido, calcular_descuento, normalizar_codigo, validar_cupon
 
@@ -16,6 +16,20 @@ class CarritoError(Exception):
     def __init__(self, mensaje):
         super().__init__(mensaje)
         self.mensaje = mensaje
+
+
+def aviso_no_comprable(producto):
+    """Por que no se puede comprar ahora un producto que sigue publicado."""
+    if producto.estado_venta == Disponibilidad.AGOTADO:
+        return f'"{producto.nombre}" está agotado.'
+    return f'"{producto.nombre}" no está disponible por ahora.'
+
+
+def aviso_de_limite(producto, limite):
+    """La cantidad pedida no cabe: por el stock si lleva inventario, o por el tope de unidades por pedido."""
+    if producto.controla_stock and limite == producto.stock_disponible:
+        return f'Solo quedan {limite} de "{producto.nombre}"; ajustamos la cantidad.'
+    return f'Puedes llevar hasta {limite} de "{producto.nombre}" por pedido; ajustamos la cantidad.'
 
 
 @dataclass
@@ -95,11 +109,8 @@ class Carrito:
     def cantidad_de(self, producto_id):
         return self.items.get(str(producto_id), 0)
 
-    def _limite(self, producto):
-        return min(producto.stock_disponible, settings.CARRITO_MAX_POR_PRODUCTO)
-
     def agregar(self, producto, cantidad=1, reemplazar=False):
-        """Pone el producto en el carrito sin pasar de lo disponible.
+        """Pone el producto en el carrito sin pasar de su limite de compra.
 
         Devuelve (cantidad_final, ajustada). Lanza CarritoError si no se puede comprar.
         """
@@ -107,9 +118,9 @@ class Carrito:
             raise CarritoError('Ese producto es de otra tienda.')
         if not producto.activo or not producto.categoria.activa:
             raise CarritoError('Este producto ya no está disponible.')
-        limite = self._limite(producto)
+        limite = producto.limite_compra
         if limite <= 0:
-            raise CarritoError(f'"{producto.nombre}" está agotado.')
+            raise CarritoError(aviso_no_comprable(producto))
         clave = str(producto.pk)
         deseada = cantidad if reemplazar else self.items.get(clave, 0) + cantidad
         final = max(1, min(deseada, limite))
@@ -135,7 +146,7 @@ class Carrito:
         return self._lineas
 
     def sincronizar(self):
-        """Ajusta el carrito al stock actual. Devuelve los avisos para el cliente."""
+        """Ajusta el carrito a la disponibilidad actual. Devuelve los avisos para el cliente."""
         avisos = []
         if not self.items:
             return avisos
@@ -146,13 +157,16 @@ class Carrito:
                 del self.items[clave]
                 avisos.append('Quitamos del carrito un producto que ya no está disponible.')
                 continue
-            limite = self._limite(producto)
+            limite = producto.limite_compra
             if limite <= 0:
                 del self.items[clave]
-                avisos.append(f'"{producto.nombre}" se agotó y lo quitamos del carrito.')
+                if producto.estado_venta == Disponibilidad.AGOTADO:
+                    avisos.append(f'"{producto.nombre}" se agotó y lo quitamos del carrito.')
+                else:
+                    avisos.append(f'"{producto.nombre}" no está disponible por ahora y lo quitamos del carrito.')
             elif cantidad > limite:
                 self.items[clave] = limite
-                avisos.append(f'Solo quedan {limite} de "{producto.nombre}"; ajustamos la cantidad.')
+                avisos.append(aviso_de_limite(producto, limite))
         if avisos:
             self._guardar()
         return avisos

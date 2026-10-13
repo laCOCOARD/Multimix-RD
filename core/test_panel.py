@@ -24,6 +24,9 @@ from tiendas.models import Tienda
 
 Estado = Pedido.Estado
 
+# Un Excel de antes de la disponibilidad (sin esas dos columnas) se sigue importando igual.
+COLUMNAS_ANTERIORES = [columna for columna in COLUMNAS if columna not in ('disponibilidad', 'controla_stock')]
+
 
 class PanelBase(TestCase):
     @classmethod
@@ -231,7 +234,8 @@ class ProductoAdminTests(PanelBase):
         pedido_de_prueba(self.producto, 4)
         respuesta = self.client.post(reverse('admin:catalogo_producto_change', args=[self.producto.pk]), {
             'nombre': 'Lámpara', 'slug': 'lampara', 'sku': 'L1', 'categoria': self.producto.categoria_id,
-            'descripcion': '', 'precio': '1000', 'stock_almacen': '3', 'activo': 'on',
+            'descripcion': '', 'precio': '1000', 'disponibilidad': 'disponible', 'controla_stock': 'on',
+            'stock_almacen': '3', 'activo': 'on',
             'fotos-TOTAL_FORMS': 0, 'fotos-INITIAL_FORMS': 0,
         })
         self.assertContains(respuesta, 'unidades reservadas')
@@ -246,7 +250,7 @@ class ProductoAdminTests(PanelBase):
         self.assertEqual([celda.value for celda in hoja[1]], COLUMNAS)
 
     def test_importar_crea_y_actualiza_por_sku(self):
-        datos = tablib.Dataset(headers=COLUMNAS)
+        datos = tablib.Dataset(headers=COLUMNAS_ANTERIORES)
         datos.append(['l1', 'Lámpara renovada', 'General', '', '1200', '', '', '', 30, 1, 0, 1])
         datos.append(['N-1', 'Silla plegable', 'Muebles', 'Liviana', '2500', '1999', '', '', 8, 0, 1, 1])
         resultado = ProductoResource(tienda=self.producto.tienda).import_data(datos, dry_run=False)
@@ -261,7 +265,7 @@ class ProductoAdminTests(PanelBase):
         self.assertTrue(Categoria.objects.filter(nombre='Muebles').exists())
 
     def test_importar_rechaza_filas_invalidas(self):
-        datos = tablib.Dataset(headers=COLUMNAS)
+        datos = tablib.Dataset(headers=COLUMNAS_ANTERIORES)
         datos.append(['M-1', 'Oferta mayor al precio', 'General', '', '100', '150', '', '', 1, 0, 0, 1])
         resultado = ProductoResource(tienda=self.producto.tienda).import_data(datos, dry_run=True)
         self.assertTrue(resultado.has_validation_errors())

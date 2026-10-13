@@ -635,3 +635,64 @@ COMMIT;
 -- tiendas 0005
 -- ============================================================
 -- No cambia el esquema: las imagenes pasan a guardarse con un nombre generado (core.archivos.NombreUnico).
+
+-- ============================================================
+-- catalogo 0007
+-- ============================================================
+--
+-- Add field controla_stock to producto
+--
+CREATE TABLE "new__catalogo_producto" ("id" integer NOT NULL PRIMARY KEY AUTOINCREMENT, "controla_stock" bool NOT NULL, "nombre" varchar(150) NOT NULL, "slug" varchar(170) NOT NULL, "sku" varchar(40) NOT NULL, "descripcion" text NOT NULL, "precio" decimal NOT NULL, "precio_oferta" decimal NULL, "oferta_inicio" datetime NULL, "oferta_fin" datetime NULL, "stock_almacen" integer unsigned NOT NULL CHECK ("stock_almacen" >= 0), "stock_reservado" integer unsigned NOT NULL CHECK ("stock_reservado" >= 0), "destacado" bool NOT NULL, "nuevo" bool NOT NULL, "activo" bool NOT NULL, "creado" datetime NOT NULL, "actualizado" datetime NOT NULL, "categoria_id" bigint NOT NULL REFERENCES "catalogo_categoria" ("id") DEFERRABLE INITIALLY DEFERRED, "texto_busqueda" text NOT NULL, "tienda_id" bigint NOT NULL REFERENCES "tiendas_tienda" ("id") DEFERRABLE INITIALLY DEFERRED, CONSTRAINT "producto_precio_positivo" CHECK ("precio" > '0'), CONSTRAINT "producto_oferta_menor_que_precio" CHECK (("precio_oferta" IS NULL OR ("precio_oferta" > '0' AND "precio_oferta" < ("precio")))), CONSTRAINT "producto_reservado_no_supera_almacen" CHECK ("stock_reservado" <= ("stock_almacen")), CONSTRAINT "producto_sku_unico_por_tienda" UNIQUE ("tienda_id", "sku"), CONSTRAINT "producto_slug_unico_por_tienda" UNIQUE ("tienda_id", "slug"));
+INSERT INTO "new__catalogo_producto" ("id", "nombre", "slug", "sku", "descripcion", "precio", "precio_oferta", "oferta_inicio", "oferta_fin", "stock_almacen", "stock_reservado", "destacado", "nuevo", "activo", "creado", "actualizado", "categoria_id", "texto_busqueda", "tienda_id", "controla_stock") SELECT "id", "nombre", "slug", "sku", "descripcion", "precio", "precio_oferta", "oferta_inicio", "oferta_fin", "stock_almacen", "stock_reservado", "destacado", "nuevo", "activo", "creado", "actualizado", "categoria_id", "texto_busqueda", "tienda_id", 0 FROM "catalogo_producto";
+DROP TABLE "catalogo_producto";
+ALTER TABLE "new__catalogo_producto" RENAME TO "catalogo_producto";
+CREATE INDEX "catalogo_producto_slug_178d3ecc" ON "catalogo_producto" ("slug");
+CREATE INDEX "catalogo_producto_categoria_id_19eecf17" ON "catalogo_producto" ("categoria_id");
+CREATE INDEX "catalogo_producto_tienda_id_cbac6c3f" ON "catalogo_producto" ("tienda_id");
+CREATE INDEX "producto_activo_creado_idx" ON "catalogo_producto" ("activo", "creado" DESC);
+CREATE INDEX "producto_activo_destacado_idx" ON "catalogo_producto" ("activo", "destacado");
+CREATE INDEX "producto_categoria_activo_idx" ON "catalogo_producto" ("categoria_id", "activo");
+CREATE INDEX "producto_precio_idx" ON "catalogo_producto" ("precio");
+CREATE INDEX "producto_tienda_activo_idx" ON "catalogo_producto" ("tienda_id", "activo", "creado" DESC);
+--
+-- Add field disponibilidad to producto
+--
+CREATE TABLE "new__catalogo_producto" ("id" integer NOT NULL PRIMARY KEY AUTOINCREMENT, "nombre" varchar(150) NOT NULL, "slug" varchar(170) NOT NULL, "sku" varchar(40) NOT NULL, "descripcion" text NOT NULL, "precio" decimal NOT NULL, "precio_oferta" decimal NULL, "oferta_inicio" datetime NULL, "oferta_fin" datetime NULL, "stock_almacen" integer unsigned NOT NULL CHECK ("stock_almacen" >= 0), "stock_reservado" integer unsigned NOT NULL CHECK ("stock_reservado" >= 0), "destacado" bool NOT NULL, "nuevo" bool NOT NULL, "activo" bool NOT NULL, "creado" datetime NOT NULL, "actualizado" datetime NOT NULL, "categoria_id" bigint NOT NULL REFERENCES "catalogo_categoria" ("id") DEFERRABLE INITIALLY DEFERRED, "texto_busqueda" text NOT NULL, "tienda_id" bigint NOT NULL REFERENCES "tiendas_tienda" ("id") DEFERRABLE INITIALLY DEFERRED, "controla_stock" bool NOT NULL, "disponibilidad" varchar(15) NOT NULL, CONSTRAINT "producto_precio_positivo" CHECK ("precio" > '0'), CONSTRAINT "producto_oferta_menor_que_precio" CHECK (("precio_oferta" IS NULL OR ("precio_oferta" > '0' AND "precio_oferta" < ("precio")))), CONSTRAINT "producto_reservado_no_supera_almacen" CHECK ("stock_reservado" <= ("stock_almacen")), CONSTRAINT "producto_sku_unico_por_tienda" UNIQUE ("tienda_id", "sku"), CONSTRAINT "producto_slug_unico_por_tienda" UNIQUE ("tienda_id", "slug"));
+INSERT INTO "new__catalogo_producto" ("id", "nombre", "slug", "sku", "descripcion", "precio", "precio_oferta", "oferta_inicio", "oferta_fin", "stock_almacen", "stock_reservado", "destacado", "nuevo", "activo", "creado", "actualizado", "categoria_id", "texto_busqueda", "tienda_id", "controla_stock", "disponibilidad") SELECT "id", "nombre", "slug", "sku", "descripcion", "precio", "precio_oferta", "oferta_inicio", "oferta_fin", "stock_almacen", "stock_reservado", "destacado", "nuevo", "activo", "creado", "actualizado", "categoria_id", "texto_busqueda", "tienda_id", "controla_stock", 'disponible' FROM "catalogo_producto";
+DROP TABLE "catalogo_producto";
+ALTER TABLE "new__catalogo_producto" RENAME TO "catalogo_producto";
+CREATE INDEX "catalogo_producto_slug_178d3ecc" ON "catalogo_producto" ("slug");
+CREATE INDEX "catalogo_producto_categoria_id_19eecf17" ON "catalogo_producto" ("categoria_id");
+CREATE INDEX "catalogo_producto_tienda_id_cbac6c3f" ON "catalogo_producto" ("tienda_id");
+CREATE INDEX "producto_activo_creado_idx" ON "catalogo_producto" ("activo", "creado" DESC);
+CREATE INDEX "producto_activo_destacado_idx" ON "catalogo_producto" ("activo", "destacado");
+CREATE INDEX "producto_categoria_activo_idx" ON "catalogo_producto" ("categoria_id", "activo");
+CREATE INDEX "producto_precio_idx" ON "catalogo_producto" ("precio");
+CREATE INDEX "producto_tienda_activo_idx" ON "catalogo_producto" ("tienda_id", "activo", "creado" DESC);
+--
+-- Create index producto_disponibilidad_idx on field(s) tienda, disponibilidad of model producto
+--
+CREATE INDEX "producto_disponibilidad_idx" ON "catalogo_producto" ("tienda_id", "disponibilidad");
+
+-- ============================================================
+-- catalogo 0008
+-- ============================================================
+-- No cambia el esquema: la tienda que ya tenia unidades cargadas sigue llevando inventario (controla_stock).
+
+-- ============================================================
+-- pedidos 0005
+-- ============================================================
+--
+-- Add field reserva_stock to detallepedido
+--
+CREATE TABLE "new__pedidos_detallepedido" ("id" integer NOT NULL PRIMARY KEY AUTOINCREMENT, "reserva_stock" bool NOT NULL, "nombre_producto" varchar(150) NOT NULL, "precio_unitario" decimal NOT NULL, "cantidad" integer unsigned NOT NULL CHECK ("cantidad" >= 0), "subtotal" decimal NOT NULL, "producto_id" bigint NOT NULL REFERENCES "catalogo_producto" ("id") DEFERRABLE INITIALLY DEFERRED, "pedido_id" bigint NOT NULL REFERENCES "pedidos_pedido" ("id") DEFERRABLE INITIALLY DEFERRED, CONSTRAINT "detalle_cantidad_positiva" CHECK ("cantidad" > 0), CONSTRAINT "detalle_producto_unico_por_pedido" UNIQUE ("pedido_id", "producto_id"));
+INSERT INTO "new__pedidos_detallepedido" ("id", "nombre_producto", "precio_unitario", "cantidad", "subtotal", "producto_id", "pedido_id", "reserva_stock") SELECT "id", "nombre_producto", "precio_unitario", "cantidad", "subtotal", "producto_id", "pedido_id", 0 FROM "pedidos_detallepedido";
+DROP TABLE "pedidos_detallepedido";
+ALTER TABLE "new__pedidos_detallepedido" RENAME TO "pedidos_detallepedido";
+CREATE INDEX "pedidos_detallepedido_producto_id_fb78018a" ON "pedidos_detallepedido" ("producto_id");
+CREATE INDEX "pedidos_detallepedido_pedido_id_37ae55c6" ON "pedidos_detallepedido" ("pedido_id");
+
+-- ============================================================
+-- pedidos 0006
+-- ============================================================
+-- No cambia el esquema: las lineas de los pedidos que ya existian quedan con reserva_stock.

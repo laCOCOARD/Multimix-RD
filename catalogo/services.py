@@ -119,7 +119,7 @@ def filtrar_catalogo(filtros, categoria=None, tienda=None):
     if filtros.get('oferta'):
         productos = productos.filter(oferta_vigente=True)
     if filtros.get('disponibles'):
-        productos = productos.filter(disponible__gt=0)
+        productos = productos.filter(comprable=True)
 
     orden = filtros.get('orden')
     if orden == 'precio_asc':

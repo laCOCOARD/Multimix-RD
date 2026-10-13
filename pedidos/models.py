@@ -169,6 +169,10 @@ class DetallePedido(models.Model):
     precio_unitario = models.DecimalField('precio unitario (al comprar)', max_digits=12, decimal_places=2)
     cantidad = models.PositiveIntegerField()
     subtotal = models.DecimalField(max_digits=12, decimal_places=2)
+    reserva_stock = models.BooleanField(
+        'apartó stock', default=False, editable=False,
+        help_text='El producto llevaba inventario al comprar: el pedido apartó sus unidades.',
+    )
 
     class Meta:
         verbose_name = 'producto del pedido'

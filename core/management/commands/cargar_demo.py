@@ -253,7 +253,7 @@ class Command(BaseCommand):
                 'categoria': categoria, 'nombre': nombre, 'descripcion': descripcion,
                 'precio': Decimal(precio), 'precio_oferta': Decimal(oferta) if oferta else None,
                 'oferta_fin': ahora + timedelta(days=30) if oferta else None,
-                'stock_almacen': stock, 'destacado': destacado,
+                'controla_stock': True, 'stock_almacen': stock, 'destacado': destacado,
             })
             if nuevo:
                 creados += 1

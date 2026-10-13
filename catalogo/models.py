@@ -2,6 +2,7 @@ from datetime import timedelta
 from decimal import Decimal
 from uuid import uuid4
 
+from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator
 from django.db import models
@@ -27,6 +28,34 @@ def q_oferta_vigente(ahora=None):
         & (Q(oferta_inicio__isnull=True) | Q(oferta_inicio__lte=ahora))
         & (Q(oferta_fin__isnull=True) | Q(oferta_fin__gte=ahora))
     )
+
+
+class Disponibilidad(models.TextChoices):
+    """Lo que el vendedor dice del producto. No depende de llevar inventario."""
+
+    DISPONIBLE = 'disponible', 'Disponible'
+    BAJO_PEDIDO = 'bajo_pedido', 'Bajo pedido'
+    AGOTADO = 'agotado', 'Agotado'
+    NO_DISPONIBLE = 'no_disponible', 'Temporalmente no disponible'
+
+
+# Con estas el cliente puede comprar; las otras dos muestran el producto sin boton de compra.
+EN_VENTA = (Disponibilidad.DISPONIBLE, Disponibilidad.BAJO_PEDIDO)
+
+
+def q_con_existencias():
+    """Sin inventario siempre hay; con inventario, mientras quede algo sin reservar."""
+    return Q(controla_stock=False) | Q(stock_almacen__gt=F('stock_reservado'))
+
+
+def q_comprable():
+    """Condicion ORM equivalente a la propiedad Producto.se_puede_comprar."""
+    return Q(disponibilidad__in=EN_VENTA) & q_con_existencias()
+
+
+def q_agotado():
+    """Marcado como agotado por el vendedor o, si lleva inventario, sin unidades."""
+    return Q(disponibilidad=Disponibilidad.AGOTADO) | (Q(disponibilidad__in=EN_VENTA) & ~q_con_existencias())
 
 
 class Categoria(models.Model):
@@ -59,7 +88,7 @@ class ProductoQuerySet(models.QuerySet):
         return self.filter(activo=True, categoria__activa=True, tienda__activa=True)
 
     def con_datos_venta(self):
-        """Anota precio_actual, oferta_vigente y disponible para filtrar y ordenar en la base."""
+        """Anota precio_actual, oferta_vigente y comprable para filtrar y ordenar en la base."""
         vigente = q_oferta_vigente()
         return self.annotate(
             oferta_vigente=Case(When(vigente, then=Value(True)), default=Value(False), output_field=BooleanField()),
@@ -67,7 +96,7 @@ class ProductoQuerySet(models.QuerySet):
                 When(vigente, then=F('precio_oferta')), default=F('precio'),
                 output_field=DecimalField(max_digits=12, decimal_places=2),
             ),
-            disponible=F('stock_almacen') - F('stock_reservado'),
+            comprable=Case(When(q_comprable(), then=Value(True)), default=Value(False), output_field=BooleanField()),
         )
 
     def para_listado(self):
@@ -75,6 +104,8 @@ class ProductoQuerySet(models.QuerySet):
 
 
 class Producto(models.Model):
+    Disponibilidad = Disponibilidad
+
     tienda = models.ForeignKey('tiendas.Tienda', on_delete=models.PROTECT, related_name='productos')
     categoria = models.ForeignKey(
         Categoria, on_delete=models.PROTECT, related_name='productos', verbose_name='categoría',
@@ -90,6 +121,15 @@ class Producto(models.Model):
     )
     oferta_inicio = models.DateTimeField('inicio de la oferta', null=True, blank=True)
     oferta_fin = models.DateTimeField('fin de la oferta', null=True, blank=True)
+    disponibilidad = models.CharField(
+        max_length=15, choices=Disponibilidad.choices, default=Disponibilidad.DISPONIBLE,
+        help_text='"Disponible" y "Bajo pedido" se pueden comprar; las otras dos muestran el producto sin botón de compra.',
+    )
+    controla_stock = models.BooleanField(
+        'llevar inventario', default=False,
+        help_text='Márcalo solo si cuentas las unidades de este producto: se venderá hasta agotar el stock. '
+                  'Sin marcar, el stock se ignora y manda la disponibilidad.',
+    )
     stock_almacen = models.PositiveIntegerField('stock en almacén', default=0)
     stock_reservado = models.PositiveIntegerField(
         'stock reservado', default=0, editable=False,
@@ -136,6 +176,7 @@ class Producto(models.Model):
             models.Index(fields=['activo', 'destacado'], name='producto_activo_destacado_idx'),
             models.Index(fields=['categoria', 'activo'], name='producto_categoria_activo_idx'),
             models.Index(fields=['precio'], name='producto_precio_idx'),
+            models.Index(fields=['tienda', 'disponibilidad'], name='producto_disponibilidad_idx'),
         ]
 
     def __str__(self):
@@ -204,12 +245,41 @@ class Producto(models.Model):
         return self.creado >= timezone.now() - timedelta(days=dias)
 
     @property
+    def se_puede_comprar(self):
+        if self.disponibilidad not in EN_VENTA:
+            return False
+        return not self.controla_stock or self.stock_disponible > 0
+
+    @property
+    def estado_venta(self):
+        """La disponibilidad que ve el cliente: la del vendedor, o Agotado si lleva inventario y no queda."""
+        if self.disponibilidad in EN_VENTA and not self.se_puede_comprar:
+            return Disponibilidad.AGOTADO
+        return Disponibilidad(self.disponibilidad)
+
+    @property
+    def bajo_pedido(self):
+        return self.estado_venta == Disponibilidad.BAJO_PEDIDO
+
+    @property
     def agotado(self):
-        return self.stock_disponible <= 0
+        """No se puede comprar ahora, por la razon que sea; `estado_venta` dice cual."""
+        return not self.se_puede_comprar
+
+    @property
+    def limite_compra(self):
+        """Unidades que caben en un carrito: el tope por producto y, si lleva inventario, lo que queda."""
+        if not self.se_puede_comprar:
+            return 0
+        if not self.controla_stock:
+            return settings.CARRITO_MAX_POR_PRODUCTO
+        return min(self.stock_disponible, settings.CARRITO_MAX_POR_PRODUCTO)
 
     @property
     def stock_bajo(self):
-        return 0 < self.stock_disponible <= ConfiguracionTienda.obtener().umbral_stock_bajo
+        if not self.controla_stock or not self.se_puede_comprar:
+            return False
+        return self.stock_disponible <= ConfiguracionTienda.obtener().umbral_stock_bajo
 
     @property
     def foto_principal(self):

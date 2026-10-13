@@ -1,4 +1,3 @@
-from django.conf import settings
 from django.core.paginator import Paginator
 from django.shortcuts import get_object_or_404, render
 
@@ -56,7 +55,7 @@ def producto(request, slug):
         'producto': item,
         'fotos': item.fotos_ordenadas,
         'relacionados': services.relacionados(item),
-        'cantidad_maxima': min(item.stock_disponible, settings.CARRITO_MAX_POR_PRODUCTO),
+        'cantidad_maxima': item.limite_compra,
         'url_absoluta': url_absoluta,
         'og_imagen': request.build_absolute_uri(foto.imagen.url) if foto else '',
         'enlace_consulta': construir_enlace(tienda.whatsapp, consulta) if tienda.whatsapp else '',

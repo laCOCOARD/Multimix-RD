@@ -2,7 +2,7 @@
 from django.db.models import Count, F, Q, Sum
 from django.utils import timezone
 
-from catalogo.models import Producto
+from catalogo.models import Producto, q_agotado, q_comprable
 from pedidos.models import DetallePedido, Pedido
 from tiendas.models import Tienda
 
@@ -35,9 +35,12 @@ def resumen_panel(tiendas=None):
         productos = productos.filter(tienda__in=tiendas)
         vendidos = vendidos.filter(pedido__tienda__in=tiendas)
 
+    # El stock bajo solo tiene sentido en los productos que llevan inventario.
     productos = productos.annotate(disponible=F('stock_almacen') - F('stock_reservado'))
-    stock_bajo = productos.filter(disponible__gt=0, disponible__lte=umbral).order_by('disponible', 'nombre')
-    agotados = productos.filter(disponible__lte=0).order_by('nombre')
+    stock_bajo = (
+        productos.filter(q_comprable(), controla_stock=True, disponible__lte=umbral).order_by('disponible', 'nombre')
+    )
+    agotados = productos.filter(q_agotado()).order_by('nombre')
     pendientes = pedidos.filter(estado=Pedido.Estado.PENDIENTE)
 
     return {

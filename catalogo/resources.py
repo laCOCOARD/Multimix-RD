@@ -6,11 +6,12 @@ from .models import Categoria, Producto
 
 COLUMNAS = [
     'sku', 'nombre', 'categoria', 'descripcion', 'precio', 'precio_oferta',
-    'oferta_inicio', 'oferta_fin', 'stock_almacen', 'destacado', 'nuevo', 'activo',
+    'oferta_inicio', 'oferta_fin', 'disponibilidad', 'controla_stock', 'stock_almacen', 'destacado', 'nuevo',
+    'activo',
 ]
 FILA_DE_EJEMPLO = [
     'HOG-001', 'Lámpara de mesa LED', 'Hogar', 'Luz cálida regulable.', '1250.00', '990.00',
-    '2026-01-15 08:00:00', '2026-01-31 23:59:00', 25, 1, 0, 1,
+    '2026-01-15 08:00:00', '2026-01-31 23:59:00', 'disponible', 0, 0, 1, 0, 1,
 ]
 
 

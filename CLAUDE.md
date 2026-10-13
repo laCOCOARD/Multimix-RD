@@ -47,12 +47,20 @@ Al cerrar cada modulo: check, makemigrations, migrate, test y commit.
 - La logica de negocio vive en `services.py` de cada app, no en vistas ni plantillas.
 - Montos siempre calculados en el servidor; nunca se confia en montos del navegador.
 - Stock: `transaction.atomic` + `select_for_update`. `stock_reservado` solo lo toca `pedidos/services.py`.
+- Lo que se puede comprar lo decide `Producto.se_puede_comprar` (o `q_comprable()` en consultas), nunca el
+  stock a secas: casi ningun producto lleva inventario.
 - El estado del pedido solo cambia con `pedidos.services.cambiar_estado` (lo usa el panel).
 - El cliente nunca marca un pedido como pagado; solo "Ya hice la transferencia".
 - Montos en plantillas con `{{ valor|moneda }}` -> `RD$ 1,250.00`.
 - Nada de `|safe` con datos de usuarios. Solo ORM.
 
 ## Decisiones tomadas
+- Disponibilidad comercial: el negocio no cuenta unidades fiables, asi que cada producto se vende segun
+  `Producto.disponibilidad` (disponible, bajo pedido, agotado, temporalmente no disponible). El inventario es
+  opcional por producto (`controla_stock`, apagado por defecto): solo entonces valen `stock_almacen` y
+  `stock_reservado`. `estado_venta` es lo que ve el cliente y `limite_compra` cuantas unidades caben en el carrito.
+  `DetallePedido.reserva_stock` recuerda si la linea aparto stock, para liberar o descontar solo eso aunque el
+  producto cambie despues de modalidad. En las pruebas `crear_producto` si lleva inventario.
 - Proyecto en `C:\Users\elies\multimix_rd` (no en la carpeta de usuario) para aislar el repositorio.
 - Paquete de configuracion: `config`. Apps en la raiz del proyecto.
 - `django-import-export[xlsx]`: el extra instala openpyxl, necesario para Excel.

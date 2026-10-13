@@ -191,6 +191,7 @@ img { max-width: 100%; height: auto; }
 .mm-etiqueta-nuevo { background: var(--mm-exito); }
 .mm-etiqueta-destacado { background: var(--mm-primario); }
 .mm-etiqueta-agotado { background: #6b7785; }
+.mm-etiqueta-pedido { background: var(--mm-primario); }
 .mm-tarjeta-cuerpo { display: flex; flex-direction: column; flex: 1; padding: .85rem; }
 .mm-tarjeta-categoria { margin: 0 0 .15rem; font-size: .72rem; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; color: var(--mm-texto-suave); }
 .mm-tarjeta-nombre { font-size: .98rem; font-weight: 600; line-height: 1.3; margin: 0 0 .5rem; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; min-height: 2.55em; }

@@ -9,7 +9,7 @@ from django.db import transaction
 from django.db.models import Count, Max, Q, Sum
 from django.utils import timezone
 
-from catalogo.models import Categoria, Producto
+from catalogo.models import Categoria, Disponibilidad, Producto
 from core.models import ConfiguracionTienda
 from promociones.models import Cupon
 from promociones.services import (
@@ -125,7 +125,8 @@ def crear_pedido(carrito, datos, ip=None):
     """Crea el pedido de la tienda del carrito con los precios actuales, reserva el stock y cuenta el cupon.
 
     `datos` trae los campos ya validados del checkout. Ningun monto viene del cliente. Productos,
-    zona y cupon deben ser de esa misma tienda.
+    zona y cupon deben ser de esa misma tienda. Solo se aparta el stock de los productos que llevan
+    inventario; los demas se venden por su disponibilidad.
     """
     tienda = carrito.tienda
     cantidades = {int(pk): cantidad for pk, cantidad in carrito.items.items() if cantidad > 0}
@@ -147,11 +148,13 @@ def crear_pedido(carrito, datos, ip=None):
         producto = productos.get(pk)
         if producto is None or not producto.activo or producto.categoria_id not in categorias_activas:
             problemas.append('Un producto de tu carrito ya no está disponible.')
-        elif cantidad > producto.stock_disponible:
-            if producto.stock_disponible == 0:
+        elif not producto.se_puede_comprar:
+            if producto.estado_venta == Disponibilidad.AGOTADO:
                 problemas.append(f'"{producto.nombre}" se agotó.')
             else:
-                problemas.append(f'Solo quedan {producto.stock_disponible} de "{producto.nombre}".')
+                problemas.append(f'"{producto.nombre}" no está disponible por ahora.')
+        elif producto.controla_stock and cantidad > producto.stock_disponible:
+            problemas.append(f'Solo quedan {producto.stock_disponible} de "{producto.nombre}".')
     if problemas:
         raise StockInsuficiente(' '.join(problemas))
 
@@ -199,11 +202,13 @@ def crear_pedido(carrito, datos, ip=None):
         DetallePedido(
             pedido=pedido, producto=producto, nombre_producto=producto.nombre,
             precio_unitario=producto.precio_final, cantidad=cantidad,
-            subtotal=producto.precio_final * cantidad,
+            subtotal=producto.precio_final * cantidad, reserva_stock=producto.controla_stock,
         )
         for producto, cantidad in lineas
     ])
     for producto, cantidad in lineas:
+        if not producto.controla_stock:
+            continue
         producto.stock_reservado += cantidad
         producto.save(update_fields=['stock_reservado', 'actualizado'])
     if cupon:
@@ -242,7 +247,8 @@ def transiciones_permitidas(pedido):
 
 
 def _productos_bloqueados(pedido):
-    detalles = list(pedido.detalles.all())
+    """Productos del pedido que apartaron stock, bloqueados, con su cantidad."""
+    detalles = list(pedido.detalles.filter(reserva_stock=True))
     productos = {
         p.pk: p for p in
         Producto.objects.select_for_update().filter(pk__in=[d.producto_id for d in detalles]).order_by('pk')

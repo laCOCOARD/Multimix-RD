@@ -21,7 +21,9 @@ from tiendas.panel import AdminDeTienda, preparar_campo_tienda, tiendas_del_pane
 from tiendas.services import ve_todas
 
 from . import services
-from .models import Categoria, FotoProducto, Producto, q_oferta_vigente
+from .models import (
+    Categoria, Disponibilidad, FotoProducto, Producto, q_agotado, q_comprable, q_oferta_vigente,
+)
 from .resources import COLUMNAS, FILA_DE_EJEMPLO, ProductoResource
 
 
@@ -81,15 +83,25 @@ class StockFilter(admin.SimpleListFilter):
         return [('bajo', 'Stock bajo'), ('agotado', 'Agotado'), ('normal', 'Stock normal')]
 
     def queryset(self, request, queryset):
+        # "Bajo" y "normal" son de los productos que llevan inventario; "agotado" incluye los marcados a mano.
         umbral = ConfiguracionTienda.obtener().umbral_stock_bajo
         queryset = queryset.annotate(_disponible=F('stock_almacen') - F('stock_reservado'))
         if self.value() == 'bajo':
-            return queryset.filter(_disponible__gt=0, _disponible__lte=umbral)
+            return queryset.filter(q_comprable(), controla_stock=True, _disponible__lte=umbral)
         if self.value() == 'agotado':
-            return queryset.filter(_disponible__lte=0)
+            return queryset.filter(q_agotado())
         if self.value() == 'normal':
-            return queryset.filter(_disponible__gt=umbral)
+            return queryset.filter(q_comprable(), controla_stock=True, _disponible__gt=umbral)
         return queryset
+
+
+def _accion_de_disponibilidad(valor):
+    @admin.action(description=f'Marcar como: {valor.label}')
+    def accion(modeladmin, request, queryset):
+        total = queryset.update(disponibilidad=valor)
+        modeladmin.message_user(request, f'{total} productos quedaron como "{valor.label}".')
+    accion.__name__ = f'marcar_{valor.value}'
+    return accion
 
 
 class OfertaMasivaForm(forms.Form):
@@ -133,22 +145,31 @@ class ProductoAdmin(AvisaImagenesSinGuardar, AdminDeTienda, ImportExportModelAdm
     import_export_change_list_template = 'admin/catalogo/producto/change_list.html'
 
     list_display = [
-        'miniatura', 'nombre', 'sku', 'categoria', 'precio_formateado', 'oferta', 'stock_almacen',
-        'stock_reservado', 'disponible', 'destacado', 'nuevo', 'activo',
+        'miniatura', 'nombre', 'sku', 'categoria', 'precio_formateado', 'oferta', 'disponibilidad',
+        'disponible', 'destacado', 'nuevo', 'activo',
     ]
     list_display_links = ['miniatura', 'nombre']
-    list_editable = ['destacado', 'nuevo', 'activo']
-    list_filter = ['categoria', 'activo', EnOfertaFilter, StockFilter, 'destacado', 'nuevo']
+    list_editable = ['disponibilidad', 'destacado', 'nuevo', 'activo']
+    list_filter = [
+        'categoria', 'activo', 'disponibilidad', EnOfertaFilter, 'controla_stock', StockFilter, 'destacado', 'nuevo',
+    ]
     search_fields = ['nombre', 'sku', 'texto_busqueda']
     list_per_page = 40
     prepopulated_fields = {'slug': ['nombre']}
     readonly_fields = ['stock_reservado', 'stock_disponible_actual', 'creado', 'actualizado']
     inlines = [FotoProductoInline]
-    actions = ['destacar', 'quitar_destacado', 'activar', 'desactivar', 'poner_oferta', 'quitar_oferta']
+    actions = [
+        'destacar', 'quitar_destacado', 'activar', 'desactivar', 'poner_oferta', 'quitar_oferta',
+        *[_accion_de_disponibilidad(valor) for valor in Disponibilidad],
+    ]
     fieldsets = [
         (None, {'fields': ['tienda', 'nombre', 'slug', 'sku', 'categoria', 'descripcion']}),
         ('Precio', {'fields': ['precio', 'precio_oferta', 'oferta_inicio', 'oferta_fin']}),
-        ('Inventario', {'fields': ['stock_almacen', 'stock_reservado', 'stock_disponible_actual']}),
+        ('Disponibilidad', {'fields': ['disponibilidad']}),
+        ('Inventario (opcional)', {
+            'description': 'Déjalo sin marcar si no cuentas las unidades: el producto se vende según su disponibilidad.',
+            'fields': ['controla_stock', 'stock_almacen', 'stock_reservado', 'stock_disponible_actual'],
+        }),
         ('Visibilidad', {'fields': ['activo', 'destacado', 'nuevo', 'creado', 'actualizado']}),
     ]
 
@@ -267,19 +288,25 @@ class ProductoAdmin(AvisaImagenesSinGuardar, AdminDeTienda, ImportExportModelAdm
             formatear_monto(producto.precio_oferta),
         )
 
-    @admin.display(description='Disponible')
+    @admin.display(description='En la tienda')
     def disponible(self, producto):
-        if producto.agotado:
-            clase, texto = 'panel-agotado', 'Agotado'
+        """Lo que ve el cliente; con inventario, tambien las unidades que quedan."""
+        estado = producto.estado_venta
+        if estado == Disponibilidad.AGOTADO:
+            clase, texto = 'panel-agotado', estado.label
+        elif not producto.se_puede_comprar:
+            clase, texto = 'panel-inactiva', 'No disponible'
+        elif not producto.controla_stock:
+            clase, texto = 'panel-ok', estado.label
         elif producto.stock_bajo:
-            clase, texto = 'panel-bajo', producto.stock_disponible
+            clase, texto = 'panel-bajo', f'Quedan {producto.stock_disponible}'
         else:
-            clase, texto = 'panel-ok', producto.stock_disponible
+            clase, texto = 'panel-ok', f'{producto.stock_disponible} en stock'
         return format_html('<span class="panel-etiqueta {}">{}</span>', clase, texto)
 
-    @admin.display(description='Disponible para la venta')
+    @admin.display(description='Unidades para la venta')
     def stock_disponible_actual(self, producto):
-        return producto.stock_disponible if producto.pk else '—'
+        return producto.stock_disponible if producto.pk and producto.controla_stock else '—'
 
     # --- Acciones masivas -----------------------------------------------------------
 

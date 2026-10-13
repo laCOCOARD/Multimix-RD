@@ -10,7 +10,7 @@
       {% endif %}
     {% endwith %}
     <span class="mm-etiquetas">
-      {% if producto.agotado %}<span class="badge mm-etiqueta-agotado">Agotado</span>{% endif %}
+      {% if producto.agotado %}<span class="badge mm-etiqueta-agotado">{{ producto.estado_venta.label }}</span>{% elif producto.bajo_pedido %}<span class="badge mm-etiqueta-pedido">Bajo pedido</span>{% endif %}
       {% if producto.en_oferta %}<span class="badge mm-etiqueta-oferta">Oferta -{{ producto.porcentaje_descuento }}%</span>{% endif %}
       {% if producto.es_nuevo %}<span class="badge mm-etiqueta-nuevo">Nuevo</span>{% endif %}
       {% if producto.destacado %}<span class="badge mm-etiqueta-destacado">Destacado</span>{% endif %}
@@ -26,7 +26,7 @@
     {% if not tienda %}
       <a class="btn btn-outline-primary w-100 mt-auto" href="{{ producto.get_absolute_url }}">Ver en la tienda</a>
     {% elif producto.agotado %}
-      <button class="btn btn-outline-secondary w-100 mt-auto" type="button" disabled>Agotado</button>
+      <button class="btn btn-outline-secondary w-100 mt-auto" type="button" disabled>{% if producto.estado_venta == 'agotado' %}Agotado{% else %}No disponible{% endif %}</button>
     {% else %}
       <form class="mt-auto js-agregar" method="post" action="{% url 'carrito:agregar' tienda.slug %}">
         {% csrf_token %}

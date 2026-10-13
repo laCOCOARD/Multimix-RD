@@ -24,6 +24,7 @@ def crear_producto(**datos):
         'nombre': 'Producto de prueba',
         'sku': f'SKU-{Producto.objects.count() + 1}',
         'precio': Decimal('1000.00'),
+        'controla_stock': True,
         'stock_almacen': 10,
     }
     valores.update(datos)
@@ -69,10 +70,13 @@ class ProductoPropiedadesTests(TestCase):
         ahora = timezone.now()
         crear_producto(sku='A', precio_oferta=Decimal('500'))
         crear_producto(sku='B', precio_oferta=Decimal('500'), oferta_fin=ahora - timedelta(days=1))
+        crear_producto(sku='C', stock_almacen=0)
+        crear_producto(sku='D', stock_almacen=0, controla_stock=False)
+        crear_producto(sku='E', disponibilidad=Producto.Disponibilidad.NO_DISPONIBLE)
         for producto in Producto.objects.con_datos_venta():
             self.assertEqual(producto.oferta_vigente, producto.en_oferta)
             self.assertEqual(producto.precio_actual, producto.precio_final)
-            self.assertEqual(producto.disponible, producto.stock_disponible)
+            self.assertEqual(producto.comprable, producto.se_puede_comprar, producto.sku)
 
     def test_nuevo_por_fecha_o_marcado(self):
         ConfiguracionTienda.obtener()
