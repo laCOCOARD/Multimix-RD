@@ -60,6 +60,12 @@ Al cerrar cada modulo: check, makemigrations, migrate, test y commit.
 - Nada de `|safe` con datos de usuarios. Solo ORM.
 
 ## Decisiones tomadas
+- Correos: `core.correo.enviar` (texto, plantillas en `templates/correos/`, nunca lanza: registra el fallo) y
+  `pedidos.avisos` (pedido nuevo, cambio de estado, comprobante, pago rechazado). Salen con
+  `transaction.on_commit`, asi que en las pruebas hay que envolver con `captureOnCommitCallbacks(execute=True)`.
+  SMTP por variables `EMAIL_*` (Brevo); sin `EMAIL_HOST` van a la consola. La tienda recibe en su correo de
+  contacto y, si no tiene, en el de sus vendedores, el del sitio o el de los superusuarios. Los enlaces usan
+  `SITIO_URL`. En Configuracion general hay un boton "Enviar correo de prueba" (Render free no tiene consola).
 - Pagos: `pedidos.services` importa `pagos.services` dentro de las funciones (pagos usa pedidos para cambiar el
   estado). `pago_vigente(pedido)` abre el pago si falta, asi que los pedidos anteriores no necesitaron migracion.
   Un comprobante rechazado deja el pago como historial y el siguiente aviso abre otro (`-P2`). Los comprobantes

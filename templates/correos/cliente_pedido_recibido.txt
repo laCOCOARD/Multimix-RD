@@ -1,0 +1,20 @@
+{% load moneda %}{% autoescape off %}Hola {{ pedido.nombre }}:
+
+Recibimos tu pedido {{ pedido.numero }} en {{ tienda.nombre }}.
+
+{% for detalle in pedido.detalles.all %}- {{ detalle.cantidad }} x {{ detalle.nombre_producto }}: {{ detalle.subtotal|moneda }}
+{% endfor %}
+Subtotal: {{ pedido.subtotal|moneda }}{% if pedido.descuento %}
+Descuento: -{{ pedido.descuento|moneda }}{% endif %}{% if pedido.impuesto %}
+{{ pedido.etiqueta_impuesto }}: {{ pedido.impuesto|moneda }}{% endif %}
+Envío: {% if pedido.recoge_en_tienda %}recoges en la tienda{% else %}{{ pedido.costo_envio|moneda }}{% endif %}
+Total: {{ pedido.total|moneda }}
+
+{% if pedido.paga_por_transferencia %}Para pagar por transferencia, entra a la página de tu pedido: ahí están las cuentas de la tienda y puedes adjuntar tu comprobante.{% elif pedido.recoge_en_tienda %}Pagas en efectivo al recoger tu pedido.{% else %}Pagas en efectivo al recibir tu pedido.{% endif %}
+
+Sigue tu pedido aquí:
+{{ enlace_pedido }}
+
+Gracias por tu compra.
+{{ tienda.nombre }}
+{% endautoescape %}

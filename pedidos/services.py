@@ -17,6 +17,7 @@ from promociones.services import (
     CuponInvalido, calcular_descuento, devolver_uso, normalizar_codigo, registrar_uso, validar_cupon,
 )
 
+from . import avisos
 from .models import DetallePedido, Pedido, SecuenciaTienda, ZonaEnvio
 
 logger = logging.getLogger('multimix.pedidos')
@@ -225,6 +226,7 @@ def crear_pedido(carrito, datos, ip=None):
     # Se importa aqui: pagos.services usa este modulo para cambiar el estado del pedido.
     from pagos.services import pago_vigente
     pago_vigente(pedido)
+    avisos.pedido_creado(pedido)
 
     logger.info('Pedido %s creado por RD$ %s (%s productos)', pedido.numero, pedido.total, len(lineas))
     return pedido
@@ -317,6 +319,7 @@ def cambiar_estado(pedido, nuevo_estado):
     pedido.save(update_fields=['estado', 'fecha_pago', 'fecha_entrega', 'stock_descontado'])
     from pagos.services import sincronizar_con_pedido
     sincronizar_con_pedido(pedido)
+    avisos.estado_cambiado(pedido)
     logger.info('Pedido %s: %s -> %s', pedido.numero, anterior, nuevo_estado)
     return pedido
 

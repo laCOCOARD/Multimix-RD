@@ -1,0 +1,20 @@
+{% load moneda %}{% autoescape off %}Entró un pedido nuevo en {{ tienda.nombre }}.
+
+Pedido: {{ pedido.numero }}
+Cliente: {{ pedido.nombre }} · {{ pedido.telefono|telefono }}{% if pedido.correo %} · {{ pedido.correo }}{% endif %}
+
+{% for detalle in pedido.detalles.all %}- {{ detalle.cantidad }} x {{ detalle.nombre_producto }}: {{ detalle.subtotal|moneda }}
+{% endfor %}
+Subtotal: {{ pedido.subtotal|moneda }}{% if pedido.descuento %}
+Cupón {{ pedido.codigo_cupon }}: -{{ pedido.descuento|moneda }}{% endif %}{% if pedido.impuesto %}
+{{ pedido.etiqueta_impuesto }}: {{ pedido.impuesto|moneda }}{% endif %}
+Envío: {% if pedido.recoge_en_tienda %}recoge en tienda{% else %}{{ pedido.costo_envio|moneda }} ({{ pedido.zona.nombre }}){% endif %}
+Total: {{ pedido.total|moneda }}
+
+Forma de pago: {{ pedido.get_metodo_pago_display }}{% if pedido.transferencia_realizada %} (dice que ya transfirió){% endif %}{% if not pedido.recoge_en_tienda %}
+Entregar en: {{ pedido.direccion_completa }}{% if pedido.referencia %} ({{ pedido.referencia }}){% endif %}{% endif %}{% if pedido.notas_cliente %}
+Notas del cliente: {{ pedido.notas_cliente }}{% endif %}
+
+Ver el pedido en el panel:
+{{ enlace_panel }}
+{% endautoescape %}

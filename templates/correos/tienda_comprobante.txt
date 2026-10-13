@@ -1,0 +1,8 @@
+{% load moneda %}{% autoescape off %}{{ pedido.nombre }} avisó que ya transfirió el pedido {{ pedido.numero }} ({{ pedido.total|moneda }}).
+
+{% if pago.comprobante %}Adjuntó el comprobante.{% else %}No adjuntó comprobante.{% endif %}{% if pago.referencia_cliente %}
+Referencia: {{ pago.referencia_cliente }}{% endif %}
+
+Revisa tu cuenta y aprueba o rechaza el pago en el panel:
+{{ enlace_pago }}
+{% endautoescape %}

@@ -1,0 +1,15 @@
+{% extends "admin/change_form.html" %}
+
+{% block content %}
+{% if original and request.user.is_superuser %}
+  <form class="panel-transiciones" method="post" action="{% url 'admin:core_configuraciontienda_correo_de_prueba' %}">
+    {% csrf_token %}
+    <span class="panel-transiciones-titulo">Correo:</span>
+    <button class="button" type="submit">Enviar correo de prueba</button>
+    <span>
+      {% if correo_configurado %}Llega a {{ destino_de_prueba|default:'(pon tu correo en tu usuario o en "correo de contacto")' }}.{% else %}Todavía no hay servidor de correo configurado: los avisos no se envían.{% endif %}
+    </span>
+  </form>
+{% endif %}
+{{ block.super }}
+{% endblock %}

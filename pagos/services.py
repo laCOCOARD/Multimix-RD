@@ -6,6 +6,7 @@ from django.db import transaction
 from django.utils import timezone
 
 from catalogo.imagenes import convertir_a_webp
+from pedidos import avisos
 from pedidos import services as pedidos
 from pedidos.models import Pedido
 
@@ -67,6 +68,7 @@ def registrar_comprobante(pedido, archivo=None, referencia=''):
     if anterior:
         pago.comprobante.storage.delete(anterior)
     pedidos.marcar_transferencia(pedido, pago.referencia_cliente)
+    avisos.comprobante_recibido(pago)
     logger.info('Pago %s en revision%s', pago.referencia, ' con comprobante' if pago.comprobante else '')
     return pago
 
@@ -106,6 +108,7 @@ def rechazar_pago(pago, usuario=None, nota=''):
     pago.revisado_por = usuario
     pago.save(update_fields=['estado', 'nota', 'revisado_en', 'revisado_por', 'actualizado'])
     Pedido.objects.filter(pk=pago.pedido_id).update(transferencia_realizada=False, referencia_transferencia='')
+    avisos.pago_rechazado(pago)
     logger.info('Pago %s rechazado por %s', pago.referencia, usuario or 'el sistema')
     return pago
 

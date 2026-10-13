@@ -1,0 +1,10 @@
+{% load moneda %}{% autoescape off %}Hola {{ pedido.nombre }}:
+
+{{ tienda.nombre }} no pudo confirmar la transferencia de tu pedido {{ pedido.numero }} ({{ pedido.total|moneda }}).{% if pago.nota %}
+Motivo: {{ pago.nota }}{% endif %}
+
+Tu pedido sigue pendiente. Puedes enviar otro comprobante desde la página de tu pedido:
+{{ enlace_pedido }}
+
+{{ tienda.nombre }}
+{% endautoescape %}

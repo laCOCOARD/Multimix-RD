@@ -1,0 +1,131 @@
+from decimal import Decimal
+from unittest import mock
+
+from django.contrib.auth import get_user_model
+from django.core import mail
+from django.test import TestCase, override_settings
+
+from catalogo.tests.test_modelos import crear_producto
+from core.models import ConfiguracionTienda
+from pagos import services as pagos
+from pedidos import avisos
+from pedidos.models import Pedido
+from pedidos.services import cambiar_estado, eliminar_pedido
+from tiendas.tests.utiles import ruta, tienda_de_prueba
+
+from .utiles import pedido_de_prueba
+
+
+@override_settings(SITIO_URL='https://multimix.example')
+class AvisosPorCorreoTests(TestCase):
+    def setUp(self):
+        self.tienda = tienda_de_prueba()
+        self.tienda.correo = 'ventas@tienda.example'
+        self.tienda.save()
+        self.producto = crear_producto(nombre='Lámpara', precio=Decimal('1000'))
+
+    def pedido(self, **cambios):
+        """Crea el pedido y deja salir los correos, como cuando la base confirma la operacion."""
+        with self.captureOnCommitCallbacks(execute=True):
+            pedido = pedido_de_prueba(self.producto, 2, **cambios)
+        return pedido
+
+    def test_pedido_nuevo_avisa_a_la_tienda_y_al_cliente(self):
+        pedido = self.pedido()
+        a_la_tienda, al_cliente = mail.outbox
+        self.assertEqual((a_la_tienda.to, a_la_tienda.subject), (['ventas@tienda.example'], f'Nuevo pedido {pedido.numero}'))
+        self.assertIn('2 x Lámpara: RD$ 2,000.00', a_la_tienda.body)
+        self.assertIn('Ana Pérez · 809-555-1234', a_la_tienda.body)
+        self.assertIn(f'https://multimix.example/panel/pedidos/pedido/{pedido.pk}/change/', a_la_tienda.body)
+
+        self.assertEqual((al_cliente.to, al_cliente.subject), (['ana@example.com'], f'Recibimos tu pedido {pedido.numero}'))
+        self.assertIn(f'https://multimix.example/pedido/{pedido.token}/', al_cliente.body)
+        self.assertIn('Total: RD$ 2,000.00', al_cliente.body)
+        # El enlace del panel es solo para la tienda.
+        self.assertNotIn('/panel/', al_cliente.body)
+
+    def test_sin_correo_del_cliente_solo_se_avisa_a_la_tienda(self):
+        self.pedido(correo='')
+        self.assertEqual([correo.to for correo in mail.outbox], [['ventas@tienda.example']])
+
+    def test_a_quien_se_avisa_en_la_tienda(self):
+        self.assertEqual(avisos.correos_de_la_tienda(self.tienda), ['ventas@tienda.example'])
+        self.tienda.correo = ''
+        Usuario = get_user_model()
+        Usuario.objects.create_superuser('admin', 'admin@sitio.example', 'clave-segura-123')
+        self.assertEqual(avisos.correos_de_la_tienda(self.tienda), ['admin@sitio.example'])
+        configuracion = ConfiguracionTienda.obtener()
+        configuracion.correo = 'hola@sitio.example'
+        configuracion.save()
+        self.assertEqual(avisos.correos_de_la_tienda(self.tienda), ['hola@sitio.example'])
+        self.tienda.usuarios.add(Usuario.objects.create_user('vendedor', 'vendedor@tienda.example'))
+        self.assertEqual(avisos.correos_de_la_tienda(self.tienda), ['vendedor@tienda.example'])
+
+    def test_cada_cambio_de_estado_le_llega_al_cliente(self):
+        pedido = self.pedido(metodo_entrega=Pedido.Entrega.RECOGER)
+        mail.outbox.clear()
+        for estado, texto in (('pagado', 'Confirmamos el pago'), ('listo', 'listo para recoger'), ('entregado', 'fue entregado')):
+            with self.captureOnCommitCallbacks(execute=True):
+                cambiar_estado(pedido, estado)
+            correo = mail.outbox[-1]
+            self.assertEqual(correo.to, ['ana@example.com'])
+            self.assertIn(texto, correo.body)
+        self.assertEqual(len(mail.outbox), 3)
+
+    def test_comprobante_avisa_a_la_tienda_y_rechazo_al_cliente(self):
+        pedido = self.pedido()
+        mail.outbox.clear()
+        with self.captureOnCommitCallbacks(execute=True):
+            pago = pagos.registrar_comprobante(pedido, None, 'REF-77')
+        correo = mail.outbox[-1]
+        self.assertEqual(correo.to, ['ventas@tienda.example'])
+        self.assertIn('Referencia: REF-77', correo.body)
+        self.assertIn(f'/panel/pagos/pago/{pago.pk}/change/', correo.body)
+
+        with self.captureOnCommitCallbacks(execute=True):
+            pagos.rechazar_pago(pago, nota='No aparece en el banco')
+        correo = mail.outbox[-1]
+        self.assertEqual(correo.to, ['ana@example.com'])
+        self.assertIn('Motivo: No aparece en el banco', correo.body)
+
+    def test_si_el_correo_falla_la_compra_sigue(self):
+        self.client.post(ruta('carrito:agregar'), {'producto_id': self.producto.pk, 'cantidad': 1})
+        with mock.patch('core.correo.send_mail', side_effect=OSError('sin conexion')):
+            with self.captureOnCommitCallbacks(execute=True):
+                respuesta = self.client.post(ruta('pedidos:checkout'), {
+                    'nombre': 'Ana Pérez', 'telefono': '8095551234', 'correo': 'ana@example.com',
+                    'metodo_entrega': 'recoger', 'metodo_pago': 'transferencia', 'acepta_terminos': 'on',
+                })
+        pedido = Pedido.objects.get()
+        self.assertRedirects(respuesta, pedido.get_absolute_url(), fetch_redirect_response=False)
+        self.assertEqual(mail.outbox, [])
+
+    def test_los_datos_del_cliente_no_se_interpretan_como_plantilla_ni_html(self):
+        self.pedido(nombre='Ana <b>{{ pedido.token }}</b>', notas='{% load x %}')
+        cuerpo = mail.outbox[0].body
+        self.assertIn('Ana <b>{{ pedido.token }}</b>', cuerpo)
+        self.assertIn('{% load x %}', cuerpo)
+
+    def test_el_administrador_prueba_el_correo_desde_el_panel(self):
+        Usuario = get_user_model()
+        self.client.force_login(Usuario.objects.create_superuser('admin', 'admin@sitio.example', 'clave-segura-123'))
+        url = '/panel/core/configuraciontienda/correo-de-prueba/'
+        self.client.post(url)
+        self.assertEqual(mail.outbox, [])  # sin servidor de correo no se intenta
+        with override_settings(EMAIL_HOST='smtp.example'):
+            self.client.post(url)
+            self.assertEqual(mail.outbox[-1].to, ['admin@sitio.example'])
+            with mock.patch('core.admin.send_mail', side_effect=OSError('clave incorrecta')):
+                respuesta = self.client.post(url, follow=True)
+            self.assertContains(respuesta, 'No se pudo enviar: OSError: clave incorrecta')
+        self.assertEqual(self.client.get(url).status_code, 405)
+
+        self.client.force_login(Usuario.objects.create_user('vendedor', is_staff=True))
+        self.assertEqual(self.client.post(url).status_code, 403)
+
+    def test_eliminar_un_pedido_no_manda_correo_de_cancelacion(self):
+        pedido = self.pedido()
+        mail.outbox.clear()
+        with self.captureOnCommitCallbacks(execute=True):
+            eliminar_pedido(pedido)
+        self.assertEqual(mail.outbox, [])
