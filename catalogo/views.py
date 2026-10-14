@@ -6,6 +6,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_GET, require_POST
 
 from clientes.services import es_favorito
+from core.seo import producto_json_ld
 from core.templatetags.moneda import formatear_monto
 from opiniones import services as opiniones
 
@@ -86,6 +87,8 @@ def producto(request, slug):
     item = get_object_or_404(Producto.objects.activos().para_listado(), tienda=tienda, slug=slug)
     url_absoluta = request.build_absolute_uri(item.get_absolute_url())
     foto = item.foto_principal
+    resumen_resenas = opiniones.resumen(item)
+    imagenes = [request.build_absolute_uri(f.imagen.url) for f in item.fotos_ordenadas]
     consulta = f'Hola, me interesa este producto: {item.nombre} (SKU {item.sku})\n{url_absoluta}'
     return render(request, 'catalogo/producto.html', {
         'producto': item,
@@ -93,7 +96,8 @@ def producto(request, slug):
         'relacionados': services.relacionados(item),
         'es_favorito': es_favorito(request.user, item),
         'resenas': opiniones.publicadas(item),
-        'resumen_resenas': opiniones.resumen(item),
+        'resumen_resenas': resumen_resenas,
+        'json_ld': producto_json_ld(item, url_absoluta, imagenes, resumen_resenas),
         'mi_resena': opiniones.resena_de(request.user, item),
         'opciones_estrellas': OPCIONES_ESTRELLAS,
         'cantidad_maxima': item.limite_compra,

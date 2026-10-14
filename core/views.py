@@ -30,6 +30,17 @@ def terminos(request):
 
 
 @require_GET
+def salud(request):
+    """Para el monitor de Render: responde 200 solo si la aplicacion y la base de datos funcionan."""
+    from django.db import connection
+    from django.http import HttpResponse
+
+    with connection.cursor() as cursor:
+        cursor.execute('SELECT 1')
+    return HttpResponse('ok', content_type='text/plain')
+
+
+@require_GET
 def pagina(request, slug):
     """Pagina informativa. Sin publicar solo la ve el administrador principal, como vista previa."""
     item = get_object_or_404(PaginaInformativa, slug=slug)

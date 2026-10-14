@@ -2,7 +2,9 @@ from django.contrib import admin, messages
 from django.contrib.admin.utils import unquote
 from django.core.exceptions import PermissionDenied
 from django.core.paginator import Paginator
-from django.http import Http404
+import csv
+
+from django.http import Http404, HttpResponse
 from django.shortcuts import redirect, render
 from django.urls import path, reverse
 from django.utils.html import format_html
@@ -12,7 +14,7 @@ from core.telefonos import formatear_telefono, telefono_internacional
 from core.templatetags.moneda import formatear_monto
 from tiendas.panel import AdminDeTienda, maneja_varias_tiendas
 
-from . import services
+from . import reportes, services
 from .models import DetallePedido, EventoPedido, Pedido, SolicitudDevolucion, ZonaEnvio
 from .whatsapp import construir_enlace, enlace_al_cliente
 
@@ -144,6 +146,7 @@ class PedidoAdmin(AdminDeTienda, admin.ModelAdmin):
                 name='pedidos_pedido_estado',
             ),
             path('clientes/', self.admin_site.admin_view(self.clientes_vista), name='pedidos_pedido_clientes'),
+            path('reporte/', self.admin_site.admin_view(self.reporte_vista), name='pedidos_pedido_reporte'),
         ]
         return propias + super().get_urls()
 
@@ -166,6 +169,31 @@ class PedidoAdmin(AdminDeTienda, admin.ModelAdmin):
             'filas': filas,
             'pagina': pagina,
             'busqueda': busqueda,
+            'varias_tiendas': maneja_varias_tiendas(request),
+            'opts': self.model._meta,
+        })
+
+    # --- Reporte de ventas: solo con los pedidos que el usuario puede ver -----------
+
+    def reporte_vista(self, request):
+        if not self.has_view_permission(request):
+            raise PermissionDenied
+        desde, hasta = reportes.rango(request.GET.get('desde'), request.GET.get('hasta'))
+        reporte = reportes.reporte_de_ventas(self.get_queryset(request), desde, hasta)
+        if request.GET.get('formato') == 'csv':
+            respuesta = HttpResponse(content_type='text/csv; charset=utf-8')
+            respuesta['Content-Disposition'] = f'attachment; filename="ventas_{desde}_{hasta}.csv"'
+            respuesta.write('\ufeff')  # para que Excel lea bien las tildes
+            hoja = csv.writer(respuesta)
+            hoja.writerow(['Dia', 'Pedidos', 'Cobrado (RD$)'])
+            for fila in reporte['por_dia']:
+                hoja.writerow([fila['dia'].isoformat(), fila['pedidos'], f"{fila['cobrado']:.2f}"])
+            hoja.writerow(['Total', reporte['pedidos'], f"{reporte['cobrado']:.2f}"])
+            return respuesta
+        return render(request, 'admin/pedidos/pedido/reporte.html', {
+            **self.admin_site.each_context(request),
+            'title': 'Reporte de ventas',
+            'reporte': reporte,
             'varias_tiendas': maneja_varias_tiendas(request),
             'opts': self.model._meta,
         })

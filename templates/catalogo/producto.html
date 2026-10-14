@@ -20,6 +20,7 @@
 <meta property="product:price:currency" content="DOP">
 <meta property="product:availability" content="{% if producto.agotado %}out of stock{% elif producto.bajo_pedido %}available for order{% else %}in stock{% endif %}">
 <link rel="canonical" href="{{ url_absoluta }}">
+<script type="application/ld+json">{{ json_ld }}</script>
 {% endblock %}
 
 {% block contenido %}

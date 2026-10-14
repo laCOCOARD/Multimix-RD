@@ -66,6 +66,8 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'config.middleware.PoliticaDeContenidoMiddleware',
+    'config.middleware.TareasPeriodicasMiddleware',
 ]
 
 ROOT_URLCONF = 'config.urls'
@@ -282,7 +284,25 @@ PAGOS_PROVEEDOR_TARJETA = os.getenv('PAGOS_PROVEEDOR_TARJETA', '').strip().lower
 IMPORT_EXPORT_USE_TRANSACTIONS = True
 IMPORT_EXPORT_FORMATS = [XLSX, CSV]
 
+# Mantenimiento que corre solo con las visitas (ver core/tareas.py). En las pruebas se activa a mano.
+TAREAS_AUTOMATICAS = not EN_TESTS
+
 # --- Seguridad en produccion ---
+# Scripts y estilos solo del propio sitio y del CDN de Bootstrap; las fotos pueden venir del almacenamiento.
+# 'unsafe-inline' sigue permitido porque el panel y algunas plantillas traen scripts y estilos en linea.
+# Los formularios solo envian a este sitio: al conectar una pasarela de pago hay que agregar aqui su dominio.
+POLITICA_DE_CONTENIDO = '; '.join([
+    "default-src 'self'",
+    "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net",
+    "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net",
+    "font-src 'self' data: https://cdn.jsdelivr.net",
+    "img-src 'self' data: blob: https:",
+    "connect-src 'self'",
+    "object-src 'none'",
+    "base-uri 'self'",
+    "form-action 'self'",
+    "frame-ancestors 'none'",
+])
 X_FRAME_OPTIONS = 'DENY'
 SECURE_CONTENT_TYPE_NOSNIFF = True
 SECURE_REFERRER_POLICY = 'strict-origin-when-cross-origin'

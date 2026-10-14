@@ -106,3 +106,38 @@ class PreguntaFrecuenteAdmin(admin.ModelAdmin):
     list_display = ['pregunta', 'activa', 'orden']
     list_editable = ['activa', 'orden']
     search_fields = ['pregunta', 'respuesta']
+
+
+@admin.register(admin.models.LogEntry)
+class HistorialDeAccionesAdmin(admin.ModelAdmin):
+    """Quien creo, cambio o borro algo desde el panel. Solo lectura y solo para el administrador principal."""
+
+    date_hierarchy = 'action_time'
+    list_display = ['action_time', 'user', 'accion', 'content_type', 'object_repr', 'cambio']
+    list_filter = ['action_flag', 'content_type']
+    search_fields = ['object_repr', 'change_message', 'user__username']
+    list_select_related = ['user', 'content_type']
+    list_per_page = 60
+
+    def has_module_permission(self, request):
+        return request.user.is_active and request.user.is_superuser
+
+    def has_view_permission(self, request, obj=None):
+        return request.user.is_active and request.user.is_superuser
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+    @admin.display(description='Acción', ordering='action_flag')
+    def accion(self, registro):
+        return registro.get_action_flag_display()
+
+    @admin.display(description='Detalle')
+    def cambio(self, registro):
+        return registro.get_change_message()

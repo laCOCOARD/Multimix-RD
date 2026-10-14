@@ -13,7 +13,7 @@
     <div class="panel-tarjeta">
       <span class="panel-tarjeta-titulo">Ventas del mes</span>
       <strong class="panel-tarjeta-valor">{{ resumen.ventas_mes|moneda }}</strong>
-      <span class="panel-tarjeta-nota">Pedidos cobrados este mes</span>
+      <span class="panel-tarjeta-nota">Pedidos cobrados este mes · <a href="{% url 'admin:pedidos_pedido_reporte' %}">ver reporte</a></span>
     </div>
     <a class="panel-tarjeta panel-tarjeta-aviso" href="{% url 'admin:pedidos_pedido_changelist' %}?estado__exact=pendiente">
       <span class="panel-tarjeta-titulo">Pedidos pendientes</span>

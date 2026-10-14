@@ -64,6 +64,18 @@ Al cerrar cada modulo: check, makemigrations, migrate, test y commit.
 - Nada de `|safe` con datos de usuarios. Solo ORM.
 
 ## Decisiones tomadas
+- Sin cron en Render free: `config.middleware.TareasPeriodicasMiddleware` llama a `core.tareas.ejecutar_si_toca`,
+  que como mucho una vez por hora (candado en la cache) cancela los pedidos vencidos y borra sesiones caducadas.
+  En las pruebas esta apagado (`TAREAS_AUTOMATICAS`).
+- Cabecera CSP (`POLITICA_DE_CONTENIDO` en settings): scripts y estilos solo del sitio y de cdn.jsdelivr.net, con
+  'unsafe-inline' porque hay scripts en linea en el panel y las plantillas. `form-action 'self'`: al conectar una
+  pasarela que reciba un formulario hay que agregar su dominio.
+- `/salud/` responde "ok" si la aplicacion y la base funcionan (para el Health Check Path de Render).
+- JSON-LD del producto (`core.seo.producto_json_ld`): precio, disponibilidad y marca reales; la valoracion solo
+  aparece si hay reseñas publicadas. Es la unica excepcion a "nada de |safe": el JSON se escapa como `json_script`.
+- Reporte de ventas (`pedidos.reportes`, Panel > Pedidos > Reporte de ventas) con descarga CSV, limitado a las
+  tiendas del usuario. El historial de acciones del panel (LogEntry) lo ve solo el superusuario; los cambios de
+  estado de cada pedido quedan en `EventoPedido` con el usuario que los hizo.
 - Contenido administrable: `tiendas.Banner` (carrusel del inicio de cada tienda; sin banners activos se ve el
   banner fijo de la tienda), `core.PaginaInformativa` (`/pagina/<slug>/`, politicas del sitio) y
   `core.PreguntaFrecuente`. Las politicas se crean por migracion vacias y sin publicar: son compromisos legales y

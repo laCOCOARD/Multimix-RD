@@ -1,0 +1,74 @@
+{% extends "admin/base_site.html" %}
+{% load moneda %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+  <a href="{% url 'admin:index' %}">Inicio</a> &rsaquo;
+  <a href="{% url 'admin:pedidos_pedido_changelist' %}">Pedidos</a> &rsaquo; Reporte de ventas
+</div>
+{% endblock %}
+
+{% block content %}
+<div id="content-main">
+  <p class="help">Ventas = pedidos cobrados en el período que no fueron cancelados ni reembolsados{% if varias_tiendas %}, de todas tus tiendas{% endif %}.</p>
+
+  <form method="get" class="panel-busqueda">
+    <label for="desde">Desde:</label> <input type="date" name="desde" id="desde" value="{{ reporte.desde|date:'Y-m-d' }}">
+    <label for="hasta">Hasta:</label> <input type="date" name="hasta" id="hasta" value="{{ reporte.hasta|date:'Y-m-d' }}">
+    <input type="submit" value="Ver">
+    <a class="button" href="?desde={{ reporte.desde|date:'Y-m-d' }}&amp;hasta={{ reporte.hasta|date:'Y-m-d' }}&amp;formato=csv">Descargar CSV</a>
+  </form>
+
+  <section class="panel-resumen" aria-label="Totales del período">
+    <div class="panel-tarjetas">
+      <div class="panel-tarjeta"><span class="panel-tarjeta-titulo">Cobrado</span><strong class="panel-tarjeta-valor">{{ reporte.cobrado|moneda }}</strong><span class="panel-tarjeta-nota">{{ reporte.pedidos }} pedido(s)</span></div>
+      <div class="panel-tarjeta"><span class="panel-tarjeta-titulo">Pedido promedio</span><strong class="panel-tarjeta-valor">{{ reporte.promedio|moneda }}</strong><span class="panel-tarjeta-nota">Cobrado entre pedidos</span></div>
+      <div class="panel-tarjeta"><span class="panel-tarjeta-titulo">Envíos cobrados</span><strong class="panel-tarjeta-valor">{{ reporte.envios|moneda }}</strong><span class="panel-tarjeta-nota">Incluidos en lo cobrado</span></div>
+      <div class="panel-tarjeta"><span class="panel-tarjeta-titulo">Descuentos dados</span><strong class="panel-tarjeta-valor">{{ reporte.descuentos|moneda }}</strong><span class="panel-tarjeta-nota">Por cupones</span></div>
+      <div class="panel-tarjeta"><span class="panel-tarjeta-titulo">Reembolsos</span><strong class="panel-tarjeta-valor">{{ reporte.reembolsos.monto|moneda }}</strong><span class="panel-tarjeta-nota">{{ reporte.reembolsos.pedidos }} pedido(s), fuera de lo cobrado</span></div>
+    </div>
+  </section>
+
+  <div class="module">
+    <table>
+      <caption>Ventas por día</caption>
+      <thead><tr><th scope="col">Día</th><th scope="col">Pedidos</th><th scope="col">Cobrado</th></tr></thead>
+      <tbody>
+        {% for fila in reporte.por_dia %}
+          <tr><th scope="row">{{ fila.dia|date:"D j M Y" }}</th><td>{{ fila.pedidos }}</td><td>{{ fila.cobrado|moneda }}</td></tr>
+        {% empty %}
+          <tr><td colspan="3">No hay ventas cobradas en este período.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="module">
+    <table>
+      <caption>Por forma de pago</caption>
+      <thead><tr><th scope="col">Forma de pago</th><th scope="col">Pedidos</th><th scope="col">Cobrado</th></tr></thead>
+      <tbody>
+        {% for fila in reporte.por_pago %}
+          <tr><th scope="row">{{ fila.metodo }}</th><td>{{ fila.pedidos }}</td><td>{{ fila.cobrado|moneda }}</td></tr>
+        {% empty %}
+          <tr><td colspan="3">Sin datos.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="module">
+    <table>
+      <caption>Productos que más ingresaron</caption>
+      <thead><tr><th scope="col">Producto</th><th scope="col">Unidades</th><th scope="col">Ingresos</th></tr></thead>
+      <tbody>
+        {% for fila in reporte.productos %}
+          <tr><th scope="row">{{ fila.nombre_producto }}</th><td>{{ fila.unidades }}</td><td>{{ fila.ingresos|moneda }}</td></tr>
+        {% empty %}
+          <tr><td colspan="3">Sin datos.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
