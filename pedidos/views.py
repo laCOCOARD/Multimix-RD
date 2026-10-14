@@ -13,6 +13,7 @@ from core.archivos import ERRORES_DE_ALMACENAMIENTO
 from core.models import CuentaBancaria
 from core.templatetags.moneda import formatear_monto
 from pagos import services as pagos
+from pagos.proveedores import proveedor_de_tarjeta
 from promociones.services import CuponInvalido
 from tiendas.decoradores import de_tienda
 
@@ -70,6 +71,8 @@ def _contexto_checkout(request, carrito, formulario):
         'cuentas': _cuentas_de(tienda),
         'pagos_recoger': services.metodos_pago_disponibles(Pedido.Entrega.RECOGER, tienda),
         'pagos_envio': services.metodos_pago_disponibles(Pedido.Entrega.ENVIO, tienda),
+        # Sin pasarela conectada la tarjeta se anuncia, pero no se puede elegir ni se piden sus datos.
+        'tarjeta_disponible': proveedor_de_tarjeta() is not None,
     }
 
 

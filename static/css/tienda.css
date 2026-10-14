@@ -286,6 +286,9 @@ img { max-width: 100%; height: auto; }
 .mm-opcion i { font-size: 1.4rem; color: var(--mm-primario); }
 .mm-opcion small { display: block; font-weight: 400; color: var(--mm-texto-suave); }
 .mm-opcion:hover { border-color: #b9c9d9; }
+.mm-opcion-proxima { height: auto; cursor: default; border-style: dashed; color: var(--mm-texto-suave); background: var(--mm-fondo); }
+.mm-opcion-proxima:hover { border-color: var(--mm-borde); }
+.mm-opcion-proxima i { color: var(--mm-texto-suave); }
 .btn-check:checked + .mm-opcion { border-color: var(--mm-primario); background: var(--mm-primario-suave); }
 .btn-check:focus-visible + .mm-opcion { box-shadow: 0 0 0 .2rem rgba(10, 95, 180, .25); }
 .mm-cuenta { padding: .9rem 1rem; border: 1px solid var(--mm-borde); border-radius: .7rem; background: var(--mm-fondo); }

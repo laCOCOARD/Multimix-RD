@@ -145,6 +145,13 @@ class PagoTests(TestCase):
 
     def test_sin_afiliacion_no_se_ofrece_tarjeta(self):
         self.assertIsNone(proveedor_de_tarjeta())
+        # El checkout la anuncia, pero no hay nada que elegir ni campos para datos de tarjeta.
+        self.client.post(f'/tienda/{self.pedido.tienda.slug}/carrito/agregar/', {'producto_id': self.producto.pk})
+        pagina = self.client.get(f'/tienda/{self.pedido.tienda.slug}/pedido/checkout/')
+        self.assertContains(pagina, 'Tarjeta de crédito o débito')
+        self.assertContains(pagina, 'Próximamente')
+        self.assertNotContains(pagina, 'value="tarjeta"')
+        self.assertNotContains(pagina, 'cc-number')
         with override_settings(PAGOS_PROVEEDOR_TARJETA='inventado'):
             self.assertIsNone(proveedor_de_tarjeta())
 
