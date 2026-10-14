@@ -67,7 +67,7 @@
       <h1 class="h2">{{ producto.nombre }}</h1>
       {% if resumen_resenas.total %}
         <a class="mm-estrellas-resumen" href="#opiniones" aria-label="{{ resumen_resenas.promedio }} de 5 estrellas, {{ resumen_resenas.total }} opiniones">
-          <i class="bi bi-star-fill"></i> {{ resumen_resenas.promedio }} · {{ resumen_resenas.total }} opinión{{ resumen_resenas.total|pluralize:'es' }}
+          <i class="bi bi-star-fill"></i> {{ resumen_resenas.promedio }} · {{ resumen_resenas.total }} opini{{ resumen_resenas.total|pluralize:'ón,ones' }}
         </a>
       {% endif %}
 
