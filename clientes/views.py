@@ -3,11 +3,14 @@ from django.contrib.auth import login
 from django.contrib.auth import views as acceso
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
-from django.shortcuts import redirect, render
+from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse_lazy
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.cache import never_cache
 from django.views.decorators.debug import sensitive_post_parameters
+from django.views.decorators.http import require_POST
+
+from catalogo.models import Producto
 
 from core.red import ip_del_cliente
 from pedidos.models import Pedido
@@ -103,6 +106,22 @@ def perfil(request):
         'boton': 'Guardar',
         'enlaces': [('clientes:cuenta', 'Volver a mi cuenta')],
     })
+
+
+@login_required
+def favoritos(request):
+    return render(request, 'clientes/favoritos.html', {'productos': services.productos_favoritos(request.user)})
+
+
+@require_POST
+@login_required
+def alternar_favorito(request, producto_id):
+    producto = get_object_or_404(Producto.objects.activos(), pk=producto_id)
+    if services.alternar_favorito(request.user, producto):
+        messages.success(request, f'Guardamos "{producto.nombre}" en tus favoritos.')
+    else:
+        messages.info(request, f'Quitamos "{producto.nombre}" de tus favoritos.')
+    return redirect(_destino(request, producto.get_absolute_url()))
 
 
 class _ConFormulario:

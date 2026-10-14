@@ -1,9 +1,13 @@
 from django.core.paginator import Paginator
 from django.http import JsonResponse
-from django.shortcuts import get_object_or_404, render
-from django.views.decorators.http import require_GET
+from django.contrib import messages
+from django.contrib.auth.decorators import login_required
+from django.shortcuts import get_object_or_404, redirect, render
+from django.views.decorators.http import require_GET, require_POST
 
+from clientes.services import es_favorito
 from core.templatetags.moneda import formatear_monto
+from opiniones import services as opiniones
 
 from pedidos.whatsapp import construir_enlace
 from tiendas.decoradores import de_tienda
@@ -13,6 +17,10 @@ from .forms import ORDENES, FiltroCatalogoForm
 from .models import Categoria, Producto
 
 PRODUCTOS_POR_PAGINA = 12
+OPCIONES_ESTRELLAS = [
+    (5, '5 estrellas · Excelente'), (4, '4 estrellas · Muy bueno'), (3, '3 estrellas · Bueno'),
+    (2, '2 estrellas · Regular'), (1, '1 estrella · Malo'),
+]
 
 
 @de_tienda
@@ -81,8 +89,28 @@ def producto(request, slug):
         'producto': item,
         'fotos': item.fotos_ordenadas,
         'relacionados': services.relacionados(item),
+        'es_favorito': es_favorito(request.user, item),
+        'resenas': opiniones.publicadas(item),
+        'resumen_resenas': opiniones.resumen(item),
+        'mi_resena': opiniones.resena_de(request.user, item),
+        'opciones_estrellas': OPCIONES_ESTRELLAS,
         'cantidad_maxima': item.limite_compra,
         'url_absoluta': url_absoluta,
         'og_imagen': request.build_absolute_uri(foto.imagen.url) if foto else '',
         'enlace_consulta': construir_enlace(tienda.whatsapp, consulta) if tienda.whatsapp else '',
     })
+
+
+@require_POST
+@login_required
+@de_tienda
+def opinar(request, slug):
+    """Reseña de un cliente con cuenta. Queda por revisar: no se publica sola."""
+    item = get_object_or_404(Producto.objects.activos(), tienda=request.tienda, slug=slug)
+    try:
+        opiniones.guardar_resena(request.user, item, request.POST.get('estrellas'), request.POST.get('comentario'))
+    except opiniones.ResenaError as error:
+        messages.error(request, error.mensaje)
+    else:
+        messages.success(request, 'Gracias por tu opinión. La publicamos en cuanto la revisemos.')
+    return redirect(item.get_absolute_url() + '#opiniones')

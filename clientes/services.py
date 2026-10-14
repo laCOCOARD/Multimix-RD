@@ -3,7 +3,7 @@ from django.contrib.auth import get_user_model
 from django.core.cache import cache
 from django.db import transaction
 
-from .models import Perfil
+from .models import Favorito, Perfil
 
 INTENTOS_MAXIMOS = 5
 VENTANA_SEGUNDOS = 15 * 60
@@ -48,6 +48,29 @@ def recordar_pedido(usuario, pedido):
     if not pedido.recoge_en_tienda:
         perfil.sector, perfil.direccion, perfil.referencia = pedido.sector, pedido.direccion, pedido.referencia
     perfil.save()
+
+
+# --- Favoritos ------------------------------------------------------------------------
+
+def es_favorito(usuario, producto):
+    return usuario.is_authenticated and Favorito.objects.filter(usuario=usuario, producto=producto).exists()
+
+
+def alternar_favorito(usuario, producto):
+    """Lo guarda si no estaba y lo quita si estaba. Devuelve True si quedo guardado."""
+    favorito, creado = Favorito.objects.get_or_create(usuario=usuario, producto=producto)
+    if not creado:
+        favorito.delete()
+    return creado
+
+
+def productos_favoritos(usuario):
+    """Los favoritos que siguen a la venta, del mas reciente al mas antiguo."""
+    from catalogo.models import Producto
+
+    return (
+        Producto.objects.activos().para_listado().filter(favoritos__usuario=usuario).order_by('-favoritos__creado')
+    )
 
 
 # --- Limite de intentos ---------------------------------------------------------------

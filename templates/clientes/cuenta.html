@@ -53,6 +53,7 @@
           <dd>{% if perfil.direccion %}{{ perfil.direccion }}{% if perfil.sector %}, {{ perfil.sector }}{% endif %}{% else %}Se guarda sola con tu primer pedido a domicilio.{% endif %}</dd>
         </dl>
         <div class="d-grid gap-2">
+          <a class="btn btn-outline-primary" href="{% url 'clientes:favoritos' %}"><i class="bi bi-heart me-1"></i>Mis favoritos</a>
           <a class="btn btn-outline-primary" href="{% url 'clientes:perfil' %}">Editar mis datos</a>
           <a class="btn btn-outline-secondary" href="{% url 'clientes:clave' %}">Cambiar contraseña</a>
         </div>

@@ -1,0 +1,27 @@
+{% extends 'base.html' %}
+
+{% block titulo %}Mis favoritos · {{ plataforma.nombre }}{% endblock %}
+{% block meta %}<meta name="robots" content="noindex">{% endblock %}
+
+{% block contenido %}
+<div class="container py-4">
+  <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4">
+    <h1 class="h3 mb-0"><i class="bi bi-heart-fill text-danger me-2"></i>Mis favoritos</h1>
+    <a class="btn btn-outline-primary btn-sm" href="{% url 'clientes:cuenta' %}">Volver a mi cuenta</a>
+  </div>
+  {% if productos %}
+    <div class="row g-3">
+      {% for producto in productos %}
+        <div class="col-6 col-md-4 col-lg-3">{% include 'includes/tarjeta_producto.html' %}</div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="mm-vacio">
+      <i class="bi bi-heart"></i>
+      <p class="lead mb-2">Todavía no guardas ningún producto.</p>
+      <p class="text-muted">Toca "Guardar en favoritos" en la página de un producto para encontrarlo aquí.</p>
+      <a class="btn btn-primary" href="{% url 'tiendas:portada' %}">Ver las tiendas</a>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

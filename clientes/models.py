@@ -21,3 +21,20 @@ class Perfil(models.Model):
 
     def __str__(self):
         return self.usuario.get_full_name() or self.usuario.get_username()
+
+
+class Favorito(models.Model):
+    """Producto que el cliente guardo para volver a encontrarlo."""
+
+    usuario = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='favoritos')
+    producto = models.ForeignKey('catalogo.Producto', on_delete=models.CASCADE, related_name='favoritos')
+    creado = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'favorito'
+        verbose_name_plural = 'favoritos'
+        ordering = ['-creado', '-id']
+        constraints = [models.UniqueConstraint(fields=['usuario', 'producto'], name='favorito_unico_por_cliente')]
+
+    def __str__(self):
+        return f'{self.usuario_id} · {self.producto_id}'

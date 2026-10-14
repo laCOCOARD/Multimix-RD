@@ -65,6 +65,11 @@
         {% if producto.marca %}<a href="{% url 'catalogo:lista' tienda.slug %}?marca={{ producto.marca|urlencode }}">{{ producto.marca }}</a> · {% endif %}{{ producto.categoria.nombre }} · SKU {{ producto.sku }}
       </p>
       <h1 class="h2">{{ producto.nombre }}</h1>
+      {% if resumen_resenas.total %}
+        <a class="mm-estrellas-resumen" href="#opiniones" aria-label="{{ resumen_resenas.promedio }} de 5 estrellas, {{ resumen_resenas.total }} opiniones">
+          <i class="bi bi-star-fill"></i> {{ resumen_resenas.promedio }} · {{ resumen_resenas.total }} opinión{{ resumen_resenas.total|pluralize:'es' }}
+        </a>
+      {% endif %}
 
       <p class="mm-precio mm-precio-grande my-3">
         <span class="mm-precio-final">{{ producto.precio_final|moneda }}</span>
@@ -121,6 +126,17 @@
         </a>
       {% endif %}
 
+      {% if user.is_authenticated %}
+        <form class="d-inline" method="post" action="{% url 'clientes:alternar_favorito' producto.pk %}">
+          {% csrf_token %}
+          <input type="hidden" name="next" value="{{ request.get_full_path }}">
+          <button class="btn btn-link px-0 mt-2 me-3" type="submit">
+            <i class="bi {% if es_favorito %}bi-heart-fill text-danger{% else %}bi-heart{% endif %} me-1"></i>{% if es_favorito %}Quitar de favoritos{% else %}Guardar en favoritos{% endif %}
+          </button>
+        </form>
+      {% else %}
+        <a class="btn btn-link px-0 mt-2 me-3" href="{% url 'clientes:entrar' %}?next={{ request.get_full_path|urlencode }}"><i class="bi bi-heart me-1"></i>Guardar en favoritos</a>
+      {% endif %}
       <button class="btn btn-link px-0 mt-2 solo-con-js js-compartir" type="button"
               data-titulo="{{ producto.nombre }}" data-url="{{ url_absoluta }}">
         <i class="bi bi-share me-1"></i>Compartir este producto
@@ -137,6 +153,54 @@
       </ul>
     </div>
   </div>
+
+  <section class="mm-seccion px-0" id="opiniones">
+    <div class="mm-seccion-cabecera">
+      <h2>Opiniones de clientes</h2>
+    </div>
+    <div class="row g-4">
+      <div class="col-lg-7">
+        {% for resena in resenas %}
+          <article class="mm-resena">
+            <p class="mb-1">
+              <span class="mm-estrellas" aria-label="{{ resena.estrellas }} de 5 estrellas">{% for n in '12345' %}<i class="bi {% if forloop.counter <= resena.estrellas %}bi-star-fill{% else %}bi-star{% endif %}"></i>{% endfor %}</span>
+              <strong class="ms-2">{{ resena.autor }}</strong>
+              {% if resena.compra_verificada %}<span class="badge text-bg-success ms-1"><i class="bi bi-patch-check me-1"></i>Compra verificada</span>{% endif %}
+            </p>
+            <p class="mb-1">{{ resena.comentario }}</p>
+            <p class="small text-muted mb-0">{{ resena.creado|date:"j \d\e F \d\e Y" }}</p>
+          </article>
+        {% empty %}
+          <p class="text-muted">Este producto todavía no tiene opiniones publicadas.</p>
+        {% endfor %}
+      </div>
+      <div class="col-lg-5">
+        <div class="mm-panel">
+          {% if user.is_authenticated %}
+            <h3 class="h6">{% if mi_resena %}Tu opinión{% else %}Deja tu opinión{% endif %}</h3>
+            {% if mi_resena %}<p class="small text-muted">Estado: {{ mi_resena.get_estado_display }}. Si la cambias, vuelve a revisión.</p>{% endif %}
+            <form method="post" action="{% url 'catalogo:opinar' tienda.slug producto.slug %}">
+              {% csrf_token %}
+              <label class="form-label" for="estrellas">Calificación</label>
+              <select class="form-select mb-3" id="estrellas" name="estrellas" required>
+                <option value="">Elige</option>
+                {% for valor, texto in opciones_estrellas %}
+                  <option value="{{ valor }}"{% if mi_resena.estrellas == valor %} selected{% endif %}>{{ texto }}</option>
+                {% endfor %}
+              </select>
+              <label class="form-label" for="comentario">Comentario</label>
+              <textarea class="form-control" id="comentario" name="comentario" rows="3" minlength="10" maxlength="1000" required>{{ mi_resena.comentario }}</textarea>
+              <button class="btn btn-primary mt-3" type="submit">Enviar opinión</button>
+              <p class="small text-muted mt-2 mb-0">Se publica después de revisarla.</p>
+            </form>
+          {% else %}
+            <p class="mb-2">¿Lo compraste? Cuéntales a otros clientes qué te pareció.</p>
+            <a class="btn btn-outline-primary" href="{% url 'clientes:entrar' %}?next={{ request.get_full_path|urlencode }}">Inicia sesión para opinar</a>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </section>
 
   {% if relacionados %}
     <section class="mm-seccion px-0">

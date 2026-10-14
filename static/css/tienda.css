@@ -229,6 +229,10 @@ img { max-width: 100%; height: auto; }
 .mm-miniatura:hover, .mm-miniatura.activa { opacity: 1; border-color: var(--mm-primario); }
 .mm-disponibilidad { font-weight: 600; }
 .mm-descripcion { color: var(--mm-texto); }
+.mm-estrellas, .mm-estrellas-resumen i { color: #e6a100; }
+.mm-estrellas-resumen { display: inline-block; margin-bottom: .25rem; font-weight: 600; font-size: .93rem; }
+.mm-resena { padding: .9rem 0; border-bottom: 1px solid var(--mm-borde); }
+.mm-resena:first-child { padding-top: 0; }
 .mm-garantias li { display: flex; gap: .6rem; padding: .35rem 0; font-size: .93rem; }
 .mm-garantias i { color: var(--mm-primario); }
 

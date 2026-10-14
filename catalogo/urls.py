@@ -10,4 +10,5 @@ urlpatterns = [
     path('sugerencias/', views.sugerencias, name='sugerencias'),
     path('categoria/<slug:slug>/', views.lista, name='categoria'),
     path('producto/<slug:slug>/', views.producto, name='producto'),
+    path('producto/<slug:slug>/opinar/', views.opinar, name='opinar'),
 ]
