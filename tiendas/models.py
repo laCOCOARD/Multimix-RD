@@ -83,10 +83,10 @@ class Tienda(models.Model):
 
     permitir_contra_entrega = models.BooleanField('permitir efectivo contra entrega', default=False)
     itbis_porcentaje = models.DecimalField(
-        'ITBIS (%)', max_digits=5, decimal_places=2, default=Decimal('18.00'),
+        'ITBIS (%)', max_digits=5, decimal_places=2, default=Decimal('0.00'),
         validators=[MinValueValidator(Decimal('0')), MaxValueValidator(Decimal('100'))],
-        help_text='Los precios se publican sin ITBIS y se suma al confirmar el pedido, sobre los productos y '
-                  'después del descuento (el envío no lo paga). Pon 0 si la tienda no lo cobra.',
+        help_text='0 = la tienda no cobra ITBIS aparte (lo normal). Con un porcentaje, se suma al confirmar el '
+                  'pedido sobre los productos, después del descuento; el envío no lo paga.',
     )
     creada = models.DateTimeField('fecha de creación', auto_now_add=True)
 

@@ -228,7 +228,9 @@ IMAGEN_LADO_MAXIMO = 1200
 DATA_UPLOAD_MAX_MEMORY_SIZE = 12 * 1024 * 1024
 
 # --- Correo ---
-# Con EMAIL_HOST se envia por SMTP (Brevo u otro); sin el, los correos se escriben en la consola.
+# Con BREVO_API_KEY se envia por la API de Brevo (HTTPS); es lo que funciona en el plan gratis de Render, que
+# bloquea SMTP. Con EMAIL_HOST se envia por SMTP. Sin ninguno, los correos se escriben en la consola.
+BREVO_API_KEY = os.getenv('BREVO_API_KEY', '').strip()
 EMAIL_HOST = os.getenv('EMAIL_HOST', '').strip()
 EMAIL_PORT = int(os.getenv('EMAIL_PORT', '587') or 587)
 EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER', '').strip()
@@ -236,10 +238,13 @@ EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD', '').strip()
 EMAIL_USE_TLS = env_bool('EMAIL_USE_TLS', True)
 # Que un proveedor lento no deje esperando al cliente que acaba de comprar.
 EMAIL_TIMEOUT = 10
-EMAIL_BACKEND = (
-    'django.core.mail.backends.smtp.EmailBackend' if EMAIL_HOST
-    else 'django.core.mail.backends.console.EmailBackend'
-)
+if BREVO_API_KEY:
+    EMAIL_BACKEND = 'core.correo_brevo.BrevoBackend'
+elif EMAIL_HOST:
+    EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+else:
+    EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+CORREO_CONFIGURADO = bool(BREVO_API_KEY or EMAIL_HOST)
 DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', '').strip() or 'Multimix RD <no-responder@localhost>'
 SERVER_EMAIL = DEFAULT_FROM_EMAIL
 # Direccion publica del sitio, para los enlaces de los correos.

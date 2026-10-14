@@ -1,8 +1,12 @@
+import io
+import json
+import urllib.error
 from decimal import Decimal
 from unittest import mock
 
 from django.contrib.auth import get_user_model
 from django.core import mail
+from django.core.mail import EmailMessage
 from django.test import TestCase, override_settings
 
 from catalogo.tests.test_modelos import crear_producto
@@ -112,7 +116,7 @@ class AvisosPorCorreoTests(TestCase):
         url = '/panel/core/configuraciontienda/correo-de-prueba/'
         self.client.post(url)
         self.assertEqual(mail.outbox, [])  # sin servidor de correo no se intenta
-        with override_settings(EMAIL_HOST='smtp.example'):
+        with override_settings(CORREO_CONFIGURADO=True):
             self.client.post(url)
             self.assertEqual(mail.outbox[-1].to, ['admin@sitio.example'])
             with mock.patch('core.admin.send_mail', side_effect=OSError('clave incorrecta')):
@@ -122,6 +126,27 @@ class AvisosPorCorreoTests(TestCase):
 
         self.client.force_login(Usuario.objects.create_user('vendedor', is_staff=True))
         self.assertEqual(self.client.post(url).status_code, 403)
+
+    @override_settings(BREVO_API_KEY='clave-de-prueba', DEFAULT_FROM_EMAIL='Multimix RD <ventas@sitio.example>')
+    def test_envio_por_la_api_de_brevo(self):
+        from core.correo_brevo import URL_DE_ENVIO, BrevoBackend
+
+        mensaje = EmailMessage('Nuevo pedido', 'Entró un pedido.', None, ['tienda@example.com'])
+        with mock.patch('core.correo_brevo.urllib.request.urlopen') as abrir:
+            self.assertEqual(BrevoBackend().send_messages([mensaje]), 1)
+        peticion = abrir.call_args.args[0]
+        self.assertEqual((peticion.full_url, peticion.get_method()), (URL_DE_ENVIO, 'POST'))
+        self.assertEqual(peticion.get_header('Api-key'), 'clave-de-prueba')
+        self.assertEqual(json.loads(peticion.data), {
+            'sender': {'email': 'ventas@sitio.example', 'name': 'Multimix RD'},
+            'to': [{'email': 'tienda@example.com'}], 'subject': 'Nuevo pedido', 'textContent': 'Entró un pedido.',
+        })
+
+        rechazo = urllib.error.HTTPError(URL_DE_ENVIO, 401, 'Unauthorized', None, io.BytesIO(b'{"message":"Key not found"}'))
+        with mock.patch('core.correo_brevo.urllib.request.urlopen', side_effect=rechazo):
+            with self.assertRaisesMessage(OSError, 'Brevo respondió 401: {"message":"Key not found"}'):
+                BrevoBackend().send_messages([mensaje])
+            self.assertEqual(BrevoBackend(fail_silently=True).send_messages([mensaje]), 0)
 
     def test_eliminar_un_pedido_no_manda_correo_de_cancelacion(self):
         pedido = self.pedido()

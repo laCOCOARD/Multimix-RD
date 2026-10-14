@@ -858,3 +858,8 @@ CREATE INDEX "pagos_pago_pedido_id_b527cca2" ON "pagos_pago" ("pedido_id");
 CREATE INDEX "pagos_pago_revisado_por_id_bf842120" ON "pagos_pago" ("revisado_por_id");
 CREATE INDEX "pagos_pago_tienda_id_0acba72a" ON "pagos_pago" ("tienda_id");
 CREATE INDEX "pago_tienda_estado_idx" ON "pagos_pago" ("tienda_id", "estado", "creado" DESC);
+
+-- ============================================================
+-- tiendas 0007 y 0008
+-- ============================================================
+-- El ITBIS queda en 0 por defecto y en todas las tiendas (no cambia la forma de la tabla).

@@ -4,12 +4,12 @@ Sitio de tiendas en línea hecho con Django 5.2, con precios en pesos dominicano
 **tiendas** de emprendedores: cada una tiene su catálogo, su carrito, su WhatsApp, sus cuentas y sus
 pedidos. El cliente entra a una tienda, arma su carrito y confirma el pedido en el sitio, paso a paso;
 WhatsApp queda como canal opcional de atención. El pago (transferencia o efectivo) lo recibe y lo confirma
-el vendedor desde su panel. Los precios se publican sin ITBIS, que se suma al confirmar.
+el vendedor desde su panel.
 
 - **Sitio:** portada con el directorio de tiendas (sin banner, para que no se confunda con una tienda) y
   buscador de productos de todas las tiendas.
 - **Cada tienda:** inicio con ofertas, destacados, nuevos y más vendidos; catálogo con búsqueda y filtros;
-  carrito propio; checkout por pasos con totales e ITBIS calculados en el servidor; confirmación con número de pedido.
+  carrito propio; checkout por pasos con totales calculados en el servidor; confirmación con número de pedido.
 - **Panel:** resumen de ventas y stock, productos (con importación desde Excel), pedidos, clientes,
   cupones, zonas de envío y cuentas bancarias. Cada vendedor ve solo lo de su tienda; el administrador
   principal ve todo y además administra las tiendas, las categorías y la configuración general.

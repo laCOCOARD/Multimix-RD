@@ -44,7 +44,7 @@ class ConfiguracionTiendaAdmin(AvisaImagenesSinGuardar, admin.ModelAdmin):
 
     def change_view(self, request, object_id, form_url='', extra_context=None):
         contexto = {
-            'correo_configurado': bool(settings.EMAIL_HOST),
+            'correo_configurado': settings.CORREO_CONFIGURADO,
             'destino_de_prueba': self._destino_de_prueba(request),
             **(extra_context or {}),
         }
@@ -55,8 +55,8 @@ class ConfiguracionTiendaAdmin(AvisaImagenesSinGuardar, admin.ModelAdmin):
         if not request.user.is_superuser:
             raise PermissionDenied
         destino = self._destino_de_prueba(request)
-        if not settings.EMAIL_HOST:
-            self.message_user(request, 'Falta configurar el servidor de correo (EMAIL_HOST y sus variables).', messages.ERROR)
+        if not settings.CORREO_CONFIGURADO:
+            self.message_user(request, 'Falta configurar el correo (la variable BREVO_API_KEY).', messages.ERROR)
         elif not destino:
             self.message_user(
                 request, 'Pon tu correo en tu usuario o en "correo de contacto" para saber a dónde enviarlo.', messages.ERROR,

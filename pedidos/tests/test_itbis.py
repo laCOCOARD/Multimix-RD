@@ -38,8 +38,8 @@ class CalculoDeItbisTests(TestCase):
         self.assertEqual(calcular_itbis([(D('99.99'), False)], D('0'), D('18')), D('18.00'))
         self.assertEqual(calcular_itbis([(D('33.33'), False)], D('0'), D('18')), D('6.00'))
 
-    def test_una_tienda_nueva_cobra_el_18(self):
-        self.assertEqual(Tienda.objects.create(nombre='Nueva').itbis_porcentaje, D('18.00'))
+    def test_una_tienda_nueva_no_cobra_itbis(self):
+        self.assertEqual(Tienda.objects.create(nombre='Nueva').itbis_porcentaje, D('0.00'))
 
 
 class PedidoConItbisTests(TestCase):

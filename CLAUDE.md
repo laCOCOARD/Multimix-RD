@@ -63,7 +63,8 @@ Al cerrar cada modulo: check, makemigrations, migrate, test y commit.
 - Correos: `core.correo.enviar` (texto, plantillas en `templates/correos/`, nunca lanza: registra el fallo) y
   `pedidos.avisos` (pedido nuevo, cambio de estado, comprobante, pago rechazado). Salen con
   `transaction.on_commit`, asi que en las pruebas hay que envolver con `captureOnCommitCallbacks(execute=True)`.
-  SMTP por variables `EMAIL_*` (Brevo); sin `EMAIL_HOST` van a la consola. La tienda recibe en su correo de
+  En produccion van por la API de Brevo (`BREVO_API_KEY`, `core.correo_brevo.BrevoBackend`): Render free bloquea
+  SMTP y el envio se quedaba en `TimeoutError`. Con `EMAIL_HOST` van por SMTP y sin nada, a la consola. La tienda recibe en su correo de
   contacto y, si no tiene, en el de sus vendedores, el del sitio o el de los superusuarios. Los enlaces usan
   `SITIO_URL`. En Configuracion general hay un boton "Enviar correo de prueba" (Render free no tiene consola).
 - Pagos: `pedidos.services` importa `pagos.services` dentro de las funciones (pagos usa pedidos para cambiar el
@@ -71,9 +72,10 @@ Al cerrar cada modulo: check, makemigrations, migrate, test y commit.
   Un comprobante rechazado deja el pago como historial y el siguiente aviso abre otro (`-P2`). Los comprobantes
   se convierten a WebP y van a `comprobantes/` del mismo bucket publico de las fotos (nombre imposible de adivinar).
   `PagoAdmin` da permiso de borrado solo para que el panel deje eliminar el pedido en cascada; no tiene boton ni accion.
-- ITBIS: los precios se publican sin impuesto y se suma al comprar. `core.impuestos.calcular_itbis` lo calcula
-  sobre los productos no exentos (`Producto.exento_itbis`), despues del descuento y sin el envio, con
-  `Tienda.itbis_porcentaje` (18 por defecto; 0 = la tienda no lo cobra). El pedido guarda `impuesto` y
+- ITBIS: apagado. El dueño pidio quitarlo el 2026-10-13: `Tienda.itbis_porcentaje` vale 0 en todas las tiendas
+  y por defecto, asi que no se suma ni se menciona. El calculo sigue disponible por si una tienda lo activa:
+  `core.impuestos.calcular_itbis` sobre los productos no exentos (`Producto.exento_itbis`), despues del
+  descuento y sin el envio. El pedido guarda `impuesto` y
   `porcentaje_impuesto`. `tienda_de_prueba()` va con 0 para que los totales de las pruebas sean los de los productos.
 - Checkout por pasos: es un solo formulario y un solo POST; `checkout.js` muestra un paso a la vez y valida cada
   uno. Sin JavaScript se ven todos seguidos. El cliente debe aceptar los terminos (`acepta_terminos`).
