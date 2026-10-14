@@ -880,3 +880,139 @@ CREATE TABLE "clientes_perfil" ("id" integer NOT NULL PRIMARY KEY AUTOINCREMENT,
 --
 ALTER TABLE "pedidos_pedido" ADD COLUMN "cliente_id" integer NULL REFERENCES "auth_user" ("id") DEFERRABLE INITIALLY DEFERRED;
 CREATE INDEX "pedidos_pedido_cliente_id_84f4fc73" ON "pedidos_pedido" ("cliente_id");
+
+-- ============================================================
+-- catalogo 0013
+-- ============================================================
+--
+-- Add field padre to categoria
+--
+ALTER TABLE "catalogo_categoria" ADD COLUMN "padre_id" bigint NULL REFERENCES "catalogo_categoria" ("id") DEFERRABLE INITIALLY DEFERRED;
+CREATE INDEX "catalogo_categoria_padre_id_05e7ff80" ON "catalogo_categoria" ("padre_id");
+
+-- ============================================================
+-- tiendas 0009
+-- ============================================================
+--
+-- Create model Banner
+--
+CREATE TABLE "tiendas_banner" ("id" integer NOT NULL PRIMARY KEY AUTOINCREMENT, "titulo" varchar(120) NOT NULL, "subtitulo" varchar(220) NOT NULL, "imagen" varchar(100) NOT NULL, "texto_boton" varchar(40) NOT NULL, "enlace" varchar(255) NOT NULL, "activo" bool NOT NULL, "orden" smallint unsigned NOT NULL CHECK ("orden" >= 0), "vigente_desde" datetime NULL, "vigente_hasta" datetime NULL, "tienda_id" bigint NOT NULL REFERENCES "tiendas_tienda" ("id") DEFERRABLE INITIALLY DEFERRED);
+CREATE INDEX "tiendas_banner_tienda_id_1d5d0535" ON "tiendas_banner" ("tienda_id");
+
+-- ============================================================
+-- core 0012
+-- ============================================================
+--
+-- Add field dias_devolucion to configuraciontienda
+--
+CREATE TABLE "new__core_configuraciontienda" ("id" integer NOT NULL PRIMARY KEY AUTOINCREMENT, "dias_devolucion" smallint unsigned NOT NULL CHECK ("dias_devolucion" >= 0), "nombre" varchar(80) NOT NULL, "logo" varchar(100) NOT NULL, "correo" varchar(254) NOT NULL, "telefono" varchar(20) NOT NULL, "horario" varchar(150) NOT NULL, "whatsapp" varchar(20) NOT NULL, "facebook" varchar(200) NOT NULL, "instagram" varchar(200) NOT NULL, "tiktok" varchar(200) NOT NULL, "dias_producto_nuevo" smallint unsigned NOT NULL CHECK ("dias_producto_nuevo" >= 0), "umbral_stock_bajo" smallint unsigned NOT NULL CHECK ("umbral_stock_bajo" >= 0), "horas_vencimiento_pedido" smallint unsigned NOT NULL CHECK ("horas_vencimiento_pedido" >= 0), "mostrar_cantidad_exacta" bool NOT NULL, "descripcion" varchar(220) NOT NULL);
+INSERT INTO "new__core_configuraciontienda" ("id", "nombre", "logo", "correo", "telefono", "horario", "whatsapp", "facebook", "instagram", "tiktok", "dias_producto_nuevo", "umbral_stock_bajo", "horas_vencimiento_pedido", "mostrar_cantidad_exacta", "descripcion", "dias_devolucion") SELECT "id", "nombre", "logo", "correo", "telefono", "horario", "whatsapp", "facebook", "instagram", "tiktok", "dias_producto_nuevo", "umbral_stock_bajo", "horas_vencimiento_pedido", "mostrar_cantidad_exacta", "descripcion", 7 FROM "core_configuraciontienda";
+DROP TABLE "core_configuraciontienda";
+ALTER TABLE "new__core_configuraciontienda" RENAME TO "core_configuraciontienda";
+
+-- ============================================================
+-- core 0013
+-- ============================================================
+--
+-- Create model PaginaInformativa
+--
+CREATE TABLE "core_paginainformativa" ("id" integer NOT NULL PRIMARY KEY AUTOINCREMENT, "slug" varchar(60) NOT NULL UNIQUE, "titulo" varchar(120) NOT NULL, "contenido" text NOT NULL, "publicada" bool NOT NULL, "orden" smallint unsigned NOT NULL CHECK ("orden" >= 0), "actualizado" datetime NOT NULL);
+--
+-- Create model PreguntaFrecuente
+--
+CREATE TABLE "core_preguntafrecuente" ("id" integer NOT NULL PRIMARY KEY AUTOINCREMENT, "pregunta" varchar(200) NOT NULL, "respuesta" text NOT NULL, "activa" bool NOT NULL, "orden" smallint unsigned NOT NULL CHECK ("orden" >= 0));
+
+-- ============================================================
+-- opiniones 0001
+-- ============================================================
+--
+-- Create model Resena
+--
+CREATE TABLE "opiniones_resena" ("id" integer NOT NULL PRIMARY KEY AUTOINCREMENT, "estrellas" smallint unsigned NOT NULL CHECK ("estrellas" >= 0), "comentario" text NOT NULL, "estado" varchar(10) NOT NULL, "compra_verificada" bool NOT NULL, "creado" datetime NOT NULL, "producto_id" bigint NOT NULL REFERENCES "catalogo_producto" ("id") DEFERRABLE INITIALLY DEFERRED, "tienda_id" bigint NOT NULL REFERENCES "tiendas_tienda" ("id") DEFERRABLE INITIALLY DEFERRED, "usuario_id" integer NOT NULL REFERENCES "auth_user" ("id") DEFERRABLE INITIALLY DEFERRED, CONSTRAINT "una_resena_por_cliente_y_producto" UNIQUE ("producto_id", "usuario_id"), CONSTRAINT "resena_de_1_a_5_estrellas" CHECK (("estrellas" >= 1 AND "estrellas" <= 5)));
+CREATE INDEX "opiniones_resena_producto_id_40d90b99" ON "opiniones_resena" ("producto_id");
+CREATE INDEX "opiniones_resena_tienda_id_32173929" ON "opiniones_resena" ("tienda_id");
+CREATE INDEX "opiniones_resena_usuario_id_5c64a8a1" ON "opiniones_resena" ("usuario_id");
+CREATE INDEX "resena_producto_estado_idx" ON "opiniones_resena" ("producto_id", "estado", "creado" DESC);
+
+-- ============================================================
+-- clientes 0002
+-- ============================================================
+--
+-- Create model Favorito
+--
+CREATE TABLE "clientes_favorito" ("id" integer NOT NULL PRIMARY KEY AUTOINCREMENT, "creado" datetime NOT NULL, "producto_id" bigint NOT NULL REFERENCES "catalogo_producto" ("id") DEFERRABLE INITIALLY DEFERRED, "usuario_id" integer NOT NULL REFERENCES "auth_user" ("id") DEFERRABLE INITIALLY DEFERRED, CONSTRAINT "favorito_unico_por_cliente" UNIQUE ("usuario_id", "producto_id"));
+CREATE INDEX "clientes_favorito_producto_id_230fa48c" ON "clientes_favorito" ("producto_id");
+CREATE INDEX "clientes_favorito_usuario_id_f5486def" ON "clientes_favorito" ("usuario_id");
+
+-- ============================================================
+-- pedidos 0009
+-- ============================================================
+--
+-- Add field numero_seguimiento to pedido
+--
+CREATE TABLE "new__pedidos_pedido" ("id" integer NOT NULL PRIMARY KEY AUTOINCREMENT, "numero_seguimiento" varchar(60) NOT NULL, "numero" varchar(20) NOT NULL UNIQUE, "token" char(32) NOT NULL UNIQUE, "nombre" varchar(120) NOT NULL, "telefono" varchar(10) NOT NULL, "correo" varchar(254) NOT NULL, "metodo_entrega" varchar(10) NOT NULL, "direccion" varchar(255) NOT NULL, "referencia" varchar(255) NOT NULL, "metodo_pago" varchar(20) NOT NULL, "transferencia_realizada" bool NOT NULL, "referencia_transferencia" varchar(60) NOT NULL, "codigo_cupon" varchar(30) NOT NULL, "subtotal" decimal NOT NULL, "descuento" decimal NOT NULL, "costo_envio" decimal NOT NULL, "total" decimal NOT NULL, "estado" varchar(10) NOT NULL, "notas_cliente" text NOT NULL, "notas_internas" text NOT NULL, "creado" datetime NOT NULL, "fecha_pago" datetime NULL, "fecha_entrega" datetime NULL, "stock_descontado" bool NOT NULL, "ip" char(39) NULL, "cupon_id" bigint NULL REFERENCES "promociones_cupon" ("id") DEFERRABLE INITIALLY DEFERRED, "zona_id" bigint NULL REFERENCES "pedidos_zonaenvio" ("id") DEFERRABLE INITIALLY DEFERRED, "tienda_id" bigint NOT NULL REFERENCES "tiendas_tienda" ("id") DEFERRABLE INITIALLY DEFERRED, "impuesto" decimal NOT NULL, "porcentaje_impuesto" decimal NOT NULL, "sector" varchar(80) NOT NULL, "cliente_id" integer NULL REFERENCES "auth_user" ("id") DEFERRABLE INITIALLY DEFERRED, CONSTRAINT "pedido_envio_requiere_zona" CHECK (("metodo_entrega" = 'recoger' OR "zona_id" IS NOT NULL)), CONSTRAINT "pedido_efectivo_recoger_solo_en_tienda" CHECK ((NOT ("metodo_pago" = 'efectivo_recoger') OR "metodo_entrega" = 'recoger')), CONSTRAINT "pedido_descuento_no_supera_subtotal" CHECK (("descuento" >= '0' AND "descuento" <= ("subtotal"))), CONSTRAINT "pedido_montos_no_negativos" CHECK (("subtotal" >= '0' AND "costo_envio" >= '0' AND "total" >= '0' AND "impuesto" >= '0')));
+INSERT INTO "new__pedidos_pedido" ("id", "numero", "token", "nombre", "telefono", "correo", "metodo_entrega", "direccion", "referencia", "metodo_pago", "transferencia_realizada", "referencia_transferencia", "codigo_cupon", "subtotal", "descuento", "costo_envio", "total", "estado", "notas_cliente", "notas_internas", "creado", "fecha_pago", "fecha_entrega", "stock_descontado", "ip", "cupon_id", "zona_id", "tienda_id", "impuesto", "porcentaje_impuesto", "sector", "cliente_id", "numero_seguimiento") SELECT "id", "numero", "token", "nombre", "telefono", "correo", "metodo_entrega", "direccion", "referencia", "metodo_pago", "transferencia_realizada", "referencia_transferencia", "codigo_cupon", "subtotal", "descuento", "costo_envio", "total", "estado", "notas_cliente", "notas_internas", "creado", "fecha_pago", "fecha_entrega", "stock_descontado", "ip", "cupon_id", "zona_id", "tienda_id", "impuesto", "porcentaje_impuesto", "sector", "cliente_id", '' FROM "pedidos_pedido";
+DROP TABLE "pedidos_pedido";
+ALTER TABLE "new__pedidos_pedido" RENAME TO "pedidos_pedido";
+CREATE INDEX "pedidos_pedido_cupon_id_31eaac91" ON "pedidos_pedido" ("cupon_id");
+CREATE INDEX "pedidos_pedido_zona_id_1faba78e" ON "pedidos_pedido" ("zona_id");
+CREATE INDEX "pedidos_pedido_tienda_id_d3d2ad56" ON "pedidos_pedido" ("tienda_id");
+CREATE INDEX "pedidos_pedido_cliente_id_84f4fc73" ON "pedidos_pedido" ("cliente_id");
+CREATE INDEX "pedido_estado_creado_idx" ON "pedidos_pedido" ("estado", "creado" DESC);
+CREATE INDEX "pedido_creado_idx" ON "pedidos_pedido" ("creado" DESC);
+CREATE INDEX "pedido_fecha_pago_idx" ON "pedidos_pedido" ("fecha_pago");
+CREATE INDEX "pedido_telefono_idx" ON "pedidos_pedido" ("telefono");
+CREATE INDEX "pedido_ip_creado_idx" ON "pedidos_pedido" ("ip", "creado" DESC);
+CREATE INDEX "pedido_tienda_creado_idx" ON "pedidos_pedido" ("tienda_id", "creado" DESC);
+--
+-- Add field transportista to pedido
+--
+CREATE TABLE "new__pedidos_pedido" ("id" integer NOT NULL PRIMARY KEY AUTOINCREMENT, "numero" varchar(20) NOT NULL UNIQUE, "token" char(32) NOT NULL UNIQUE, "nombre" varchar(120) NOT NULL, "telefono" varchar(10) NOT NULL, "correo" varchar(254) NOT NULL, "metodo_entrega" varchar(10) NOT NULL, "direccion" varchar(255) NOT NULL, "referencia" varchar(255) NOT NULL, "metodo_pago" varchar(20) NOT NULL, "transferencia_realizada" bool NOT NULL, "referencia_transferencia" varchar(60) NOT NULL, "codigo_cupon" varchar(30) NOT NULL, "subtotal" decimal NOT NULL, "descuento" decimal NOT NULL, "costo_envio" decimal NOT NULL, "total" decimal NOT NULL, "estado" varchar(10) NOT NULL, "notas_cliente" text NOT NULL, "notas_internas" text NOT NULL, "creado" datetime NOT NULL, "fecha_pago" datetime NULL, "fecha_entrega" datetime NULL, "stock_descontado" bool NOT NULL, "ip" char(39) NULL, "cupon_id" bigint NULL REFERENCES "promociones_cupon" ("id") DEFERRABLE INITIALLY DEFERRED, "zona_id" bigint NULL REFERENCES "pedidos_zonaenvio" ("id") DEFERRABLE INITIALLY DEFERRED, "tienda_id" bigint NOT NULL REFERENCES "tiendas_tienda" ("id") DEFERRABLE INITIALLY DEFERRED, "impuesto" decimal NOT NULL, "porcentaje_impuesto" decimal NOT NULL, "sector" varchar(80) NOT NULL, "cliente_id" integer NULL REFERENCES "auth_user" ("id") DEFERRABLE INITIALLY DEFERRED, "numero_seguimiento" varchar(60) NOT NULL, "transportista" varchar(60) NOT NULL, CONSTRAINT "pedido_envio_requiere_zona" CHECK (("metodo_entrega" = 'recoger' OR "zona_id" IS NOT NULL)), CONSTRAINT "pedido_efectivo_recoger_solo_en_tienda" CHECK ((NOT ("metodo_pago" = 'efectivo_recoger') OR "metodo_entrega" = 'recoger')), CONSTRAINT "pedido_descuento_no_supera_subtotal" CHECK (("descuento" >= '0' AND "descuento" <= ("subtotal"))), CONSTRAINT "pedido_montos_no_negativos" CHECK (("subtotal" >= '0' AND "costo_envio" >= '0' AND "total" >= '0' AND "impuesto" >= '0')));
+INSERT INTO "new__pedidos_pedido" ("id", "numero", "token", "nombre", "telefono", "correo", "metodo_entrega", "direccion", "referencia", "metodo_pago", "transferencia_realizada", "referencia_transferencia", "codigo_cupon", "subtotal", "descuento", "costo_envio", "total", "estado", "notas_cliente", "notas_internas", "creado", "fecha_pago", "fecha_entrega", "stock_descontado", "ip", "cupon_id", "zona_id", "tienda_id", "impuesto", "porcentaje_impuesto", "sector", "cliente_id", "numero_seguimiento", "transportista") SELECT "id", "numero", "token", "nombre", "telefono", "correo", "metodo_entrega", "direccion", "referencia", "metodo_pago", "transferencia_realizada", "referencia_transferencia", "codigo_cupon", "subtotal", "descuento", "costo_envio", "total", "estado", "notas_cliente", "notas_internas", "creado", "fecha_pago", "fecha_entrega", "stock_descontado", "ip", "cupon_id", "zona_id", "tienda_id", "impuesto", "porcentaje_impuesto", "sector", "cliente_id", "numero_seguimiento", '' FROM "pedidos_pedido";
+DROP TABLE "pedidos_pedido";
+ALTER TABLE "new__pedidos_pedido" RENAME TO "pedidos_pedido";
+CREATE INDEX "pedidos_pedido_cupon_id_31eaac91" ON "pedidos_pedido" ("cupon_id");
+CREATE INDEX "pedidos_pedido_zona_id_1faba78e" ON "pedidos_pedido" ("zona_id");
+CREATE INDEX "pedidos_pedido_tienda_id_d3d2ad56" ON "pedidos_pedido" ("tienda_id");
+CREATE INDEX "pedidos_pedido_cliente_id_84f4fc73" ON "pedidos_pedido" ("cliente_id");
+CREATE INDEX "pedido_estado_creado_idx" ON "pedidos_pedido" ("estado", "creado" DESC);
+CREATE INDEX "pedido_creado_idx" ON "pedidos_pedido" ("creado" DESC);
+CREATE INDEX "pedido_fecha_pago_idx" ON "pedidos_pedido" ("fecha_pago");
+CREATE INDEX "pedido_telefono_idx" ON "pedidos_pedido" ("telefono");
+CREATE INDEX "pedido_ip_creado_idx" ON "pedidos_pedido" ("ip", "creado" DESC);
+CREATE INDEX "pedido_tienda_creado_idx" ON "pedidos_pedido" ("tienda_id", "creado" DESC);
+--
+-- Alter field estado on pedido
+--
+CREATE TABLE "new__pedidos_pedido" ("id" integer NOT NULL PRIMARY KEY AUTOINCREMENT, "numero" varchar(20) NOT NULL UNIQUE, "token" char(32) NOT NULL UNIQUE, "nombre" varchar(120) NOT NULL, "telefono" varchar(10) NOT NULL, "correo" varchar(254) NOT NULL, "metodo_entrega" varchar(10) NOT NULL, "direccion" varchar(255) NOT NULL, "referencia" varchar(255) NOT NULL, "metodo_pago" varchar(20) NOT NULL, "transferencia_realizada" bool NOT NULL, "referencia_transferencia" varchar(60) NOT NULL, "codigo_cupon" varchar(30) NOT NULL, "subtotal" decimal NOT NULL, "descuento" decimal NOT NULL, "costo_envio" decimal NOT NULL, "total" decimal NOT NULL, "notas_cliente" text NOT NULL, "notas_internas" text NOT NULL, "creado" datetime NOT NULL, "fecha_pago" datetime NULL, "fecha_entrega" datetime NULL, "stock_descontado" bool NOT NULL, "ip" char(39) NULL, "cupon_id" bigint NULL REFERENCES "promociones_cupon" ("id") DEFERRABLE INITIALLY DEFERRED, "zona_id" bigint NULL REFERENCES "pedidos_zonaenvio" ("id") DEFERRABLE INITIALLY DEFERRED, "tienda_id" bigint NOT NULL REFERENCES "tiendas_tienda" ("id") DEFERRABLE INITIALLY DEFERRED, "impuesto" decimal NOT NULL, "porcentaje_impuesto" decimal NOT NULL, "sector" varchar(80) NOT NULL, "cliente_id" integer NULL REFERENCES "auth_user" ("id") DEFERRABLE INITIALLY DEFERRED, "numero_seguimiento" varchar(60) NOT NULL, "transportista" varchar(60) NOT NULL, "estado" varchar(12) NOT NULL, CONSTRAINT "pedido_envio_requiere_zona" CHECK (("metodo_entrega" = 'recoger' OR "zona_id" IS NOT NULL)), CONSTRAINT "pedido_efectivo_recoger_solo_en_tienda" CHECK ((NOT ("metodo_pago" = 'efectivo_recoger') OR "metodo_entrega" = 'recoger')), CONSTRAINT "pedido_descuento_no_supera_subtotal" CHECK (("descuento" >= '0' AND "descuento" <= ("subtotal"))), CONSTRAINT "pedido_montos_no_negativos" CHECK (("subtotal" >= '0' AND "costo_envio" >= '0' AND "total" >= '0' AND "impuesto" >= '0')));
+INSERT INTO "new__pedidos_pedido" ("id", "numero", "token", "nombre", "telefono", "correo", "metodo_entrega", "direccion", "referencia", "metodo_pago", "transferencia_realizada", "referencia_transferencia", "codigo_cupon", "subtotal", "descuento", "costo_envio", "total", "notas_cliente", "notas_internas", "creado", "fecha_pago", "fecha_entrega", "stock_descontado", "ip", "cupon_id", "zona_id", "tienda_id", "impuesto", "porcentaje_impuesto", "sector", "cliente_id", "numero_seguimiento", "transportista", "estado") SELECT "id", "numero", "token", "nombre", "telefono", "correo", "metodo_entrega", "direccion", "referencia", "metodo_pago", "transferencia_realizada", "referencia_transferencia", "codigo_cupon", "subtotal", "descuento", "costo_envio", "total", "notas_cliente", "notas_internas", "creado", "fecha_pago", "fecha_entrega", "stock_descontado", "ip", "cupon_id", "zona_id", "tienda_id", "impuesto", "porcentaje_impuesto", "sector", "cliente_id", "numero_seguimiento", "transportista", "estado" FROM "pedidos_pedido";
+DROP TABLE "pedidos_pedido";
+ALTER TABLE "new__pedidos_pedido" RENAME TO "pedidos_pedido";
+CREATE INDEX "pedidos_pedido_cupon_id_31eaac91" ON "pedidos_pedido" ("cupon_id");
+CREATE INDEX "pedidos_pedido_zona_id_1faba78e" ON "pedidos_pedido" ("zona_id");
+CREATE INDEX "pedidos_pedido_tienda_id_d3d2ad56" ON "pedidos_pedido" ("tienda_id");
+CREATE INDEX "pedidos_pedido_cliente_id_84f4fc73" ON "pedidos_pedido" ("cliente_id");
+CREATE INDEX "pedido_estado_creado_idx" ON "pedidos_pedido" ("estado", "creado" DESC);
+CREATE INDEX "pedido_creado_idx" ON "pedidos_pedido" ("creado" DESC);
+CREATE INDEX "pedido_fecha_pago_idx" ON "pedidos_pedido" ("fecha_pago");
+CREATE INDEX "pedido_telefono_idx" ON "pedidos_pedido" ("telefono");
+CREATE INDEX "pedido_ip_creado_idx" ON "pedidos_pedido" ("ip", "creado" DESC);
+CREATE INDEX "pedido_tienda_creado_idx" ON "pedidos_pedido" ("tienda_id", "creado" DESC);
+--
+-- Create model EventoPedido
+--
+CREATE TABLE "pedidos_eventopedido" ("id" integer NOT NULL PRIMARY KEY AUTOINCREMENT, "estado" varchar(12) NOT NULL, "nota" varchar(255) NOT NULL, "creado" datetime NOT NULL, "pedido_id" bigint NOT NULL REFERENCES "pedidos_pedido" ("id") DEFERRABLE INITIALLY DEFERRED, "usuario_id" integer NULL REFERENCES "auth_user" ("id") DEFERRABLE INITIALLY DEFERRED);
+--
+-- Create model SolicitudDevolucion
+--
+CREATE TABLE "pedidos_solicituddevolucion" ("id" integer NOT NULL PRIMARY KEY AUTOINCREMENT, "motivo" text NOT NULL, "estado" varchar(10) NOT NULL, "respuesta" varchar(255) NOT NULL, "creado" datetime NOT NULL, "resuelto_en" datetime NULL, "pedido_id" bigint NOT NULL REFERENCES "pedidos_pedido" ("id") DEFERRABLE INITIALLY DEFERRED, "resuelto_por_id" integer NULL REFERENCES "auth_user" ("id") DEFERRABLE INITIALLY DEFERRED, "tienda_id" bigint NOT NULL REFERENCES "tiendas_tienda" ("id") DEFERRABLE INITIALLY DEFERRED);
+CREATE INDEX "pedidos_eventopedido_pedido_id_cd43f084" ON "pedidos_eventopedido" ("pedido_id");
+CREATE INDEX "pedidos_eventopedido_usuario_id_0ca0fa47" ON "pedidos_eventopedido" ("usuario_id");
+CREATE INDEX "pedidos_solicituddevolucion_pedido_id_1c5a66f4" ON "pedidos_solicituddevolucion" ("pedido_id");
+CREATE INDEX "pedidos_solicituddevolucion_resuelto_por_id_ca13a7d3" ON "pedidos_solicituddevolucion" ("resuelto_por_id");
+CREATE INDEX "pedidos_solicituddevolucion_tienda_id_7b6ba42c" ON "pedidos_solicituddevolucion" ("tienda_id");
+
+-- ============================================================
+-- core 0014
+-- ============================================================
+-- No cambia el esquema: crea las paginas de politicas, vacias y sin publicar.

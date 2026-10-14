@@ -10,8 +10,9 @@ desde el panel.
 - Plantillas Django + CSS + JavaScript sin frameworks. Bootstrap 5 y Bootstrap Icons por CDN, sin `integrity`.
 - Sin React, Node, Tailwind ni pasos de build.
 - Base de datos por `.env` (`DB_ENGINE`: sqlite | postgresql | mysql). Ninguna credencial en el codigo.
-- Dependencias: `requirements.txt` (Django, Pillow, django-import-export[xlsx], python-dotenv) y
-  `requirements-prod.txt` (gunicorn, psycopg).
+- Dependencias: `requirements.txt` (Django, Pillow, qrcode, django-import-export[xlsx], python-dotenv) y
+  `requirements-prod.txt` (gunicorn, psycopg, dj-database-url, whitenoise, django-storages). El proyecto
+  importa `dj_database_url` siempre: en desarrollo se instala `requirements-prod.txt`.
 - Idioma `es`, zona horaria `America/Santo_Domingo`. Interfaz en español; modelos y campos en español sin tildes ni ñ.
 
 ## Comandos
@@ -35,7 +36,8 @@ Al cerrar cada modulo: check, makemigrations, migrate, test y commit.
 - `catalogo/` — Categoria (comun a todas las tiendas), Producto, FotoProducto; inicio, catalogo y detalle de cada tienda.
 - `promociones/` — Cupon y su validacion.
 - `carrito/` — carrito en sesion, uno por tienda (sin modelo).
-- `pedidos/` — ZonaEnvio, Pedido, DetallePedido, SecuenciaTienda; checkout, confirmacion, clientes, WhatsApp.
+- `pedidos/` — ZonaEnvio, Pedido, DetallePedido, SecuenciaTienda, EventoPedido (seguimiento) y
+  SolicitudDevolucion; checkout, pagina del pedido, clientes del panel, reportes, avisos por correo, WhatsApp.
 - `clientes/` — cuentas de clientes del sitio (registro, entrada, recuperar contraseña, perfil, historial de
   pedidos) y limite de intentos.
 - `opiniones/` — Resena: una por cliente y producto, moderada (solo el superusuario publica o rechaza; el
@@ -43,7 +45,8 @@ Al cerrar cada modulo: check, makemigrations, migrate, test y commit.
 - `pagos/` — Pago (un intento de pago por pedido), comprobantes de transferencia, conciliacion en el panel y
   el contrato de las pasarelas de tarjeta (`proveedores.py`, ninguna conectada). Ver `docs/PAGOS.md`.
 - `templates/`, `static/` — plantillas y recursos de la tienda y del panel.
-- `docs/` — DESPLIEGUE.md y esquema.sql (referencia; las tablas las crea `migrate`).
+- `docs/` — RENDER.md (despliegue real y traslado de la base), PAGOS.md, DESPLIEGUE.md (VPS) y esquema.sql
+  (referencia; las tablas las crea `migrate`).
 
 ## Reglas que no se rompen
 - Nada cruza de una tienda a otra. Producto, Pedido, Pago, Cupon, ZonaEnvio y CuentaBancaria llevan `tienda`.
@@ -56,7 +59,11 @@ Al cerrar cada modulo: check, makemigrations, migrate, test y commit.
 - Stock: `transaction.atomic` + `select_for_update`. `stock_reservado` solo lo toca `pedidos/services.py`.
 - Lo que se puede comprar lo decide `Producto.se_puede_comprar` (o `q_comprable()` en consultas), nunca el
   stock a secas: casi ningun producto lleva inventario.
-- El estado del pedido solo cambia con `pedidos.services.cambiar_estado` (lo usa el panel).
+- El estado del pedido solo cambia con `pedidos.services.cambiar_estado` (lo usa el panel), que ademas deja el
+  paso en `EventoPedido`. Estados: pendiente, pagado, preparando, listo (recoger) o enviado y en reparto (envio),
+  entregado, cancelado y reembolsado. Cancelado y reembolsado no cuentan como venta (`Pedido.ESTADOS_SIN_VENTA`).
+- El cliente cancela su pedido solo antes de pagar (`puede_cancelar_el_cliente`): pendiente y sin haber avisado
+  la transferencia. Las devoluciones se solicitan hasta `ConfiguracionTienda.dias_devolucion` dias tras la entrega.
 - El cliente nunca marca un pedido como pagado; solo "Ya hice la transferencia" y su comprobante.
 - El pago de un pedido solo cambia con `pagos.services` (`registrar_comprobante`, `aprobar_pago`, `rechazar_pago`);
   `cambiar_estado` lo mantiene de acuerdo con el pedido (`sincronizar_con_pedido`). Nunca se guardan datos de tarjeta.
@@ -64,6 +71,10 @@ Al cerrar cada modulo: check, makemigrations, migrate, test y commit.
 - Nada de `|safe` con datos de usuarios. Solo ORM.
 
 ## Decisiones tomadas
+- Subcategorias: `Categoria.padre`, solo dos niveles (lo valida `clean` y el panel solo ofrece principales). La
+  pagina de una categoria principal lista tambien los productos de sus subcategorias, y `categorias_de` devuelve
+  cada subcategoria debajo de su principal. Variantes de producto (talla, color) NO estan hechas: hoy cada variante
+  se publica como un producto con su SKU.
 - Sin cron en Render free: `config.middleware.TareasPeriodicasMiddleware` llama a `core.tareas.ejecutar_si_toca`,
   que como mucho una vez por hora (candado en la cache) cancela los pedidos vencidos y borra sesiones caducadas.
   En las pruebas esta apagado (`TAREAS_AUTOMATICAS`).

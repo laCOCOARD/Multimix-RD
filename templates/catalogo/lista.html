@@ -45,7 +45,7 @@
                href="{% url 'catalogo:lista' tienda.slug %}{% querystring pagina=None %}">Todas</a>
             {% for item in categorias %}
               <a class="list-group-item list-group-item-action{% if categoria.pk == item.pk %} active{% endif %}"
-                 href="{% url 'catalogo:categoria' tienda.slug item.slug %}{% querystring pagina=None %}">{{ item.nombre }}</a>
+                 href="{% url 'catalogo:categoria' tienda.slug item.slug %}{% querystring pagina=None %}">{% if item.padre_id %}<span class="ms-3">{{ item.nombre }}</span>{% else %}{{ item.nombre }}{% endif %}</a>
             {% endfor %}
           </div>
         </div>

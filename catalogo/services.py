@@ -7,7 +7,7 @@ from django.conf import settings
 from django.core.cache import cache
 from django.core.exceptions import ValidationError
 from django.core.files.storage import default_storage
-from django.db.models import OuterRef, Q, Subquery, Sum
+from django.db.models import F, OuterRef, Q, Subquery, Sum
 from django.db.models.functions import Coalesce
 from django.utils import timezone
 from PIL import Image
@@ -68,15 +68,29 @@ def nuevos(tienda, limite=8):
 
 
 def categorias_de(tienda):
-    """Categorias activas en las que la tienda tiene productos activos."""
-    return Categoria.objects.filter(activa=True, productos__tienda=tienda, productos__activo=True).distinct()
+    """Categorias activas en las que la tienda tiene productos activos, propios o de sus subcategorias.
+
+    Vienen ordenadas con cada subcategoria debajo de su categoria principal.
+    """
+    directos = Q(productos__tienda=tienda, productos__activo=True)
+    en_subcategorias = Q(
+        subcategorias__activa=True, subcategorias__productos__tienda=tienda, subcategorias__productos__activo=True,
+    )
+    return (
+        Categoria.objects.filter(activa=True).filter(directos | en_subcategorias).distinct()
+        .order_by(
+            Coalesce('padre__orden', 'orden'), Coalesce('padre__nombre', 'nombre'),
+            F('padre').asc(nulls_first=True), 'orden', 'nombre',
+        )
+    )
 
 
 def marcas_de(tienda, categoria=None):
     """Marcas de los productos a la venta de la tienda (y de la categoria, si se pasa), en orden alfabetico."""
     productos = Producto.objects.activos().filter(tienda=tienda).exclude(marca='')
     if categoria is not None:
-        productos = productos.filter(categoria=categoria)
+        # Una categoria principal muestra tambien lo de sus subcategorias.
+        productos = productos.filter(Q(categoria=categoria) | Q(categoria__padre=categoria, categoria__activa=True))
     # Una misma marca escrita con otra capitalizacion cuenta una sola vez.
     marcas = {}
     for marca in productos.order_by('marca').values_list('marca', flat=True).distinct():
@@ -99,7 +113,8 @@ def categorias_de_portada(tienda):
     """Categorias de la tienda para su portada. La que no tiene imagen muestra la foto de uno de sus productos."""
     foto = (
         FotoProducto.objects.filter(
-            producto__categoria=OuterRef('pk'), producto__tienda=tienda, producto__activo=True, principal=True,
+            Q(producto__categoria=OuterRef('pk')) | Q(producto__categoria__padre=OuterRef('pk')),
+            producto__tienda=tienda, producto__activo=True, principal=True,
         )
         .order_by('-producto__destacado', '-producto__creado', '-producto__id').values('imagen')[:1]
     )
@@ -130,7 +145,8 @@ def filtrar_catalogo(filtros, categoria=None, tienda=None):
     """
     productos = _base(tienda).con_datos_venta()
     if categoria is not None:
-        productos = productos.filter(categoria=categoria)
+        # Una categoria principal muestra tambien lo de sus subcategorias.
+        productos = productos.filter(Q(categoria=categoria) | Q(categoria__padre=categoria, categoria__activa=True))
 
     # Busqueda sin tildes ni mayusculas: deben aparecer todas las palabras escritas.
     for palabra in normalizar(filtros.get('q')).split():

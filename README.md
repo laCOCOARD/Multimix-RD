@@ -13,6 +13,11 @@ el vendedor desde su panel.
 - **Panel:** resumen de ventas y stock, productos (con importación desde Excel), pedidos, clientes,
   cupones, zonas de envío y cuentas bancarias. Cada vendedor ve solo lo de su tienda; el administrador
   principal ve todo y además administra las tiendas, las categorías y la configuración general.
+- **Clientes:** cuenta opcional con historial de pedidos, favoritos, dirección guardada y recuperación de
+  contraseña; reseñas de productos moderadas, con "compra verificada".
+- **Pedidos:** seguimiento paso a paso con número de guía, comprobante de transferencia, cancelación por el
+  cliente antes de pagar, solicitudes de devolución y reembolsos. Correos al cliente y a la tienda.
+- **Contenido:** banners por tienda, páginas de políticas y preguntas frecuentes editables desde el panel.
 - **Stack:** Python 3.13 (o 3.12), Django 5.2, Bootstrap 5 por CDN, JavaScript sin frameworks.
   SQLite en desarrollo; PostgreSQL (o MySQL 8) en producción. WhiteNoise sirve los archivos estáticos.
 
@@ -32,6 +37,24 @@ el vendedor desde su panel.
    "Ya hice la transferencia"; eso no cambia el estado.
 5. El vendedor confirma el pago y avanza el pedido desde el panel. Los pedidos pendientes que
    vencen los cancela el comando `cancelar_pedidos_vencidos`, que devuelve el stock.
+
+## Documentación
+
+- `docs/RENDER.md` — cómo está desplegado hoy, variables de entorno y cómo respaldar y trasladar la base.
+- `docs/PAGOS.md` — cómo se cobra y qué falta para aceptar tarjetas.
+- `docs/DESPLIEGUE.md` — instalación en un servidor propio (VPS).
+- `docs/esquema.sql` — referencia de las tablas (las crea `migrate`).
+
+## Lo que todavía no hace
+
+- **Pago con tarjeta:** falta la afiliación del comercio con una pasarela. El checkout lo anuncia como
+  "Próximamente" y nunca pide datos de tarjeta.
+- **Reparto del dinero a las tiendas** (comisión y liquidaciones): depende del pago con tarjeta.
+- **Variantes de producto** (talla, color): cada variante se publica como un producto con su SKU.
+- **Consulta de un pedido sin su enlace:** el seguimiento se abre con el enlace privado del pedido (llega
+  por correo y queda en la cuenta del cliente).
+- **Carrito guardado en la cuenta:** el carrito vive en la sesión del navegador.
+- **Correos de carrito abandonado y programa de puntos.**
 
 ## Requisitos
 

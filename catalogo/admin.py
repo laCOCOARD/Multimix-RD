@@ -31,9 +31,16 @@ from .resources import COLUMNAS, FILA_DE_EJEMPLO, ProductoResource
 class CategoriaAdmin(AvisaImagenesSinGuardar, admin.ModelAdmin):
     """Las categorias son comunes a todas las tiendas; las administra el administrador principal."""
 
-    list_display = ['nombre', 'cantidad_productos', 'activa', 'orden']
+    list_display = ['nombre', 'padre', 'cantidad_productos', 'activa', 'orden']
     list_editable = ['activa', 'orden']
-    list_filter = ['activa']
+    list_filter = ['activa', ('padre', admin.RelatedOnlyFieldListFilter)]
+    list_select_related = ['padre']
+
+    def formfield_for_foreignkey(self, db_field, request, **kwargs):
+        if db_field.name == 'padre':
+            # Solo dos niveles: como principal se ofrece unicamente lo que no es subcategoria.
+            kwargs['queryset'] = Categoria.objects.filter(padre__isnull=True)
+        return super().formfield_for_foreignkey(db_field, request, **kwargs)
     search_fields = ['nombre']
     prepopulated_fields = {'slug': ['nombre']}
 

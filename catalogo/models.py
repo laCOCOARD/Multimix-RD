@@ -62,6 +62,11 @@ class Categoria(models.Model):
     """Las categorias son de todo el sitio: las administra el dueño y las comparten las tiendas."""
 
     nombre = models.CharField(max_length=80, unique=True)
+    padre = models.ForeignKey(
+        'self', on_delete=models.PROTECT, null=True, blank=True, related_name='subcategorias',
+        verbose_name='categoría principal',
+        help_text='Déjalo vacío para una categoría principal. Elige una para que esta sea su subcategoría.',
+    )
     slug = models.SlugField(max_length=100, unique=True, blank=True, help_text='Se genera solo si lo dejas vacío.')
     descripcion = models.TextField('descripción', blank=True)
     imagen = models.ImageField(upload_to=NombreUnico('categorias'), blank=True, validators=[validar_imagen])
@@ -75,6 +80,17 @@ class Categoria(models.Model):
 
     def __str__(self):
         return self.nombre
+
+    def clean(self):
+        """Solo hay dos niveles: categoria principal y subcategoria."""
+        if self.padre_id is None:
+            return
+        if self.padre_id == self.pk:
+            raise ValidationError({'padre': 'Una categoría no puede ser su propia subcategoría.'})
+        if self.padre.padre_id is not None:
+            raise ValidationError({'padre': 'Elige una categoría principal, no una subcategoría.'})
+        if self.pk and self.subcategorias.exists():
+            raise ValidationError({'padre': 'Esta categoría ya tiene subcategorías: no puede ser subcategoría de otra.'})
 
     def save(self, *args, **kwargs):
         if not self.slug:
