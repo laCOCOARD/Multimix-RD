@@ -863,3 +863,20 @@ CREATE INDEX "pago_tienda_estado_idx" ON "pagos_pago" ("tienda_id", "estado", "c
 -- tiendas 0007 y 0008
 -- ============================================================
 -- El ITBIS queda en 0 por defecto y en todas las tiendas (no cambia la forma de la tabla).
+
+-- ============================================================
+-- clientes 0001
+-- ============================================================
+--
+-- Create model Perfil
+--
+CREATE TABLE "clientes_perfil" ("id" integer NOT NULL PRIMARY KEY AUTOINCREMENT, "telefono" varchar(10) NOT NULL, "sector" varchar(80) NOT NULL, "direccion" varchar(255) NOT NULL, "referencia" varchar(255) NOT NULL, "usuario_id" integer NOT NULL UNIQUE REFERENCES "auth_user" ("id") DEFERRABLE INITIALLY DEFERRED);
+
+-- ============================================================
+-- pedidos 0008
+-- ============================================================
+--
+-- Add field cliente to pedido
+--
+ALTER TABLE "pedidos_pedido" ADD COLUMN "cliente_id" integer NULL REFERENCES "auth_user" ("id") DEFERRABLE INITIALLY DEFERRED;
+CREATE INDEX "pedidos_pedido_cliente_id_84f4fc73" ON "pedidos_pedido" ("cliente_id");

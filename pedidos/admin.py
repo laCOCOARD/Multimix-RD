@@ -87,7 +87,7 @@ class PedidoAdmin(AdminDeTienda, admin.ModelAdmin):
         ('Pedido', {'fields': [
             'numero', 'tienda', 'estado_con_color', 'creado', 'fecha_pago', 'fecha_entrega', 'enlace_publico',
         ]}),
-        ('Cliente', {'fields': ['nombre', 'whatsapp_cliente', 'correo']}),
+        ('Cliente', {'fields': ['nombre', 'whatsapp_cliente', 'correo', 'cuenta_del_cliente']}),
         ('Entrega', {'fields': ['metodo_entrega', 'zona', 'sector', 'direccion', 'referencia']}),
         ('Pago', {'fields': ['metodo_pago', 'transferencia_realizada', 'referencia_transferencia', 'pago_registrado']}),
         ('Montos', {'fields': [
@@ -233,6 +233,10 @@ class PedidoAdmin(AdminDeTienda, admin.ModelAdmin):
         if not pedido.codigo_cupon:
             return 'Sin cupón'
         return f'{pedido.codigo_cupon}: -{formatear_monto(pedido.descuento)}'
+
+    @admin.display(description='Cuenta')
+    def cuenta_del_cliente(self, pedido):
+        return 'Compró con su cuenta' if pedido.cliente_id else 'Compró como invitado'
 
     @admin.display(description='Pago y comprobante')
     def pago_registrado(self, pedido):

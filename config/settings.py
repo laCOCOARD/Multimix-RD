@@ -51,6 +51,7 @@ INSTALLED_APPS = [
     'carrito',
     'pedidos',
     'pagos',
+    'clientes',
 ]
 
 MIDDLEWARE = [
@@ -148,6 +149,12 @@ AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator'},
     {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},
 ]
+
+# Cuentas de clientes. El panel tiene su propia pantalla de entrada.
+LOGIN_URL = 'clientes:entrar'
+LOGIN_REDIRECT_URL = 'clientes:cuenta'
+# El enlace para recuperar la contraseña vale un dia.
+PASSWORD_RESET_TIMEOUT = 60 * 60 * 24
 
 # --- Idioma y zona horaria ---
 LANGUAGE_CODE = 'es'

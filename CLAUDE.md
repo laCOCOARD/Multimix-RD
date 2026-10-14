@@ -36,6 +36,8 @@ Al cerrar cada modulo: check, makemigrations, migrate, test y commit.
 - `promociones/` — Cupon y su validacion.
 - `carrito/` — carrito en sesion, uno por tienda (sin modelo).
 - `pedidos/` — ZonaEnvio, Pedido, DetallePedido, SecuenciaTienda; checkout, confirmacion, clientes, WhatsApp.
+- `clientes/` — cuentas de clientes del sitio (registro, entrada, recuperar contraseña, perfil, historial de
+  pedidos) y limite de intentos.
 - `pagos/` — Pago (un intento de pago por pedido), comprobantes de transferencia, conciliacion en el panel y
   el contrato de las pasarelas de tarjeta (`proveedores.py`, ninguna conectada). Ver `docs/PAGOS.md`.
 - `templates/`, `static/` — plantillas y recursos de la tienda y del panel.
@@ -60,6 +62,15 @@ Al cerrar cada modulo: check, makemigrations, migrate, test y commit.
 - Nada de `|safe` con datos de usuarios. Solo ORM.
 
 ## Decisiones tomadas
+- Cuentas de clientes: son usuarios de Django sin acceso al panel, con el correo como nombre de usuario, y son
+  del sitio, no de una tienda (`/cuenta/`). `clientes.Perfil` guarda el telefono y la ultima direccion de entrega;
+  la zona no, porque es de cada tienda. `Pedido.cliente` solo se llena si compro con la sesion iniciada: un pedido
+  de invitado nunca se asocia despues a una cuenta por coincidir el correo (el correo no esta verificado). Se puede
+  seguir comprando sin cuenta. Las plantillas de acceso estan en `templates/clientes/` y no en
+  `templates/registration/`, que pisaria las pantallas de contraseña del panel.
+- Limite de intentos (`clientes.services.bloqueado`): 5 en 15 minutos para entrar (por conexion y correo), crear
+  cuentas y pedir enlaces de recuperacion (por conexion). Vive en la cache: con varios procesos cada uno cuenta
+  aparte, y en las pruebas (DummyCache) hay que activar una cache real para comprobarlo.
 - Correos: `core.correo.enviar` (texto, plantillas en `templates/correos/`, nunca lanza: registra el fallo) y
   `pedidos.avisos` (pedido nuevo, cambio de estado, comprobante, pago rechazado). Salen con
   `transaction.on_commit`, asi que en las pruebas hay que envolver con `captureOnCommitCallbacks(execute=True)`.

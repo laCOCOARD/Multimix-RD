@@ -125,7 +125,7 @@ def _validar_entrega_y_pago(datos, tienda):
 
 
 @transaction.atomic
-def crear_pedido(carrito, datos, ip=None):
+def crear_pedido(carrito, datos, ip=None, cliente=None):
     """Crea el pedido de la tienda del carrito con los precios actuales, reserva el stock y cuenta el cupon.
 
     `datos` trae los campos ya validados del checkout. Ningun monto viene del cliente. Productos,
@@ -185,6 +185,7 @@ def crear_pedido(carrito, datos, ip=None):
 
     pedido = Pedido.objects.create(
         tienda=tienda,
+        cliente=cliente,
         numero=_siguiente_numero(tienda),
         nombre=datos['nombre'],
         telefono=datos['telefono'],

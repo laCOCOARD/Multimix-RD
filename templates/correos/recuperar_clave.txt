@@ -1,0 +1,10 @@
+{% autoescape off %}Hola:
+
+Alguien pidió cambiar la contraseña de tu cuenta en Multimix RD. Si fuiste tú, entra a este enlace y escribe una nueva:
+
+{{ protocol }}://{{ domain }}{% url 'clientes:nueva_clave' uidb64=uid token=token %}
+
+El enlace sirve una sola vez. Si no pediste el cambio, ignora este correo: tu contraseña sigue igual.
+
+Multimix RD
+{% endautoescape %}

@@ -54,6 +54,10 @@
         </a>
 
         <div class="d-flex align-items-center gap-2 order-lg-3">
+          <a class="btn mm-btn-carrito" href="{% if user.is_authenticated %}{% url 'clientes:cuenta' %}{% else %}{% url 'clientes:entrar' %}{% endif %}"
+             aria-label="{% if user.is_authenticated %}Mi cuenta{% else %}Iniciar sesión{% endif %}" title="{% if user.is_authenticated %}Mi cuenta{% else %}Iniciar sesión{% endif %}">
+            <i class="bi {% if user.is_authenticated %}bi-person-check{% else %}bi-person{% endif %}"></i>
+          </a>
           {% if tienda %}
             <a class="btn mm-btn-carrito position-relative" href="{% url 'carrito:detalle' tienda.slug %}" aria-label="Ver carrito de {{ tienda.nombre }}">
               <i class="bi bi-bag"></i>

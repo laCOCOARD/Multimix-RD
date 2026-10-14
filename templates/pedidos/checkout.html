@@ -33,6 +33,14 @@
 
         <section class="mm-panel mb-4" data-paso="1" aria-labelledby="titulo-paso-1">
           <h2 class="h5 mb-3" id="titulo-paso-1" tabindex="-1"><span class="mm-paso solo-sin-js">1</span>Tus datos</h2>
+          {% if user.is_authenticated %}
+            <p class="small text-muted">Compras con tu cuenta ({{ user.email }}): el pedido queda en tu historial.</p>
+          {% else %}
+            <p class="small text-muted">
+              Puedes comprar sin cuenta. Si ya tienes una, <a href="{% url 'clientes:entrar' %}?next={{ request.path|urlencode }}">inicia sesión</a>
+              y llenamos tus datos; o <a href="{% url 'clientes:registro' %}?next={{ request.path|urlencode }}">créala</a> para ver tus pedidos.
+            </p>
+          {% endif %}
           <div class="row g-3">
             <div class="col-12">
               <label class="form-label" for="id_nombre">{{ formulario.nombre.label }}</label>

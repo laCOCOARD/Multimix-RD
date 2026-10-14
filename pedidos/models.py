@@ -1,6 +1,7 @@
 import uuid
 from decimal import Decimal
 
+from django.conf import settings
 from django.core.validators import MinValueValidator
 from django.db import models
 from django.db.models import F, Q
@@ -76,6 +77,10 @@ class Pedido(models.Model):
     numero = models.CharField('número', max_length=20, unique=True, editable=False)
     token = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
 
+    cliente = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='pedidos',
+        editable=False, help_text='La cuenta con la que se hizo el pedido; vacío si compró como invitado.',
+    )
     nombre = models.CharField(max_length=120)
     telefono = models.CharField('teléfono', max_length=10)
     correo = models.EmailField(blank=True)

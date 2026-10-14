@@ -9,6 +9,7 @@ from tiendas.decoradores import RUTA_DE_TIENDA
 
 urlpatterns = [
     path(f'{settings.ADMIN_URL}/', admin.site.urls),
+    path('cuenta/', include('clientes.urls')),
     path('sitemap.xml', sitemap, {'sitemaps': SITEMAPS}, name='sitemap'),
     # Dentro de una tienda: su catalogo y su carrito.
     path(RUTA_DE_TIENDA + 'carrito/', include('carrito.urls')),

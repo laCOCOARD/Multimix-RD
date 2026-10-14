@@ -1,16 +1,15 @@
 import logging
-import os
-from ipaddress import ip_address
-from io import BytesIO
-from django.conf import settings
+
 from django.contrib import messages
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
 
 from carrito.carrito import Carrito
+from clientes import services as clientes
 from core.archivos import ERRORES_DE_ALMACENAMIENTO
 from core.models import CuentaBancaria
+from core.red import ip_del_cliente as _ip_cliente
 from core.templatetags.moneda import formatear_monto
 from pagos import services as pagos
 from pagos.proveedores import proveedor_de_tarjeta
@@ -23,29 +22,6 @@ from .models import Pedido
 from .whatsapp import enlace_del_pedido
 
 logger = logging.getLogger('multimix.pedidos')
-
-
-def _ip_cliente(request):
-    if settings.CONFIAR_IP_PROXY:
-        candidatos = [
-            request.META.get('HTTP_X_REAL_IP', '').strip(),
-            request.META.get('HTTP_X_FORWARDED_FOR', '').split(',')[0].strip(),
-        ]
-        for candidato in candidatos:
-            try:
-                return str(ip_address(candidato))
-            except ValueError:
-                continue
-
-        # Render may expose the client IP only through its forwarded headers.
-        # Never rate-limit every visitor together by the platform proxy address.
-        if os.getenv('RENDER_EXTERNAL_HOSTNAME'):
-            return None
-
-    try:
-        return str(ip_address(request.META.get('REMOTE_ADDR', '')))
-    except ValueError:
-        return None
 
 
 def _zona_elegida(valor, tienda):
@@ -90,7 +66,10 @@ def checkout(request):
         return redirect('carrito:detalle', tienda.slug)
 
     if request.method != 'POST':
+        cliente = request.user if request.user.is_authenticated else None
         formulario = CheckoutForm(carrito=carrito, initial={
+            # Quien tiene cuenta no vuelve a escribir sus datos.
+            **(clientes.datos_para_el_checkout(cliente) if cliente else {}),
             'metodo_entrega': Pedido.Entrega.RECOGER,
             'metodo_pago': Pedido.Pago.TRANSFERENCIA,
             'cupon': carrito.codigo_cupon,
@@ -104,7 +83,8 @@ def checkout(request):
             formulario.add_error(None, 'Recibimos varios pedidos desde tu conexión. Espera un rato y vuelve a intentarlo.')
         else:
             try:
-                pedido = services.crear_pedido(carrito, formulario.cleaned_data, ip=ip)
+                cliente = request.user if request.user.is_authenticated else None
+                pedido = services.crear_pedido(carrito, formulario.cleaned_data, ip=ip, cliente=cliente)
             except services.StockInsuficiente as error:
                 carrito.sincronizar()
                 messages.error(request, f'{error.mensaje} Revisa tu carrito y vuelve a confirmar.')
@@ -114,6 +94,8 @@ def checkout(request):
                 formulario.add_error(None, error.mensaje)
             else:
                 carrito.vaciar()
+                if cliente:
+                    clientes.recordar_pedido(cliente, pedido)
                 return redirect(pedido)
     return render(request, 'pedidos/checkout.html', _contexto_checkout(request, carrito, formulario))
 
