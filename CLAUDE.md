@@ -77,7 +77,8 @@ Al cerrar cada modulo: check, makemigrations, migrate, test y commit.
   y se le depositan a la tienda menos la comision; el efectivo siempre lo cobra la tienda. Saldo negativo = la
   tienda le debe al sitio. `liquidar` crea la `Liquidacion` y marca cada pedido (`liquidacion`, `monto_liquidado`)
   para no pagarlo dos veces; un pedido liquidado que luego se reembolsa se descuenta en la siguiente
-  (`ajuste_liquidacion`). El vendedor ve sus liquidaciones pero no la comision ni quien cobra en el formulario.
+  (`ajuste_liquidacion`). Lo que cobre el banco por enviar el deposito (`Liquidacion.costo_transferencia`, un monto
+  que se escribe al liquidar) se le descuenta a la tienda. El vendedor ve sus liquidaciones pero no la comision ni quien cobra en el formulario.
 - La pagina del pedido lleva `<meta name="referrer" content="same-origin">`, nunca `no-referrer`: con este ultimo
   el navegador envia `Origin: null` en sus formularios (comprobante, cancelar, devolucion) y Django responde 403.
   Paso en produccion y las pruebas no lo ven, porque el cliente de pruebas no manda `Origin`.

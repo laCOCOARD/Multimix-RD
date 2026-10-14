@@ -1062,3 +1062,20 @@ ALTER TABLE "pedidos_pedido" ADD COLUMN "liquidacion_id" bigint NULL REFERENCES 
 ALTER TABLE "pedidos_pedido" ADD COLUMN "monto_liquidado" decimal NULL;
 CREATE INDEX "pedidos_pedido_ajuste_liquidacion_id_f93a0f71" ON "pedidos_pedido" ("ajuste_liquidacion_id");
 CREATE INDEX "pedidos_pedido_liquidacion_id_b6b436e1" ON "pedidos_pedido" ("liquidacion_id");
+
+-- ============================================================
+-- pagos 0003
+-- ============================================================
+--
+-- Add field costo_transferencia to liquidacion
+--
+CREATE TABLE "new__pagos_liquidacion" ("id" integer NOT NULL PRIMARY KEY AUTOINCREMENT, "costo_transferencia" decimal NOT NULL, "creada" datetime NOT NULL, "pedidos_incluidos" integer unsigned NOT NULL CHECK ("pedidos_incluidos" >= 0), "ventas" decimal NOT NULL, "cobrado_por_el_sitio" decimal NOT NULL, "comision_porcentaje" decimal NOT NULL, "comision" decimal NOT NULL, "ajustes" decimal NOT NULL, "monto" decimal NOT NULL, "nota" varchar(255) NOT NULL, "creada_por_id" integer NULL REFERENCES "auth_user" ("id") DEFERRABLE INITIALLY DEFERRED, "tienda_id" bigint NOT NULL REFERENCES "tiendas_tienda" ("id") DEFERRABLE INITIALLY DEFERRED);
+INSERT INTO "new__pagos_liquidacion" ("id", "creada", "pedidos_incluidos", "ventas", "cobrado_por_el_sitio", "comision_porcentaje", "comision", "ajustes", "monto", "nota", "creada_por_id", "tienda_id", "costo_transferencia") SELECT "id", "creada", "pedidos_incluidos", "ventas", "cobrado_por_el_sitio", "comision_porcentaje", "comision", "ajustes", "monto", "nota", "creada_por_id", "tienda_id", '0' FROM "pagos_liquidacion";
+DROP TABLE "pagos_liquidacion";
+ALTER TABLE "new__pagos_liquidacion" RENAME TO "pagos_liquidacion";
+CREATE INDEX "pagos_liquidacion_creada_por_id_dc71ed1a" ON "pagos_liquidacion" ("creada_por_id");
+CREATE INDEX "pagos_liquidacion_tienda_id_b32bdd81" ON "pagos_liquidacion" ("tienda_id");
+--
+-- Alter field monto on liquidacion
+--
+-- (no-op)

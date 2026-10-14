@@ -62,6 +62,8 @@ referencia del pago y el código de autorización.
   tienda le debe al sitio.
 - Para que el sitio reciba las transferencias de una tienda, sus **cuentas bancarias** en el panel deben ser las
   del sitio: son las que ve el cliente al pagar.
+- Al registrar el depósito se puede anotar la **comisión del banco por la transferencia**: se le descuenta a la
+  tienda y queda guardada en la liquidación.
 - **Registrar liquidación** guarda el depósito (con su referencia) y marca los pedidos para no pagarlos dos veces.
   Cambiar la comisión después no altera lo ya liquidado. Un pedido liquidado que luego se reembolsa se descuenta
   en la siguiente liquidación.

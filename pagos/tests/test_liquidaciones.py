@@ -43,6 +43,10 @@ class SaldoTests(TestCase):
         saldo = liquidaciones.saldo_de(self.tienda)
         # 2,000 - 200 de cupon = 1,800 en productos; comision 180. El envio (250) va completo a la tienda.
         self.assertEqual((saldo.ventas, saldo.comision, saldo.monto), (D('2050.00'), D('180.00'), D('1870.00')))
+        self.assertEqual((saldo.productos, saldo.envios), (D('1800.00'), D('250.00')))
+        # El cliente deposito 2,050 (productos + envio). La tienda recibe sus productos menos la comision (1,620)
+        # y el envio completo (250).
+        self.assertEqual(saldo.monto, (saldo.productos - saldo.comision) + saldo.envios)
 
     def test_el_efectivo_lo_cobra_la_tienda_y_debe_la_comision(self):
         entregado(self.producto, 1, metodo_pago=Pedido.Pago.EFECTIVO_RECOGER)
@@ -97,6 +101,19 @@ class SaldoTests(TestCase):
         liquidacion.refresh_from_db()
         self.assertEqual(liquidacion.monto, D('1800.00'))
 
+    def test_la_comision_del_banco_por_la_transferencia_se_le_descuenta_a_la_tienda(self):
+        entregado(self.producto, 2)
+        liquidacion = liquidaciones.liquidar(self.tienda, costo_transferencia='150')
+        self.assertEqual((liquidacion.costo_transferencia, liquidacion.monto), (D('150.00'), D('1650.00')))
+
+    def test_la_comision_de_la_transferencia_tiene_que_ser_un_monto_valido(self):
+        entregado(self.producto, 1)  # saldo a depositar: 900
+        for malo in ('-5', 'abc', '901'):
+            with self.assertRaises(liquidaciones.LiquidacionError):
+                liquidaciones.liquidar(self.tienda, costo_transferencia=malo)
+        self.assertFalse(Liquidacion.objects.exists())
+        self.assertEqual(liquidaciones.liquidar(self.tienda, costo_transferencia='').costo_transferencia, D('0.00'))
+
     def test_un_reembolso_de_algo_ya_depositado_se_descuenta_en_la_siguiente(self):
         devuelto = entregado(self.producto, 1)
         liquidaciones.liquidar(self.tienda)
@@ -128,10 +145,14 @@ class PanelDeLiquidacionesTests(TestCase):
         self.assertEqual({s.tienda.nombre: s.monto for s in pagina.context['saldos']},
                          {'Multimix RD': D('900.00'), 'Fitnes RD': D('800.00')})
         self.assertContains(pagina, 'RD$ 900.00')
-        respuesta = self.client.post(reverse('admin:pagos_liquidacion_liquidar', args=[self.propia.pk]), {'nota': 'Dep. 123'}, follow=True)
-        self.assertContains(respuesta, 'RD$ 900.00 depositados')
+        respuesta = self.client.post(
+            reverse('admin:pagos_liquidacion_liquidar', args=[self.propia.pk]),
+            {'nota': 'Dep. 123', 'costo_transferencia': '100'}, follow=True,
+        )
+        self.assertContains(respuesta, 'RD$ 800.00 depositados')
+        self.assertContains(respuesta, 'Se descontaron RD$ 100.00 de la transferencia')
         liquidacion = Liquidacion.objects.get()
-        self.assertEqual((liquidacion.tienda, liquidacion.monto, liquidacion.creada_por), (self.propia, D('900.00'), self.admin))
+        self.assertEqual((liquidacion.tienda, liquidacion.monto, liquidacion.creada_por), (self.propia, D('800.00'), self.admin))
         self.assertEqual(self.client.get(reverse('admin:pagos_liquidacion_liquidar', args=[self.propia.pk])).status_code, 405)
 
     def test_el_vendedor_no_ve_saldos_ni_liquida_pero_si_sus_liquidaciones(self):

@@ -7,9 +7,10 @@ Reglas:
   que depositarselas a la tienda menos la comision. El efectivo siempre lo cobra la tienda al entregar.
 - Saldo = lo que el sitio cobro por la tienda - la comision de todos sus pedidos - reembolsos ya depositados.
   Positivo: el sitio le deposita a la tienda. Negativo: la tienda le debe al sitio.
+- Al depositar, lo que cobre el banco por la transferencia se descuenta de lo que recibe la tienda.
 """
 from dataclasses import dataclass, field
-from decimal import ROUND_HALF_UP, Decimal
+from decimal import ROUND_HALF_UP, Decimal, InvalidOperation
 
 from django.db import transaction
 from django.db.models import Sum
@@ -35,7 +36,9 @@ class Saldo:
     tienda: object
     pedidos: list = field(default_factory=list)
     reembolsados: list = field(default_factory=list)
-    ventas: Decimal = CERO          # total de los pedidos por liquidar
+    ventas: Decimal = CERO          # total de los pedidos por liquidar (productos + envios)
+    productos: Decimal = CERO       # subtotal menos descuento: la base de la comision
+    envios: Decimal = CERO          # lo que pago el cliente por el envio: va completo a la tienda
     cobrado_por_el_sitio: Decimal = CERO
     comision: Decimal = CERO
     ajustes: Decimal = CERO         # depositos de pedidos que despues se reembolsaron
@@ -82,6 +85,8 @@ def saldo_de(tienda, bloquear=False):
     for pedido in saldo.pedidos:
         comision = comision_de(pedido, tienda.comision_porcentaje)
         saldo.ventas += pedido.total
+        saldo.productos += max(pedido.subtotal - pedido.descuento, CERO)
+        saldo.envios += pedido.costo_envio
         saldo.comision += comision
         saldo.cobrado_por_el_sitio += monto_del_pedido(pedido, tienda) + comision
     saldo.ajustes = sum((pedido.monto_liquidado or CERO for pedido in saldo.reembolsados), CERO)
@@ -93,16 +98,34 @@ def saldo_de(tienda, bloquear=False):
     return saldo
 
 
+def _costo(valor, saldo):
+    """Comision del banco por la transferencia: un monto en RD$ que no puede pasar de lo que se deposita."""
+    try:
+        costo = Decimal(str(valor or '0').replace(',', '').strip() or '0').quantize(CENTAVO, rounding=ROUND_HALF_UP)
+    except InvalidOperation as error:
+        raise LiquidacionError('Escribe la comisión de la transferencia como un monto. Ej.: 150.00') from error
+    if costo < 0:
+        raise LiquidacionError('La comisión de la transferencia no puede ser negativa.')
+    if costo > max(saldo.monto, CERO):
+        raise LiquidacionError('La comisión de la transferencia no puede ser mayor que lo que se le deposita a la tienda.')
+    return costo
+
+
 @transaction.atomic
-def liquidar(tienda, usuario=None, nota=''):
-    """Cierra el saldo de la tienda: registra el deposito y marca los pedidos para no pagarlos dos veces."""
+def liquidar(tienda, usuario=None, nota='', costo_transferencia=0):
+    """Cierra el saldo de la tienda: registra el deposito y marca los pedidos para no pagarlos dos veces.
+
+    `costo_transferencia` es lo que cobro el banco por enviar el deposito; se le descuenta a la tienda.
+    """
     saldo = saldo_de(tienda, bloquear=True)
     if not saldo.hay_movimientos:
         raise LiquidacionError(f'{tienda.nombre} no tiene pedidos entregados por liquidar.')
+    costo = _costo(costo_transferencia, saldo)
     liquidacion = Liquidacion.objects.create(
         tienda=tienda, creada_por=usuario, nota=(nota or '').strip()[:255], pedidos_incluidos=len(saldo.pedidos),
         ventas=saldo.ventas, cobrado_por_el_sitio=saldo.cobrado_por_el_sitio, comision=saldo.comision,
-        ajustes=saldo.ajustes, monto=saldo.monto, comision_porcentaje=tienda.comision_porcentaje,
+        ajustes=saldo.ajustes, costo_transferencia=costo, monto=saldo.monto - costo,
+        comision_porcentaje=tienda.comision_porcentaje,
     )
     for pedido in saldo.pedidos:
         pedido.liquidacion = liquidacion

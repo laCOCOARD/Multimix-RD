@@ -13,8 +13,8 @@
   <p class="help">
     Cuánto le toca a cada tienda por sus pedidos <strong>cobrados y ya entregados</strong> que todavía no has liquidado.
     La comisión se calcula sobre los productos (no sobre el envío). Si el sitio recibe las transferencias de la tienda,
-    se le depositan menos la comisión; el efectivo lo cobra la tienda al entregar. La comisión y quién cobra se
-    configuran en cada tienda.
+    se le depositan menos la comisión; el efectivo lo cobra la tienda al entregar. El envío que pagó el cliente va
+    completo a la tienda. La comisión y quién cobra se configuran en cada tienda.
   </p>
 
   {% for saldo in saldos %}
@@ -31,8 +31,10 @@
             <a href="{% url 'admin:pedidos_pedido_changelist' %}?tienda__id__exact={{ saldo.tienda.pk }}&amp;estado__exact=entregado&amp;liquidacion__isempty=1">{{ saldo.pedidos|length }} pedido(s)</a>
           </td></tr>
           <tr><th scope="row">Vendido en esos pedidos</th><td>{{ saldo.ventas|moneda }}</td></tr>
-          <tr><th scope="row">De eso, cobró el sitio</th><td>{{ saldo.cobrado_por_el_sitio|moneda }}</td></tr>
-          <tr><th scope="row">Tu comisión</th><td>-{{ saldo.comision|moneda }}</td></tr>
+          <tr><th scope="row">&nbsp;&nbsp;Productos (con descuentos aplicados)</th><td>{{ saldo.productos|moneda }}</td></tr>
+          <tr><th scope="row">&nbsp;&nbsp;Envíos (son de la tienda)</th><td>{{ saldo.envios|moneda }}</td></tr>
+          <tr><th scope="row">De lo vendido, cobró el sitio</th><td>{{ saldo.cobrado_por_el_sitio|moneda }}</td></tr>
+          <tr><th scope="row">Tu comisión ({{ saldo.tienda.comision_porcentaje|floatformat:'-2' }}% de los productos)</th><td>-{{ saldo.comision|moneda }}</td></tr>
           {% if saldo.ajustes %}
             <tr><th scope="row">Reembolsos de pedidos ya liquidados ({{ saldo.reembolsados|length }})</th><td>-{{ saldo.ajustes|moneda }}</td></tr>
           {% endif %}
@@ -47,7 +49,11 @@
         <form method="post" action="{% url 'admin:pagos_liquidacion_liquidar' saldo.tienda.pk %}" class="panel-busqueda" style="padding: 10px 12px;">
           {% csrf_token %}
           <label for="nota-{{ saldo.tienda.pk }}">Referencia del depósito (opcional):</label>
-          <input type="text" name="nota" id="nota-{{ saldo.tienda.pk }}" maxlength="255" size="40">
+          <input type="text" name="nota" id="nota-{{ saldo.tienda.pk }}" maxlength="255" size="30">
+          {% if saldo.monto > 0 %}
+            <label for="costo-{{ saldo.tienda.pk }}">Comisión del banco por la transferencia (RD$):</label>
+            <input type="number" name="costo_transferencia" id="costo-{{ saldo.tienda.pk }}" min="0" step="0.01" value="0" style="width: 7em;">
+          {% endif %}
           <input type="submit" value="Registrar liquidación" data-confirmar="¿Registrar la liquidación de {{ saldo.tienda.nombre }}? Sus pedidos quedarán marcados como liquidados.">
         </form>
       {% else %}

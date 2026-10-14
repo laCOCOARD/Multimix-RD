@@ -123,7 +123,7 @@ class LiquidacionAdmin(AdminDeTienda, admin.ModelAdmin):
     list_select_related = ['tienda']
     fields = [
         'tienda', 'creada', 'creada_por', 'pedidos_incluidos', 'ventas', 'cobrado_por_el_sitio',
-        'comision_porcentaje', 'comision', 'ajustes', 'monto', 'nota',
+        'comision_porcentaje', 'comision', 'ajustes', 'costo_transferencia', 'monto', 'nota',
     ]
     readonly_fields = fields
 
@@ -168,12 +168,16 @@ class LiquidacionAdmin(AdminDeTienda, admin.ModelAdmin):
             raise PermissionDenied
         tienda = get_object_or_404(Tienda, pk=tienda_id)
         try:
-            liquidacion = liquidaciones.liquidar(tienda, request.user, request.POST.get('nota', ''))
+            liquidacion = liquidaciones.liquidar(
+                tienda, request.user, request.POST.get('nota', ''), request.POST.get('costo_transferencia', ''),
+            )
         except liquidaciones.LiquidacionError as error:
             self.message_user(request, error.mensaje, messages.ERROR)
         else:
             if liquidacion.monto >= 0:
                 texto = f'Liquidación de {tienda.nombre} registrada: {formatear_monto(liquidacion.monto)} depositados.'
+                if liquidacion.costo_transferencia:
+                    texto += f' Se descontaron {formatear_monto(liquidacion.costo_transferencia)} de la transferencia.'
             else:
                 texto = f'Liquidación de {tienda.nombre} registrada: la tienda te debía {formatear_monto(-liquidacion.monto)}.'
             self.message_user(request, texto, messages.SUCCESS)
