@@ -117,6 +117,13 @@ class CancelarPorElClienteTests(TestCase):
             pedido.refresh_from_db()
             self.assertEqual(pedido.estado, estado)
 
+    def test_la_pagina_del_pedido_no_anula_el_origen_de_sus_formularios(self):
+        """Con `no-referrer` el navegador manda "Origin: null" y la proteccion CSRF rechaza cancelar o avisar el pago."""
+        pedido = pedido_de_prueba(self.producto, 1)
+        pagina = self.client.get(pedido.get_absolute_url())
+        self.assertNotContains(pagina, 'content="no-referrer"')
+        self.assertContains(pagina, '<meta name="referrer" content="same-origin">')
+
     def test_solo_por_post(self):
         pedido = pedido_de_prueba(self.producto, 1)
         self.assertEqual(self.client.get(reverse('pedidos:cancelar', args=[pedido.token])).status_code, 405)

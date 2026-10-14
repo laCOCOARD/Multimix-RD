@@ -2,7 +2,8 @@
 {% load moneda static %}
 
 {% block titulo %}Pedido {{ pedido.numero }} · {{ tienda.nombre }}{% endblock %}
-{% block meta %}<meta name="robots" content="noindex, nofollow"><meta name="referrer" content="no-referrer">{% endblock %}
+{% block meta %}{# same-origin y no no-referrer: con no-referrer el navegador envia "Origin: null" y Django rechaza los formularios de esta pagina. #}
+<meta name="robots" content="noindex, nofollow"><meta name="referrer" content="same-origin">{% endblock %}
 
 {% block contenido %}
 <div class="container py-4" id="confirmacion">

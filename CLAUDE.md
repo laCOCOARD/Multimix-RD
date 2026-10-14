@@ -71,6 +71,9 @@ Al cerrar cada modulo: check, makemigrations, migrate, test y commit.
 - Nada de `|safe` con datos de usuarios. Solo ORM.
 
 ## Decisiones tomadas
+- La pagina del pedido lleva `<meta name="referrer" content="same-origin">`, nunca `no-referrer`: con este ultimo
+  el navegador envia `Origin: null` en sus formularios (comprobante, cancelar, devolucion) y Django responde 403.
+  Paso en produccion y las pruebas no lo ven, porque el cliente de pruebas no manda `Origin`.
 - Subcategorias: `Categoria.padre`, solo dos niveles (lo valida `clean` y el panel solo ofrece principales). La
   pagina de una categoria principal lista tambien los productos de sus subcategorias, y `categorias_de` devuelve
   cada subcategoria debajo de su principal. Variantes de producto (talla, color) NO estan hechas: hoy cada variante

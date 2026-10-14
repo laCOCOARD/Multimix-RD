@@ -1,6 +1,8 @@
 import logging
 
 from django.conf import settings
+from django.core.exceptions import PermissionDenied
+from django.http import Http404
 
 from core.tareas import ejecutar_si_toca
 
@@ -39,6 +41,9 @@ class ExcepcionRequestLoggingMiddleware:
         return self.get_response(request)
 
     def process_exception(self, request, exception):
+        # Una pagina que no existe o un acceso denegado no son fallos del sitio.
+        if isinstance(exception, (Http404, PermissionDenied)):
+            return
         logger.error(
             'Unhandled exception while processing request.',
             exc_info=(type(exception), exception, exception.__traceback__),
