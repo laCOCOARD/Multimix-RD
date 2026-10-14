@@ -1,0 +1,13 @@
+{% autoescape off %}Hola {{ pedido.nombre }}:
+
+{{ tienda.nombre }} {% if solicitud.estado == 'aceptada' %}aceptó{% else %}no aceptó{% endif %} tu solicitud de devolución del pedido {{ pedido.numero }}.{% if solicitud.respuesta %}
+
+Respuesta de la tienda: {{ solicitud.respuesta }}{% endif %}{% if solicitud.estado == 'aceptada' %}
+
+La tienda se pondrá de acuerdo contigo para recibir el producto y devolverte el dinero.{% endif %}
+
+Ver el pedido:
+{{ enlace_pedido }}
+
+{{ tienda.nombre }}
+{% endautoescape %}

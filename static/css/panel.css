@@ -68,6 +68,9 @@ div.breadcrumbs a:hover { color: #d6f0b8; }
 .panel-estado-enviado { background: #0e8f9b; }
 .panel-estado-entregado { background: #1a8f5a; }
 .panel-estado-cancelado { background: #d23b3b; }
+.panel-estado-preparando, .panel-boton-preparando { background: #5a6fd8; }
+.panel-estado-en_reparto, .panel-boton-en_reparto { background: #0b7f8a; }
+.panel-estado-reembolsado, .panel-boton-reembolsado { background: #6b7785; }
 .panel-pago-pendiente { background: #e08a00; }
 .panel-pago-en_revision { background: #7a4fd6; }
 .panel-pago-aprobado { background: #1a8f5a; }

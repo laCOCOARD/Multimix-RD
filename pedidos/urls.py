@@ -15,4 +15,6 @@ urlpatterns = [
     path('pedido/<uuid:token>/verificar/', factura_views.verificar_factura, name='verificar_factura'),
     path('pedido/<uuid:token>/', views.confirmacion, name='confirmacion'),
     path('pedido/<uuid:token>/transferencia/', views.avisar_transferencia, name='avisar_transferencia'),
+    path('pedido/<uuid:token>/cancelar/', views.cancelar, name='cancelar'),
+    path('pedido/<uuid:token>/devolucion/', views.pedir_devolucion, name='pedir_devolucion'),
 ]

@@ -22,7 +22,7 @@ class ConfiguracionTiendaAdmin(AvisaImagenesSinGuardar, admin.ModelAdmin):
         ('Catálogo y stock (todas las tiendas)', {
             'fields': ['dias_producto_nuevo', 'umbral_stock_bajo', 'mostrar_cantidad_exacta'],
         }),
-        ('Pedidos (todas las tiendas)', {'fields': ['horas_vencimiento_pedido']}),
+        ('Pedidos (todas las tiendas)', {'fields': ['horas_vencimiento_pedido', 'dias_devolucion']}),
     ]
 
     change_form_template = 'admin/core/configuraciontienda/change_form.html'

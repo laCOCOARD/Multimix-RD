@@ -310,6 +310,15 @@ img { max-width: 100%; height: auto; }
 .mm-estado-enviado { background: #0e9aa7; }
 .mm-estado-entregado { background: var(--mm-exito); }
 .mm-estado-cancelado { background: var(--mm-peligro); }
+.mm-estado-preparando { background: #5a6fd8; }
+.mm-estado-en_reparto { background: #0b7f8a; }
+.mm-estado-reembolsado { background: #6b7785; }
+.mm-seguimiento { list-style: none; margin: 0; padding: 0 0 0 1.1rem; border-left: 2px solid var(--mm-borde); }
+.mm-seguimiento li { position: relative; padding: 0 0 1rem .9rem; }
+.mm-seguimiento li:last-child { padding-bottom: 0; }
+.mm-seguimiento li::before { content: ""; position: absolute; left: -1.55rem; top: .3rem; width: .8rem; height: .8rem; border-radius: 50%; background: #c5d1de; border: 2px solid var(--mm-superficie); }
+.mm-seguimiento li.actual::before { background: var(--mm-acento); box-shadow: 0 0 0 .2rem rgba(36, 131, 43, .2); }
+.mm-seguimiento strong { margin-right: .5rem; }
 .mm-datos dt { font-weight: 600; color: var(--mm-texto-suave); }
 
 /* --- Pie y WhatsApp flotante -------------------------------------------- */

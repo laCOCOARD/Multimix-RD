@@ -38,8 +38,8 @@ def _estado_inicial(pedido):
 def pago_vigente(pedido):
     """El pago en curso del pedido; lo abre si aun no tiene. Un pedido cancelado no abre pagos nuevos."""
     pago = pedido.pagos.filter(estado__in=Pago.VIGENTES).order_by('-id').first()
-    if pago is not None or pedido.estado == Pedido.Estado.CANCELADO:
-        return pago
+    if pago is not None or pedido.estado in Pedido.ESTADOS_SIN_VENTA:
+        return pago or pedido.pagos.order_by('-id').first()
     return Pago.objects.create(
         tienda_id=pedido.tienda_id, pedido=pedido, metodo=pedido.metodo_pago, monto=pedido.total,
         referencia=f'{pedido.numero}-P{pedido.pagos.count() + 1}', estado=_estado_inicial(pedido),
@@ -118,7 +118,9 @@ def sincronizar_con_pedido(pedido):
 
     El vendedor tambien puede marcar el pedido como pagado o cancelarlo desde el propio pedido.
     """
-    if pedido.estado == Pedido.Estado.CANCELADO:
+    if pedido.estado == Pedido.Estado.REEMBOLSADO:
+        pedido.pagos.filter(estado=Estado.APROBADO).update(estado=Estado.REEMBOLSADO, actualizado=timezone.now())
+    elif pedido.estado == Pedido.Estado.CANCELADO:
         pedido.pagos.filter(estado__in=Pago.POR_RESOLVER).update(estado=Estado.CANCELADO, actualizado=timezone.now())
     elif pedido.fecha_pago:
         pago = pago_vigente(pedido)

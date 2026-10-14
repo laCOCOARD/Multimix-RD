@@ -18,7 +18,7 @@ from promociones.services import (
 )
 
 from . import avisos
-from .models import DetallePedido, Pedido, SecuenciaTienda, ZonaEnvio
+from .models import DetallePedido, EventoPedido, Pedido, SecuenciaTienda, SolicitudDevolucion, ZonaEnvio
 
 logger = logging.getLogger('multimix.pedidos')
 
@@ -227,6 +227,7 @@ def crear_pedido(carrito, datos, ip=None, cliente=None):
     # Se importa aqui: pagos.services usa este modulo para cambiar el estado del pedido.
     from pagos.services import pago_vigente
     pago_vigente(pedido)
+    EventoPedido.objects.create(pedido=pedido, estado=Estado.PENDIENTE, nota='Pedido recibido')
     avisos.pedido_creado(pedido)
 
     logger.info('Pedido %s creado por RD$ %s (%s productos)', pedido.numero, pedido.total, len(lineas))
@@ -251,13 +252,20 @@ def transiciones_permitidas(pedido):
     if pedido.estado == Estado.PENDIENTE:
         if pedido.paga_por_transferencia:
             return [Estado.PAGADO, Estado.CANCELADO]
-        return [Estado.PAGADO, despacho, Estado.ENTREGADO, Estado.CANCELADO]
+        return [Estado.PAGADO, Estado.PREPARANDO, despacho, Estado.ENTREGADO, Estado.CANCELADO]
     if pedido.estado == Estado.PAGADO:
+        return [Estado.PREPARANDO, despacho, Estado.ENTREGADO, Estado.CANCELADO]
+    if pedido.estado == Estado.PREPARANDO:
         return [despacho, Estado.ENTREGADO, Estado.CANCELADO]
     if pedido.estado == Estado.LISTO:
         return [Estado.ENTREGADO, Estado.CANCELADO]
     if pedido.estado == Estado.ENVIADO:
+        return [Estado.EN_REPARTO, Estado.ENTREGADO]
+    if pedido.estado == Estado.EN_REPARTO:
         return [Estado.ENTREGADO]
+    # Lo cobrado se puede devolver: despues de entregado, o si se cancelo cuando ya estaba pagado.
+    if pedido.estado in (Estado.ENTREGADO, Estado.CANCELADO) and pedido.fecha_pago:
+        return [Estado.REEMBOLSADO]
     return []
 
 
@@ -291,8 +299,12 @@ def _liberar_reserva(pedido):
 
 
 @transaction.atomic
-def cambiar_estado(pedido, nuevo_estado):
-    """Unica puerta para cambiar el estado de un pedido. Lanza TransicionInvalida si no procede."""
+def cambiar_estado(pedido, nuevo_estado, usuario=None, nota=''):
+    """Unica puerta para cambiar el estado de un pedido. Lanza TransicionInvalida si no procede.
+
+    `usuario` es quien lo cambia desde el panel y `nota` un comentario que vera el cliente en el seguimiento.
+    Un reembolso no devuelve stock: lo entregado se repone a mano si vuelve a la tienda.
+    """
     pedido = Pedido.objects.select_for_update().get(pk=pedido.pk)
     if nuevo_estado not in transiciones_permitidas(pedido):
         destino = Estado(nuevo_estado).label if nuevo_estado in Estado.values else nuevo_estado
@@ -304,7 +316,7 @@ def cambiar_estado(pedido, nuevo_estado):
 
     if nuevo_estado == Estado.PAGADO:
         pedido.fecha_pago = ahora
-    elif nuevo_estado in (Estado.ENVIADO, Estado.ENTREGADO):
+    elif nuevo_estado in (Estado.ENVIADO, Estado.EN_REPARTO, Estado.ENTREGADO):
         _descontar_stock(pedido)
         if nuevo_estado == Estado.ENTREGADO:
             pedido.fecha_entrega = ahora
@@ -318,6 +330,7 @@ def cambiar_estado(pedido, nuevo_estado):
 
     pedido.estado = nuevo_estado
     pedido.save(update_fields=['estado', 'fecha_pago', 'fecha_entrega', 'stock_descontado'])
+    EventoPedido.objects.create(pedido=pedido, estado=nuevo_estado, nota=(nota or '')[:255], usuario=usuario)
     from pagos.services import sincronizar_con_pedido
     sincronizar_con_pedido(pedido)
     avisos.estado_cambiado(pedido)
@@ -356,6 +369,61 @@ def cancelar_pedidos_vencidos():
     return cancelados
 
 
+# --- Lo que puede hacer el cliente con su pedido ------------------------------------------------
+
+def puede_cancelar_el_cliente(pedido):
+    """Solo antes de pagar: pendiente y sin haber avisado que ya transfirio."""
+    return pedido.estado == Estado.PENDIENTE and not pedido.transferencia_realizada and pedido.fecha_pago is None
+
+
+def cancelar_por_cliente(pedido):
+    if not puede_cancelar_el_cliente(pedido):
+        raise PedidoError('Este pedido ya no se puede cancelar desde aquí. Escribe a la tienda.')
+    return cambiar_estado(pedido, Estado.CANCELADO, nota='Cancelado por el cliente')
+
+
+def devolucion_abierta(pedido):
+    """La solicitud de devolucion que el cliente ya hizo, si no fue rechazada."""
+    return pedido.devoluciones.exclude(estado=SolicitudDevolucion.Estado.RECHAZADA).order_by('-id').first()
+
+
+def puede_pedir_devolucion(pedido):
+    dias = ConfiguracionTienda.obtener().dias_devolucion
+    if not dias or pedido.estado != Estado.ENTREGADO or pedido.fecha_entrega is None:
+        return False
+    if timezone.now() > pedido.fecha_entrega + timedelta(days=dias):
+        return False
+    return devolucion_abierta(pedido) is None
+
+
+@transaction.atomic
+def solicitar_devolucion(pedido, motivo):
+    pedido = Pedido.objects.select_for_update().get(pk=pedido.pk)
+    motivo = (motivo or '').strip()
+    if not puede_pedir_devolucion(pedido):
+        raise PedidoError('Este pedido ya no admite solicitudes de devolución.')
+    if len(motivo) < 10:
+        raise PedidoError('Cuéntale a la tienda por qué quieres devolver el pedido.')
+    solicitud = SolicitudDevolucion.objects.create(tienda_id=pedido.tienda_id, pedido=pedido, motivo=motivo[:600])
+    avisos.devolucion_solicitada(solicitud)
+    return solicitud
+
+
+@transaction.atomic
+def responder_devolucion(solicitud, aceptar, usuario=None, respuesta=''):
+    """La tienda acepta o rechaza. Aceptar no mueve dinero: el reembolso se registra en el pedido."""
+    solicitud = SolicitudDevolucion.objects.select_for_update().get(pk=solicitud.pk)
+    if solicitud.estado != SolicitudDevolucion.Estado.PENDIENTE:
+        raise PedidoError(f'La solicitud del pedido {solicitud.pedido.numero} ya fue respondida.')
+    solicitud.estado = SolicitudDevolucion.Estado.ACEPTADA if aceptar else SolicitudDevolucion.Estado.RECHAZADA
+    solicitud.respuesta = (respuesta or solicitud.respuesta or '')[:255]
+    solicitud.resuelto_en = timezone.now()
+    solicitud.resuelto_por = usuario
+    solicitud.save()
+    avisos.devolucion_respondida(solicitud)
+    return solicitud
+
+
 def zonas_activas(tienda):
     return ZonaEnvio.objects.filter(tienda=tienda, activa=True)
 
@@ -375,7 +443,7 @@ def clientes(pedidos, busqueda=''):
         if digitos:
             filtro |= Q(telefono__contains=digitos)
         pedidos = pedidos.filter(filtro)
-    vigente = ~Q(estado=Estado.CANCELADO)
+    vigente = ~Q(estado__in=Pedido.ESTADOS_SIN_VENTA)
     return (
         pedidos.order_by().values('tienda_id', 'telefono')
         .annotate(

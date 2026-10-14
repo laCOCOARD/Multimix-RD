@@ -147,12 +147,15 @@ class PedidoAdminTests(PanelBase):
         pedido = pedido_de_prueba(self.producto, 1)
         self.client.post(reverse('admin:pedidos_pedido_change', args=[pedido.pk]), {
             'estado': 'entregado', 'total': '1', 'notas_internas': 'Cliente frecuente',
+            'transportista': 'Mensajería Rápida', 'numero_seguimiento': 'MR-123',
             'detalles-TOTAL_FORMS': 0, 'detalles-INITIAL_FORMS': 0,
+            'eventos-TOTAL_FORMS': 0, 'eventos-INITIAL_FORMS': 0,
         })
         pedido.refresh_from_db()
         self.assertEqual(pedido.estado, Estado.PENDIENTE)
         self.assertEqual(pedido.total, Decimal('1000.00'))
         self.assertEqual(pedido.notas_internas, 'Cliente frecuente')
+        self.assertEqual((pedido.transportista, pedido.numero_seguimiento), ('Mensajería Rápida', 'MR-123'))
 
     def test_acciones_usan_la_capa_de_servicios(self):
         pedido = pedido_de_prueba(self.producto, 2)

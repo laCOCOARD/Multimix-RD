@@ -80,3 +80,27 @@ def pago_rechazado(pago):
             _contexto(pedido, pago=pago), [pedido.correo],
         )
     _al_confirmar(enviar_aviso)
+
+
+def devolucion_solicitada(solicitud):
+    def enviar_aviso():
+        pedido = Pedido.objects.select_related('tienda').get(pk=solicitud.pedido_id)
+        contexto = _contexto(
+            pedido, solicitud=solicitud,
+            enlace_solicitud=url_absoluta(reverse('admin:pedidos_solicituddevolucion_change', args=[solicitud.pk])),
+        )
+        enviar(
+            f'Solicitud de devolución: pedido {pedido.numero}', 'tienda_devolucion', contexto,
+            correos_de_la_tienda(pedido.tienda),
+        )
+    _al_confirmar(enviar_aviso)
+
+
+def devolucion_respondida(solicitud):
+    def enviar_aviso():
+        pedido = Pedido.objects.select_related('tienda').get(pk=solicitud.pedido_id)
+        enviar(
+            f'Tu solicitud de devolución del pedido {pedido.numero}', 'cliente_devolucion',
+            _contexto(pedido, solicitud=solicitud), [pedido.correo],
+        )
+    _al_confirmar(enviar_aviso)

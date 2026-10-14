@@ -12,7 +12,7 @@ from .models import ConfiguracionTienda
 def _ventas_desde(pedidos, inicio):
     """Suma de pedidos cobrados (con fecha de pago) y no cancelados desde `inicio`."""
     return (
-        pedidos.filter(fecha_pago__gte=inicio).exclude(estado=Pedido.Estado.CANCELADO)
+        pedidos.filter(fecha_pago__gte=inicio).exclude(estado__in=Pedido.ESTADOS_SIN_VENTA)
         .aggregate(total=Sum('total'))['total'] or 0
     )
 
@@ -65,7 +65,7 @@ def resumen_panel(tiendas=None):
 def ventas_por_tienda():
     """Para el administrador principal: lo cobrado este mes y los pedidos pendientes de cada tienda."""
     _, inicio_mes = _inicio_del_dia_y_del_mes()
-    cobrado = Q(pedidos__fecha_pago__gte=inicio_mes) & ~Q(pedidos__estado=Pedido.Estado.CANCELADO)
+    cobrado = Q(pedidos__fecha_pago__gte=inicio_mes) & ~Q(pedidos__estado__in=Pedido.ESTADOS_SIN_VENTA)
     return Tienda.objects.annotate(
         ventas_mes=Sum('pedidos__total', filter=cobrado),
         pedidos_mes=Count('pedidos', filter=cobrado),

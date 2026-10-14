@@ -52,6 +52,10 @@ class ConfiguracionTienda(models.Model):
     horas_vencimiento_pedido = models.PositiveSmallIntegerField(
         'horas para vencer pedidos pendientes', default=48, validators=[MinValueValidator(1)],
     )
+    dias_devolucion = models.PositiveSmallIntegerField(
+        'días para pedir una devolución', default=7,
+        help_text='Días después de la entrega en que el cliente puede solicitar una devolución. 0 = no se ofrecen.',
+    )
     mostrar_cantidad_exacta = models.BooleanField(
         'mostrar la cantidad exacta disponible', default=False,
         help_text='Si está apagado solo se muestra "Disponible" o "Quedan X" cuando hay poco.',

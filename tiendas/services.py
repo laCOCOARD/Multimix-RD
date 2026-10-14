@@ -18,7 +18,8 @@ PERMISOS_VENDEDOR = {
         'view_fotoproducto', 'add_fotoproducto', 'change_fotoproducto', 'delete_fotoproducto',
     ],
     'pedidos': [
-        'view_pedido', 'change_pedido', 'delete_pedido', 'view_detallepedido',
+        'view_pedido', 'change_pedido', 'delete_pedido', 'view_detallepedido', 'view_eventopedido',
+        'view_solicituddevolucion', 'change_solicituddevolucion',
         'view_zonaenvio', 'add_zonaenvio', 'change_zonaenvio', 'delete_zonaenvio',
     ],
     'promociones': ['view_cupon', 'add_cupon', 'change_cupon', 'delete_cupon'],

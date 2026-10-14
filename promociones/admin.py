@@ -23,7 +23,7 @@ class CuponAdmin(AdminDeTienda, admin.ModelAdmin):
 
     def get_queryset(self, request):
         return super().get_queryset(request).annotate(
-            total_pedidos=Count('pedidos', filter=~Q(pedidos__estado=Pedido.Estado.CANCELADO)),
+            total_pedidos=Count('pedidos', filter=~Q(pedidos__estado__in=Pedido.ESTADOS_SIN_VENTA)),
         )
 
     @admin.display(description='Descuento', ordering='valor')

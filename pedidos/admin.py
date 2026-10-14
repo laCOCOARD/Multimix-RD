@@ -13,7 +13,7 @@ from core.templatetags.moneda import formatear_monto
 from tiendas.panel import AdminDeTienda, maneja_varias_tiendas
 
 from . import services
-from .models import DetallePedido, Pedido, ZonaEnvio
+from .models import DetallePedido, EventoPedido, Pedido, SolicitudDevolucion, ZonaEnvio
 from .whatsapp import construir_enlace, enlace_al_cliente
 
 Estado = Pedido.Estado
@@ -50,6 +50,25 @@ class DetallePedidoInline(admin.TabularInline):
         return formatear_monto(detalle.subtotal)
 
 
+class EventoPedidoInline(admin.TabularInline):
+    """Seguimiento del pedido: que paso, cuando y quien lo hizo. Solo lectura."""
+
+    model = EventoPedido
+    extra = 0
+    can_delete = False
+    fields = ['creado', 'estado', 'nota', 'usuario']
+    readonly_fields = fields
+
+    def has_add_permission(self, request, obj=None):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_view_permission(self, request, obj=None):
+        return request.user.has_perm('pedidos.view_pedido')
+
+
 def _accion_de_estado(estado, descripcion):
     @admin.action(description=descripcion)
     def accion(modeladmin, request, queryset):
@@ -75,27 +94,32 @@ class PedidoAdmin(AdminDeTienda, admin.ModelAdmin):
     search_fields = ['numero', 'nombre', 'telefono', 'correo', 'referencia_transferencia']
     list_select_related = ['zona']
     list_per_page = 40
-    inlines = [DetallePedidoInline]
+    inlines = [DetallePedidoInline, EventoPedidoInline]
     actions = [
         _accion_de_estado(Estado.PAGADO, 'Marcar como Pagado'),
+        _accion_de_estado(Estado.PREPARANDO, 'Marcar como Preparando pedido'),
         _accion_de_estado(Estado.LISTO, 'Marcar como Listo para recoger'),
         _accion_de_estado(Estado.ENVIADO, 'Marcar como Enviado'),
+        _accion_de_estado(Estado.EN_REPARTO, 'Marcar como En reparto'),
         _accion_de_estado(Estado.ENTREGADO, 'Marcar como Entregado'),
         _accion_de_estado(Estado.CANCELADO, 'Marcar como Cancelado'),
+        _accion_de_estado(Estado.REEMBOLSADO, 'Marcar como Reembolsado'),
     ]
     fieldsets = [
         ('Pedido', {'fields': [
             'numero', 'tienda', 'estado_con_color', 'creado', 'fecha_pago', 'fecha_entrega', 'enlace_publico',
         ]}),
         ('Cliente', {'fields': ['nombre', 'whatsapp_cliente', 'correo', 'cuenta_del_cliente']}),
-        ('Entrega', {'fields': ['metodo_entrega', 'zona', 'sector', 'direccion', 'referencia']}),
+        ('Entrega', {'fields': [
+            'metodo_entrega', 'zona', 'sector', 'direccion', 'referencia', 'transportista', 'numero_seguimiento',
+        ]}),
         ('Pago', {'fields': ['metodo_pago', 'transferencia_realizada', 'referencia_transferencia', 'pago_registrado']}),
         ('Montos', {'fields': [
             'subtotal_formateado', 'cupon_aplicado', 'itbis_formateado', 'envio_formateado', 'total_formateado',
         ]}),
         ('Notas', {'fields': ['notas_cliente', 'notas_internas']}),
     ]
-    campos_editables = ['notas_internas']
+    campos_editables = ['notas_internas', 'transportista', 'numero_seguimiento']
 
     def get_readonly_fields(self, request, obj=None):
         campos = [campo for _, opciones in self.fieldsets for campo in opciones['fields']]
@@ -154,7 +178,7 @@ class PedidoAdmin(AdminDeTienda, admin.ModelAdmin):
         hechos = 0
         for pedido in queryset.order_by('creado'):
             try:
-                services.cambiar_estado(pedido, estado)
+                services.cambiar_estado(pedido, estado, usuario=request.user)
                 hechos += 1
             except services.PedidoError as error:
                 self.message_user(request, error.mensaje, messages.ERROR)
@@ -171,7 +195,7 @@ class PedidoAdmin(AdminDeTienda, admin.ModelAdmin):
         if pedido is None:
             raise Http404
         try:
-            pedido = services.cambiar_estado(pedido, request.POST.get('estado', ''))
+            pedido = services.cambiar_estado(pedido, request.POST.get('estado', ''), usuario=request.user)
         except services.PedidoError as error:
             self.message_user(request, error.mensaje, messages.ERROR)
         else:
@@ -251,3 +275,67 @@ class PedidoAdmin(AdminDeTienda, admin.ModelAdmin):
     @admin.display(description='Página del cliente')
     def enlace_publico(self, pedido):
         return format_html('<a href="{}" target="_blank" rel="noopener">Ver confirmación ↗</a>', pedido.get_absolute_url())
+
+
+@admin.register(SolicitudDevolucion)
+class SolicitudDevolucionAdmin(AdminDeTienda, admin.ModelAdmin):
+    """Las devoluciones que piden los clientes. La tienda escribe su respuesta y acepta o rechaza."""
+
+    list_display = ['pedido_enlazado', 'creado', 'motivo_corto', 'estado', 'resuelto_en']
+    list_filter = ['estado', 'creado']
+    search_fields = ['pedido__numero', 'pedido__nombre', 'motivo']
+    list_select_related = ['pedido']
+    actions = ['aceptar', 'rechazar']
+    fields = ['pedido_enlazado', 'tienda', 'creado', 'motivo', 'estado', 'respuesta', 'resuelto_en', 'resuelto_por']
+    readonly_fields = ['pedido_enlazado', 'tienda', 'creado', 'motivo', 'estado', 'resuelto_en', 'resuelto_por']
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        # Solo se borran junto con su pedido.
+        return request.user.has_perm('pedidos.delete_pedido')
+
+    def get_actions(self, request):
+        acciones = super().get_actions(request)
+        acciones.pop('delete_selected', None)
+        return acciones
+
+    def delete_view(self, request, object_id, extra_context=None):
+        raise PermissionDenied
+
+    def change_view(self, request, object_id, form_url='', extra_context=None):
+        return super().change_view(request, object_id, form_url, {'show_delete': False, **(extra_context or {})})
+
+    def _responder(self, request, queryset, aceptar):
+        if not self.has_change_permission(request):
+            raise PermissionDenied
+        total = 0
+        for solicitud in queryset:
+            try:
+                services.responder_devolucion(solicitud, aceptar, request.user)
+                total += 1
+            except services.PedidoError as error:
+                self.message_user(request, error.mensaje, messages.ERROR)
+        if total:
+            hecho = 'aceptadas' if aceptar else 'rechazadas'
+            self.message_user(request, f'{total} solicitud(es) {hecho}. El cliente recibe un correo.', messages.SUCCESS)
+
+    @admin.action(description='Aceptar la devolución')
+    def aceptar(self, request, queryset):
+        self._responder(request, queryset, True)
+
+    @admin.action(description='Rechazar la devolución')
+    def rechazar(self, request, queryset):
+        self._responder(request, queryset, False)
+
+    @admin.display(description='Pedido', ordering='pedido__numero')
+    def pedido_enlazado(self, solicitud):
+        return format_html(
+            '<a href="{}">{}</a> · {}', reverse('admin:pedidos_pedido_change', args=[solicitud.pedido_id]),
+            solicitud.pedido.numero, solicitud.pedido.nombre,
+        )
+
+    @admin.display(description='Motivo')
+    def motivo_corto(self, solicitud):
+        return solicitud.motivo[:80]

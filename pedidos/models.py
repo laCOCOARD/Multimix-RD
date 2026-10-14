@@ -56,10 +56,13 @@ class Pedido(models.Model):
     class Estado(models.TextChoices):
         PENDIENTE = 'pendiente', 'Pendiente'
         PAGADO = 'pagado', 'Pagado'
+        PREPARANDO = 'preparando', 'Preparando pedido'
         LISTO = 'listo', 'Listo para recoger'
         ENVIADO = 'enviado', 'Enviado'
+        EN_REPARTO = 'en_reparto', 'En reparto'
         ENTREGADO = 'entregado', 'Entregado'
         CANCELADO = 'cancelado', 'Cancelado'
+        REEMBOLSADO = 'reembolsado', 'Reembolsado'
 
     class Entrega(models.TextChoices):
         RECOGER = 'recoger', 'Recoger en tienda'
@@ -71,7 +74,11 @@ class Pedido(models.Model):
         CONTRA_ENTREGA = 'contra_entrega', 'Efectivo contra entrega'
 
     # Estados que cuentan como venta para "Más vendidos" y los reportes.
-    ESTADOS_VENTA = (Estado.PAGADO, Estado.LISTO, Estado.ENVIADO, Estado.ENTREGADO)
+    ESTADOS_VENTA = (
+        Estado.PAGADO, Estado.PREPARANDO, Estado.LISTO, Estado.ENVIADO, Estado.EN_REPARTO, Estado.ENTREGADO,
+    )
+    # Un pedido en estos estados no cuenta como dinero cobrado aunque tenga fecha de pago.
+    ESTADOS_SIN_VENTA = (Estado.CANCELADO, Estado.REEMBOLSADO)
 
     tienda = models.ForeignKey('tiendas.Tienda', on_delete=models.PROTECT, related_name='pedidos', editable=False)
     numero = models.CharField('número', max_length=20, unique=True, editable=False)
@@ -112,7 +119,11 @@ class Pedido(models.Model):
     costo_envio = models.DecimalField('costo de envío', max_digits=12, decimal_places=2, default=Decimal('0.00'))
     total = models.DecimalField(max_digits=12, decimal_places=2)
 
-    estado = models.CharField(max_length=10, choices=Estado.choices, default=Estado.PENDIENTE)
+    estado = models.CharField(max_length=12, choices=Estado.choices, default=Estado.PENDIENTE)
+    transportista = models.CharField(max_length=60, blank=True, help_text='Empresa o persona que lleva el pedido.')
+    numero_seguimiento = models.CharField(
+        'número de seguimiento', max_length=60, blank=True, help_text='El que da el transportista, si lo hay.',
+    )
     notas_cliente = models.TextField('notas del cliente', blank=True)
     notas_internas = models.TextField('notas internas', blank=True, help_text='Solo se ven en el panel.')
 
@@ -178,7 +189,7 @@ class Pedido(models.Model):
 
     @property
     def esta_pagado(self):
-        return self.fecha_pago is not None and self.estado != self.Estado.CANCELADO
+        return self.fecha_pago is not None and self.estado not in self.ESTADOS_SIN_VENTA
 
 
 class DetallePedido(models.Model):
@@ -204,3 +215,53 @@ class DetallePedido(models.Model):
 
     def __str__(self):
         return f'{self.cantidad} × {self.nombre_producto}'
+
+
+class EventoPedido(models.Model):
+    """Cada paso del pedido: lo ve el cliente como seguimiento y queda como registro de quien lo cambio."""
+
+    pedido = models.ForeignKey(Pedido, on_delete=models.CASCADE, related_name='eventos')
+    estado = models.CharField(max_length=12, choices=Pedido.Estado.choices)
+    nota = models.CharField(max_length=255, blank=True)
+    usuario = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='+',
+        help_text='Quien hizo el cambio en el panel; vacío si fue el cliente o el sistema.',
+    )
+    creado = models.DateTimeField('fecha', auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'paso del pedido'
+        verbose_name_plural = 'seguimiento del pedido'
+        ordering = ['creado', 'id']
+
+    def __str__(self):
+        return f'{self.pedido_id}: {self.get_estado_display()}'
+
+
+class SolicitudDevolucion(models.Model):
+    """El cliente pide devolver un pedido entregado; la tienda la acepta o la rechaza."""
+
+    class Estado(models.TextChoices):
+        PENDIENTE = 'pendiente', 'Por revisar'
+        ACEPTADA = 'aceptada', 'Aceptada'
+        RECHAZADA = 'rechazada', 'Rechazada'
+
+    tienda = models.ForeignKey('tiendas.Tienda', on_delete=models.CASCADE, related_name='devoluciones', editable=False)
+    pedido = models.ForeignKey(Pedido, on_delete=models.CASCADE, related_name='devoluciones', editable=False)
+    motivo = models.TextField(max_length=600)
+    estado = models.CharField(max_length=10, choices=Estado.choices, default=Estado.PENDIENTE)
+    respuesta = models.CharField('respuesta de la tienda', max_length=255, blank=True)
+    creado = models.DateTimeField('fecha de la solicitud', auto_now_add=True)
+    resuelto_en = models.DateTimeField('fecha de respuesta', null=True, blank=True)
+    resuelto_por = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='+',
+        verbose_name='respondió',
+    )
+
+    class Meta:
+        verbose_name = 'solicitud de devolución'
+        verbose_name_plural = 'solicitudes de devolución'
+        ordering = ['-creado', '-id']
+
+    def __str__(self):
+        return f'Devolución de {self.pedido}'

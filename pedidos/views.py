@@ -166,6 +166,10 @@ def confirmacion(request, token):
     return render(request, 'pedidos/confirmacion.html', {
         'pedido': pedido,
         'pago': pagos.pago_vigente(pedido),
+        'eventos': pedido.eventos.all(),
+        'puede_cancelar': services.puede_cancelar_el_cliente(pedido),
+        'puede_pedir_devolucion': services.puede_pedir_devolucion(pedido),
+        'devolucion': services.devolucion_abierta(pedido),
         'cuentas': _cuentas_de(tienda) if pedido.paga_por_transferencia else [],
         # WhatsApp ya no es un paso de la compra: queda como canal opcional para hablar con la tienda.
         'enlace_whatsapp': enlace_del_pedido(pedido, tienda.whatsapp) if tienda.whatsapp else '',
@@ -193,4 +197,29 @@ def avisar_transferencia(request, token):
         messages.error(request, 'No pudimos guardar tu comprobante. Espera un momento e inténtalo otra vez.')
     else:
         messages.success(request, 'Gracias. La tienda revisará tu transferencia; aquí mismo verás tu pago confirmado.')
+    return redirect(pedido)
+
+
+@require_POST
+def cancelar(request, token):
+    """El cliente cancela su pedido desde su enlace privado. Solo antes de pagar."""
+    pedido = get_object_or_404(Pedido, token=token)
+    try:
+        services.cancelar_por_cliente(pedido)
+    except services.PedidoError as error:
+        messages.error(request, error.mensaje)
+    else:
+        messages.success(request, 'Cancelamos tu pedido.')
+    return redirect(pedido)
+
+
+@require_POST
+def pedir_devolucion(request, token):
+    pedido = get_object_or_404(Pedido, token=token)
+    try:
+        services.solicitar_devolucion(pedido, request.POST.get('motivo', ''))
+    except services.PedidoError as error:
+        messages.error(request, error.mensaje)
+    else:
+        messages.success(request, 'Enviamos tu solicitud a la tienda. Te responderá por correo o aquí mismo.')
     return redirect(pedido)

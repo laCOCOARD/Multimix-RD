@@ -1,0 +1,8 @@
+{% load moneda %}{% autoescape off %}{{ pedido.nombre }} pidió devolver el pedido {{ pedido.numero }} ({{ pedido.total|moneda }}).
+
+Motivo:
+{{ solicitud.motivo }}
+
+Acepta o rechaza la solicitud en el panel:
+{{ enlace_solicitud }}
+{% endautoescape %}

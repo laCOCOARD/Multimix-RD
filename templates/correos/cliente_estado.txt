@@ -1,8 +1,10 @@
 {% load moneda %}{% autoescape off %}Hola {{ pedido.nombre }}:
 
-{% if pedido.estado == 'pagado' %}Confirmamos el pago de tu pedido {{ pedido.numero }}. La tienda ya lo está preparando.{% elif pedido.estado == 'listo' %}Tu pedido {{ pedido.numero }} está listo para recoger{% if tienda.direccion_tienda %} en {{ tienda.direccion_tienda }}{% endif %}.{% if tienda.horario %} Horario: {{ tienda.horario }}.{% endif %}{% elif pedido.estado == 'enviado' %}Tu pedido {{ pedido.numero }} va en camino a {{ pedido.direccion_completa }}.{% elif pedido.estado == 'entregado' %}Tu pedido {{ pedido.numero }} fue entregado. ¡Gracias por comprar en {{ tienda.nombre }}!{% elif pedido.estado == 'cancelado' %}Tu pedido {{ pedido.numero }} fue cancelado. Si crees que es un error, escribe a la tienda.{% else %}Tu pedido {{ pedido.numero }} ahora está: {{ pedido.get_estado_display }}.{% endif %}
+{% if pedido.estado == 'pagado' %}Confirmamos el pago de tu pedido {{ pedido.numero }}. La tienda ya lo está preparando.{% elif pedido.estado == 'preparando' %}La tienda está preparando tu pedido {{ pedido.numero }}.{% elif pedido.estado == 'en_reparto' %}Tu pedido {{ pedido.numero }} está en reparto: llega pronto a {{ pedido.direccion_completa }}.{% elif pedido.estado == 'reembolsado' %}Registramos el reembolso de tu pedido {{ pedido.numero }}.{% elif pedido.estado == 'listo' %}Tu pedido {{ pedido.numero }} está listo para recoger{% if tienda.direccion_tienda %} en {{ tienda.direccion_tienda }}{% endif %}.{% if tienda.horario %} Horario: {{ tienda.horario }}.{% endif %}{% elif pedido.estado == 'enviado' %}Tu pedido {{ pedido.numero }} va en camino a {{ pedido.direccion_completa }}.{% elif pedido.estado == 'entregado' %}Tu pedido {{ pedido.numero }} fue entregado. ¡Gracias por comprar en {{ tienda.nombre }}!{% elif pedido.estado == 'cancelado' %}Tu pedido {{ pedido.numero }} fue cancelado. Si crees que es un error, escribe a la tienda.{% else %}Tu pedido {{ pedido.numero }} ahora está: {{ pedido.get_estado_display }}.{% endif %}
 
-Total del pedido: {{ pedido.total|moneda }}
+{% if pedido.numero_seguimiento and pedido.estado in 'enviado en_reparto' %}Seguimiento{% if pedido.transportista %} ({{ pedido.transportista }}){% endif %}: {{ pedido.numero_seguimiento }}
+
+{% endif %}Total del pedido: {{ pedido.total|moneda }}
 
 Ver el pedido:
 {{ enlace_pedido }}

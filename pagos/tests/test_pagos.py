@@ -120,8 +120,10 @@ class PagoTests(TestCase):
         self.assertEqual(self.pedido.pagos.get().estado, Estado.CANCELADO)
         self.client.post(self.url, {'comprobante': imagen_de_prueba()})
         self.assertEqual(self.pedido.pagos.get().estado, Estado.CANCELADO)
+        # Un pedido cancelado no abre pagos nuevos: se sigue viendo el que quedo cancelado.
         self.pedido.refresh_from_db()
-        self.assertIsNone(services.pago_vigente(self.pedido))
+        self.assertEqual(services.pago_vigente(self.pedido).estado, Estado.CANCELADO)
+        self.assertEqual(Pago.objects.count(), 1)
 
     def test_el_efectivo_se_cobra_al_entregar(self):
         pedido = pedido_de_prueba(self.producto, 1, metodo_pago=Pedido.Pago.EFECTIVO_RECOGER)
