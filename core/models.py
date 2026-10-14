@@ -118,3 +118,76 @@ class CuentaBancaria(models.Model):
 
     def __str__(self):
         return f'{self.banco} · {self.get_tipo_cuenta_display()} · {self.numero}'
+
+
+CACHE_CONTENIDO = 'contenido_del_pie'
+
+
+class PaginaInformativa(models.Model):
+    """Pagina de texto del sitio: privacidad, entregas, devoluciones... La escribe el administrador principal."""
+
+    slug = models.SlugField('dirección web', max_length=60, unique=True, help_text='Queda en /pagina/<esto>/.')
+    titulo = models.CharField('título', max_length=120)
+    contenido = models.TextField(blank=True, help_text='Texto simple. Deja una línea en blanco entre párrafos.')
+    publicada = models.BooleanField(
+        default=False, help_text='Sin publicar solo la ve el administrador (vista previa) y no sale en el pie.',
+    )
+    orden = models.PositiveSmallIntegerField(default=0)
+    actualizado = models.DateTimeField('última actualización', auto_now=True)
+
+    class Meta:
+        verbose_name = 'página informativa'
+        verbose_name_plural = 'páginas informativas'
+        ordering = ['orden', 'titulo']
+
+    def __str__(self):
+        return self.titulo
+
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        cache.delete(CACHE_CONTENIDO)
+
+    def delete(self, *args, **kwargs):
+        resultado = super().delete(*args, **kwargs)
+        cache.delete(CACHE_CONTENIDO)
+        return resultado
+
+    def get_absolute_url(self):
+        from django.urls import reverse
+        return reverse('core:pagina', args=[self.slug])
+
+
+class PreguntaFrecuente(models.Model):
+    pregunta = models.CharField(max_length=200)
+    respuesta = models.TextField()
+    activa = models.BooleanField(default=True)
+    orden = models.PositiveSmallIntegerField(default=0)
+
+    class Meta:
+        verbose_name = 'pregunta frecuente'
+        verbose_name_plural = 'preguntas frecuentes'
+        ordering = ['orden', 'id']
+
+    def __str__(self):
+        return self.pregunta
+
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        cache.delete(CACHE_CONTENIDO)
+
+    def delete(self, *args, **kwargs):
+        resultado = super().delete(*args, **kwargs)
+        cache.delete(CACHE_CONTENIDO)
+        return resultado
+
+
+def contenido_del_pie():
+    """Paginas publicadas y si hay preguntas frecuentes: lo que enlaza el pie de todas las paginas."""
+    datos = cache.get(CACHE_CONTENIDO)
+    if datos is None:
+        datos = {
+            'paginas': list(PaginaInformativa.objects.filter(publicada=True).values('slug', 'titulo')),
+            'hay_preguntas': PreguntaFrecuente.objects.filter(activa=True).exists(),
+        }
+        cache.set(CACHE_CONTENIDO, datos, 300)
+    return datos

@@ -6,8 +6,8 @@ from django.utils.html import format_html
 
 from core.admin_avisos import AvisaImagenesSinGuardar
 
-from .models import Tienda
-from .panel import tiendas_del_panel
+from .models import Banner, Tienda
+from .panel import AdminDeTienda, tiendas_del_panel
 from .services import dar_acceso_al_panel, ve_todas
 
 
@@ -77,3 +77,17 @@ class TiendaAdmin(AvisaImagenesSinGuardar, admin.ModelAdmin):
     @admin.display(description='Vendedores')
     def vendedores(self, tienda):
         return ', '.join(usuario.get_username() for usuario in tienda.usuarios.all()) or '—'
+
+
+@admin.register(Banner)
+class BannerAdmin(AvisaImagenesSinGuardar, AdminDeTienda, admin.ModelAdmin):
+    """Promociones que rotan en el inicio de la tienda."""
+
+    list_display = ['titulo', 'activo', 'orden', 'vigente_desde', 'vigente_hasta']
+    list_editable = ['activo', 'orden']
+    list_filter = ['activo']
+    search_fields = ['titulo', 'subtitulo']
+    fieldsets = [
+        (None, {'fields': ['tienda', 'titulo', 'subtitulo', 'imagen', 'texto_boton', 'enlace']}),
+        ('Cuándo se muestra', {'fields': ['activo', 'orden', 'vigente_desde', 'vigente_hasta']}),
+    ]

@@ -2,7 +2,7 @@ from carrito.carrito import cantidad_en_sesion
 from catalogo.services import categorias_de
 from pedidos.whatsapp import construir_enlace
 
-from .models import ConfiguracionTienda
+from .models import ConfiguracionTienda, contenido_del_pie
 
 
 def tienda(request):
@@ -21,6 +21,7 @@ def tienda(request):
         'categorias_menu': (),
         'carrito_cantidad': 0,
         'enlace_whatsapp_tienda': '',
+        'contenido_pie': contenido_del_pie(),
     }
     if marca.whatsapp:
         saludo = f'Hola, les escribo desde la tienda en línea de {marca.nombre}.'

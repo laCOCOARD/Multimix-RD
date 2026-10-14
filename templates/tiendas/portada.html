@@ -1,7 +1,8 @@
 {% extends 'base.html' %}
 
 {# La portada del sitio es el directorio de tiendas: no lleva banner y trae su propio buscador. #}
-{% block buscador_cabecera %}{% endblock %}
+{% block buscador_cabecera %}
+{% endblock %}
 
 {% block contenido %}
 <section class="mm-directorio">
@@ -72,4 +73,14 @@
     </div></div>
   </div>
 </section>
+
+{% if preguntas %}
+<section class="container mm-seccion">
+  <div class="mm-seccion-cabecera">
+    <h2><i class="bi bi-question-circle me-2"></i>Preguntas frecuentes</h2>
+    <a href="{% url 'core:preguntas' %}">Ver todas <i class="bi bi-arrow-right"></i></a>
+  </div>
+  {% include 'includes/preguntas.html' %}
+</section>
+{% endif %}
 {% endblock %}

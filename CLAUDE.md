@@ -64,6 +64,11 @@ Al cerrar cada modulo: check, makemigrations, migrate, test y commit.
 - Nada de `|safe` con datos de usuarios. Solo ORM.
 
 ## Decisiones tomadas
+- Contenido administrable: `tiendas.Banner` (carrusel del inicio de cada tienda; sin banners activos se ve el
+  banner fijo de la tienda), `core.PaginaInformativa` (`/pagina/<slug>/`, politicas del sitio) y
+  `core.PreguntaFrecuente`. Las politicas se crean por migracion vacias y sin publicar: son compromisos legales y
+  el texto lo pone el dueño; sin publicar solo las ve el superusuario. El contenido se muestra con `linebreaks`,
+  nunca como HTML. El pie las lee de `core.models.contenido_del_pie` (cache de 5 minutos, se limpia al guardar).
 - Cuentas de clientes: son usuarios de Django sin acceso al panel, con el correo como nombre de usuario, y son
   del sitio, no de una tienda (`/cuenta/`). `clientes.Perfil` guarda el telefono y la ultima direccion de entrega;
   la zona no, porque es de cada tienda. `Pedido.cliente` solo se llena si compro con la sesion iniciada: un pedido

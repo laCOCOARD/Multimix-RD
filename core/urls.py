@@ -11,5 +11,7 @@ urlpatterns = [
     path(RUTA_DE_TIENDA + 'como-comprar/', views.como_comprar, name='como_comprar'),
     path(RUTA_DE_TIENDA + 'envios-y-retiros/', views.envios, name='envios'),
     path('terminos/', views.terminos, name='terminos'),
+    path('pagina/<slug:slug>/', views.pagina, name='pagina'),
+    path('preguntas-frecuentes/', views.preguntas, name='preguntas'),
     path('robots.txt', views.robots_txt, name='robots'),
 ]

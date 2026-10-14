@@ -1,0 +1,9 @@
+{# Funciona sin JavaScript: cada pregunta es un <details> nativo. #}
+<div class="mm-preguntas">
+  {% for pregunta in preguntas %}
+    <details class="mm-panel mb-2">
+      <summary class="fw-semibold">{{ pregunta.pregunta }}</summary>
+      <div class="mt-2 mm-descripcion">{{ pregunta.respuesta|linebreaks }}</div>
+    </details>
+  {% endfor %}
+</div>

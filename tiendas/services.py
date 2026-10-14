@@ -4,15 +4,16 @@ from django.contrib.auth.management import create_permissions
 from django.contrib.auth.models import Group, Permission
 from django.db import DEFAULT_DB_ALIAS, connections
 from django.db.models import Count, Q
+from django.utils import timezone
 
-from .models import Tienda
+from .models import Banner, Tienda
 
 GRUPO_VENDEDORES = 'Vendedores'
 
 # Lo que un vendedor puede hacer en el panel. El panel ademas le muestra solo lo de sus tiendas
 # (tiendas.panel.AdminDeTienda); las categorias y la configuracion general quedan para el administrador.
 PERMISOS_VENDEDOR = {
-    'tiendas': ['view_tienda', 'change_tienda'],
+    'tiendas': ['view_tienda', 'change_tienda', 'view_banner', 'add_banner', 'change_banner', 'delete_banner'],
     'catalogo': [
         'view_producto', 'add_producto', 'change_producto', 'delete_producto',
         'view_fotoproducto', 'add_fotoproducto', 'change_fotoproducto', 'delete_fotoproducto',
@@ -68,6 +69,16 @@ def dar_acceso_al_panel(usuarios):
             usuario.is_staff = True
             usuario.save(update_fields=['is_staff'])
         usuario.groups.add(grupo)
+
+
+def banners_de(tienda):
+    """Banners activos y dentro de su vigencia, en el orden que eligio la tienda."""
+    ahora = timezone.now()
+    return list(
+        Banner.objects.filter(tienda=tienda, activo=True)
+        .filter(Q(vigente_desde__isnull=True) | Q(vigente_desde__lte=ahora))
+        .filter(Q(vigente_hasta__isnull=True) | Q(vigente_hasta__gte=ahora))
+    )
 
 
 def directorio():

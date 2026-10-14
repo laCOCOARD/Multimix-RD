@@ -131,3 +131,46 @@ class Tienda(models.Model):
             prefijo = f'{base[:LARGO_PREFIJO - len(sufijo)]}{sufijo}'
             numero += 1
         return prefijo
+
+
+def validar_enlace_interno_o_seguro(valor):
+    """El boton de un banner lleva a una pagina del sitio (/tienda/...) o a una direccion https."""
+    from django.core.exceptions import ValidationError
+
+    if not (valor.startswith('/') and not valor.startswith('//')) and not valor.startswith('https://'):
+        raise ValidationError('Usa una ruta del sitio (empieza con /) o una dirección que empiece con https://.')
+
+
+class Banner(models.Model):
+    """Promocion que rota en el inicio de la tienda. Sin banners activos se muestra el banner fijo de la tienda."""
+
+    tienda = models.ForeignKey(Tienda, on_delete=models.CASCADE, related_name='banners')
+    titulo = models.CharField('título', max_length=120)
+    subtitulo = models.CharField('subtítulo', max_length=220, blank=True)
+    imagen = models.ImageField(
+        upload_to=NombreUnico('banners'), blank=True, validators=[validar_imagen],
+        help_text='JPG, PNG o WebP de hasta 5 MB, apaisada. Sin imagen se usa el color de la marca.',
+    )
+    texto_boton = models.CharField('texto del botón', max_length=40, blank=True)
+    enlace = models.CharField(
+        max_length=255, blank=True, validators=[validar_enlace_interno_o_seguro],
+        help_text='A dónde lleva el botón. Ej.: /tienda/mi-tienda/catalogo/?oferta=on',
+    )
+    activo = models.BooleanField(default=True)
+    orden = models.PositiveSmallIntegerField(default=0)
+    vigente_desde = models.DateTimeField(null=True, blank=True)
+    vigente_hasta = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        verbose_name = 'banner'
+        verbose_name_plural = 'banners'
+        ordering = ['orden', 'id']
+
+    def __str__(self):
+        return self.titulo
+
+    def clean(self):
+        from django.core.exceptions import ValidationError
+
+        if self.vigente_desde and self.vigente_hasta and self.vigente_hasta <= self.vigente_desde:
+            raise ValidationError({'vigente_hasta': 'La vigencia debe terminar después de su inicio.'})

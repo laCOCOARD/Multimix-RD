@@ -9,7 +9,7 @@ from django.views.decorators.http import require_POST
 from tiendas.panel import AdminDeTienda
 
 from .admin_avisos import AvisaImagenesSinGuardar
-from .models import ConfiguracionTienda, CuentaBancaria
+from .models import ConfiguracionTienda, CuentaBancaria, PaginaInformativa, PreguntaFrecuente
 
 
 @admin.register(ConfiguracionTienda)
@@ -88,3 +88,21 @@ class CuentaBancariaAdmin(AdminDeTienda, admin.ModelAdmin):
     list_editable = ['activa', 'orden']
     list_filter = ['activa', 'tipo_cuenta']
     search_fields = ['banco', 'numero', 'titular']
+
+
+@admin.register(PaginaInformativa)
+class PaginaInformativaAdmin(admin.ModelAdmin):
+    """Politicas y paginas de texto del sitio. Solo el administrador principal."""
+
+    list_display = ['titulo', 'slug', 'publicada', 'orden', 'actualizado']
+    list_editable = ['publicada', 'orden']
+    search_fields = ['titulo', 'contenido']
+    prepopulated_fields = {'slug': ['titulo']}
+    view_on_site = True
+
+
+@admin.register(PreguntaFrecuente)
+class PreguntaFrecuenteAdmin(admin.ModelAdmin):
+    list_display = ['pregunta', 'activa', 'orden']
+    list_editable = ['activa', 'orden']
+    search_fields = ['pregunta', 'respuesta']

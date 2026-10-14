@@ -15,7 +15,12 @@ RESULTADOS_POR_PAGINA = 12
 @require_GET
 def portada(request):
     """Directorio de tiendas: desde aqui el cliente entra a comprar en una."""
-    return render(request, 'tiendas/portada.html', {'tiendas': services.directorio()})
+    from core.models import PreguntaFrecuente
+
+    return render(request, 'tiendas/portada.html', {
+        'tiendas': services.directorio(),
+        'preguntas': PreguntaFrecuente.objects.filter(activa=True)[:6],
+    })
 
 
 @require_GET

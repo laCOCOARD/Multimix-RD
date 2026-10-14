@@ -153,7 +153,11 @@
               <li><a href="{% url 'core:como_comprar' tienda.slug %}">Cómo comprar</a></li>
               <li><a href="{% url 'core:envios' tienda.slug %}">Envíos y retiros</a></li>
             {% endif %}
+            {% if contenido_pie.hay_preguntas %}<li><a href="{% url 'core:preguntas' %}">Preguntas frecuentes</a></li>{% endif %}
             <li><a href="{% url 'core:terminos' %}">Términos del sitio</a></li>
+            {% for pagina in contenido_pie.paginas %}
+              <li><a href="{% url 'core:pagina' pagina.slug %}">{{ pagina.titulo }}</a></li>
+            {% endfor %}
           </ul>
         </div>
         <div class="col-md-4">

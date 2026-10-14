@@ -1,0 +1,19 @@
+{% extends 'base.html' %}
+
+{% block titulo %}{{ pagina.titulo }} · {{ plataforma.nombre }}{% endblock %}
+{% block descripcion %}{{ pagina.contenido|truncatechars:155 }}{% endblock %}
+
+{% block contenido %}
+<div class="container py-4">
+  <div class="row justify-content-center">
+    <div class="col-lg-9">
+      <h1 class="h3 mb-4">{{ pagina.titulo }}</h1>
+      {% if not pagina.publicada %}
+        <p class="alert alert-warning">Vista previa: esta página todavía no está publicada. Solo la ves tú.</p>
+      {% endif %}
+      <div class="mm-panel mm-descripcion">{{ pagina.contenido|linebreaks }}</div>
+      <p class="small text-muted mt-3">Última actualización: {{ pagina.actualizado|date:"j \d\e F \d\e Y" }}</p>
+    </div>
+  </div>
+</div>
+{% endblock %}

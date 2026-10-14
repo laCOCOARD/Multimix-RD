@@ -11,6 +11,7 @@ from opiniones import services as opiniones
 
 from pedidos.whatsapp import construir_enlace
 from tiendas.decoradores import de_tienda
+from tiendas.services import banners_de
 
 from . import services
 from .forms import ORDENES, FiltroCatalogoForm
@@ -35,6 +36,7 @@ def inicio(request):
     return render(request, 'catalogo/inicio.html', {
         'secciones': [s for s in secciones if s['productos']],
         'categorias': services.categorias_de_portada(tienda),
+        'banners': banners_de(tienda),
     })
 
 

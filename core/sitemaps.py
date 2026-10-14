@@ -2,6 +2,8 @@ from django.contrib.sitemaps import Sitemap
 from django.urls import reverse
 
 from catalogo.models import Producto
+
+from .models import PaginaInformativa
 from tiendas.models import Tienda
 
 
@@ -14,6 +16,17 @@ class PaginasSitemap(Sitemap):
 
     def location(self, item):
         return reverse(item)
+
+
+class PaginasInformativasSitemap(Sitemap):
+    changefreq = 'monthly'
+    priority = 0.4
+
+    def items(self):
+        return PaginaInformativa.objects.filter(publicada=True)
+
+    def lastmod(self, pagina):
+        return pagina.actualizado
 
 
 class TiendasSitemap(Sitemap):
@@ -37,6 +50,7 @@ class ProductosSitemap(Sitemap):
 
 SITEMAPS = {
     'paginas': PaginasSitemap,
+    'informativas': PaginasInformativasSitemap,
     'tiendas': TiendasSitemap,
     'productos': ProductosSitemap,
 }

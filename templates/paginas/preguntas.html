@@ -1,0 +1,15 @@
+{% extends 'base.html' %}
+
+{% block titulo %}Preguntas frecuentes · {{ plataforma.nombre }}{% endblock %}
+{% block descripcion %}Respuestas a las dudas más comunes sobre comprar en {{ plataforma.nombre }}.{% endblock %}
+
+{% block contenido %}
+<div class="container py-4">
+  <div class="row justify-content-center">
+    <div class="col-lg-9">
+      <h1 class="h3 mb-4">Preguntas frecuentes</h1>
+      {% include 'includes/preguntas.html' %}
+    </div>
+  </div>
+</div>
+{% endblock %}
