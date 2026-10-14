@@ -1016,3 +1016,49 @@ CREATE INDEX "pedidos_solicituddevolucion_tienda_id_7b6ba42c" ON "pedidos_solici
 -- core 0014
 -- ============================================================
 -- No cambia el esquema: crea las paginas de politicas, vacias y sin publicar.
+
+-- ============================================================
+-- tiendas 0010
+-- ============================================================
+--
+-- Add field comision_porcentaje to tienda
+--
+CREATE TABLE "new__tiendas_tienda" ("id" integer NOT NULL PRIMARY KEY AUTOINCREMENT, "comision_porcentaje" decimal NOT NULL, "nombre" varchar(80) NOT NULL UNIQUE, "slug" varchar(60) NOT NULL UNIQUE, "prefijo" varchar(5) NOT NULL UNIQUE, "activa" bool NOT NULL, "orden" smallint unsigned NOT NULL CHECK ("orden" >= 0), "logo" varchar(100) NOT NULL, "banner_titulo" varchar(120) NOT NULL, "banner_subtitulo" varchar(220) NOT NULL, "banner_texto_boton" varchar(40) NOT NULL, "banner_imagen" varchar(100) NOT NULL, "correo" varchar(254) NOT NULL, "telefono" varchar(20) NOT NULL, "horario" varchar(150) NOT NULL, "whatsapp" varchar(20) NOT NULL, "direccion_tienda" varchar(255) NOT NULL, "facebook" varchar(200) NOT NULL, "instagram" varchar(200) NOT NULL, "tiktok" varchar(200) NOT NULL, "permitir_contra_entrega" bool NOT NULL, "creada" datetime NOT NULL, "itbis_porcentaje" decimal NOT NULL);
+INSERT INTO "new__tiendas_tienda" ("id", "nombre", "slug", "prefijo", "activa", "orden", "logo", "banner_titulo", "banner_subtitulo", "banner_texto_boton", "banner_imagen", "correo", "telefono", "horario", "whatsapp", "direccion_tienda", "facebook", "instagram", "tiktok", "permitir_contra_entrega", "creada", "itbis_porcentaje", "comision_porcentaje") SELECT "id", "nombre", "slug", "prefijo", "activa", "orden", "logo", "banner_titulo", "banner_subtitulo", "banner_texto_boton", "banner_imagen", "correo", "telefono", "horario", "whatsapp", "direccion_tienda", "facebook", "instagram", "tiktok", "permitir_contra_entrega", "creada", "itbis_porcentaje", '0.00' FROM "tiendas_tienda";
+DROP TABLE "tiendas_tienda";
+ALTER TABLE "new__tiendas_tienda" RENAME TO "tiendas_tienda";
+--
+-- Add field el_sitio_cobra to tienda
+--
+CREATE TABLE "new__tiendas_tienda" ("id" integer NOT NULL PRIMARY KEY AUTOINCREMENT, "nombre" varchar(80) NOT NULL UNIQUE, "slug" varchar(60) NOT NULL UNIQUE, "prefijo" varchar(5) NOT NULL UNIQUE, "activa" bool NOT NULL, "orden" smallint unsigned NOT NULL CHECK ("orden" >= 0), "logo" varchar(100) NOT NULL, "banner_titulo" varchar(120) NOT NULL, "banner_subtitulo" varchar(220) NOT NULL, "banner_texto_boton" varchar(40) NOT NULL, "banner_imagen" varchar(100) NOT NULL, "correo" varchar(254) NOT NULL, "telefono" varchar(20) NOT NULL, "horario" varchar(150) NOT NULL, "whatsapp" varchar(20) NOT NULL, "direccion_tienda" varchar(255) NOT NULL, "facebook" varchar(200) NOT NULL, "instagram" varchar(200) NOT NULL, "tiktok" varchar(200) NOT NULL, "permitir_contra_entrega" bool NOT NULL, "creada" datetime NOT NULL, "itbis_porcentaje" decimal NOT NULL, "comision_porcentaje" decimal NOT NULL, "el_sitio_cobra" bool NOT NULL);
+INSERT INTO "new__tiendas_tienda" ("id", "nombre", "slug", "prefijo", "activa", "orden", "logo", "banner_titulo", "banner_subtitulo", "banner_texto_boton", "banner_imagen", "correo", "telefono", "horario", "whatsapp", "direccion_tienda", "facebook", "instagram", "tiktok", "permitir_contra_entrega", "creada", "itbis_porcentaje", "comision_porcentaje", "el_sitio_cobra") SELECT "id", "nombre", "slug", "prefijo", "activa", "orden", "logo", "banner_titulo", "banner_subtitulo", "banner_texto_boton", "banner_imagen", "correo", "telefono", "horario", "whatsapp", "direccion_tienda", "facebook", "instagram", "tiktok", "permitir_contra_entrega", "creada", "itbis_porcentaje", "comision_porcentaje", 0 FROM "tiendas_tienda";
+DROP TABLE "tiendas_tienda";
+ALTER TABLE "new__tiendas_tienda" RENAME TO "tiendas_tienda";
+
+-- ============================================================
+-- pagos 0002
+-- ============================================================
+--
+-- Create model Liquidacion
+--
+CREATE TABLE "pagos_liquidacion" ("id" integer NOT NULL PRIMARY KEY AUTOINCREMENT, "creada" datetime NOT NULL, "pedidos_incluidos" integer unsigned NOT NULL CHECK ("pedidos_incluidos" >= 0), "ventas" decimal NOT NULL, "cobrado_por_el_sitio" decimal NOT NULL, "comision_porcentaje" decimal NOT NULL, "comision" decimal NOT NULL, "ajustes" decimal NOT NULL, "monto" decimal NOT NULL, "nota" varchar(255) NOT NULL, "creada_por_id" integer NULL REFERENCES "auth_user" ("id") DEFERRABLE INITIALLY DEFERRED, "tienda_id" bigint NOT NULL REFERENCES "tiendas_tienda" ("id") DEFERRABLE INITIALLY DEFERRED);
+CREATE INDEX "pagos_liquidacion_creada_por_id_dc71ed1a" ON "pagos_liquidacion" ("creada_por_id");
+CREATE INDEX "pagos_liquidacion_tienda_id_b32bdd81" ON "pagos_liquidacion" ("tienda_id");
+
+-- ============================================================
+-- pedidos 0010
+-- ============================================================
+--
+-- Add field ajuste_liquidacion to pedido
+--
+ALTER TABLE "pedidos_pedido" ADD COLUMN "ajuste_liquidacion_id" bigint NULL REFERENCES "pagos_liquidacion" ("id") DEFERRABLE INITIALLY DEFERRED;
+--
+-- Add field liquidacion to pedido
+--
+ALTER TABLE "pedidos_pedido" ADD COLUMN "liquidacion_id" bigint NULL REFERENCES "pagos_liquidacion" ("id") DEFERRABLE INITIALLY DEFERRED;
+--
+-- Add field monto_liquidado to pedido
+--
+ALTER TABLE "pedidos_pedido" ADD COLUMN "monto_liquidado" decimal NULL;
+CREATE INDEX "pedidos_pedido_ajuste_liquidacion_id_f93a0f71" ON "pedidos_pedido" ("ajuste_liquidacion_id");
+CREATE INDEX "pedidos_pedido_liquidacion_id_b6b436e1" ON "pedidos_pedido" ("liquidacion_id");

@@ -1,0 +1,6 @@
+{% extends "admin/change_list.html" %}
+
+{% block object-tools-items %}
+  {% if puede_liquidar %}<li><a href="{% url 'admin:pagos_liquidacion_saldos' %}">Saldos por tienda</a></li>{% endif %}
+  {{ block.super }}
+{% endblock %}

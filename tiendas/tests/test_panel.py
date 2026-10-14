@@ -353,7 +353,7 @@ class TiendaAdminTests(PanelDeVendedores):
             'nombre': 'Multimix RD', 'banner_titulo': 'Bienvenidos', 'banner_subtitulo': '',
             'banner_texto_boton': 'Ver catálogo', 'whatsapp': '18095551111', 'telefono': '', 'correo': '',
             'horario': '', 'direccion_tienda': 'Calle 1', 'facebook': '', 'instagram': '', 'tiktok': '',
-            'itbis_porcentaje': '18',
+            'itbis_porcentaje': '18', 'comision_porcentaje': '0',
         }
         datos.update(cambios)
         return datos

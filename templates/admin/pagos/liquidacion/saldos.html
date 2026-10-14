@@ -1,0 +1,68 @@
+{% extends "admin/base_site.html" %}
+{% load moneda %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+  <a href="{% url 'admin:index' %}">Inicio</a> &rsaquo;
+  <a href="{% url 'admin:pagos_liquidacion_changelist' %}">Liquidaciones</a> &rsaquo; Saldos por tienda
+</div>
+{% endblock %}
+
+{% block content %}
+<div id="content-main">
+  <p class="help">
+    Cuánto le toca a cada tienda por sus pedidos <strong>cobrados y ya entregados</strong> que todavía no has liquidado.
+    La comisión se calcula sobre los productos (no sobre el envío). Si el sitio recibe las transferencias de la tienda,
+    se le depositan menos la comisión; el efectivo lo cobra la tienda al entregar. La comisión y quién cobra se
+    configuran en cada tienda.
+  </p>
+
+  {% for saldo in saldos %}
+    <div class="module">
+      <table>
+        <caption>
+          {{ saldo.tienda.nombre }}
+          · comisión {{ saldo.tienda.comision_porcentaje|floatformat:'-2' }}%
+          · {% if saldo.tienda.el_sitio_cobra %}el sitio recibe sus transferencias{% else %}la tienda cobra todo en sus cuentas{% endif %}
+          · <a href="{% url 'admin:tiendas_tienda_change' saldo.tienda.pk %}" style="color: inherit; text-decoration: underline;">editar tienda</a>
+        </caption>
+        <tbody>
+          <tr><th scope="row">Pedidos entregados por liquidar</th><td>
+            <a href="{% url 'admin:pedidos_pedido_changelist' %}?tienda__id__exact={{ saldo.tienda.pk }}&amp;estado__exact=entregado&amp;liquidacion__isempty=1">{{ saldo.pedidos|length }} pedido(s)</a>
+          </td></tr>
+          <tr><th scope="row">Vendido en esos pedidos</th><td>{{ saldo.ventas|moneda }}</td></tr>
+          <tr><th scope="row">De eso, cobró el sitio</th><td>{{ saldo.cobrado_por_el_sitio|moneda }}</td></tr>
+          <tr><th scope="row">Tu comisión</th><td>-{{ saldo.comision|moneda }}</td></tr>
+          {% if saldo.ajustes %}
+            <tr><th scope="row">Reembolsos de pedidos ya liquidados ({{ saldo.reembolsados|length }})</th><td>-{{ saldo.ajustes|moneda }}</td></tr>
+          {% endif %}
+          <tr>
+            <th scope="row"><strong>{% if saldo.monto >= 0 %}A depositarle a la tienda{% else %}La tienda te debe{% endif %}</strong></th>
+            <td><strong>{% if saldo.monto >= 0 %}{{ saldo.monto|moneda }}{% else %}{{ saldo.debe|moneda }}{% endif %}</strong></td>
+          </tr>
+          <tr><th scope="row">En curso (cobrado, aún sin entregar)</th><td>{{ saldo.en_curso|moneda }} en {{ saldo.pedidos_en_curso }} pedido(s)</td></tr>
+        </tbody>
+      </table>
+      {% if saldo.hay_movimientos %}
+        <form method="post" action="{% url 'admin:pagos_liquidacion_liquidar' saldo.tienda.pk %}" class="panel-busqueda" style="padding: 10px 12px;">
+          {% csrf_token %}
+          <label for="nota-{{ saldo.tienda.pk }}">Referencia del depósito (opcional):</label>
+          <input type="text" name="nota" id="nota-{{ saldo.tienda.pk }}" maxlength="255" size="40">
+          <input type="submit" value="Registrar liquidación" data-confirmar="¿Registrar la liquidación de {{ saldo.tienda.nombre }}? Sus pedidos quedarán marcados como liquidados.">
+        </form>
+      {% else %}
+        <p class="help" style="padding: 0 12px 10px;">Nada por liquidar.</p>
+      {% endif %}
+    </div>
+  {% empty %}
+    <p>No hay tiendas.</p>
+  {% endfor %}
+  <script>
+    document.querySelectorAll('[data-confirmar]').forEach((boton) => {
+      boton.addEventListener('click', (evento) => {
+        if (!window.confirm(boton.dataset.confirmar)) evento.preventDefault();
+      });
+    });
+  </script>
+</div>
+{% endblock %}

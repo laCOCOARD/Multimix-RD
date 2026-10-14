@@ -71,6 +71,13 @@ Al cerrar cada modulo: check, makemigrations, migrate, test y commit.
 - Nada de `|safe` con datos de usuarios. Solo ORM.
 
 ## Decisiones tomadas
+- Reparto a las tiendas (`pagos/liquidaciones.py`, Panel > Liquidaciones > Saldos por tienda, solo superusuario):
+  entra en cuenta el pedido cobrado y entregado. Comision del sitio (`Tienda.comision_porcentaje`) sobre
+  subtotal - descuento; el envio es de la tienda. Con `Tienda.el_sitio_cobra` las transferencias las tiene el sitio
+  y se le depositan a la tienda menos la comision; el efectivo siempre lo cobra la tienda. Saldo negativo = la
+  tienda le debe al sitio. `liquidar` crea la `Liquidacion` y marca cada pedido (`liquidacion`, `monto_liquidado`)
+  para no pagarlo dos veces; un pedido liquidado que luego se reembolsa se descuenta en la siguiente
+  (`ajuste_liquidacion`). El vendedor ve sus liquidaciones pero no la comision ni quien cobra en el formulario.
 - La pagina del pedido lleva `<meta name="referrer" content="same-origin">`, nunca `no-referrer`: con este ultimo
   el navegador envia `Origin: null` en sus formularios (comprobante, cancelar, devolucion) y Django responde 403.
   Paso en produccion y las pruebas no lo ven, porque el cliente de pruebas no manda `Origin`.

@@ -131,6 +131,16 @@ class Pedido(models.Model):
     fecha_pago = models.DateTimeField('fecha de pago', null=True, blank=True)
     fecha_entrega = models.DateTimeField('fecha de entrega', null=True, blank=True)
     stock_descontado = models.BooleanField('stock ya descontado', default=False, editable=False)
+    # Reparto a la tienda (pagos/liquidaciones.py). Solo los toca `pagos.liquidaciones.liquidar`.
+    liquidacion = models.ForeignKey(
+        'pagos.Liquidacion', on_delete=models.SET_NULL, null=True, blank=True, related_name='pedidos',
+        editable=False, verbose_name='liquidación',
+    )
+    monto_liquidado = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True, editable=False)
+    ajuste_liquidacion = models.ForeignKey(
+        'pagos.Liquidacion', on_delete=models.SET_NULL, null=True, blank=True, related_name='reembolsos_descontados',
+        editable=False, help_text='Liquidación en la que se descontó este pedido por haberse reembolsado.',
+    )
     ip = models.GenericIPAddressField('IP del cliente', null=True, blank=True, editable=False)
 
     class Meta:

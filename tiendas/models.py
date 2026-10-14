@@ -88,6 +88,16 @@ class Tienda(models.Model):
         help_text='0 = la tienda no cobra ITBIS aparte (lo normal). Con un porcentaje, se suma al confirmar el '
                   'pedido sobre los productos, después del descuento; el envío no lo paga.',
     )
+    comision_porcentaje = models.DecimalField(
+        'comisión del sitio (%)', max_digits=5, decimal_places=2, default=Decimal('0.00'),
+        validators=[MinValueValidator(Decimal('0')), MaxValueValidator(Decimal('100'))],
+        help_text='Lo que se queda el sitio de cada venta, sobre los productos (no sobre el envío).',
+    )
+    el_sitio_cobra = models.BooleanField(
+        'el sitio recibe las transferencias', default=False,
+        help_text='Márcalo si las cuentas bancarias que ve el cliente de esta tienda son las tuyas: el sitio cobra y '
+                  'después le deposita a la tienda. Sin marcar, la tienda cobra en sus propias cuentas.',
+    )
     creada = models.DateTimeField('fecha de creación', auto_now_add=True)
 
     objects = TiendaQuerySet.as_manager()

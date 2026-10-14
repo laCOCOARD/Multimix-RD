@@ -84,3 +84,33 @@ class Pago(models.Model):
 def borrar_comprobante(sender, instance, **kwargs):
     if instance.comprobante:
         instance.comprobante.delete(save=False)
+
+
+class Liquidacion(models.Model):
+    """Cierre de cuentas con una tienda: lo que el sitio le deposito (o lo que la tienda le debia) por sus ventas."""
+
+    tienda = models.ForeignKey('tiendas.Tienda', on_delete=models.PROTECT, related_name='liquidaciones')
+    creada = models.DateTimeField('fecha', auto_now_add=True)
+    creada_por = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='+',
+        verbose_name='registrada por',
+    )
+    pedidos_incluidos = models.PositiveIntegerField('pedidos', default=0)
+    ventas = models.DecimalField('vendido', max_digits=12, decimal_places=2)
+    cobrado_por_el_sitio = models.DecimalField('cobró el sitio', max_digits=12, decimal_places=2)
+    comision_porcentaje = models.DecimalField('comisión (%)', max_digits=5, decimal_places=2)
+    comision = models.DecimalField('comisión', max_digits=12, decimal_places=2)
+    ajustes = models.DecimalField('reembolsos descontados', max_digits=12, decimal_places=2, default=0)
+    monto = models.DecimalField(
+        'saldo', max_digits=12, decimal_places=2,
+        help_text='Positivo: el sitio le depositó a la tienda. Negativo: la tienda le debía al sitio.',
+    )
+    nota = models.CharField('referencia del depósito', max_length=255, blank=True)
+
+    class Meta:
+        verbose_name = 'liquidación'
+        verbose_name_plural = 'liquidaciones'
+        ordering = ['-creada', '-id']
+
+    def __str__(self):
+        return f'{self.tienda} · {self.creada:%d/%m/%Y}'

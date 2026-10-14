@@ -27,6 +27,7 @@ class TiendaAdmin(AvisaImagenesSinGuardar, admin.ModelAdmin):
         ('Contacto', {'fields': ['whatsapp', 'telefono', 'correo', 'horario', 'direccion_tienda']}),
         ('Redes', {'fields': ['facebook', 'instagram', 'tiktok']}),
         ('Pedidos', {'fields': ['permitir_contra_entrega', 'itbis_porcentaje']}),
+        ('Reparto (solo lo ve el administrador principal)', {'fields': ['comision_porcentaje', 'el_sitio_cobra']}),
     ]
 
     def get_queryset(self, request):
@@ -37,10 +38,22 @@ class TiendaAdmin(AvisaImagenesSinGuardar, admin.ModelAdmin):
             return consulta
         return consulta.filter(pk__in=[tienda.pk for tienda in tiendas_del_panel(request)])
 
+    def get_list_display(self, request):
+        columnas = list(super().get_list_display(request))
+        if ve_todas(request.user):
+            # Tu porcentaje de cada tienda, a la vista; se cambia entrando a la tienda.
+            columnas.insert(4, 'comision')
+        return columnas
+
+    @admin.display(description='Tu comisión', ordering='comision_porcentaje')
+    def comision(self, tienda):
+        return f'{tienda.comision_porcentaje.normalize():f} %'
+
     def get_fieldsets(self, request, obj=None):
         if ve_todas(request.user):
             return self.fieldsets
-        (titulo, _), *resto = self.fieldsets
+        # El vendedor no ve ni cambia la comision ni quien cobra: el ultimo bloque es del administrador.
+        (titulo, _), *resto = self.fieldsets[:-1]
         return [(titulo, {'fields': ['nombre', 'enlace_publico']}), *resto]
 
     def get_readonly_fields(self, request, obj=None):

@@ -12,7 +12,7 @@ from django.views.decorators.http import require_POST
 
 from core.telefonos import formatear_telefono, telefono_internacional
 from core.templatetags.moneda import formatear_monto
-from tiendas.panel import AdminDeTienda, maneja_varias_tiendas
+from tiendas.panel import AdminDeTienda, maneja_varias_tiendas, tiendas_del_panel
 
 from . import reportes, services
 from .models import DetallePedido, EventoPedido, Pedido, SolicitudDevolucion, ZonaEnvio
@@ -91,7 +91,7 @@ class PedidoAdmin(AdminDeTienda, admin.ModelAdmin):
     # La zona se filtra solo entre las que aparecen en los pedidos que el usuario puede ver.
     list_filter = [
         'estado', 'metodo_entrega', 'metodo_pago', 'transferencia_realizada',
-        ('zona', admin.RelatedOnlyFieldListFilter), 'creado',
+        ('zona', admin.RelatedOnlyFieldListFilter), ('liquidacion', admin.EmptyFieldListFilter), 'creado',
     ]
     search_fields = ['numero', 'nombre', 'telefono', 'correo', 'referencia_transferencia']
     list_select_related = ['zona']
@@ -118,6 +118,7 @@ class PedidoAdmin(AdminDeTienda, admin.ModelAdmin):
         ('Pago', {'fields': ['metodo_pago', 'transferencia_realizada', 'referencia_transferencia', 'pago_registrado']}),
         ('Montos', {'fields': [
             'subtotal_formateado', 'cupon_aplicado', 'itbis_formateado', 'envio_formateado', 'total_formateado',
+            'liquidado',
         ]}),
         ('Notas', {'fields': ['notas_cliente', 'notas_internas']}),
     ]
@@ -179,7 +180,13 @@ class PedidoAdmin(AdminDeTienda, admin.ModelAdmin):
         if not self.has_view_permission(request):
             raise PermissionDenied
         desde, hasta = reportes.rango(request.GET.get('desde'), request.GET.get('hasta'))
-        reporte = reportes.reporte_de_ventas(self.get_queryset(request), desde, hasta)
+        # Quien maneja varias tiendas puede ver el reporte de una sola (entre las suyas).
+        pedidos = self.get_queryset(request)
+        tiendas = tiendas_del_panel(request) if maneja_varias_tiendas(request) else []
+        elegida = next((t for t in tiendas if str(t.pk) == request.GET.get('tienda', '')), None)
+        if elegida is not None:
+            pedidos = pedidos.filter(tienda=elegida)
+        reporte = reportes.reporte_de_ventas(pedidos, desde, hasta)
         if request.GET.get('formato') == 'csv':
             respuesta = HttpResponse(content_type='text/csv; charset=utf-8')
             respuesta['Content-Disposition'] = f'attachment; filename="ventas_{desde}_{hasta}.csv"'
@@ -194,6 +201,8 @@ class PedidoAdmin(AdminDeTienda, admin.ModelAdmin):
             **self.admin_site.each_context(request),
             'title': 'Reporte de ventas',
             'reporte': reporte,
+            'tiendas': tiendas,
+            'tienda_elegida': elegida,
             'varias_tiendas': maneja_varias_tiendas(request),
             'opts': self.model._meta,
         })
@@ -285,6 +294,12 @@ class PedidoAdmin(AdminDeTienda, admin.ModelAdmin):
         if not pedido.codigo_cupon:
             return 'Sin cupón'
         return f'{pedido.codigo_cupon}: -{formatear_monto(pedido.descuento)}'
+
+    @admin.display(description='Reparto a la tienda')
+    def liquidado(self, pedido):
+        if pedido.liquidacion_id is None:
+            return 'Sin liquidar'
+        return f'Liquidado el {pedido.liquidacion.creada:%d/%m/%Y}'
 
     @admin.display(description='Cuenta')
     def cuenta_del_cliente(self, pedido):

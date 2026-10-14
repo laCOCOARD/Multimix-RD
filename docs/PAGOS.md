@@ -43,7 +43,26 @@ pago con tarjeta. Falta, en este orden:
    que indique su documentación. Nunca van en el código ni en la base de datos.
 5. Pruebas en el entorno de pruebas del proveedor (aprobado, rechazado, cancelado y notificación repetida) antes
    de usar las credenciales reales.
-6. Reparto a las tiendas: comisión por tienda, saldo y liquidaciones. Todavía no está construido.
+6. Con tarjeta, el dinero entra al sitio: esos pagos se suman solos al reparto de abajo (hay que agregar
+   la forma de pago a `METODOS_DEL_SITIO` en `pagos/liquidaciones.py`).
 
 No se guardan números de tarjeta ni códigos de seguridad en ningún caso: del proveedor solo se conservan la
 referencia del pago y el código de autorización.
+
+## Reparto a las tiendas
+
+**Panel → Liquidaciones → Saldos por tienda** (solo el administrador principal).
+
+- Cada tienda tiene su propia **comisión del sitio (%)** y la casilla **"el sitio recibe las transferencias"**.
+  Se cambian en **Tiendas → la tienda → Reparto**. El vendedor no las ve.
+- Entra en cuenta un pedido **cobrado y ya entregado**. Lo cobrado sin entregar aparece como "en curso".
+- La comisión se calcula sobre los productos (subtotal menos descuento). El envío es completo de la tienda.
+- Si el sitio recibe las transferencias, se le depositan a la tienda menos la comisión. El efectivo lo cobra la
+  tienda al entregar, así que por esos pedidos la tienda debe la comisión. Un saldo negativo significa que la
+  tienda le debe al sitio.
+- Para que el sitio reciba las transferencias de una tienda, sus **cuentas bancarias** en el panel deben ser las
+  del sitio: son las que ve el cliente al pagar.
+- **Registrar liquidación** guarda el depósito (con su referencia) y marca los pedidos para no pagarlos dos veces.
+  Cambiar la comisión después no altera lo ya liquidado. Un pedido liquidado que luego se reembolsa se descuenta
+  en la siguiente liquidación.
+- Cada tienda ve sus liquidaciones en su panel, y en la lista de pedidos puede filtrar los ya liquidados.

@@ -41,8 +41,8 @@
     {% if ventas_por_tienda %}
     <div class="module">
       <table>
-        <caption>Ventas del mes por tienda</caption>
-        <thead><tr><th scope="col">Tienda</th><th scope="col">Cobrado</th><th scope="col">Pedidos cobrados</th><th scope="col">Pendientes</th></tr></thead>
+        <caption>Ventas del mes por tienda · <a href="{% url 'admin:pagos_liquidacion_saldos' %}" style="color: inherit; text-decoration: underline;">ver saldos y liquidar</a></caption>
+        <thead><tr><th scope="col">Tienda</th><th scope="col">Cobrado</th><th scope="col">Pedidos cobrados</th><th scope="col">Pendientes</th><th scope="col">Detalle</th></tr></thead>
         <tbody>
           {% for fila in ventas_por_tienda %}
             <tr>
@@ -53,6 +53,7 @@
               <td>{{ fila.ventas_mes|default:0|moneda }}</td>
               <td>{{ fila.pedidos_mes }}</td>
               <td>{{ fila.pendientes }}</td>
+              <td><a href="{% url 'admin:pedidos_pedido_reporte' %}?tienda={{ fila.pk }}">Reporte</a> · <a href="{% url 'admin:tiendas_tienda_change' fila.pk %}">Editar</a></td>
             </tr>
           {% endfor %}
         </tbody>

@@ -10,13 +10,20 @@
 
 {% block content %}
 <div id="content-main">
-  <p class="help">Ventas = pedidos cobrados en el período que no fueron cancelados ni reembolsados{% if varias_tiendas %}, de todas tus tiendas{% endif %}.</p>
+  <p class="help">Ventas = pedidos cobrados en el período que no fueron cancelados ni reembolsados{% if tienda_elegida %}, de {{ tienda_elegida.nombre }}{% elif varias_tiendas %}, de todas tus tiendas{% endif %}.</p>
 
   <form method="get" class="panel-busqueda">
+    {% if tiendas %}
+      <label for="tienda">Tienda:</label>
+      <select name="tienda" id="tienda">
+        <option value="">Todas</option>
+        {% for tienda in tiendas %}<option value="{{ tienda.pk }}"{% if tienda_elegida.pk == tienda.pk %} selected{% endif %}>{{ tienda.nombre }}</option>{% endfor %}
+      </select>
+    {% endif %}
     <label for="desde">Desde:</label> <input type="date" name="desde" id="desde" value="{{ reporte.desde|date:'Y-m-d' }}">
     <label for="hasta">Hasta:</label> <input type="date" name="hasta" id="hasta" value="{{ reporte.hasta|date:'Y-m-d' }}">
     <input type="submit" value="Ver">
-    <a class="button" href="?desde={{ reporte.desde|date:'Y-m-d' }}&amp;hasta={{ reporte.hasta|date:'Y-m-d' }}&amp;formato=csv">Descargar CSV</a>
+    <a class="button" href="?desde={{ reporte.desde|date:'Y-m-d' }}&amp;hasta={{ reporte.hasta|date:'Y-m-d' }}{% if tienda_elegida %}&amp;tienda={{ tienda_elegida.pk }}{% endif %}&amp;formato=csv">Descargar CSV</a>
   </form>
 
   <section class="panel-resumen" aria-label="Totales del período">
