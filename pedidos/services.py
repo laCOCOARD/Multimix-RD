@@ -16,6 +16,7 @@ from promociones.models import Cupon
 from promociones.services import (
     CuponInvalido, calcular_descuento, devolver_uso, normalizar_codigo, registrar_uso, validar_cupon,
 )
+from tiendas.services import ve_todas
 
 from . import avisos
 from .models import DetallePedido, EventoPedido, Pedido, SecuenciaTienda, SolicitudDevolucion, ZonaEnvio
@@ -198,6 +199,7 @@ def crear_pedido(carrito, datos, ip=None, cliente=None):
         metodo_pago=datos['metodo_pago'],
         transferencia_realizada=bool(datos.get('transferencia_realizada')) and por_transferencia,
         referencia_transferencia=(datos.get('referencia_transferencia') or '').strip() if por_transferencia else '',
+        cobra_el_sitio=por_transferencia and tienda.el_sitio_cobra,
         cupon=cupon,
         codigo_cupon=cupon.codigo if cupon else '',
         subtotal=subtotal,
@@ -246,8 +248,23 @@ def marcar_transferencia(pedido, referencia=''):
 
 # --- Estados y stock -----------------------------------------------------------------
 
-def transiciones_permitidas(pedido):
-    """Estados a los que puede pasar el pedido segun su estado, entrega y forma de pago."""
+def transiciones_permitidas(pedido, usuario=None):
+    """Estados a los que puede pasar el pedido segun su estado, entrega y forma de pago.
+
+    Con `usuario` se quitan los que no le tocan: si el pedido lo cobra el sitio, el dinero esta en las cuentas del
+    dueño y solo el administrador principal confirma el pago, lo reembolsa o cancela un pedido que el cliente dice
+    haber transferido.
+    """
+    estados = _transiciones(pedido)
+    if usuario is not None and pedido.cobra_el_sitio and not ve_todas(usuario):
+        reservados = [Estado.PAGADO, Estado.REEMBOLSADO]
+        if pedido.estado == Estado.PENDIENTE and pedido.transferencia_realizada:
+            reservados.append(Estado.CANCELADO)
+        estados = [estado for estado in estados if estado not in reservados]
+    return estados
+
+
+def _transiciones(pedido):
     despacho = Estado.LISTO if pedido.recoge_en_tienda else Estado.ENVIADO
     if pedido.estado == Estado.PENDIENTE:
         if pedido.paga_por_transferencia:
@@ -306,6 +323,11 @@ def cambiar_estado(pedido, nuevo_estado, usuario=None, nota=''):
     Un reembolso no devuelve stock: lo entregado se repone a mano si vuelve a la tienda.
     """
     pedido = Pedido.objects.select_for_update().get(pk=pedido.pk)
+    if nuevo_estado in _transiciones(pedido) and nuevo_estado not in transiciones_permitidas(pedido, usuario):
+        raise TransicionInvalida(
+            f'El pago del pedido {pedido.numero} lo recibe el sitio en sus cuentas: lo confirma el administrador '
+            'principal.'
+        )
     if nuevo_estado not in transiciones_permitidas(pedido):
         destino = Estado(nuevo_estado).label if nuevo_estado in Estado.values else nuevo_estado
         raise TransicionInvalida(
@@ -334,6 +356,8 @@ def cambiar_estado(pedido, nuevo_estado, usuario=None, nota=''):
     from pagos.services import sincronizar_con_pedido
     sincronizar_con_pedido(pedido)
     avisos.estado_cambiado(pedido)
+    if nuevo_estado == Estado.PAGADO and pedido.cobra_el_sitio:
+        avisos.pago_confirmado_a_la_tienda(pedido)
     logger.info('Pedido %s: %s -> %s', pedido.numero, anterior, nuevo_estado)
     return pedido
 

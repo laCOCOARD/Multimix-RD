@@ -104,6 +104,11 @@ class Pedido(models.Model):
     metodo_pago = models.CharField('método de pago', max_length=20, choices=Pago.choices)
     transferencia_realizada = models.BooleanField('el cliente dice que ya transfirió', default=False)
     referencia_transferencia = models.CharField('referencia de la transferencia', max_length=60, blank=True)
+    cobra_el_sitio = models.BooleanField(
+        'lo cobra el sitio', default=False, editable=False,
+        help_text='El cliente transfiere a las cuentas del sitio: el pago lo confirma el administrador principal y '
+                  'después se le liquida a la tienda. Se fija al crear el pedido.',
+    )
 
     cupon = models.ForeignKey(
         Cupon, on_delete=models.SET_NULL, null=True, blank=True, related_name='pedidos', verbose_name='cupón',

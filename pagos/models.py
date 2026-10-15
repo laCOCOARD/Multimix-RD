@@ -98,6 +98,14 @@ class Liquidacion(models.Model):
     pedidos_incluidos = models.PositiveIntegerField('pedidos', default=0)
     ventas = models.DecimalField('vendido', max_digits=12, decimal_places=2)
     cobrado_por_el_sitio = models.DecimalField('cobró el sitio', max_digits=12, decimal_places=2)
+    cobrado_por_la_tienda = models.DecimalField(
+        'cobró la tienda (efectivo)', max_digits=12, decimal_places=2, default=0,
+        help_text='Lo que la tienda cobró directamente (efectivo o en sus cuentas): no se le deposita.',
+    )
+    comision_de_lo_cobrado_por_la_tienda = models.DecimalField(
+        'comisión de lo que cobró la tienda', max_digits=12, decimal_places=2, default=0,
+        help_text='Parte de la comisión que se descontó de lo depositado (o que la tienda pagó) por esas ventas.',
+    )
     comision_porcentaje = models.DecimalField('comisión (%)', max_digits=5, decimal_places=2)
     comision = models.DecimalField('comisión', max_digits=12, decimal_places=2)
     ajustes = models.DecimalField('reembolsos descontados', max_digits=12, decimal_places=2, default=0)

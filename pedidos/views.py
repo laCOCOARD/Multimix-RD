@@ -9,7 +9,7 @@ from django.views.decorators.http import require_POST
 from carrito.carrito import Carrito
 from clientes import services as clientes
 from core.archivos import ERRORES_DE_ALMACENAMIENTO
-from core.models import CuentaBancaria
+from core.models import cuentas_para_transferir
 from core.red import ip_del_cliente as _ip_cliente
 from core.templatetags.moneda import formatear_monto
 from pagos import services as pagos
@@ -32,10 +32,6 @@ def _zona_elegida(valor, tienda):
         return None
 
 
-def _cuentas_de(tienda):
-    return CuentaBancaria.objects.filter(tienda=tienda, activa=True)
-
-
 def _contexto_checkout(request, carrito, formulario):
     tienda = carrito.tienda
     entrega = formulario['metodo_entrega'].value() or Pedido.Entrega.RECOGER
@@ -45,7 +41,7 @@ def _contexto_checkout(request, carrito, formulario):
         'lineas': carrito.lineas(),
         'totales': services.calcular_totales(carrito, entrega, zona),
         'zonas': services.zonas_activas(tienda),
-        'cuentas': _cuentas_de(tienda),
+        'cuentas': cuentas_para_transferir(tienda),
         'pagos_recoger': services.metodos_pago_disponibles(Pedido.Entrega.RECOGER, tienda),
         'pagos_envio': services.metodos_pago_disponibles(Pedido.Entrega.ENVIO, tienda),
         # Sin pasarela conectada la tarjeta se anuncia, pero no se puede elegir ni se piden sus datos.
@@ -173,7 +169,7 @@ def confirmacion(request, token):
         'puede_cancelar': services.puede_cancelar_el_cliente(pedido),
         'puede_pedir_devolucion': services.puede_pedir_devolucion(pedido),
         'devolucion': services.devolucion_abierta(pedido),
-        'cuentas': _cuentas_de(tienda) if pedido.paga_por_transferencia else [],
+        'cuentas': cuentas_para_transferir(tienda, pedido.cobra_el_sitio) if pedido.paga_por_transferencia else [],
         # WhatsApp ya no es un paso de la compra: queda como canal opcional para hablar con la tienda.
         'enlace_whatsapp': enlace_del_pedido(pedido, tienda.whatsapp) if tienda.whatsapp else '',
         'puede_avisar_transferencia': (

@@ -9,6 +9,7 @@ from catalogo.imagenes import convertir_a_webp
 from pedidos import avisos
 from pedidos import services as pedidos
 from pedidos.models import Pedido
+from tiendas.services import ve_todas
 
 from .models import Pago
 
@@ -33,6 +34,19 @@ def _estado_inicial(pedido):
     if pedido.transferencia_realizada:
         return Estado.EN_REVISION
     return Estado.PENDIENTE
+
+
+def puede_resolver(pago, usuario):
+    """Si el cliente transfirio a las cuentas del sitio, solo el administrador principal puede comprobarlo en su
+    banco: el vendedor ve el pago, pero no lo aprueba ni lo rechaza. `usuario` vacio es el sistema."""
+    return usuario is None or not pago.pedido.cobra_el_sitio or ve_todas(usuario)
+
+
+def _exigir_permiso(pago, usuario):
+    if not puede_resolver(pago, usuario):
+        raise PagoError(
+            f'El pago {pago.referencia} llegó a las cuentas del sitio: lo confirma el administrador principal.'
+        )
 
 
 def pago_vigente(pedido):
@@ -77,6 +91,7 @@ def registrar_comprobante(pedido, archivo=None, referencia=''):
 def aprobar_pago(pago, usuario=None):
     """Confirma el pago y pasa el pedido a Pagado. Repetirlo no hace nada: un pedido se cobra una sola vez."""
     pago = Pago.objects.select_for_update().select_related('pedido').get(pk=pago.pk)
+    _exigir_permiso(pago, usuario)
     if pago.estado == Estado.APROBADO:
         return pago
     if not pago.por_resolver:
@@ -84,7 +99,7 @@ def aprobar_pago(pago, usuario=None):
     pedido = pago.pedido
     if pedido.estado == Pedido.Estado.PENDIENTE:
         # cambiar_estado deja aprobado el pago del pedido (sincronizar_con_pedido).
-        pedidos.cambiar_estado(pedido, Pedido.Estado.PAGADO)
+        pedidos.cambiar_estado(pedido, Pedido.Estado.PAGADO, usuario=usuario)
     elif not pedido.esta_pagado:
         raise PagoError(f'El pedido {pedido.numero} está "{pedido.get_estado_display()}" y no se puede cobrar.')
     pago.refresh_from_db()
@@ -100,6 +115,7 @@ def aprobar_pago(pago, usuario=None):
 def rechazar_pago(pago, usuario=None, nota=''):
     """El comprobante no sirve: el pago queda rechazado y el cliente puede enviar otro."""
     pago = Pago.objects.select_for_update().select_related('pedido').get(pk=pago.pk)
+    _exigir_permiso(pago, usuario)
     if not pago.por_resolver:
         raise PagoError(f'El pago {pago.referencia} está "{pago.get_estado_display()}" y ya no se puede rechazar.')
     pago.estado = Estado.RECHAZADO

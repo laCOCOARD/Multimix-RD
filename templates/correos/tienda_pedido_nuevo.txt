@@ -11,7 +11,8 @@ Cupón {{ pedido.codigo_cupon }}: -{{ pedido.descuento|moneda }}{% endif %}{% if
 Envío: {% if pedido.recoge_en_tienda %}recoge en tienda{% else %}{{ pedido.costo_envio|moneda }} ({{ pedido.zona.nombre }}){% endif %}
 Total: {{ pedido.total|moneda }}
 
-Forma de pago: {{ pedido.get_metodo_pago_display }}{% if pedido.transferencia_realizada %} (dice que ya transfirió){% endif %}{% if not pedido.recoge_en_tienda %}
+Forma de pago: {{ pedido.get_metodo_pago_display }}{% if pedido.transferencia_realizada %} (dice que ya transfirió){% endif %}{% if pedido.cobra_el_sitio %}
+El cliente transfiere a las cuentas de {{ sitio }}: te avisaremos por correo cuando confirmemos el pago. No lo prepares antes.{% endif %}{% if not pedido.recoge_en_tienda %}
 Entregar en: {{ pedido.direccion_completa }}{% if pedido.referencia %} ({{ pedido.referencia }}){% endif %}{% endif %}{% if pedido.notas_cliente %}
 Notas del cliente: {{ pedido.notas_cliente }}{% endif %}
 

@@ -123,3 +123,6 @@ a.panel-tarjeta:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba
 .panel-accesos .button { padding: 9px 16px; border-radius: 8px; font-weight: 700; }
 .panel-busqueda { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: 0 0 18px; padding: 14px 16px; border: 1px solid var(--hairline-color); border-radius: 10px; background: var(--darkened-bg); }
 .panel-busqueda input[type=search] { min-width: min(100%, 18rem); }
+
+/* --- Saldos por tienda: apartados de lo cobrado por el sitio y por la tienda ---- */
+.module th.panel-subtitulo { background: var(--darkened-bg); color: var(--body-fg); font-weight: 700; padding-top: 10px; }

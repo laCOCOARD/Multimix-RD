@@ -3,7 +3,7 @@ from django.core.exceptions import PermissionDenied
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import path, reverse
 from django.views.decorators.http import require_POST
-from django.utils.html import format_html
+from django.utils.html import format_html, format_html_join
 
 from core.templatetags.moneda import formatear_monto
 from pedidos.services import PedidoError
@@ -17,11 +17,12 @@ from .models import Liquidacion, Pago
 
 @admin.register(Pago)
 class PagoAdmin(AdminDeTienda, admin.ModelAdmin):
-    """Conciliacion: el vendedor revisa los comprobantes y aprueba o rechaza. Los pagos no se crean ni se borran aqui."""
+    """Conciliacion: el vendedor revisa los comprobantes y aprueba o rechaza. Si el cliente transfirio a las cuentas del
+    sitio, solo el administrador principal lo hace (`services.puede_resolver`). Los pagos no se crean ni se borran aqui."""
 
     date_hierarchy = 'creado'
-    list_display = ['referencia', 'pedido_enlazado', 'creado', 'metodo', 'monto_formateado', 'estado_con_color', 'tiene_comprobante']
-    list_filter = ['estado', 'metodo', 'creado']
+    list_display = ['referencia', 'pedido_enlazado', 'creado', 'metodo', 'monto_formateado', 'estado_con_color', 'tiene_comprobante', 'quien_confirma']
+    list_filter = ['estado', 'metodo', 'pedido__cobra_el_sitio', 'creado']
     search_fields = ['referencia', 'pedido__numero', 'pedido__nombre', 'pedido__telefono', 'referencia_cliente']
     list_select_related = ['pedido']
     list_per_page = 40
@@ -29,6 +30,7 @@ class PagoAdmin(AdminDeTienda, admin.ModelAdmin):
     fieldsets = [
         ('Pago', {'fields': [
             'referencia', 'pedido_enlazado', 'tienda', 'metodo', 'monto_formateado', 'estado_con_color', 'creado',
+            'quien_confirma',
         ]}),
         ('Transferencia', {'fields': ['referencia_cliente', 'vista_del_comprobante']}),
         ('Revisión', {'fields': ['revisado_en', 'revisado_por', 'nota']}),
@@ -97,6 +99,10 @@ class PagoAdmin(AdminDeTienda, admin.ModelAdmin):
     def estado_con_color(self, pago):
         return format_html('<span class="panel-estado panel-pago-{}">{}</span>', pago.estado, pago.get_estado_display())
 
+    @admin.display(description='Lo confirma', ordering='pedido__cobra_el_sitio')
+    def quien_confirma(self, pago):
+        return 'El sitio' if pago.pedido.cobra_el_sitio else 'La tienda'
+
     @admin.display(description='Comprobante', boolean=True)
     def tiene_comprobante(self, pago):
         return bool(pago.comprobante)
@@ -123,7 +129,8 @@ class LiquidacionAdmin(AdminDeTienda, admin.ModelAdmin):
     list_select_related = ['tienda']
     fields = [
         'tienda', 'creada', 'creada_por', 'pedidos_incluidos', 'ventas', 'cobrado_por_el_sitio',
-        'comision_porcentaje', 'comision', 'ajustes', 'costo_transferencia', 'monto', 'nota',
+        'cobrado_por_la_tienda', 'comision_porcentaje', 'comision', 'comision_de_lo_cobrado_por_la_tienda', 'ajustes',
+        'costo_transferencia', 'monto', 'nota', 'detalle_de_pedidos',
     ]
     readonly_fields = fields
 
@@ -182,6 +189,18 @@ class LiquidacionAdmin(AdminDeTienda, admin.ModelAdmin):
                 texto = f'Liquidación de {tienda.nombre} registrada: la tienda te debía {formatear_monto(-liquidacion.monto)}.'
             self.message_user(request, texto, messages.SUCCESS)
         return redirect(reverse('admin:pagos_liquidacion_saldos'))
+
+    @admin.display(description='Pedidos liquidados')
+    def detalle_de_pedidos(self, liquidacion):
+        pedidos = liquidacion.pedidos.order_by('fecha_pago', 'id')
+        if not pedidos:
+            return 'Ninguno'
+        filas = format_html_join('', '<li><a href="{}">{}</a> · {} · {} · {}</li>', (
+            (reverse('admin:pedidos_pedido_change', args=[pedido.pk]), pedido.numero, pedido.get_metodo_pago_display(),
+             'lo cobró el sitio' if pedido.cobra_el_sitio else 'lo cobró la tienda', formatear_monto(pedido.total))
+            for pedido in pedidos
+        ))
+        return format_html('<ul style="margin: 0; padding-left: 1.2em;">{}</ul>', filas)
 
     @admin.display(description='Vendido', ordering='ventas')
     def vendido(self, liquidacion):

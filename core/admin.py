@@ -9,7 +9,7 @@ from django.views.decorators.http import require_POST
 from tiendas.panel import AdminDeTienda
 
 from .admin_avisos import AvisaImagenesSinGuardar
-from .models import ConfiguracionTienda, CuentaBancaria, PaginaInformativa, PreguntaFrecuente
+from .models import ConfiguracionTienda, CuentaBancaria, CuentaDelSitio, PaginaInformativa, PreguntaFrecuente
 
 
 @admin.register(ConfiguracionTienda)
@@ -84,6 +84,17 @@ class ConfiguracionTiendaAdmin(AvisaImagenesSinGuardar, admin.ModelAdmin):
 
 @admin.register(CuentaBancaria)
 class CuentaBancariaAdmin(AdminDeTienda, admin.ModelAdmin):
+    list_display = ['banco', 'tipo_cuenta', 'numero', 'titular', 'cedula_rnc', 'activa', 'orden']
+    list_editable = ['activa', 'orden']
+    list_filter = ['activa', 'tipo_cuenta']
+    search_fields = ['banco', 'numero', 'titular']
+
+
+@admin.register(CuentaDelSitio)
+class CuentaDelSitioAdmin(admin.ModelAdmin):
+    """Tus cuentas: las ven los clientes de las tiendas en las que el sitio recibe las transferencias.
+    Solo el administrador principal (los vendedores no tienen permisos sobre este modelo)."""
+
     list_display = ['banco', 'tipo_cuenta', 'numero', 'titular', 'cedula_rnc', 'activa', 'orden']
     list_editable = ['activa', 'orden']
     list_filter = ['activa', 'tipo_cuenta']

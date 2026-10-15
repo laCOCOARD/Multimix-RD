@@ -3,6 +3,6 @@
 {% if pago.comprobante %}Adjuntó el comprobante.{% else %}No adjuntó comprobante.{% endif %}{% if pago.referencia_cliente %}
 Referencia: {{ pago.referencia_cliente }}{% endif %}
 
-Revisa tu cuenta y aprueba o rechaza el pago en el panel:
+{% if pedido.cobra_el_sitio %}Transfirió a las cuentas del sitio (tienda {{ tienda.nombre }}). Comprueba en la app del banco que el dinero llegó y aprueba o rechaza el pago en el panel; al aprobarlo se le avisa a la tienda:{% else %}Revisa tu cuenta y aprueba o rechaza el pago en el panel:{% endif %}
 {{ enlace_pago }}
 {% endautoescape %}

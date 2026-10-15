@@ -91,12 +91,13 @@ class ConfiguracionTienda(models.Model):
         return config
 
 
-class CuentaBancaria(models.Model):
+class DatosDeCuenta(models.Model):
+    """Lo que el cliente necesita para transferir: lo comparten las cuentas de cada tienda y las del sitio."""
+
     class Tipo(models.TextChoices):
         AHORROS = 'ahorros', 'Ahorros'
         CORRIENTE = 'corriente', 'Corriente'
 
-    tienda = models.ForeignKey('tiendas.Tienda', on_delete=models.CASCADE, related_name='cuentas_bancarias')
     banco = models.CharField(max_length=80)
     tipo_cuenta = models.CharField('tipo de cuenta', max_length=10, choices=Tipo.choices, default=Tipo.AHORROS)
     numero = models.CharField('número de cuenta', max_length=30)
@@ -106,9 +107,19 @@ class CuentaBancaria(models.Model):
     orden = models.PositiveSmallIntegerField(default=0)
 
     class Meta:
+        abstract = True
+        ordering = ['orden', 'banco']
+
+    def __str__(self):
+        return f'{self.banco} · {self.get_tipo_cuenta_display()} · {self.numero}'
+
+
+class CuentaBancaria(DatosDeCuenta):
+    tienda = models.ForeignKey('tiendas.Tienda', on_delete=models.CASCADE, related_name='cuentas_bancarias')
+
+    class Meta(DatosDeCuenta.Meta):
         verbose_name = 'cuenta bancaria'
         verbose_name_plural = 'cuentas bancarias'
-        ordering = ['orden', 'banco']
         constraints = [
             models.UniqueConstraint(
                 fields=['tienda', 'banco', 'numero'], name='cuenta_unica_por_tienda',
@@ -116,8 +127,32 @@ class CuentaBancaria(models.Model):
             ),
         ]
 
-    def __str__(self):
-        return f'{self.banco} · {self.get_tipo_cuenta_display()} · {self.numero}'
+
+class CuentaDelSitio(DatosDeCuenta):
+    """Cuenta del dueño del sitio: la ven los clientes de las tiendas en las que el sitio recibe las transferencias."""
+
+    class Meta(DatosDeCuenta.Meta):
+        verbose_name = 'cuenta del sitio'
+        verbose_name_plural = 'cuentas del sitio'
+        constraints = [
+            models.UniqueConstraint(
+                fields=['banco', 'numero'], name='cuenta_del_sitio_unica',
+                violation_error_message='Ya registraste esa cuenta de ese banco.',
+            ),
+        ]
+
+
+def cuentas_para_transferir(tienda, cobra_el_sitio=None):
+    """Las cuentas que ve el cliente: las del sitio si el sitio cobra por la tienda; si no, las de la tienda.
+
+    Para un pedido ya hecho se pasa `cobra_el_sitio` del pedido: el cliente debe ver las mismas cuentas que vio al
+    comprar aunque despues cambie el ajuste de la tienda.
+    """
+    if cobra_el_sitio is None:
+        cobra_el_sitio = tienda.el_sitio_cobra
+    if cobra_el_sitio:
+        return CuentaDelSitio.objects.filter(activa=True)
+    return CuentaBancaria.objects.filter(tienda=tienda, activa=True)
 
 
 CACHE_CONTENIDO = 'contenido_del_pie'

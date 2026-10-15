@@ -3,8 +3,10 @@
 Reglas:
 - Entra en cuenta un pedido cobrado y ya entregado. Hasta entonces esta "en curso".
 - La comision del sitio se calcula sobre los productos (subtotal menos descuento); el envio es de la tienda.
-- Si el sitio recibe los pagos de la tienda (`Tienda.el_sitio_cobra`), las transferencias las tiene el sitio y hay
-  que depositarselas a la tienda menos la comision. El efectivo siempre lo cobra la tienda al entregar.
+- Si el cliente transfirio a las cuentas del sitio (`Pedido.cobra_el_sitio`, que se fija al comprar segun
+  `Tienda.el_sitio_cobra`), el dinero lo tiene el sitio y hay que depositarselo a la tienda menos la comision.
+- El efectivo (y la transferencia a las cuentas de la tienda) lo cobra la tienda: no se le deposita, pero la
+  comision del sitio si cuenta, porque fue una venta de la tienda. Esa parte la tienda se la debe al sitio.
 - Saldo = lo que el sitio cobro por la tienda - la comision de todos sus pedidos - reembolsos ya depositados.
   Positivo: el sitio le deposita a la tienda. Negativo: la tienda le debe al sitio.
 - Al depositar, lo que cobre el banco por la transferencia se descuenta de lo que recibe la tienda.
@@ -21,8 +23,6 @@ from .models import Liquidacion
 
 CERO = Decimal('0.00')
 CENTAVO = Decimal('0.01')
-# Formas de pago cuyo dinero llega a las cuentas del sitio cuando el sitio cobra por la tienda.
-METODOS_DEL_SITIO = (Pedido.Pago.TRANSFERENCIA,)
 
 
 class LiquidacionError(Exception):
@@ -32,9 +32,23 @@ class LiquidacionError(Exception):
 
 
 @dataclass
+class Grupo:
+    """Pedidos por liquidar segun quien tiene el dinero: el sitio o la tienda."""
+    pedidos: list = field(default_factory=list)
+    ventas: Decimal = CERO
+    comision: Decimal = CERO
+
+    @property
+    def neto(self):
+        return self.ventas - self.comision
+
+
+@dataclass
 class Saldo:
     tienda: object
     pedidos: list = field(default_factory=list)
+    del_sitio: Grupo = field(default_factory=Grupo)     # el cliente transfirio a las cuentas del sitio
+    de_la_tienda: Grupo = field(default_factory=Grupo)  # efectivo o transferencia a la tienda: ya lo tiene ella
     reembolsados: list = field(default_factory=list)
     ventas: Decimal = CERO          # total de los pedidos por liquidar (productos + envios)
     productos: Decimal = CERO       # subtotal menos descuento: la base de la comision
@@ -61,7 +75,7 @@ def comision_de(pedido, porcentaje):
 
 def monto_del_pedido(pedido, tienda):
     """Lo que el pedido suma (o resta) al saldo de la tienda."""
-    cobrado = pedido.total if tienda.el_sitio_cobra and pedido.metodo_pago in METODOS_DEL_SITIO else CERO
+    cobrado = pedido.total if pedido.cobra_el_sitio else CERO
     return cobrado - comision_de(pedido, tienda.comision_porcentaje)
 
 
@@ -89,6 +103,11 @@ def saldo_de(tienda, bloquear=False):
         saldo.envios += pedido.costo_envio
         saldo.comision += comision
         saldo.cobrado_por_el_sitio += monto_del_pedido(pedido, tienda) + comision
+        pedido.comision = comision
+        grupo = saldo.del_sitio if pedido.cobra_el_sitio else saldo.de_la_tienda
+        grupo.pedidos.append(pedido)
+        grupo.ventas += pedido.total
+        grupo.comision += comision
     saldo.ajustes = sum((pedido.monto_liquidado or CERO for pedido in saldo.reembolsados), CERO)
     en_curso = Pedido.objects.filter(tienda=tienda, fecha_pago__isnull=False, liquidacion__isnull=True).exclude(
         estado__in=(Pedido.Estado.ENTREGADO, *Pedido.ESTADOS_SIN_VENTA),
@@ -124,6 +143,7 @@ def liquidar(tienda, usuario=None, nota='', costo_transferencia=0):
     liquidacion = Liquidacion.objects.create(
         tienda=tienda, creada_por=usuario, nota=(nota or '').strip()[:255], pedidos_incluidos=len(saldo.pedidos),
         ventas=saldo.ventas, cobrado_por_el_sitio=saldo.cobrado_por_el_sitio, comision=saldo.comision,
+        cobrado_por_la_tienda=saldo.de_la_tienda.ventas, comision_de_lo_cobrado_por_la_tienda=saldo.de_la_tienda.comision,
         ajustes=saldo.ajustes, costo_transferencia=costo, monto=saldo.monto - costo,
         comision_porcentaje=tienda.comision_porcentaje,
     )

@@ -1079,3 +1079,56 @@ CREATE INDEX "pagos_liquidacion_tienda_id_b32bdd81" ON "pagos_liquidacion" ("tie
 -- Alter field monto on liquidacion
 --
 -- (no-op)
+
+-- ============================================================
+-- core 0016
+-- ============================================================
+--
+-- Create model CuentaDelSitio
+--
+CREATE TABLE "core_cuentadelsitio" ("id" integer NOT NULL PRIMARY KEY AUTOINCREMENT, "banco" varchar(80) NOT NULL, "tipo_cuenta" varchar(10) NOT NULL, "numero" varchar(30) NOT NULL, "titular" varchar(120) NOT NULL, "cedula_rnc" varchar(20) NOT NULL, "activa" bool NOT NULL, "orden" smallint unsigned NOT NULL CHECK ("orden" >= 0), CONSTRAINT "cuenta_del_sitio_unica" UNIQUE ("banco", "numero"));
+
+-- ============================================================
+-- pedidos 0011
+-- ============================================================
+--
+-- Add field cobra_el_sitio to pedido
+--
+CREATE TABLE "new__pedidos_pedido" ("id" integer NOT NULL PRIMARY KEY AUTOINCREMENT, "cobra_el_sitio" bool NOT NULL, "numero" varchar(20) NOT NULL UNIQUE, "token" char(32) NOT NULL UNIQUE, "nombre" varchar(120) NOT NULL, "telefono" varchar(10) NOT NULL, "correo" varchar(254) NOT NULL, "metodo_entrega" varchar(10) NOT NULL, "direccion" varchar(255) NOT NULL, "referencia" varchar(255) NOT NULL, "metodo_pago" varchar(20) NOT NULL, "transferencia_realizada" bool NOT NULL, "referencia_transferencia" varchar(60) NOT NULL, "codigo_cupon" varchar(30) NOT NULL, "subtotal" decimal NOT NULL, "descuento" decimal NOT NULL, "costo_envio" decimal NOT NULL, "total" decimal NOT NULL, "estado" varchar(12) NOT NULL, "notas_cliente" text NOT NULL, "notas_internas" text NOT NULL, "creado" datetime NOT NULL, "fecha_pago" datetime NULL, "fecha_entrega" datetime NULL, "stock_descontado" bool NOT NULL, "ip" char(39) NULL, "cupon_id" bigint NULL REFERENCES "promociones_cupon" ("id") DEFERRABLE INITIALLY DEFERRED, "zona_id" bigint NULL REFERENCES "pedidos_zonaenvio" ("id") DEFERRABLE INITIALLY DEFERRED, "tienda_id" bigint NOT NULL REFERENCES "tiendas_tienda" ("id") DEFERRABLE INITIALLY DEFERRED, "impuesto" decimal NOT NULL, "porcentaje_impuesto" decimal NOT NULL, "sector" varchar(80) NOT NULL, "cliente_id" integer NULL REFERENCES "auth_user" ("id") DEFERRABLE INITIALLY DEFERRED, "numero_seguimiento" varchar(60) NOT NULL, "transportista" varchar(60) NOT NULL, "ajuste_liquidacion_id" bigint NULL REFERENCES "pagos_liquidacion" ("id") DEFERRABLE INITIALLY DEFERRED, "liquidacion_id" bigint NULL REFERENCES "pagos_liquidacion" ("id") DEFERRABLE INITIALLY DEFERRED, "monto_liquidado" decimal NULL, CONSTRAINT "pedido_envio_requiere_zona" CHECK (("metodo_entrega" = 'recoger' OR "zona_id" IS NOT NULL)), CONSTRAINT "pedido_efectivo_recoger_solo_en_tienda" CHECK ((NOT ("metodo_pago" = 'efectivo_recoger') OR "metodo_entrega" = 'recoger')), CONSTRAINT "pedido_descuento_no_supera_subtotal" CHECK (("descuento" >= '0' AND "descuento" <= ("subtotal"))), CONSTRAINT "pedido_montos_no_negativos" CHECK (("subtotal" >= '0' AND "costo_envio" >= '0' AND "total" >= '0' AND "impuesto" >= '0')));
+INSERT INTO "new__pedidos_pedido" ("id", "numero", "token", "nombre", "telefono", "correo", "metodo_entrega", "direccion", "referencia", "metodo_pago", "transferencia_realizada", "referencia_transferencia", "codigo_cupon", "subtotal", "descuento", "costo_envio", "total", "estado", "notas_cliente", "notas_internas", "creado", "fecha_pago", "fecha_entrega", "stock_descontado", "ip", "cupon_id", "zona_id", "tienda_id", "impuesto", "porcentaje_impuesto", "sector", "cliente_id", "numero_seguimiento", "transportista", "ajuste_liquidacion_id", "liquidacion_id", "monto_liquidado", "cobra_el_sitio") SELECT "id", "numero", "token", "nombre", "telefono", "correo", "metodo_entrega", "direccion", "referencia", "metodo_pago", "transferencia_realizada", "referencia_transferencia", "codigo_cupon", "subtotal", "descuento", "costo_envio", "total", "estado", "notas_cliente", "notas_internas", "creado", "fecha_pago", "fecha_entrega", "stock_descontado", "ip", "cupon_id", "zona_id", "tienda_id", "impuesto", "porcentaje_impuesto", "sector", "cliente_id", "numero_seguimiento", "transportista", "ajuste_liquidacion_id", "liquidacion_id", "monto_liquidado", 0 FROM "pedidos_pedido";
+DROP TABLE "pedidos_pedido";
+ALTER TABLE "new__pedidos_pedido" RENAME TO "pedidos_pedido";
+CREATE INDEX "pedidos_pedido_cupon_id_31eaac91" ON "pedidos_pedido" ("cupon_id");
+CREATE INDEX "pedidos_pedido_zona_id_1faba78e" ON "pedidos_pedido" ("zona_id");
+CREATE INDEX "pedidos_pedido_tienda_id_d3d2ad56" ON "pedidos_pedido" ("tienda_id");
+CREATE INDEX "pedidos_pedido_cliente_id_84f4fc73" ON "pedidos_pedido" ("cliente_id");
+CREATE INDEX "pedidos_pedido_ajuste_liquidacion_id_f93a0f71" ON "pedidos_pedido" ("ajuste_liquidacion_id");
+CREATE INDEX "pedidos_pedido_liquidacion_id_b6b436e1" ON "pedidos_pedido" ("liquidacion_id");
+CREATE INDEX "pedido_estado_creado_idx" ON "pedidos_pedido" ("estado", "creado" DESC);
+CREATE INDEX "pedido_creado_idx" ON "pedidos_pedido" ("creado" DESC);
+CREATE INDEX "pedido_fecha_pago_idx" ON "pedidos_pedido" ("fecha_pago");
+CREATE INDEX "pedido_telefono_idx" ON "pedidos_pedido" ("telefono");
+CREATE INDEX "pedido_ip_creado_idx" ON "pedidos_pedido" ("ip", "creado" DESC);
+CREATE INDEX "pedido_tienda_creado_idx" ON "pedidos_pedido" ("tienda_id", "creado" DESC);
+
+-- ============================================================
+-- pagos 0004
+-- ============================================================
+--
+-- Add field cobrado_por_la_tienda to liquidacion
+--
+CREATE TABLE "new__pagos_liquidacion" ("id" integer NOT NULL PRIMARY KEY AUTOINCREMENT, "cobrado_por_la_tienda" decimal NOT NULL, "creada" datetime NOT NULL, "pedidos_incluidos" integer unsigned NOT NULL CHECK ("pedidos_incluidos" >= 0), "ventas" decimal NOT NULL, "cobrado_por_el_sitio" decimal NOT NULL, "comision_porcentaje" decimal NOT NULL, "comision" decimal NOT NULL, "ajustes" decimal NOT NULL, "monto" decimal NOT NULL, "nota" varchar(255) NOT NULL, "creada_por_id" integer NULL REFERENCES "auth_user" ("id") DEFERRABLE INITIALLY DEFERRED, "tienda_id" bigint NOT NULL REFERENCES "tiendas_tienda" ("id") DEFERRABLE INITIALLY DEFERRED, "costo_transferencia" decimal NOT NULL);
+INSERT INTO "new__pagos_liquidacion" ("id", "creada", "pedidos_incluidos", "ventas", "cobrado_por_el_sitio", "comision_porcentaje", "comision", "ajustes", "monto", "nota", "creada_por_id", "tienda_id", "costo_transferencia", "cobrado_por_la_tienda") SELECT "id", "creada", "pedidos_incluidos", "ventas", "cobrado_por_el_sitio", "comision_porcentaje", "comision", "ajustes", "monto", "nota", "creada_por_id", "tienda_id", "costo_transferencia", '0' FROM "pagos_liquidacion";
+DROP TABLE "pagos_liquidacion";
+ALTER TABLE "new__pagos_liquidacion" RENAME TO "pagos_liquidacion";
+CREATE INDEX "pagos_liquidacion_creada_por_id_dc71ed1a" ON "pagos_liquidacion" ("creada_por_id");
+CREATE INDEX "pagos_liquidacion_tienda_id_b32bdd81" ON "pagos_liquidacion" ("tienda_id");
+--
+-- Add field comision_de_lo_cobrado_por_la_tienda to liquidacion
+--
+CREATE TABLE "new__pagos_liquidacion" ("id" integer NOT NULL PRIMARY KEY AUTOINCREMENT, "creada" datetime NOT NULL, "pedidos_incluidos" integer unsigned NOT NULL CHECK ("pedidos_incluidos" >= 0), "ventas" decimal NOT NULL, "cobrado_por_el_sitio" decimal NOT NULL, "comision_porcentaje" decimal NOT NULL, "comision" decimal NOT NULL, "ajustes" decimal NOT NULL, "monto" decimal NOT NULL, "nota" varchar(255) NOT NULL, "creada_por_id" integer NULL REFERENCES "auth_user" ("id") DEFERRABLE INITIALLY DEFERRED, "tienda_id" bigint NOT NULL REFERENCES "tiendas_tienda" ("id") DEFERRABLE INITIALLY DEFERRED, "costo_transferencia" decimal NOT NULL, "cobrado_por_la_tienda" decimal NOT NULL, "comision_de_lo_cobrado_por_la_tienda" decimal NOT NULL);
+INSERT INTO "new__pagos_liquidacion" ("id", "creada", "pedidos_incluidos", "ventas", "cobrado_por_el_sitio", "comision_porcentaje", "comision", "ajustes", "monto", "nota", "creada_por_id", "tienda_id", "costo_transferencia", "cobrado_por_la_tienda", "comision_de_lo_cobrado_por_la_tienda") SELECT "id", "creada", "pedidos_incluidos", "ventas", "cobrado_por_el_sitio", "comision_porcentaje", "comision", "ajustes", "monto", "nota", "creada_por_id", "tienda_id", "costo_transferencia", "cobrado_por_la_tienda", '0' FROM "pagos_liquidacion";
+DROP TABLE "pagos_liquidacion";
+ALTER TABLE "new__pagos_liquidacion" RENAME TO "pagos_liquidacion";
+CREATE INDEX "pagos_liquidacion_creada_por_id_dc71ed1a" ON "pagos_liquidacion" ("creada_por_id");
+CREATE INDEX "pagos_liquidacion_tienda_id_b32bdd81" ON "pagos_liquidacion" ("tienda_id");

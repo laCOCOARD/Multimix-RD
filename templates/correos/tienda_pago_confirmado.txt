@@ -1,0 +1,14 @@
+{% load moneda %}{% autoescape off %}{{ sitio }} confirmó en su banco el pago del pedido {{ pedido.numero }} ({{ pedido.total|moneda }}). Ya puedes prepararlo.
+
+Cliente: {{ pedido.nombre }} · {{ pedido.telefono|telefono }}
+
+{% for detalle in pedido.detalles.all %}- {{ detalle.cantidad }} x {{ detalle.nombre_producto }}
+{% endfor %}
+Entrega: {% if pedido.recoge_en_tienda %}el cliente lo recoge en la tienda{% else %}{{ pedido.direccion_completa }}{% if pedido.referencia %} ({{ pedido.referencia }}){% endif %}{% endif %}{% if pedido.notas_cliente %}
+Notas del cliente: {{ pedido.notas_cliente }}{% endif %}
+
+El dinero lo tiene {{ sitio }} y te lo deposita, menos su comisión, en la liquidación después de entregar el pedido.
+
+Ver el pedido en el panel:
+{{ enlace_panel }}
+{% endautoescape %}

@@ -54,11 +54,38 @@ class SaldoTests(TestCase):
         self.assertEqual((saldo.cobrado_por_el_sitio, saldo.comision, saldo.monto), (D('0.00'), D('100.00'), D('-100.00')))
 
     def test_si_la_tienda_cobra_en_sus_cuentas_solo_debe_la_comision(self):
-        self.tienda.el_sitio_cobra = False
-        self.tienda.save()
+        # El carrito usa la instancia de producto.tienda: el ajuste se cambia en esa.
+        self.producto.tienda.el_sitio_cobra = False
+        self.producto.tienda.save()
         entregado(self.producto, 3)
         saldo = liquidaciones.saldo_de(self.tienda)
         self.assertEqual((saldo.cobrado_por_el_sitio, saldo.monto), (D('0.00'), D('-300.00')))
+
+    def test_quien_cobra_se_fija_al_comprar(self):
+        pedido = entregado(self.producto, 1)
+        self.producto.tienda.el_sitio_cobra = False
+        self.producto.tienda.save()
+        # El cliente ya transfirio a las cuentas del sitio: apagar el ajuste despues no cambia quien tiene el dinero.
+        self.assertTrue(pedido.cobra_el_sitio)
+        self.assertEqual(liquidaciones.saldo_de(self.tienda).monto, D('900.00'))
+
+    def test_el_efectivo_va_aparte_no_se_deposita_pero_paga_comision(self):
+        transferido = entregado(self.producto, 2)
+        efectivo = entregado(self.producto, 1, metodo_pago=Pedido.Pago.EFECTIVO_RECOGER)
+        saldo = liquidaciones.saldo_de(self.tienda)
+        self.assertEqual(saldo.del_sitio.pedidos, [transferido])
+        self.assertEqual((saldo.del_sitio.ventas, saldo.del_sitio.comision, saldo.del_sitio.neto),
+                         (D('2000.00'), D('200.00'), D('1800.00')))
+        self.assertEqual(saldo.de_la_tienda.pedidos, [efectivo])
+        self.assertEqual((saldo.de_la_tienda.ventas, saldo.de_la_tienda.comision), (D('1000.00'), D('100.00')))
+        # Se le deposita lo transferido menos toda la comision: 1,800 - 100 del efectivo.
+        self.assertEqual(saldo.monto, D('1700.00'))
+        liquidacion = liquidaciones.liquidar(self.tienda)
+        self.assertEqual(
+            (liquidacion.cobrado_por_el_sitio, liquidacion.cobrado_por_la_tienda,
+             liquidacion.comision_de_lo_cobrado_por_la_tienda, liquidacion.monto),
+            (D('2000.00'), D('1000.00'), D('100.00'), D('1700.00')),
+        )
 
     def test_cada_tienda_con_su_porcentaje(self):
         otra = tienda_de_prueba('Fitnes RD', comision_porcentaje=D('25'), el_sitio_cobra=True)

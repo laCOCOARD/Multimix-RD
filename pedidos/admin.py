@@ -13,6 +13,7 @@ from django.views.decorators.http import require_POST
 from core.telefonos import formatear_telefono, telefono_internacional
 from core.templatetags.moneda import formatear_monto
 from tiendas.panel import AdminDeTienda, maneja_varias_tiendas, tiendas_del_panel
+from tiendas.services import ve_todas
 
 from . import reportes, services
 from .models import DetallePedido, EventoPedido, Pedido, SolicitudDevolucion, ZonaEnvio
@@ -90,7 +91,7 @@ class PedidoAdmin(AdminDeTienda, admin.ModelAdmin):
     ]
     # La zona se filtra solo entre las que aparecen en los pedidos que el usuario puede ver.
     list_filter = [
-        'estado', 'metodo_entrega', 'metodo_pago', 'transferencia_realizada',
+        'estado', 'metodo_entrega', 'metodo_pago', 'transferencia_realizada', 'cobra_el_sitio',
         ('zona', admin.RelatedOnlyFieldListFilter), ('liquidacion', admin.EmptyFieldListFilter), 'creado',
     ]
     search_fields = ['numero', 'nombre', 'telefono', 'correo', 'referencia_transferencia']
@@ -246,8 +247,9 @@ class PedidoAdmin(AdminDeTienda, admin.ModelAdmin):
         contexto = dict(extra_context or {})
         if pedido is not None and self.has_change_permission(request, pedido):
             contexto['transiciones'] = [
-                (estado.value, estado.label) for estado in services.transiciones_permitidas(pedido)
+                (estado.value, estado.label) for estado in services.transiciones_permitidas(pedido, request.user)
             ]
+            contexto['confirma_el_sitio'] = pedido.cobra_el_sitio and not ve_todas(request.user)
         return super().change_view(request, object_id, form_url, contexto)
 
     # --- Columnas -------------------------------------------------------------------
@@ -267,7 +269,12 @@ class PedidoAdmin(AdminDeTienda, admin.ModelAdmin):
 
     @admin.display(description='Aviso', boolean=False)
     def aviso_transferencia(self, pedido):
-        if pedido.estado == Estado.PENDIENTE and pedido.transferencia_realizada:
+        if pedido.estado != Estado.PENDIENTE or not pedido.paga_por_transferencia:
+            return ''
+        if pedido.cobra_el_sitio:
+            texto = 'El sitio verifica el pago' if pedido.transferencia_realizada else 'Esperando el pago'
+            return format_html('<span class="panel-etiqueta">{}</span>', texto)
+        if pedido.transferencia_realizada:
             return format_html('<span class="panel-etiqueta panel-bajo">{}</span>', 'Dice que transfirió')
         return ''
 
@@ -308,11 +315,12 @@ class PedidoAdmin(AdminDeTienda, admin.ModelAdmin):
     @admin.display(description='Pago y comprobante')
     def pago_registrado(self, pedido):
         pago = pedido.pagos.order_by('-id').first()
+        quien = ' · lo recibe y confirma el sitio' if pedido.cobra_el_sitio else ''
         if pago is None:
-            return 'Sin pago registrado'
+            return f'Sin pago registrado{quien}'
         return format_html(
-            '<a href="{}">{} · {}{}</a>', reverse('admin:pagos_pago_change', args=[pago.pk]), pago.referencia,
-            pago.get_estado_display(), ' · con comprobante' if pago.comprobante else '',
+            '<a href="{}">{} · {}{}</a>{}', reverse('admin:pagos_pago_change', args=[pago.pk]), pago.referencia,
+            pago.get_estado_display(), ' · con comprobante' if pago.comprobante else '', quien,
         )
 
     @admin.display(description='Página del cliente')
