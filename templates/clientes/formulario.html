@@ -1,14 +1,31 @@
 {% extends 'base.html' %}
+{% load static %}
 
 {% block titulo %}{{ titulo }} · {{ plataforma.nombre }}{% endblock %}
 {% block meta %}<meta name="robots" content="noindex">{% endblock %}
 
 {% block contenido %}
-<div class="container py-4">
-  <div class="row justify-content-center">
-    <div class="col-md-8 col-lg-5">
-      <div class="mm-panel">
-        <h1 class="h3 mb-2">{{ titulo }}</h1>
+<div class="container py-4 py-lg-5">
+  {# Sin sesion (entrar, crear cuenta, recuperar) la pantalla lleva la marca al lado; con sesion, solo el formulario. #}
+  <div class="mm-acceso {% if user.is_authenticated %}mm-acceso-angosto{% else %}con-marca{% endif %}">
+    {% if not user.is_authenticated %}
+      <aside class="mm-acceso-marca">
+        <span class="mm-acceso-logo">
+          {% if plataforma.logo %}<img src="{{ plataforma.logo.url }}" alt="">{% else %}<img src="{% static 'img/logo-simbolo.webp' %}" alt="" width="393" height="300">{% endif %}
+          <span>{{ plataforma.nombre }}</span>
+        </span>
+        <h2>Tiendas de confianza en un solo lugar</h2>
+        <p>Con tu cuenta compras en todas las tiendas del sitio.</p>
+        <ul>
+          <li><i class="bi bi-check-circle-fill"></i>Tus pedidos y su estado, siempre a mano.</li>
+          <li><i class="bi bi-check-circle-fill"></i>Los avisos de cada pedido llegan a tu correo.</li>
+          <li><i class="bi bi-check-circle-fill"></i>Tu dirección queda guardada para la próxima compra.</li>
+          <li><i class="bi bi-check-circle-fill"></i>Nunca te pedimos datos de tu tarjeta.</li>
+        </ul>
+      </aside>
+    {% endif %}
+      <div class="mm-acceso-formulario">
+        <h1 class="mb-2">{{ titulo }}</h1>
         {% if validlink is False %}
           <p class="alert alert-warning mb-3">Este enlace ya se usó o venció. Pide uno nuevo.</p>
           <a class="btn btn-primary" href="{% url 'clientes:recuperar' %}">Pedir otro enlace</a>
@@ -52,7 +69,6 @@
           </ul>
         {% endif %}
       </div>
-    </div>
   </div>
 </div>
 {% endblock %}

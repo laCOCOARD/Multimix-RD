@@ -69,7 +69,7 @@ class DirectorioTests(DosTiendas):
         self.assertNotContains(portada, 'mm-banner')
         self.assertNotContains(portada, 'Ver catálogo')
         self.assertNotContains(portada, 'Tu tienda de bienestar')
-        self.assertContains(portada, 'Elige una tienda y empieza a comprar')
+        self.assertContains(portada, 'Compra en tiendas de confianza')
         self.assertContains(portada, 'Busca un producto en todas las tiendas')
         self.assertContains(portada, 'Tiendas de emprendedores en un solo lugar.')
         # El inicio de cada tienda si conserva su banner.

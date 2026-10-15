@@ -1,0 +1,11 @@
+{# Indice lateral de las paginas de ayuda y legales. `actual` es el slug de la pagina abierta ('terminos' para los terminos). #}
+<nav class="mm-legal-indice" aria-label="Información del sitio">
+  <h2>Información</h2>
+  <a href="{% url 'core:terminos' %}"{% if actual == 'terminos' %} class="activa" aria-current="page"{% endif %}>Términos del sitio</a>
+  {% for item in contenido_pie.paginas %}
+    <a href="{% url 'core:pagina' item.slug %}"{% if actual == item.slug %} class="activa" aria-current="page"{% endif %}>{{ item.titulo }}</a>
+  {% endfor %}
+  {% if contenido_pie.hay_preguntas %}
+    <a href="{% url 'core:preguntas' %}"{% if actual == 'preguntas' %} class="activa" aria-current="page"{% endif %}>Preguntas frecuentes</a>
+  {% endif %}
+</nav>

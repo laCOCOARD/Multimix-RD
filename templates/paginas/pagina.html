@@ -1,18 +1,26 @@
 {% extends 'base.html' %}
+{% load textos %}
 
 {% block titulo %}{{ pagina.titulo }} · {{ plataforma.nombre }}{% endblock %}
 {% block descripcion %}{{ pagina.contenido|truncatechars:155 }}{% endblock %}
 
 {% block contenido %}
-<div class="container py-4">
-  <div class="row justify-content-center">
+<div class="container py-4 py-lg-5">
+  <div class="row g-4">
+    <div class="col-lg-3 d-none d-lg-block">
+      {% include 'paginas/_indice_legal.html' with actual=pagina.slug %}
+    </div>
     <div class="col-lg-9">
-      <h1 class="h3 mb-4">{{ pagina.titulo }}</h1>
-      {% if not pagina.publicada %}
-        <p class="alert alert-warning">Vista previa: esta página todavía no está publicada. Solo la ves tú.</p>
-      {% endif %}
-      <div class="mm-panel mm-descripcion">{{ pagina.contenido|linebreaks }}</div>
-      <p class="small text-muted mt-3">Última actualización: {{ pagina.actualizado|date:"j \d\e F \d\e Y" }}</p>
+      <article class="mm-legal">
+        <header class="mm-legal-cabecera">
+          <h1>{{ pagina.titulo }}</h1>
+          <p>{{ plataforma.nombre }} · Última actualización: {{ pagina.actualizado|date:"j \d\e F \d\e Y" }}</p>
+        </header>
+        {% if not pagina.publicada %}
+          <p class="alert alert-warning">Vista previa: esta página todavía no está publicada. Solo la ves tú.</p>
+        {% endif %}
+        <div class="mm-legal-texto">{{ pagina.contenido|texto_legal }}</div>
+      </article>
     </div>
   </div>
 </div>

@@ -4,11 +4,19 @@
 {% block descripcion %}Respuestas a las dudas más comunes sobre comprar en {{ plataforma.nombre }}.{% endblock %}
 
 {% block contenido %}
-<div class="container py-4">
-  <div class="row justify-content-center">
+<div class="container py-4 py-lg-5">
+  <div class="row g-4">
+    <div class="col-lg-3 d-none d-lg-block">
+      {% include 'paginas/_indice_legal.html' with actual='preguntas' %}
+    </div>
     <div class="col-lg-9">
-      <h1 class="h3 mb-4">Preguntas frecuentes</h1>
-      {% include 'includes/preguntas.html' %}
+      <article class="mm-legal">
+        <header class="mm-legal-cabecera">
+          <h1>Preguntas frecuentes</h1>
+          <p>Respuestas a las dudas más comunes sobre comprar en {{ plataforma.nombre }}.</p>
+        </header>
+        {% include 'includes/preguntas.html' %}
+      </article>
     </div>
   </div>
 </div>

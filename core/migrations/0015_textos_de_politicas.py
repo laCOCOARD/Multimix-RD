@@ -5,6 +5,16 @@ from django.db import migrations
 # si despues se cambian alli, hay que corregir el texto en Panel > Paginas informativas.
 
 
+def _telefono(numero):
+    """809-555-0123 en vez de 18095550123 (WhatsApp se guarda con el codigo de pais)."""
+    digitos = ''.join(c for c in numero if c.isdigit())
+    if len(digitos) == 11 and digitos.startswith('1'):
+        digitos = digitos[1:]
+    if len(digitos) == 10:
+        return f'{digitos[:3]}-{digitos[3:6]}-{digitos[6:]}'
+    return numero
+
+
 def _contacto(config):
     """Como escribirle al sitio, con los datos de Configuracion general."""
     if config is None:
@@ -13,9 +23,9 @@ def _contacto(config):
     if config.correo:
         medios.append(f'al correo {config.correo}')
     if config.whatsapp:
-        medios.append(f'por WhatsApp al {config.whatsapp}')
+        medios.append(f'por WhatsApp al {_telefono(config.whatsapp)}')
     elif config.telefono:
-        medios.append(f'al teléfono {config.telefono}')
+        medios.append(f'al teléfono {_telefono(config.telefono)}')
     if not medios:
         return 'usando los datos de contacto que aparecen al pie de esta página'
     return ' o '.join(medios)
@@ -180,9 +190,9 @@ La constancia del pedido que descargas del sitio no es un comprobante fiscal. Si
         if config.correo:
             lineas.append(f'Correo: {config.correo}')
         if config.telefono:
-            lineas.append(f'Teléfono: {config.telefono}')
+            lineas.append(f'Teléfono: {_telefono(config.telefono)}')
         if config.whatsapp:
-            lineas.append(f'WhatsApp: {config.whatsapp}')
+            lineas.append(f'WhatsApp: {_telefono(config.whatsapp)}')
         if config.horario:
             lineas.append(f'Horario: {config.horario}')
     atencion = '\n'.join(lineas) if lineas else 'Usa los datos de contacto que aparecen al pie de esta página.'

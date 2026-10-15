@@ -5,42 +5,61 @@
 {% endblock %}
 
 {% block contenido %}
-<section class="mm-directorio">
+<section class="mm-portada">
   <div class="container">
-    <h1 class="mm-directorio-titulo">Elige una tienda y empieza a comprar</h1>
-    <p class="mm-directorio-texto">Cada tienda tiene su catálogo, su carrito y su WhatsApp. Le compras directo a quien vende.</p>
-    <form class="mm-directorio-buscador" role="search" action="{% url 'tiendas:buscar' %}" method="get">
-      <i class="bi bi-search" aria-hidden="true"></i>
-      <input type="search" name="q" maxlength="80" placeholder="Busca un producto en todas las tiendas"
-             aria-label="Buscar un producto en todas las tiendas">
-      <button class="btn btn-primary" type="submit">Buscar</button>
-    </form>
+    <div class="row align-items-center g-4 g-lg-5">
+      <div class="col-lg-7">
+        <p class="mm-portada-etiqueta"><i class="bi bi-geo-alt-fill"></i>Tiendas de República Dominicana</p>
+        <h1 class="mm-portada-titulo">Compra en tiendas de confianza, todo en un solo lugar</h1>
+        <p class="mm-portada-texto">Elige la tienda, haz tu pedido en línea y síguelo hasta que llegue. Cada compra está respaldada por políticas claras de pago, entrega y devolución.</p>
+        <form class="mm-directorio-buscador" role="search" action="{% url 'tiendas:buscar' %}" method="get">
+          <i class="bi bi-search" aria-hidden="true"></i>
+          <input type="search" name="q" maxlength="80" placeholder="Busca un producto en todas las tiendas"
+                 aria-label="Buscar un producto en todas las tiendas">
+          <button class="btn btn-primary" type="submit">Buscar</button>
+        </form>
+      </div>
+      <div class="col-lg-5">
+        <div class="mm-portada-confianza">
+          <h2>Tu compra, protegida</h2>
+          <ul>
+            <li><i class="bi bi-shield-check"></i><div><strong>Pago verificado</strong><span>La tienda confirma tu pago antes de preparar el pedido. Nunca te pedimos datos de tarjeta.</span></div></li>
+            <li><i class="bi bi-truck"></i><div><strong>Seguimiento en línea</strong><span>Ves cada paso de tu pedido y te avisamos por correo.</span></div></li>
+            {% if plataforma.dias_devolucion %}
+              <li><i class="bi bi-arrow-repeat"></i><div><strong>Cambios y devoluciones</strong><span>Tienes {{ plataforma.dias_devolucion }} días después de la entrega para solicitarlos.</span></div></li>
+            {% endif %}
+            <li><i class="bi bi-chat-dots"></i><div><strong>Atención directa</strong><span>Escríbele a la tienda o a nosotros por WhatsApp o correo.</span></div></li>
+          </ul>
+        </div>
+      </div>
+    </div>
   </div>
 </section>
 
-<section class="container mm-directorio-tiendas" id="tiendas">
-  <div class="mm-seccion-cabecera">
-    <h2><i class="bi bi-shop me-2"></i>Tiendas{% if tiendas %} <span class="mm-directorio-total">{{ tiendas|length }}</span>{% endif %}</h2>
+<section class="container mm-seccion" id="tiendas">
+  <div class="mm-seccion-cabecera mm-titulo-seccion">
+    <div>
+      <h2>Nuestras tiendas</h2>
+      <p>{% if tiendas %}{{ tiendas|length }} tienda{{ tiendas|pluralize }} con su propio catálogo. Cada pedido se hace dentro de una tienda.{% else %}Pronto verás aquí nuestras tiendas.{% endif %}</p>
+    </div>
     <a href="{% url 'tiendas:buscar' %}">Ver todos los productos <i class="bi bi-arrow-right"></i></a>
   </div>
 
-  <div class="row g-4">
+  <div class="row g-3 g-lg-4">
     {% for item in tiendas %}
-      <div class="col-md-6 col-xl-4">
-        <a class="mm-tienda revelar" href="{{ item.get_absolute_url }}">
-          <span class="mm-tienda-portada"
-                {% if item.banner_imagen %}style="background-image: url('{{ item.banner_imagen.url }}');"{% endif %}></span>
-          <span class="mm-tienda-cuerpo">
-            <span class="mm-tienda-logo">
+      <div class="col-md-6 col-lg-4">
+        <a class="mm-tienda-tarjeta" href="{{ item.get_absolute_url }}">
+          <span class="mm-tienda-tarjeta-cabeza">
+            <span class="mm-tienda-avatar{% if item.logo %} con-logo{% endif %}">
               {% if item.logo %}<img src="{{ item.logo.url }}" alt="" loading="lazy" decoding="async">{% else %}{{ item.nombre|slice:':1'|upper }}{% endif %}
             </span>
-            <span class="mm-tienda-nombre">{{ item.nombre }}</span>
-            {% if item.banner_subtitulo %}<span class="mm-tienda-descripcion">{{ item.banner_subtitulo }}</span>{% endif %}
-            <span class="mm-tienda-pie">
-              <span><i class="bi bi-box-seam me-1"></i>{{ item.total_productos }} producto{{ item.total_productos|pluralize }}</span>
-              <span class="mm-tienda-entrar">Entrar a la tienda <i class="bi bi-arrow-right"></i></span>
+            <span>
+              <span class="mm-tienda-tarjeta-nombre">{{ item.nombre }}</span>
+              <span class="mm-tienda-tarjeta-meta">{{ item.total_productos }} producto{{ item.total_productos|pluralize }}</span>
             </span>
           </span>
+          {% if item.banner_subtitulo %}<p class="mm-tienda-tarjeta-texto">{{ item.banner_subtitulo }}</p>{% endif %}
+          <span class="mm-tienda-tarjeta-pie">Visitar la tienda <i class="bi bi-arrow-right"></i></span>
         </a>
       </div>
     {% empty %}
@@ -54,10 +73,33 @@
   </div>
 </section>
 
+<section class="container mm-seccion">
+  <div class="mm-titulo-seccion">
+    <h2>Compra con tranquilidad</h2>
+    <p>Lo que puedes esperar de cada compra en {{ plataforma.nombre }}.</p>
+  </div>
+  <div class="row g-3 g-lg-4">
+    {% for item in respaldos %}
+      <div class="col-md-4">
+        {% if item.slug in paginas_publicadas %}
+          <a class="mm-respaldo" href="{% url 'core:pagina' item.slug %}">
+        {% else %}
+          <div class="mm-respaldo">
+        {% endif %}
+          <i class="bi {{ item.icono }}"></i>
+          <h3>{{ item.titulo }}</h3>
+          <p>{{ item.texto }}</p>
+          {% if item.slug in paginas_publicadas %}<span class="mm-respaldo-enlace">Leer la política <i class="bi bi-arrow-right"></i></span>{% endif %}
+        {% if item.slug in paginas_publicadas %}</a>{% else %}</div>{% endif %}
+      </div>
+    {% endfor %}
+  </div>
+</section>
+
 {% if preguntas %}
 <section class="container mm-seccion">
-  <div class="mm-seccion-cabecera">
-    <h2><i class="bi bi-question-circle me-2"></i>Preguntas frecuentes</h2>
+  <div class="mm-seccion-cabecera mm-titulo-seccion">
+    <h2>Preguntas frecuentes</h2>
     <a href="{% url 'core:preguntas' %}">Ver todas <i class="bi bi-arrow-right"></i></a>
   </div>
   {% include 'includes/preguntas.html' %}

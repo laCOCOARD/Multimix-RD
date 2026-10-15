@@ -128,66 +128,78 @@
 
   <footer class="mm-pie mt-5">
     <div class="container py-5">
-      <div class="row g-4">
-        <div class="col-md-4">
+      <div class="row g-4 g-lg-5">
+        <div class="col-lg-4">
           <p class="mm-logo-texto mm-logo-pie mb-2">{{ marca.nombre }}</p>
-          <p class="mb-0 small">{{ marca.descripcion }}</p>
-        </div>
-        <div class="col-6 col-md-2">
-          {% if not puede_navegar %}
-          {% elif tienda %}
-            <h2 class="h6">Tienda</h2>
-            <ul class="list-unstyled small mb-0">
-              <li><a href="{% url 'catalogo:lista' tienda.slug %}">Catálogo</a></li>
-              <li><a href="{% url 'catalogo:lista' tienda.slug %}?oferta=on">Ofertas</a></li>
-              <li><a href="{% url 'carrito:detalle' tienda.slug %}">Mi carrito</a></li>
-            </ul>
-          {% else %}
-            <h2 class="h6">Comprar</h2>
-            <ul class="list-unstyled small mb-0">
-              <li><a href="{% url 'tiendas:portada' %}#tiendas">Tiendas</a></li>
-              <li><a href="{% url 'tiendas:buscar' %}">Todos los productos</a></li>
-              <li><a href="{% url 'tiendas:buscar' %}?oferta=on">Ofertas</a></li>
-            </ul>
-          {% endif %}
-        </div>
-        <div class="col-6 col-md-2">
-          <h2 class="h6">Ayuda</h2>
-          <ul class="list-unstyled small mb-0">
-            {% if tienda %}
-              <li><a href="{% url 'core:envios' tienda.slug %}">Envíos y retiros</a></li>
-            {% endif %}
-            {% if contenido_pie.hay_preguntas %}<li><a href="{% url 'core:preguntas' %}">Preguntas frecuentes</a></li>{% endif %}
-            <li><a href="{% url 'core:terminos' %}">Términos del sitio</a></li>
-            {% for pagina in contenido_pie.paginas %}
-              <li><a href="{% url 'core:pagina' pagina.slug %}">{{ pagina.titulo }}</a></li>
-            {% endfor %}
+          <p class="small mb-3">{{ marca.descripcion }}</p>
+          <ul class="list-unstyled small mb-3 mm-pie-contacto">
+            {% if tienda.direccion_tienda %}<li><i class="bi bi-geo-alt"></i>{{ tienda.direccion_tienda }}</li>{% endif %}
+            {% if marca.telefono %}<li><i class="bi bi-telephone"></i>{{ marca.telefono }}</li>{% endif %}
+            {% if marca.correo %}<li><i class="bi bi-envelope"></i><a href="mailto:{{ marca.correo }}">{{ marca.correo }}</a></li>{% endif %}
+            {% if marca.horario %}<li><i class="bi bi-clock"></i>{{ marca.horario }}</li>{% endif %}
           </ul>
-        </div>
-        <div class="col-md-4">
-          <h2 class="h6">Contacto</h2>
-          <ul class="list-unstyled small mb-2">
-            {% if tienda.direccion_tienda %}<li><i class="bi bi-geo-alt me-2"></i>{{ tienda.direccion_tienda }}</li>{% endif %}
-            {% if marca.telefono %}<li><i class="bi bi-telephone me-2"></i>{{ marca.telefono }}</li>{% endif %}
-            {% if marca.correo %}<li><i class="bi bi-envelope me-2"></i><a href="mailto:{{ marca.correo }}">{{ marca.correo }}</a></li>{% endif %}
-            {% if marca.horario %}<li><i class="bi bi-clock me-2"></i>{{ marca.horario }}</li>{% endif %}
-          </ul>
-          <div class="d-flex gap-3 fs-5">
+          <div class="d-flex gap-2 mm-pie-redes">
             {% if marca.facebook %}<a href="{{ marca.facebook }}" target="_blank" rel="noopener" aria-label="Facebook"><i class="bi bi-facebook"></i></a>{% endif %}
             {% if marca.instagram %}<a href="{{ marca.instagram }}" target="_blank" rel="noopener" aria-label="Instagram"><i class="bi bi-instagram"></i></a>{% endif %}
             {% if marca.tiktok %}<a href="{{ marca.tiktok }}" target="_blank" rel="noopener" aria-label="TikTok"><i class="bi bi-tiktok"></i></a>{% endif %}
             {% if enlace_whatsapp_tienda %}<a href="{{ enlace_whatsapp_tienda }}" target="_blank" rel="noopener" aria-label="WhatsApp"><i class="bi bi-whatsapp"></i></a>{% endif %}
           </div>
         </div>
+        {% if puede_navegar %}
+          <div class="col-6 col-md-4 col-lg-2">
+            {% if tienda %}
+              <h2>Tienda</h2>
+              <ul class="list-unstyled small mb-0">
+                <li><a href="{% url 'catalogo:lista' tienda.slug %}">Catálogo</a></li>
+                <li><a href="{% url 'catalogo:lista' tienda.slug %}?oferta=on">Ofertas</a></li>
+                <li><a href="{% url 'carrito:detalle' tienda.slug %}">Mi carrito</a></li>
+                <li><a href="{% url 'tiendas:portada' %}">Todas las tiendas</a></li>
+              </ul>
+            {% else %}
+              <h2>Comprar</h2>
+              <ul class="list-unstyled small mb-0">
+                <li><a href="{% url 'tiendas:portada' %}#tiendas">Tiendas</a></li>
+                <li><a href="{% url 'tiendas:buscar' %}">Todos los productos</a></li>
+                <li><a href="{% url 'tiendas:buscar' %}?oferta=on">Ofertas</a></li>
+                <li><a href="{% url 'clientes:cuenta' %}">Mi cuenta</a></li>
+              </ul>
+            {% endif %}
+          </div>
+        {% endif %}
+        <div class="col-6 col-md-4 col-lg-3">
+          <h2>Ayuda</h2>
+          <ul class="list-unstyled small mb-0">
+            {% if tienda %}<li><a href="{% url 'core:envios' tienda.slug %}">Envíos y retiros</a></li>{% endif %}
+            {% if contenido_pie.hay_preguntas %}<li><a href="{% url 'core:preguntas' %}">Preguntas frecuentes</a></li>{% endif %}
+            {% for pagina in paginas_ayuda %}
+              <li><a href="{% url 'core:pagina' pagina.slug %}">{{ pagina.titulo }}</a></li>
+            {% endfor %}
+          </ul>
+        </div>
+        <div class="col-6 col-md-4 col-lg-3">
+          <h2>Legal</h2>
+          <ul class="list-unstyled small mb-0">
+            <li><a href="{% url 'core:terminos' %}">Términos del sitio</a></li>
+            {% for pagina in paginas_legales %}
+              <li><a href="{% url 'core:pagina' pagina.slug %}">{{ pagina.titulo }}</a></li>
+            {% endfor %}
+          </ul>
+        </div>
       </div>
     </div>
-    <div class="mm-pie-legal py-3 small text-center">
-      <div class="container">
-        © {% now "Y" %} {{ plataforma.nombre }}. Precios en pesos dominicanos (RD$).
-        {% if tienda %}
-          <br>{{ tienda.nombre }} vende y entrega sus productos por su cuenta, dentro de <a href="{% url 'tiendas:portada' %}">{{ plataforma.nombre }}</a>.
-        {% endif %}
+    <div class="mm-pie-legal py-3 small">
+      <div class="container d-flex flex-wrap justify-content-between align-items-center gap-2">
+        <span>© {% now "Y" %} {{ plataforma.nombre }}. Precios en pesos dominicanos (RD$).</span>
+        <span class="mm-pie-sellos">
+          <span><i class="bi bi-lock"></i>Conexión segura</span>
+          <span><i class="bi bi-shield-check"></i>Pagos verificados por la tienda</span>
+        </span>
       </div>
+      {% if tienda %}
+        <div class="container mt-2">
+          {{ tienda.nombre }} vende y entrega sus productos por su cuenta, dentro de <a href="{% url 'tiendas:portada' %}">{{ plataforma.nombre }}</a>.
+        </div>
+      {% endif %}
     </div>
   </footer>
 

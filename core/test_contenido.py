@@ -122,3 +122,13 @@ class BannerTests(TestCase):
             'tienda': self.propia.pk, 'titulo': 'Nuevo', 'subtitulo': '', 'texto_boton': '', 'enlace': '', 'activo': 'on', 'orden': 0,
         })
         self.assertTrue(Banner.objects.filter(tienda=self.propia, titulo='Nuevo').exists())
+
+
+class TextoLegalTests(TestCase):
+    def test_titulos_listas_y_parrafos_sin_interpretar_html(self):
+        from core.templatetags.textos import texto_legal
+
+        html = texto_legal('Intro <b>x</b>.\n\n1. Qué datos\n- Uno\n- <script>dos</script>\nCierre.\n\nSolo un párrafo')
+        self.assertEqual(html, '<p>Intro &lt;b&gt;x&lt;/b&gt;.</p>\n<h2>1. Qué datos</h2>\n'
+                               '<ul><li>Uno</li><li>&lt;script&gt;dos&lt;/script&gt;</li></ul>\n<p>Cierre.</p>\n'
+                               '<p>Solo un párrafo</p>')

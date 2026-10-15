@@ -12,6 +12,17 @@ from . import services
 RESULTADOS_POR_PAGINA = 12
 
 
+# "Compra con tranquilidad" de la portada: cada bloque enlaza su politica si esta publicada.
+RESPALDOS = [
+    {'slug': 'metodos-de-pago', 'icono': 'bi-credit-card-2-front', 'titulo': 'Pagos claros',
+     'texto': 'Transferencia con comprobante o efectivo. Pagas solo a las cuentas que muestra tu pedido.'},
+    {'slug': 'entregas', 'icono': 'bi-box-seam', 'titulo': 'Entrega o retiro',
+     'texto': 'Recibe en tu casa dentro de las zonas de cada tienda o recoge tu pedido cuando esté listo.'},
+    {'slug': 'cambios-y-devoluciones', 'icono': 'bi-arrow-counterclockwise', 'titulo': 'Cambios y devoluciones',
+     'texto': 'Si algo no está bien, lo solicitas desde tu pedido y la tienda te responde.'},
+]
+
+
 @require_GET
 def portada(request):
     """Directorio de tiendas: desde aqui el cliente entra a comprar en una."""
@@ -20,6 +31,7 @@ def portada(request):
     return render(request, 'tiendas/portada.html', {
         'tiendas': services.directorio(),
         'preguntas': PreguntaFrecuente.objects.filter(activa=True)[:6],
+        'respaldos': RESPALDOS,
     })
 
 

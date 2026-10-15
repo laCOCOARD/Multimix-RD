@@ -103,8 +103,8 @@ Al cerrar cada modulo: check, makemigrations, migrate, test y commit.
   `core.PreguntaFrecuente`. Las politicas las crea `core/0014` y `core/0015` les pone un texto estandar y las
   publica (pedido del dueño el 2026-10-14; solo llena las vacias). Los plazos del texto (dias de devolucion, horas
   de vencimiento) son los de la configuracion al migrar: si cambian, se corrige el texto en el panel. Sin publicar
-  solo las ve el superusuario. El contenido se muestra con `linebreaks`,
-  nunca como HTML. El pie las lee de `core.models.contenido_del_pie` (cache de 5 minutos, se limpia al guardar).
+  solo las ve el superusuario. El contenido se muestra con el filtro
+  `texto_legal` (`core/templatetags/textos.py`: titulos, listas y parrafos, todo escapado), nunca como HTML. El pie las lee de `core.models.contenido_del_pie` (cache de 5 minutos, se limpia al guardar).
 - Cuentas de clientes: son usuarios de Django sin acceso al panel, con el correo como nombre de usuario, y son
   del sitio, no de una tienda (`/cuenta/`). `clientes.Perfil` guarda el telefono y la ultima direccion de entrega;
   la zona no, porque es de cada tienda. `Pedido.cliente` solo se llena si compro con la sesion iniciada: un pedido
@@ -152,7 +152,11 @@ Al cerrar cada modulo: check, makemigrations, migrate, test y commit.
   (o nada en las paginas del sitio), `plataforma` la configuracion y `marca` la que firme la pagina
   (`tienda or plataforma`).
 - La portada del sitio (directorio) no lleva banner ni boton de catalogo, a pedido del dueño: se veia igual
-  que el inicio de una tienda. Tampoco hay guia "Como comprar" (quitada a pedido del dueño): su ruta redirige al
+  que el inicio de una tienda. Lleva `mm-portada` (azul, con "Tu compra, protegida"), tarjetas de tienda
+  (`mm-tienda-tarjeta`) y "Compra con tranquilidad" (`tiendas.views.RESPALDOS`, enlaza solo politicas publicadas).
+  Letra: Inter servida desde `static/fonts/` (no por CDN). Pantallas de entrar/crear/recuperar con panel de marca
+  (`mm-acceso con-marca`); politicas, terminos y preguntas con indice lateral (`paginas/_indice_legal.html`).
+  Tampoco hay guia "Como comprar" (quitada a pedido del dueño): su ruta redirige al
   inicio de la tienda. El banner (`mm-banner`) es solo de las tiendas; la portada usa `mm-directorio`.
 - WhatsApp siempre con codigo de pais: `core.telefonos.normalizar_whatsapp` antepone el 1 a los numeros
   dominicanos de 10 digitos. Se aplica al validar y guardar Tienda y ConfiguracionTienda y, por si acaso, al

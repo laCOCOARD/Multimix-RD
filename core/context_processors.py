@@ -7,6 +7,9 @@ from pedidos.whatsapp import construir_enlace
 from .models import ConfiguracionTienda, contenido_del_pie
 
 
+PAGINAS_LEGALES = {'privacidad', 'garantias', 'contacto'}
+
+
 def tienda(request):
     """Datos comunes de las plantillas.
 
@@ -14,6 +17,7 @@ def tienda(request):
     None en las paginas del sitio. `marca` es de quien se muestran el nombre, el logo y los contactos.
     """
     plataforma = ConfiguracionTienda.obtener()
+    pie = contenido_del_pie()
     actual = getattr(request, 'tienda', None)
     marca = actual or plataforma
     contexto = {
@@ -23,7 +27,11 @@ def tienda(request):
         'categorias_menu': (),
         'carrito_cantidad': 0,
         'enlace_whatsapp_tienda': '',
-        'contenido_pie': contenido_del_pie(),
+        'contenido_pie': pie,
+        # El pie separa la ayuda de los textos legales; la portada enlaza solo las politicas publicadas.
+        'paginas_ayuda': [p for p in pie['paginas'] if p['slug'] not in PAGINAS_LEGALES],
+        'paginas_legales': [p for p in pie['paginas'] if p['slug'] in PAGINAS_LEGALES],
+        'paginas_publicadas': {p['slug'] for p in pie['paginas']},
         # Sin sesion (pagina de entrar, enlace de un pedido) el menu, el buscador y el carrito llevarian a entrar.
         'puede_navegar': not settings.CUENTA_OBLIGATORIA or getattr(getattr(request, 'user', None), 'is_authenticated', False),
     }

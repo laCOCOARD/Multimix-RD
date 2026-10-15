@@ -426,9 +426,9 @@ class TiendaAdminTests(PanelDeVendedores):
             # El nombre del archivo no se conserva: Supabase rechaza los que traen tildes o ñ.
             self.assertRegex(tienda.logo.name, r'^tiendas/[0-9a-f]{32}\.png$')
             self.assertRegex(tienda.banner_imagen.name, r'^tiendas/[0-9a-f]{32}\.jpg$')
-            portada = self.client.get('/')
-            self.assertContains(portada, tienda.logo.url)
-            self.assertContains(portada, tienda.banner_imagen.url)
+            # El directorio muestra el logo; el banner sale en el inicio de la tienda.
+            self.assertContains(self.client.get('/'), tienda.logo.url)
+            self.assertContains(self.client.get(tienda.get_absolute_url()), tienda.banner_imagen.url)
 
     def test_si_el_almacenamiento_de_fotos_falla_avisa_y_no_guarda_nada(self):
         editar = reverse('admin:tiendas_tienda_change', args=[self.propia.pk])

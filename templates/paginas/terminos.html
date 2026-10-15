@@ -4,47 +4,57 @@
 {% block descripcion %}Cómo funciona {{ plataforma.nombre }} y quién responde por cada compra.{% endblock %}
 
 {% block contenido %}
-<div class="container py-4">
-  <div class="row justify-content-center">
+<div class="container py-4 py-lg-5">
+  <div class="row g-4">
+    <div class="col-lg-3 d-none d-lg-block">
+      {% include 'paginas/_indice_legal.html' with actual='terminos' %}
+    </div>
     <div class="col-lg-9">
-      <h1 class="h3 mb-4">Términos del sitio</h1>
+      <article class="mm-legal">
+      <header class="mm-legal-cabecera">
+        <h1>Términos del sitio</h1>
+        <p>Cómo funciona {{ plataforma.nombre }} y quién responde por cada compra.</p>
+      </header>
+      <div class="mm-legal-texto">
 
-      <div class="mm-panel mb-4">
-        <h2 class="h5">Qué es {{ plataforma.nombre }}</h2>
-        <p class="mb-0">{{ plataforma.nombre }} reúne tiendas de emprendedores independientes. Cada tienda publica sus propios productos y precios, atiende a sus clientes y cobra sus ventas directamente.</p>
-      </div>
+      <section>
+        <h2>Qué es {{ plataforma.nombre }}</h2>
+        <p>{{ plataforma.nombre }} reúne tiendas de emprendedores independientes. Cada tienda publica sus propios productos y precios, atiende a sus clientes y responde por lo que vende.</p>
+      </section>
 
-      <div class="mm-panel mb-4">
-        <h2 class="h5">Quién te vende</h2>
-        <ul class="mm-lista mb-0">
+      <section>
+        <h2>Quién te vende</h2>
+        <ul>
           <li>Cada compra se hace dentro de una sola tienda, con el carrito de esa tienda. Si compras en dos tiendas son dos pedidos distintos.</li>
           <li>El pedido se confirma en este sitio y lo recibe la tienda. El efectivo lo cobra la tienda; las transferencias van a las cuentas que se muestran en tu pedido, que pueden ser de la tienda o de {{ plataforma.nombre }}, que cobra por cuenta de la tienda. Paga solo a esas cuentas.</li>
           <li>La tienda que te vende responde por sus productos, precios, existencias, entregas, cambios y devoluciones. Sus datos de contacto están al pie de cada página de la tienda.</li>
           <li>El comprobante que recibes es una constancia del pedido de esa tienda; no es un comprobante fiscal.</li>
         </ul>
-      </div>
+      </section>
 
-      <div class="mm-panel mb-4">
-        <h2 class="h5">Tu cuenta</h2>
-        <ul class="mm-lista mb-0">
+      <section>
+        <h2>Tu cuenta</h2>
+        <ul>
           <li>Para ver las tiendas y comprar necesitas una cuenta con tu correo. Los avisos de tus pedidos te llegan a ese correo, así que usa uno que revises.</li>
           <li>Eres responsable de mantener tu contraseña en secreto y de lo que se haga con tu cuenta. Si crees que alguien entró a ella, cambia la contraseña.</li>
           <li>Podemos suspender una cuenta que se use para fraudes, pedidos falsos o abusos.</li>
         </ul>
-      </div>
+      </section>
 
-      <div class="mm-panel mb-4">
-        <h2 class="h5">Tus datos</h2>
-        <ul class="mm-lista mb-0">
+      <section>
+        <h2>Tus datos</h2>
+        <ul>
           <li>Para hacer un pedido das tu nombre, tu teléfono (obligatorio, para coordinar la entrega) y, si pides envío, tu dirección. Esos datos los recibe la tienda donde compras para atender tu pedido. Más detalles en la <a href="{% url 'core:pagina' 'privacidad' %}">política de privacidad</a>.</li>
           <li>Una tienda no ve los pedidos ni los clientes de las demás. La administración de {{ plataforma.nombre }} puede ver los pedidos para dar soporte y mantener el sitio.</li>
         </ul>
-      </div>
+      </section>
 
-      <div class="mm-panel">
-        <h2 class="h5">Si tienes un problema</h2>
-        <p class="mb-0">Escribe primero a la tienda donde compraste, con tu número de pedido. Si no te responde, cuéntanos{% if plataforma.correo %} en <a href="mailto:{{ plataforma.correo }}">{{ plataforma.correo }}</a>{% endif %}{% if plataforma.telefono %} o al {{ plataforma.telefono }}{% endif %}.</p>
+      <section>
+        <h2>Si tienes un problema</h2>
+        <p>Escribe primero a la tienda donde compraste, con tu número de pedido. Si no te responde, cuéntanos{% if plataforma.correo %} en <a href="mailto:{{ plataforma.correo }}">{{ plataforma.correo }}</a>{% endif %}{% if plataforma.telefono %} o al {{ plataforma.telefono }}{% endif %}.</p>
+      </section>
       </div>
+      </article>
     </div>
   </div>
 </div>
