@@ -58,7 +58,8 @@ class CatalogoVistasTests(TestCase):
             self.assertTrue(portada['Hogar'].usa_foto_de_producto)
             self.assertEqual(portada['Tecnología'].url_portada, '')
             respuesta = self.client.get(ruta('catalogo:inicio'))
-            self.assertContains(respuesta, f'class="mm-categoria-producto" src="{foto.imagen.url}"')
+            self.assertContains(respuesta, 'mm-burbuja-foto con-producto')
+            self.assertContains(respuesta, f'src="{foto.imagen.url}"')
 
     def test_lista_excluye_inactivos(self):
         respuesta = self.client.get(ruta('catalogo:lista'))

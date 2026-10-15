@@ -156,8 +156,11 @@ Al cerrar cada modulo: check, makemigrations, migrate, test y commit.
   (o nada en las paginas del sitio), `plataforma` la configuracion y `marca` la que firme la pagina
   (`tienda or plataforma`).
 - La portada del sitio (directorio) no lleva banner ni boton de catalogo, a pedido del dueño: se veia igual
-  que el inicio de una tienda. Lleva `mm-portada` (azul, con "Tu compra, protegida"), tarjetas de tienda
-  (`mm-tienda-tarjeta`) y "Compra con tranquilidad" (`tiendas.views.RESPALDOS`, enlaza solo politicas publicadas).
+  que el inicio de una tienda. Tampoco lleva bloques de informacion (pedido del dueño): "Tu compra, protegida",
+  la ayuda y lo legal van en el menu de 3 barras (`includes/menu_lateral.html`, offcanvas, visible siempre). La
+  portada es buscador + filas que se deslizan (tiendas, ofertas y lo nuevo de todas las tiendas). Filas:
+  `includes/fila_productos.html` + `[data-fila]` en `tienda.js` (flechas, `data-auto` avanza solo). El inicio de
+  cada tienda: cinta en movimiento (`mm-cinta`), categorias en burbujas y una fila por seccion.
   Letra: Inter servida desde `static/fonts/` (no por CDN). Pantallas de entrar/crear/recuperar con panel de marca
   (`mm-acceso con-marca`); politicas, terminos y preguntas con indice lateral (`paginas/_indice_legal.html`).
   Tampoco hay guia "Como comprar" (quitada a pedido del dueño): su ruta redirige al

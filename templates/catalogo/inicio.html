@@ -55,32 +55,40 @@
 </section>
 {% endif %}
 
-<section class="container mm-ventajas">
-  <div class="row g-3">
-    <div class="col-6 col-lg-3"><div class="mm-ventaja revelar"><i class="bi bi-truck"></i><span>Envío a domicilio</span></div></div>
-    <div class="col-6 col-lg-3"><div class="mm-ventaja revelar"><i class="bi bi-shop"></i><span>Retiro en tienda</span></div></div>
-    <div class="col-6 col-lg-3"><div class="mm-ventaja revelar"><i class="bi bi-bank"></i><span>Paga por transferencia</span></div></div>
-    <div class="col-6 col-lg-3"><div class="mm-ventaja revelar"><i class="bi bi-bag-check"></i><span>Compra en línea, sin esperas</span></div></div>
+{# Cinta que corre con lo que ofrece la tienda. Se duplica para que el movimiento no tenga cortes. #}
+<div class="mm-cinta" aria-label="Lo que ofrece la tienda">
+  <div class="mm-cinta-pista">
+    {% for vuelta in '12' %}
+      <ul{% if not forloop.first %} aria-hidden="true"{% endif %}>
+        <li><i class="bi bi-truck"></i>Envío a domicilio</li>
+        <li><i class="bi bi-shop"></i>Retiro en tienda</li>
+        <li><i class="bi bi-bank"></i>Paga por transferencia</li>
+        <li><i class="bi bi-bag-check"></i>Compra en línea, sin esperas</li>
+        <li><i class="bi bi-arrow-repeat"></i>Cambios y devoluciones</li>
+        <li><i class="bi bi-geo-alt"></i>Sigue tu pedido en línea</li>
+      </ul>
+    {% endfor %}
   </div>
-</section>
+</div>
 
 {% if categorias %}
 <section class="container mm-seccion">
   <div class="mm-seccion-cabecera">
-    <h2><i class="bi bi-grid-fill me-2"></i>Categorías</h2>
+    <h2>Categorías</h2>
+    <a href="{% url 'catalogo:lista' tienda.slug %}">Ver catálogo <i class="bi bi-arrow-right"></i></a>
   </div>
-  <div class="row g-3">
+  <div class="mm-burbujas">
     {% for categoria in categorias %}
-      <div class="col-6 col-md-4 col-lg-3">
-        <a class="mm-categoria revelar" href="{% url 'catalogo:categoria' tienda.slug categoria.slug %}">
+      <a class="mm-burbuja" href="{% url 'catalogo:categoria' tienda.slug categoria.slug %}">
+        <span class="mm-burbuja-foto{% if categoria.usa_foto_de_producto %} con-producto{% endif %}">
           {% if categoria.url_portada %}
-            <img{% if categoria.usa_foto_de_producto %} class="mm-categoria-producto"{% endif %} src="{{ categoria.url_portada }}" alt="" loading="lazy" decoding="async">
+            <img src="{{ categoria.url_portada }}" alt="" loading="lazy" decoding="async">
           {% else %}
-            <span class="mm-categoria-sin-foto"><i class="bi bi-box-seam"></i></span>
+            <i class="bi bi-box-seam"></i>
           {% endif %}
-          <span class="mm-categoria-nombre">{{ categoria.nombre }}</span>
-        </a>
-      </div>
+        </span>
+        <span class="mm-burbuja-nombre">{{ categoria.nombre }}</span>
+      </a>
     {% endfor %}
   </div>
 </section>
@@ -92,15 +100,23 @@
     <h2><i class="bi {{ seccion.icono }} me-2"></i>{{ seccion.titulo }}</h2>
     <a href="{% url 'catalogo:lista' tienda.slug %}{{ seccion.enlace }}">Ver todo <i class="bi bi-arrow-right"></i></a>
   </div>
-  <div class="row g-3">
-    {% for producto in seccion.productos %}
-      <div class="col-6 col-md-4 col-lg-3">{% include 'includes/tarjeta_producto.html' %}</div>
-    {% endfor %}
-  </div>
+  {% include 'includes/fila_productos.html' with productos=seccion.productos auto=forloop.first %}
 </section>
 {% empty %}
 <section class="container mm-seccion text-center">
   <p class="lead text-muted">Pronto verás aquí nuestros productos.</p>
 </section>
 {% endfor %}
+
+{% if secciones %}
+<section class="container mm-seccion">
+  <a class="mm-llamado" href="{% url 'catalogo:lista' tienda.slug %}">
+    <span>
+      <strong>Explora todo el catálogo de {{ tienda.nombre }}</strong>
+      <span>Filtra por categoría, marca y precio.</span>
+    </span>
+    <i class="bi bi-arrow-right-circle-fill"></i>
+  </a>
+</section>
+{% endif %}
 {% endblock %}

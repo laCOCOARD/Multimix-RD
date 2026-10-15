@@ -43,8 +43,12 @@
 
   <header class="mm-cabecera sticky-top">
     <nav class="navbar navbar-expand-lg">
-      <div class="container">
-        <a class="navbar-brand mm-logo" href="{% if tienda %}{{ tienda.get_absolute_url }}{% else %}{% url 'tiendas:portada' %}{% endif %}">
+      <div class="container flex-nowrap gap-2">
+        <button class="mm-btn-menu" type="button" data-bs-toggle="offcanvas" data-bs-target="#menu-lateral"
+                aria-controls="menu-lateral" aria-label="Abrir menú">
+          <i class="bi bi-list"></i>
+        </button>
+        <a class="navbar-brand mm-logo me-0 me-lg-3" href="{% if tienda %}{{ tienda.get_absolute_url }}{% else %}{% url 'tiendas:portada' %}{% endif %}">
           {% if marca.logo %}
             <img src="{{ marca.logo.url }}" alt="{{ marca.nombre }}" height="40">
           {% else %}
@@ -53,29 +57,8 @@
           {% endif %}
         </a>
 
-        <div class="d-flex align-items-center gap-2 order-lg-3">
-          <a class="btn mm-btn-carrito" href="{% if user.is_authenticated %}{% url 'clientes:cuenta' %}{% else %}{% url 'clientes:entrar' %}{% endif %}"
-             aria-label="{% if user.is_authenticated %}Mi cuenta{% else %}Iniciar sesión{% endif %}" title="{% if user.is_authenticated %}Mi cuenta{% else %}Iniciar sesión{% endif %}">
-            <i class="bi {% if user.is_authenticated %}bi-person-check{% else %}bi-person{% endif %}"></i>
-          </a>
-          {% if tienda and puede_navegar %}
-            <a class="btn mm-btn-carrito position-relative" href="{% url 'carrito:detalle' tienda.slug %}" aria-label="Ver carrito de {{ tienda.nombre }}">
-              <i class="bi bi-bag"></i>
-              <span class="badge rounded-pill mm-contador js-contador-carrito{% if not carrito_cantidad %} d-none{% endif %}">{{ carrito_cantidad }}</span>
-            </a>
-          {% endif %}
-          {% if puede_navegar %}
-          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#menu-principal"
-                  aria-controls="menu-principal" aria-expanded="false" aria-label="Abrir menú">
-            <span class="navbar-toggler-icon"></span>
-          </button>
-          {% endif %}
-        </div>
-
         {% if puede_navegar %}
-
-        <div class="collapse navbar-collapse order-lg-2" id="menu-principal">
-          <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+          <ul class="navbar-nav flex-row gap-3 me-auto d-none d-lg-flex">
             {% if tienda %}
               <li class="nav-item"><a class="nav-link" href="{% url 'catalogo:lista' tienda.slug %}">Catálogo</a></li>
               <li class="nav-item dropdown">
@@ -97,7 +80,7 @@
             {% endif %}
           </ul>
           {% block buscador_cabecera %}
-          <form class="d-flex mm-buscador js-buscador" role="search" method="get"
+          <form class="d-none d-lg-flex mm-buscador js-buscador" role="search" method="get"
                 action="{% if tienda %}{% url 'catalogo:lista' tienda.slug %}{% else %}{% url 'tiendas:buscar' %}{% endif %}"
                 data-sugerencias="{% if tienda %}{% url 'catalogo:sugerencias' tienda.slug %}{% else %}{% url 'tiendas:sugerencias' %}{% endif %}">
             <input class="form-control" type="search" name="q" maxlength="80" value="{{ filtros.q|default:'' }}" autocomplete="off"
@@ -106,11 +89,25 @@
             <button class="btn btn-primary" type="submit" aria-label="Buscar"><i class="bi bi-search"></i></button>
           </form>
           {% endblock %}
-        </div>
         {% endif %}
+
+        <div class="d-flex align-items-center gap-1 ms-auto ms-lg-2">
+          <a class="btn mm-btn-carrito" href="{% if user.is_authenticated %}{% url 'clientes:cuenta' %}{% else %}{% url 'clientes:entrar' %}{% endif %}"
+             aria-label="{% if user.is_authenticated %}Mi cuenta{% else %}Iniciar sesión{% endif %}" title="{% if user.is_authenticated %}Mi cuenta{% else %}Iniciar sesión{% endif %}">
+            <i class="bi {% if user.is_authenticated %}bi-person-check{% else %}bi-person{% endif %}"></i>
+          </a>
+          {% if tienda and puede_navegar %}
+            <a class="btn mm-btn-carrito position-relative" href="{% url 'carrito:detalle' tienda.slug %}" aria-label="Ver carrito de {{ tienda.nombre }}">
+              <i class="bi bi-bag"></i>
+              <span class="badge rounded-pill mm-contador js-contador-carrito{% if not carrito_cantidad %} d-none{% endif %}">{{ carrito_cantidad }}</span>
+            </a>
+          {% endif %}
+        </div>
       </div>
     </nav>
   </header>
+
+  {% include 'includes/menu_lateral.html' %}
 
   <main id="contenido" class="flex-grow-1">
     {% if messages %}

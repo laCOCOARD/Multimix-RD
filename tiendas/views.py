@@ -4,23 +4,12 @@ from django.shortcuts import redirect, render
 from django.views.decorators.http import require_GET
 
 from catalogo.forms import ORDENES, FiltroCatalogoForm
-from catalogo.services import filtrar_catalogo, sugerencias as sugerencias_de_productos
+from catalogo.services import en_oferta, filtrar_catalogo, nuevos, sugerencias as sugerencias_de_productos
 from catalogo.views import respuesta_de_sugerencias
 
 from . import services
 
 RESULTADOS_POR_PAGINA = 12
-
-
-# "Compra con tranquilidad" de la portada: cada bloque enlaza su politica si esta publicada.
-RESPALDOS = [
-    {'slug': 'metodos-de-pago', 'icono': 'bi-credit-card-2-front', 'titulo': 'Pagos claros',
-     'texto': 'Transferencia con comprobante o efectivo. Pagas solo a las cuentas que muestra tu pedido.'},
-    {'slug': 'entregas', 'icono': 'bi-box-seam', 'titulo': 'Entrega o retiro',
-     'texto': 'Recibe en tu casa dentro de las zonas de cada tienda o recoge tu pedido cuando esté listo.'},
-    {'slug': 'cambios-y-devoluciones', 'icono': 'bi-arrow-counterclockwise', 'titulo': 'Cambios y devoluciones',
-     'texto': 'Si algo no está bien, lo solicitas desde tu pedido y la tienda te responde.'},
-]
 
 
 @require_GET
@@ -31,7 +20,9 @@ def portada(request):
     return render(request, 'tiendas/portada.html', {
         'tiendas': services.directorio(),
         'preguntas': PreguntaFrecuente.objects.filter(activa=True)[:6],
-        'respaldos': RESPALDOS,
+        # Productos de todas las tiendas: la portada se mueve con lo que hay a la venta.
+        'ofertas': en_oferta(None, limite=12),
+        'nuevos': nuevos(None, limite=12),
     })
 
 

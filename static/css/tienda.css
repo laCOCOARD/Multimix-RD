@@ -150,9 +150,6 @@ img { max-width: 100%; height: auto; }
 .mm-banner-marca { display: grid; place-items: center; width: min(17rem, 100%); aspect-ratio: 1; border-radius: 50%; background: #fff; box-shadow: 0 18px 50px rgba(4, 22, 52, .35); animation: mm-aparecer .7s .15s ease both; }
 .mm-banner-marca img { width: 74%; height: auto; }
 
-.mm-ventajas { margin-top: -1.75rem; position: relative; }
-.mm-ventaja { display: flex; align-items: center; gap: .7rem; height: 100%; padding: .9rem 1rem; background: var(--mm-superficie); border-radius: var(--mm-radio); box-shadow: var(--mm-sombra); font-weight: 600; font-size: .92rem; }
-.mm-ventaja i { font-size: 1.4rem; color: var(--mm-primario); }
 
 /* --- Secciones ---------------------------------------------------------- */
 .mm-seccion { padding-top: 3rem; }
@@ -161,13 +158,7 @@ img { max-width: 100%; height: auto; }
 .mm-seccion-cabecera h2 i { color: var(--mm-hoja); }
 .mm-seccion-cabecera a { font-weight: 600; white-space: nowrap; }
 
-.mm-categoria { position: relative; display: block; aspect-ratio: 4 / 3; overflow: hidden; border-radius: var(--mm-radio); background: var(--mm-primario-suave); box-shadow: var(--mm-sombra); }
-.mm-categoria img { width: 100%; height: 100%; object-fit: cover; transition: transform .5s ease; }
-.mm-categoria:hover img { transform: scale(1.07); }
 /* Foto de producto (fondo blanco) usada como imagen de la categoria: se muestra entera. */
-.mm-categoria img.mm-categoria-producto { object-fit: contain; padding: .5rem .5rem 2.4rem; background: var(--mm-superficie); }
-.mm-categoria-sin-foto { display: grid; place-items: center; height: 100%; font-size: 2.5rem; color: var(--mm-primario); }
-.mm-categoria-nombre { position: absolute; inset: auto 0 0 0; padding: 1.6rem .9rem .7rem; color: #fff; font-weight: 700; background: linear-gradient(transparent, rgba(8, 42, 92, .88)); }
 
 /* --- Portada del sitio: directorio de tiendas --------------------------- */
 /* Clara y sin banner, para que no se confunda con el inicio de una tienda (que si lo lleva). */
@@ -352,8 +343,6 @@ html:not(.js) .solo-con-js { display: none !important; }
 
   .mm-banner { padding: 3rem 0; }
   .mm-banner .btn { flex: 1 1 auto; }
-  .mm-ventaja { min-height: 4.5rem; padding: .7rem; gap: .5rem; font-size: .82rem; }
-  .mm-ventaja i { flex: 0 0 auto; font-size: 1.2rem; }
   .mm-seccion { padding-top: 2.25rem; }
   .mm-seccion-cabecera { align-items: flex-start; flex-wrap: wrap; }
   .mm-seccion-cabecera h2 { font-size: 1.25rem; }
@@ -395,28 +384,10 @@ html:not(.js) .solo-con-js { display: none !important; }
    ========================================================================== */
 
 /* --- Portada ------------------------------------------------------------ */
-.mm-portada { position: relative; overflow: hidden; padding: clamp(2.5rem, 7vw, 5rem) 0; color: #dbe6f2; background: radial-gradient(1100px 420px at 85% -10%, rgba(109, 181, 35, .18), transparent 60%), linear-gradient(160deg, var(--mm-oscuro) 0%, #0b3a7a 100%); }
-.mm-portada-etiqueta { display: inline-flex; align-items: center; gap: .45rem; margin-bottom: 1rem; padding: .3rem .8rem; border: 1px solid rgba(255, 255, 255, .2); border-radius: 999px; font-size: .82rem; font-weight: 600; color: #fff; background: rgba(255, 255, 255, .06); }
-.mm-portada-etiqueta i { color: var(--mm-hoja); }
-.mm-portada-titulo { margin-bottom: 1rem; font-size: clamp(1.9rem, 4.6vw, 3rem); font-weight: 700; line-height: 1.12; letter-spacing: -.03em; color: #fff; max-width: 20ch; }
-.mm-portada-texto { max-width: 36rem; margin-bottom: 1.75rem; font-size: clamp(1rem, 1.8vw, 1.1rem); line-height: 1.6; color: #c3d3e6; }
-.mm-portada .mm-directorio-buscador { margin: 0; max-width: 34rem; border: 0; box-shadow: 0 12px 32px rgba(0, 0, 0, .25); }
-.mm-portada-confianza { padding: 1.5rem; border: 1px solid rgba(255, 255, 255, .14); border-radius: 1.1rem; background: rgba(255, 255, 255, .06); }
-.mm-portada-confianza h2 { margin-bottom: 1.1rem; font-size: 1rem; font-weight: 600; letter-spacing: 0; color: #fff; }
-.mm-portada-confianza ul { display: grid; gap: 1.1rem; margin: 0; padding: 0; list-style: none; }
-.mm-portada-confianza li { display: flex; gap: .85rem; }
-.mm-portada-confianza i { display: grid; place-items: center; flex: 0 0 2.4rem; height: 2.4rem; border-radius: .65rem; background: rgba(255, 255, 255, .1); color: #fff; font-size: 1.15rem; }
-.mm-portada-confianza strong { display: block; color: #fff; font-weight: 600; }
-.mm-portada-confianza span { display: block; font-size: .88rem; line-height: 1.5; color: #b6c8dc; }
 
-.mm-titulo-seccion { margin-bottom: 1.5rem; }
-.mm-titulo-seccion h2 { margin: 0 0 .25rem; font-size: clamp(1.35rem, 2.6vw, 1.6rem); }
-.mm-titulo-seccion p { margin: 0; color: var(--mm-texto-suave); }
 
 /* Tarjeta de tienda en el directorio. */
-.mm-tienda-tarjeta { display: flex; flex-direction: column; gap: .9rem; height: 100%; padding: 1.35rem; background: var(--mm-superficie); border: 1px solid var(--mm-borde); border-radius: var(--mm-radio); color: var(--mm-texto); transition: border-color var(--mm-transicion), box-shadow var(--mm-transicion), transform var(--mm-transicion); }
 .mm-tienda-tarjeta:hover { border-color: #c6d6e8; box-shadow: var(--mm-sombra-alta); transform: translateY(-2px); color: var(--mm-texto); text-decoration: none; }
-.mm-tienda-tarjeta-cabeza { display: flex; align-items: center; gap: .9rem; }
 .mm-tienda-avatar { display: grid; place-items: center; flex: 0 0 3.5rem; height: 3.5rem; overflow: hidden; border-radius: .8rem; background: var(--mm-primario); color: #fff; font-size: 1.35rem; font-weight: 700; }
 .mm-tienda-avatar.con-logo { background: var(--mm-superficie); border: 1px solid var(--mm-borde); }
 .mm-tienda-avatar img { width: 100%; height: 100%; object-fit: contain; }
@@ -428,12 +399,6 @@ html:not(.js) .solo-con-js { display: none !important; }
 .mm-tienda-tarjeta:hover .mm-tienda-tarjeta-pie i { transform: translateX(3px); }
 
 /* Compra con tranquilidad: enlaces a las politicas. */
-.mm-respaldo { display: block; height: 100%; padding: 1.35rem; background: var(--mm-superficie); border: 1px solid var(--mm-borde); border-radius: var(--mm-radio); color: var(--mm-texto); }
-a.mm-respaldo:hover { border-color: #c6d6e8; box-shadow: var(--mm-sombra); color: var(--mm-texto); text-decoration: none; }
-.mm-respaldo > i { display: inline-grid; place-items: center; width: 2.6rem; height: 2.6rem; margin-bottom: .9rem; border-radius: .7rem; background: var(--mm-primario-suave); color: var(--mm-primario); font-size: 1.2rem; }
-.mm-respaldo h3 { margin-bottom: .35rem; font-size: 1.02rem; font-weight: 600; letter-spacing: -.01em; }
-.mm-respaldo p { margin: 0 0 .6rem; font-size: .9rem; line-height: 1.55; color: var(--mm-texto-suave); }
-.mm-respaldo-enlace { font-size: .88rem; font-weight: 600; color: var(--mm-primario); }
 
 /* --- Cuenta: entrar, crear y recuperar ---------------------------------- */
 .mm-acceso { display: grid; grid-template-columns: minmax(0, 1fr); max-width: 60rem; margin: 0 auto; overflow: hidden; background: var(--mm-superficie); border: 1px solid var(--mm-borde); border-radius: 1.1rem; box-shadow: var(--mm-sombra); }
@@ -481,3 +446,119 @@ a.mm-respaldo:hover { border-color: #c6d6e8; box-shadow: var(--mm-sombra); color
 .mm-pie-redes a:hover { background: rgba(255, 255, 255, .16); text-decoration: none; }
 .mm-pie-sellos { display: inline-flex; flex-wrap: wrap; gap: .4rem 1.1rem; }
 .mm-pie-sellos span { display: inline-flex; align-items: center; gap: .35rem; }
+
+/* ==========================================================================
+   Movimiento: menu lateral, filas que se deslizan, categorias y cinta
+   ========================================================================== */
+
+/* --- Boton de 3 barras y menu lateral ----------------------------------- */
+.mm-btn-menu { display: grid; place-items: center; flex: 0 0 auto; width: 2.6rem; height: 2.6rem; padding: 0; border: 0; border-radius: .7rem; background: transparent; color: var(--mm-oscuro); font-size: 1.6rem; transition: background-color var(--mm-transicion); }
+.mm-btn-menu:hover, .mm-btn-menu:focus-visible { background: var(--mm-primario-suave); color: var(--mm-primario); }
+.mm-menu { --bs-offcanvas-width: min(23rem, 88vw); border-right: 0 !important; }
+.mm-menu .offcanvas-header { border-bottom: 1px solid var(--mm-borde); }
+.mm-menu .offcanvas-title { margin: 0; font-size: 1.25rem; }
+.mm-menu .offcanvas-body { display: grid; align-content: start; gap: 1.4rem; }
+.mm-menu-grupo h2 { margin: 0 0 .4rem; padding: 0 .65rem; font-size: .72rem; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--mm-texto-suave); }
+.mm-menu-grupo > a, .mm-menu-grupo button, .mm-menu-sub a { display: flex; align-items: center; gap: .75rem; width: 100%; padding: .55rem .65rem; border: 0; border-radius: .6rem; background: none; color: var(--mm-texto); font-size: .95rem; font-weight: 500; text-align: left; transition: background-color var(--mm-transicion), color var(--mm-transicion), transform var(--mm-transicion); }
+.mm-menu-grupo > a:hover, .mm-menu-grupo button:hover, .mm-menu-sub a:hover { background: var(--mm-primario-suave); color: var(--mm-primario); text-decoration: none; transform: translateX(3px); }
+.mm-menu-grupo > a > i:first-child, .mm-menu-grupo button > i:first-child { width: 1.2rem; font-size: 1.05rem; color: var(--mm-primario); }
+.mm-menu-desplegar .bi-chevron-down { transition: transform var(--mm-transicion); }
+.mm-menu-desplegar:not(.collapsed) .bi-chevron-down { transform: rotate(180deg); }
+.mm-menu-sub { margin: .1rem 0 .3rem 2.6rem; border-left: 2px solid var(--mm-borde); }
+.mm-menu-sub a { padding: .4rem .7rem; font-size: .9rem; border-radius: 0 .6rem .6rem 0; }
+.mm-menu-confianza { padding: 1rem; border-radius: var(--mm-radio); background: linear-gradient(160deg, var(--mm-oscuro), #0b3a7a); color: #c3d3e6; }
+.mm-menu-confianza h2 { padding: 0; color: #fff; }
+.mm-menu-confianza ul { display: grid; gap: .75rem; margin: .6rem 0 0; padding: 0; list-style: none; font-size: .86rem; line-height: 1.45; }
+.mm-menu-confianza li { display: flex; gap: .65rem; }
+.mm-menu-confianza i { color: var(--mm-hoja); font-size: 1rem; }
+.mm-menu-confianza strong { color: #fff; font-weight: 600; }
+/* Los enlaces del menu entran uno tras otro al abrirlo. */
+.mm-menu.showing .mm-menu-grupo, .mm-menu.show .mm-menu-grupo { animation: mm-aparecer .45s ease both; }
+.mm-menu .mm-menu-grupo:nth-child(2) { animation-delay: .05s; }
+.mm-menu .mm-menu-grupo:nth-child(3) { animation-delay: .1s; }
+.mm-menu .mm-menu-grupo:nth-child(4) { animation-delay: .15s; }
+.mm-menu .mm-menu-grupo:nth-child(5) { animation-delay: .2s; }
+.mm-menu .mm-menu-grupo:nth-child(6) { animation-delay: .25s; }
+
+/* --- Portada ------------------------------------------------------------ */
+.mm-portada { position: relative; isolation: isolate; padding: clamp(2.75rem, 7vw, 4.75rem) 0; text-align: center; color: #dbe6f2; background: linear-gradient(160deg, var(--mm-oscuro) 0%, #0b3a7a 55%, #0a5fb4 100%); background-size: 160% 160%; animation: mm-degradado 14s ease-in-out infinite alternate; }
+@keyframes mm-degradado { from { background-position: 0% 0%; } to { background-position: 100% 100%; } }
+/* Las luces van en su propio marco recortado: la portada no recorta, para que las sugerencias del buscador se vean. */
+.mm-portada-fondo { position: absolute; inset: 0; z-index: -1; overflow: hidden; pointer-events: none; }
+.mm-portada-luz { position: absolute; border-radius: 50%; filter: blur(60px); opacity: .55; pointer-events: none; }
+.mm-portada-luz-1 { top: -6rem; right: 8%; width: 22rem; height: 22rem; background: rgba(109, 181, 35, .45); animation: mm-flotar 11s ease-in-out infinite alternate; }
+.mm-portada-luz-2 { bottom: -8rem; left: 4%; width: 26rem; height: 26rem; background: rgba(11, 128, 205, .55); animation: mm-flotar 13s ease-in-out infinite alternate-reverse; }
+@keyframes mm-flotar { from { transform: translate(0, 0) scale(1); } to { transform: translate(3rem, 2rem) scale(1.15); } }
+.mm-portada-etiqueta { display: inline-flex; align-items: center; gap: .45rem; margin-bottom: 1rem; padding: .3rem .8rem; border: 1px solid rgba(255, 255, 255, .2); border-radius: 999px; font-size: .82rem; font-weight: 600; color: #fff; background: rgba(255, 255, 255, .06); animation: mm-aparecer .6s ease both; }
+.mm-portada-etiqueta i { color: var(--mm-hoja); }
+.mm-portada-titulo { max-width: 22ch; margin: 0 auto .9rem; font-size: clamp(1.9rem, 4.8vw, 3.1rem); font-weight: 700; line-height: 1.12; letter-spacing: -.03em; color: #fff; animation: mm-aparecer .7s .08s ease both; }
+.mm-portada-texto { max-width: 34rem; margin: 0 auto 1.75rem; font-size: clamp(1rem, 1.8vw, 1.12rem); color: #c3d3e6; animation: mm-aparecer .7s .16s ease both; }
+.mm-portada .mm-directorio-buscador { position: relative; z-index: 2; max-width: 36rem; margin: 0 auto; border: 0; box-shadow: 0 14px 36px rgba(0, 0, 0, .28); animation: mm-aparecer .7s .24s ease both; }
+.mm-portada .mm-sugerencias { text-align: left; }
+
+/* Tarjeta de tienda, con la franja de su banner. */
+.mm-tienda-tarjeta { display: flex; flex-direction: column; gap: .85rem; height: 100%; overflow: hidden; padding: 0 1.25rem 1.25rem; background: var(--mm-superficie); border: 1px solid var(--mm-borde); border-radius: var(--mm-radio); color: var(--mm-texto); transition: border-color var(--mm-transicion), box-shadow var(--mm-transicion), transform var(--mm-transicion); }
+.mm-tienda-tarjeta-portada { display: block; height: 5.5rem; margin: 0 -1.25rem; background: linear-gradient(120deg, var(--mm-primario), var(--mm-oscuro)); background-size: cover; background-position: center; transition: transform .6s ease; }
+.mm-tienda-tarjeta:hover .mm-tienda-tarjeta-portada { transform: scale(1.06); }
+.mm-tienda-tarjeta-cabeza { display: block; position: relative; margin-top: -1.9rem; }
+.mm-tienda-tarjeta-cabeza > span:last-child { display: block; margin-top: .55rem; }
+.mm-tienda-tarjeta .mm-tienda-avatar { width: 3.75rem; height: 3.75rem; border: 3px solid var(--mm-superficie); box-shadow: 0 6px 16px rgba(8, 42, 92, .18); }
+
+/* --- Fila que se desliza (productos o tiendas) --------------------------- */
+.mm-fila { position: relative; }
+.mm-fila-pista { display: grid; grid-auto-flow: column; grid-auto-columns: calc((100% - 1rem) / 2.15); gap: 1rem; overflow-x: auto; overscroll-behavior-x: contain; scroll-snap-type: x mandatory; scroll-behavior: smooth; padding: .35rem .1rem 1rem; scrollbar-width: none; }
+.mm-fila-pista::-webkit-scrollbar { display: none; }
+.mm-fila-pista:focus-visible { outline: 2px solid var(--mm-primario); outline-offset: 4px; border-radius: var(--mm-radio); }
+.mm-fila-item { scroll-snap-align: start; min-width: 0; }
+.mm-fila-item > .mm-tarjeta { height: 100%; }
+@media (min-width: 576px) { .mm-fila-pista { grid-auto-columns: calc((100% - 2rem) / 3.2); } }
+@media (min-width: 992px) {
+  .mm-fila-pista { grid-auto-columns: calc((100% - 3.75rem) / 4.25); gap: 1.25rem; }
+  .mm-fila-tiendas { grid-auto-columns: calc((100% - 2.5rem) / 3); }
+}
+@media (max-width: 575.98px) { .mm-fila-tiendas { grid-auto-columns: 85%; } }
+.mm-fila-flecha { position: absolute; top: 40%; z-index: 3; display: grid; place-items: center; width: 2.75rem; height: 2.75rem; border: 0; border-radius: 50%; background: var(--mm-superficie); color: var(--mm-oscuro); font-size: 1.15rem; box-shadow: var(--mm-sombra-alta); transform: translateY(-50%); transition: opacity var(--mm-transicion), transform var(--mm-transicion), background-color var(--mm-transicion); }
+.mm-fila-flecha:hover { background: var(--mm-primario); color: #fff; transform: translateY(-50%) scale(1.08); }
+.mm-fila-flecha:disabled { opacity: 0; pointer-events: none; }
+.mm-fila-anterior { left: -1.1rem; }
+.mm-fila-siguiente { right: -1.1rem; }
+@media (hover: none), (max-width: 767.98px) { .mm-fila-flecha { display: none; } }
+
+/* --- Categorias en burbujas --------------------------------------------- */
+.mm-burbujas { display: flex; gap: 1.1rem; overflow-x: auto; scroll-snap-type: x proximity; padding: .4rem .1rem 1rem; scrollbar-width: none; }
+.mm-burbujas::-webkit-scrollbar { display: none; }
+.mm-burbuja { display: grid; justify-items: center; gap: .55rem; flex: 0 0 auto; width: 6.75rem; scroll-snap-align: start; color: var(--mm-texto); text-align: center; }
+.mm-burbuja:hover { color: var(--mm-primario); text-decoration: none; }
+.mm-burbuja-foto { display: grid; place-items: center; width: 5.75rem; height: 5.75rem; overflow: hidden; border-radius: 50%; background: var(--mm-primario-suave); color: var(--mm-primario); font-size: 1.8rem; box-shadow: 0 0 0 3px var(--mm-superficie), 0 0 0 5px var(--mm-borde); transition: box-shadow var(--mm-transicion), transform var(--mm-transicion); }
+.mm-burbuja-foto img { width: 100%; height: 100%; object-fit: cover; transition: transform .5s ease; }
+.mm-burbuja-foto.con-producto { background: var(--mm-superficie); }
+.mm-burbuja-foto.con-producto img { object-fit: contain; padding: .55rem; }
+.mm-burbuja:hover .mm-burbuja-foto { transform: translateY(-3px); box-shadow: 0 0 0 3px var(--mm-superficie), 0 0 0 5px var(--mm-primario); }
+.mm-burbuja:hover .mm-burbuja-foto img { transform: scale(1.1); }
+.mm-burbuja-nombre { font-size: .86rem; font-weight: 600; line-height: 1.25; }
+
+/* --- Cinta con lo que ofrece la tienda ---------------------------------- */
+.mm-cinta { overflow: hidden; background: var(--mm-oscuro); color: #dbe6f2; mask-image: linear-gradient(90deg, transparent, #000 6%, #000 94%, transparent); }
+.mm-cinta-pista { display: flex; width: max-content; animation: mm-cinta 32s linear infinite; }
+.mm-cinta:hover .mm-cinta-pista { animation-play-state: paused; }
+.mm-cinta ul { display: flex; flex: 0 0 auto; margin: 0; padding: 0; list-style: none; }
+.mm-cinta li { display: inline-flex; align-items: center; gap: .5rem; padding: .7rem 1.75rem; font-size: .88rem; font-weight: 500; white-space: nowrap; }
+.mm-cinta li i { color: var(--mm-hoja); font-size: 1rem; }
+@keyframes mm-cinta { to { transform: translateX(-50%); } }
+
+/* --- Banner de la tienda con movimiento --------------------------------- */
+.mm-banner { position: relative; overflow: hidden; isolation: isolate; }
+.mm-banner::before { content: ""; position: absolute; z-index: -1; top: -30%; right: -10%; width: 34rem; height: 34rem; border-radius: 50%; background: radial-gradient(circle, rgba(109, 181, 35, .35), transparent 65%); animation: mm-flotar 12s ease-in-out infinite alternate; pointer-events: none; }
+
+/* --- Llamado al catalogo ------------------------------------------------ */
+.mm-llamado { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 1.5rem 1.75rem; border-radius: var(--mm-radio); background: linear-gradient(120deg, var(--mm-primario), var(--mm-oscuro)); color: #fff; transition: transform var(--mm-transicion), box-shadow var(--mm-transicion); }
+.mm-llamado:hover { color: #fff; text-decoration: none; transform: translateY(-2px); box-shadow: var(--mm-sombra-alta); }
+.mm-llamado strong { display: block; font-size: 1.15rem; font-weight: 600; }
+.mm-llamado span span { color: #c3d3e6; font-size: .92rem; }
+.mm-llamado > i { font-size: 2.2rem; transition: transform var(--mm-transicion); }
+.mm-llamado:hover > i { transform: translateX(4px); }
+
+@media (prefers-reduced-motion: reduce) {
+  .mm-cinta-pista { animation: none; }
+  .mm-fila-pista { scroll-behavior: auto; }
+}

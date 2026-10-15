@@ -228,4 +228,49 @@
       });
     });
   }
+
+  // Filas que se deslizan: flechas en pantallas con raton y, con data-auto, avance solo cada pocos segundos.
+  const sinMovimiento = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  document.querySelectorAll('[data-fila]').forEach((fila) => {
+    const pista = fila.querySelector('.mm-fila-pista');
+    const anterior = fila.querySelector('[data-mover="-1"]');
+    const siguiente = fila.querySelector('[data-mover="1"]');
+    if (!pista) return;
+
+    const uno = () => {
+      const item = pista.querySelector('.mm-fila-item');
+      return item ? item.getBoundingClientRect().width + (parseFloat(getComputedStyle(pista).columnGap) || 0) : pista.clientWidth;
+    };
+    // Las flechas avanzan las tarjetas que se ven completas, al menos una.
+    const paso = () => Math.max(uno(), Math.floor(pista.clientWidth / uno()) * uno());
+    const alFinal = () => pista.scrollLeft + pista.clientWidth >= pista.scrollWidth - 4;
+    const actualizar = () => {
+      const desborda = pista.scrollWidth > pista.clientWidth + 4;
+      [anterior, siguiente].forEach((boton) => { if (boton) boton.hidden = !desborda; });
+      if (anterior) anterior.disabled = pista.scrollLeft <= 4;
+      if (siguiente) siguiente.disabled = alFinal();
+    };
+    const mover = (direccion) => pista.scrollBy({ left: direccion * paso(), behavior: sinMovimiento ? 'auto' : 'smooth' });
+
+    [anterior, siguiente].forEach((boton) => {
+      if (boton) boton.addEventListener('click', () => mover(Number(boton.dataset.mover)));
+    });
+    pista.addEventListener('scroll', actualizar, { passive: true });
+    window.addEventListener('resize', actualizar);
+    actualizar();
+
+    if (fila.hasAttribute('data-auto') && !sinMovimiento) {
+      let pausa = false;
+      ['mouseenter', 'focusin', 'touchstart'].forEach((evento) => fila.addEventListener(evento, () => { pausa = true; }, { passive: true }));
+      ['mouseleave', 'focusout'].forEach((evento) => fila.addEventListener(evento, () => { pausa = false; }));
+      setInterval(() => {
+        if (pausa || document.hidden || pista.scrollWidth <= pista.clientWidth + 4) return;
+        // Solo avanza si la fila esta a la vista; al llegar al final vuelve al comienzo.
+        const caja = fila.getBoundingClientRect();
+        if (caja.bottom < 0 || caja.top > window.innerHeight) return;
+        if (alFinal()) pista.scrollTo({ left: 0, behavior: 'smooth' });
+        else pista.scrollBy({ left: uno(), behavior: 'smooth' });
+      }, 4500);
+    }
+  });
 })();

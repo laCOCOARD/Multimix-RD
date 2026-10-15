@@ -1,0 +1,94 @@
+{# Menu de las 3 barras: navegacion, lo que respalda cada compra, ayuda y contacto. Sin sesion solo ofrece entrar y la informacion. #}
+<div class="offcanvas offcanvas-start mm-menu" id="menu-lateral" tabindex="-1" aria-labelledby="menu-lateral-titulo">
+  <div class="offcanvas-header">
+    <p class="offcanvas-title mm-logo-texto" id="menu-lateral-titulo">{{ marca.nombre }}</p>
+    <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Cerrar menú"></button>
+  </div>
+  <div class="offcanvas-body">
+    {% if puede_navegar %}
+      <form class="mm-buscador d-flex d-lg-none mb-3" role="search" method="get"
+            action="{% if tienda %}{% url 'catalogo:lista' tienda.slug %}{% else %}{% url 'tiendas:buscar' %}{% endif %}">
+        <input class="form-control" type="search" name="q" maxlength="80" autocomplete="off"
+               placeholder="{% if tienda %}Buscar en esta tienda{% else %}Buscar productos{% endif %}" aria-label="Buscar">
+        <button class="btn btn-primary" type="submit" aria-label="Buscar"><i class="bi bi-search"></i></button>
+      </form>
+
+      <nav class="mm-menu-grupo" aria-label="{% if tienda %}{{ tienda.nombre }}{% else %}Comprar{% endif %}">
+        {% if tienda %}
+          <h2>{{ tienda.nombre }}</h2>
+          <a href="{{ tienda.get_absolute_url }}"><i class="bi bi-house"></i>Inicio de la tienda</a>
+          <a href="{% url 'catalogo:lista' tienda.slug %}"><i class="bi bi-grid"></i>Catálogo</a>
+          {% if categorias_menu %}
+            <button class="mm-menu-desplegar collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#menu-categorias"
+                    aria-expanded="false" aria-controls="menu-categorias">
+              <i class="bi bi-tags"></i>Categorías<i class="bi bi-chevron-down ms-auto"></i>
+            </button>
+            <div class="collapse mm-menu-sub" id="menu-categorias">
+              {% for categoria in categorias_menu %}
+                <a href="{% url 'catalogo:categoria' tienda.slug categoria.slug %}">{{ categoria.nombre }}</a>
+              {% endfor %}
+            </div>
+          {% endif %}
+          <a href="{% url 'catalogo:lista' tienda.slug %}?oferta=on"><i class="bi bi-percent"></i>Ofertas</a>
+          <a href="{% url 'core:envios' tienda.slug %}"><i class="bi bi-truck"></i>Envíos y retiros</a>
+          <a href="{% url 'carrito:detalle' tienda.slug %}"><i class="bi bi-bag"></i>Mi carrito</a>
+          <a href="{% url 'tiendas:portada' %}"><i class="bi bi-arrow-left-circle"></i>Todas las tiendas</a>
+        {% else %}
+          <h2>Comprar</h2>
+          <a href="{% url 'tiendas:portada' %}#tiendas"><i class="bi bi-shop"></i>Tiendas</a>
+          <a href="{% url 'tiendas:buscar' %}"><i class="bi bi-grid"></i>Todos los productos</a>
+          <a href="{% url 'tiendas:buscar' %}?oferta=on"><i class="bi bi-percent"></i>Ofertas</a>
+        {% endif %}
+      </nav>
+
+      <nav class="mm-menu-grupo" aria-label="Mi cuenta">
+        <h2>Mi cuenta</h2>
+        <a href="{% url 'clientes:cuenta' %}"><i class="bi bi-receipt"></i>Mis pedidos</a>
+        <a href="{% url 'clientes:favoritos' %}"><i class="bi bi-heart"></i>Mis favoritos</a>
+        <a href="{% url 'clientes:perfil' %}"><i class="bi bi-person"></i>Mis datos</a>
+        <form method="post" action="{% url 'clientes:salir' %}">
+          {% csrf_token %}
+          <button type="submit"><i class="bi bi-box-arrow-right"></i>Cerrar sesión</button>
+        </form>
+      </nav>
+    {% else %}
+      <nav class="mm-menu-grupo" aria-label="Mi cuenta">
+        <a href="{% url 'clientes:entrar' %}"><i class="bi bi-box-arrow-in-right"></i>Iniciar sesión</a>
+        <a href="{% url 'clientes:registro' %}"><i class="bi bi-person-plus"></i>Crear cuenta</a>
+      </nav>
+    {% endif %}
+
+    <section class="mm-menu-grupo mm-menu-confianza">
+      <h2>Tu compra, protegida</h2>
+      <ul>
+        <li><i class="bi bi-shield-check"></i><span><strong>Pago verificado.</strong> La tienda confirma tu pago antes de preparar el pedido. Nunca te pedimos datos de tarjeta.</span></li>
+        <li><i class="bi bi-geo-alt"></i><span><strong>Seguimiento en línea.</strong> Ves cada paso de tu pedido y te avisamos por correo.</span></li>
+        {% if plataforma.dias_devolucion %}
+          <li><i class="bi bi-arrow-repeat"></i><span><strong>Cambios y devoluciones.</strong> {{ plataforma.dias_devolucion }} días después de la entrega para solicitarlos.</span></li>
+        {% endif %}
+        <li><i class="bi bi-chat-dots"></i><span><strong>Atención directa.</strong> Escríbele a la tienda o a nosotros.</span></li>
+      </ul>
+    </section>
+
+    <nav class="mm-menu-grupo" aria-label="Ayuda">
+      <h2>Ayuda</h2>
+      {% if contenido_pie.hay_preguntas %}<a href="{% url 'core:preguntas' %}"><i class="bi bi-question-circle"></i>Preguntas frecuentes</a>{% endif %}
+      {% for pagina in paginas_ayuda %}
+        <a href="{% url 'core:pagina' pagina.slug %}"><i class="bi bi-file-earmark-text"></i>{{ pagina.titulo }}</a>
+      {% endfor %}
+      <a href="{% url 'core:terminos' %}"><i class="bi bi-file-earmark-check"></i>Términos del sitio</a>
+      {% for pagina in paginas_legales %}
+        <a href="{% url 'core:pagina' pagina.slug %}"><i class="bi bi-file-earmark-lock"></i>{{ pagina.titulo }}</a>
+      {% endfor %}
+    </nav>
+
+    {% if enlace_whatsapp_tienda or marca.correo or marca.telefono %}
+      <nav class="mm-menu-grupo" aria-label="Contacto">
+        <h2>Contacto</h2>
+        {% if enlace_whatsapp_tienda %}<a href="{{ enlace_whatsapp_tienda }}" target="_blank" rel="noopener"><i class="bi bi-whatsapp"></i>Escríbenos por WhatsApp</a>{% endif %}
+        {% if marca.telefono %}<a href="tel:{{ marca.telefono }}"><i class="bi bi-telephone"></i>{{ marca.telefono }}</a>{% endif %}
+        {% if marca.correo %}<a href="mailto:{{ marca.correo }}"><i class="bi bi-envelope"></i>{{ marca.correo }}</a>{% endif %}
+      </nav>
+    {% endif %}
+  </div>
+</div>
