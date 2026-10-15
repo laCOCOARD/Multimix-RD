@@ -353,4 +353,27 @@
       compraFija.querySelectorAll('button').forEach((boton) => { boton.tabIndex = mostrar ? 0 : -1; });
     }).observe(formCompra);
   }
+
+  // Foto que no carga (archivo borrado del almacenamiento): se cambia por el icono de "sin foto".
+  document.addEventListener('error', (evento) => {
+    const foto = evento.target;
+    if (!(foto instanceof HTMLImageElement) || !foto.closest('.mm-tarjeta-foto, .mm-galeria-principal, .mm-linea-foto')) return;
+    const vacio = document.createElement('span');
+    vacio.className = 'mm-sin-foto';
+    vacio.innerHTML = '<i class="bi bi-image"></i>';
+    foto.replaceWith(vacio);
+  }, true);
+
+  // Lupa en la foto del producto: con el raton, la foto se amplia donde apunta.
+  const marco = document.querySelector('.mm-galeria-principal');
+  if (marco && window.matchMedia('(hover: hover) and (pointer: fine)').matches) {
+    marco.addEventListener('mousemove', (evento) => {
+      const foto = marco.querySelector('img');
+      if (!foto) return;
+      const caja = marco.getBoundingClientRect();
+      foto.style.transformOrigin = `${((evento.clientX - caja.left) / caja.width) * 100}% ${((evento.clientY - caja.top) / caja.height) * 100}%`;
+      marco.classList.add('ampliada');
+    });
+    marco.addEventListener('mouseleave', () => marco.classList.remove('ampliada'));
+  }
 })();

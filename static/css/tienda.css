@@ -612,3 +612,13 @@ html:not(.js) .solo-con-js { display: none !important; }
   body:has(.mm-compra-fija.visible) .mm-arriba { bottom: calc(8.6rem + env(safe-area-inset-bottom)) !important; }
 }
 .btn.mm-agregado { --bs-btn-bg: var(--mm-acento); --bs-btn-border-color: var(--mm-acento); --bs-btn-disabled-bg: var(--mm-acento); --bs-btn-disabled-border-color: var(--mm-acento); animation: mm-salto .45s ease; }
+
+/* --- Categorias en botones (catalogo en el celular) y lupa de la foto ---- */
+.mm-chips { display: flex; gap: .5rem; overflow-x: auto; padding: .15rem .05rem .35rem; scrollbar-width: none; }
+.mm-chips::-webkit-scrollbar { display: none; }
+.mm-chip { flex: 0 0 auto; padding: .45rem 1rem; border: 1px solid var(--mm-borde); border-radius: 999px; background: var(--mm-superficie); color: var(--mm-texto); font-size: .88rem; font-weight: 500; white-space: nowrap; transition: background-color var(--mm-transicion), color var(--mm-transicion), border-color var(--mm-transicion); }
+.mm-chip:hover { border-color: var(--mm-primario); color: var(--mm-primario); text-decoration: none; }
+.mm-chip.activa { background: var(--mm-primario); border-color: var(--mm-primario); color: #fff; }
+.mm-galeria-principal img { transition: transform .25s ease, opacity .2s ease; }
+.mm-galeria-principal.ampliada { cursor: zoom-in; }
+.mm-galeria-principal.ampliada img { transform: scale(1.9); }

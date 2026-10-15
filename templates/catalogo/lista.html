@@ -29,6 +29,16 @@
             aria-expanded="false" aria-controls="filtros"><i class="bi bi-sliders me-1"></i>Filtros</button>
   </div>
 
+  {% if categorias %}
+    {# En el celular las categorias quedan a un toque, en una fila que se desliza. #}
+    <nav class="mm-chips d-lg-none mb-3" aria-label="Categorías">
+      <a class="mm-chip{% if not categoria %} activa{% endif %}" href="{% url 'catalogo:lista' tienda.slug %}{% querystring pagina=None %}">Todas</a>
+      {% for item in categorias %}
+        <a class="mm-chip{% if categoria.pk == item.pk %} activa{% endif %}" href="{% url 'catalogo:categoria' tienda.slug item.slug %}{% querystring pagina=None %}">{{ item.nombre }}</a>
+      {% endfor %}
+    </nav>
+  {% endif %}
+
   <div class="row g-4">
     <aside class="col-lg-3">
       <form class="mm-filtros collapse d-lg-block" id="filtros" method="get"
