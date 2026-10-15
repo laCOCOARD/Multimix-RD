@@ -111,9 +111,16 @@
       {% else %}
         <div class="mm-vacio">
           <i class="bi bi-search"></i>
-          <p class="lead mb-2">No encontramos productos con esos filtros.</p>
+          <p class="lead mb-1">No encontramos productos con esos filtros.</p>
+          <p class="text-muted mb-3">Prueba quitando algún filtro o con otra palabra.</p>
           <a class="btn btn-primary" href="{% url 'catalogo:lista' tienda.slug %}">Ver todo el catálogo</a>
         </div>
+        {% if sugeridos %}
+          <section class="mm-seccion">
+            <div class="mm-seccion-cabecera"><h2>Quizás te interese</h2></div>
+            {% include 'includes/fila_productos.html' with productos=sugeridos %}
+          </section>
+        {% endif %}
       {% endif %}
     </div>
   </div>

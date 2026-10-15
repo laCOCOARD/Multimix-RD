@@ -17,7 +17,7 @@ from core.texto import normalizar
 from core.validators import validar_imagen
 from pedidos.models import DetallePedido, Pedido
 
-from .models import Categoria, FotoProducto, Producto, q_oferta_vigente
+from .models import Categoria, FotoProducto, Producto, q_comprable, q_oferta_vigente
 
 
 def clave_mas_vendidos(tienda):
@@ -130,7 +130,42 @@ def categorias_de_portada(tienda):
     return categorias
 
 
-def relacionados(producto, limite=4):
+# Vistos recientemente (como en las grandes tiendas): ids en la sesion, el mas reciente primero.
+CLAVE_VISTOS = 'vistos'
+MAXIMO_VISTOS = 12
+
+
+def recordar_visto(sesion, producto):
+    anteriores = [pk for pk in sesion.get(CLAVE_VISTOS, []) if pk != producto.pk]
+    sesion[CLAVE_VISTOS] = [producto.pk, *anteriores][:MAXIMO_VISTOS]
+
+
+def vistos(sesion, tienda=None, excluir=None, limite=10):
+    """Los productos que el visitante miro hace poco y siguen a la venta; dentro de una tienda, solo los suyos."""
+    ids = [pk for pk in sesion.get(CLAVE_VISTOS, []) if pk != excluir]
+    productos = _base(tienda).in_bulk(ids)
+    return [productos[pk] for pk in ids if pk in productos][:limite]
+
+
+def oferta_por_terminar(producto, dias=7):
+    """Fin de la oferta si termina dentro de pocos dias (para la cuenta regresiva); si no, None."""
+    if producto.en_oferta and producto.oferta_fin and producto.oferta_fin - timezone.now() <= timedelta(days=dias):
+        return producto.oferta_fin
+    return None
+
+
+def sugerencias_para_el_carrito(tienda, en_el_carrito, limite=10):
+    """Para completar el pedido: de las categorias de lo que lleva, y si no alcanza, destacados de la tienda."""
+    productos = _base(tienda).filter(q_comprable()).exclude(pk__in=en_el_carrito)
+    categorias = Producto.objects.filter(pk__in=en_el_carrito).values('categoria_id')
+    sugeridos = list(productos.filter(categoria_id__in=categorias)[:limite]) if en_el_carrito else []
+    if len(sugeridos) < limite:
+        ya = [p.pk for p in sugeridos]
+        sugeridos += list(productos.exclude(pk__in=ya).order_by('-destacado', '-creado')[:limite - len(sugeridos)])
+    return sugeridos
+
+
+def relacionados(producto, limite=10):
     """Otros productos de la misma tienda y categoria."""
     return list(
         _base().filter(tienda_id=producto.tienda_id, categoria_id=producto.categoria_id)

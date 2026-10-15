@@ -21,6 +21,7 @@
 <meta property="product:availability" content="{% if producto.agotado %}out of stock{% elif producto.bajo_pedido %}available for order{% else %}in stock{% endif %}">
 <link rel="canonical" href="{{ url_absoluta }}">
 <script type="application/ld+json">{{ json_ld }}</script>
+<script type="application/ld+json">{{ ruta_json_ld }}</script>
 {% endblock %}
 
 {% block contenido %}
@@ -79,6 +80,11 @@
           <span class="badge mm-etiqueta-oferta">-{{ producto.porcentaje_descuento }}%</span>
         {% endif %}
       </p>
+      {% if oferta_termina %}
+        <p class="mm-cuenta-atras" data-fin="{{ oferta_termina|date:'c' }}">
+          <i class="bi bi-alarm"></i>La oferta termina <span class="js-tiempo">el {{ oferta_termina|date:"j \d\e F, g:i A" }}</span>
+        </p>
+      {% endif %}
 
       {% if tienda.itbis_porcentaje and not producto.exento_itbis %}
         <p class="small text-muted mt-n2">Precio sin ITBIS ({{ tienda.itbis_porcentaje|floatformat:'-2' }}%): se suma al confirmar tu pedido.</p>
@@ -101,7 +107,7 @@
       {% if producto.agotado %}
         <button class="btn btn-secondary btn-lg w-100 mb-2" type="button" disabled>{% if producto.estado_venta == 'agotado' %}Agotado{% else %}No disponible por ahora{% endif %}</button>
       {% else %}
-        <form class="js-agregar mb-2" method="post" action="{% url 'carrito:agregar' tienda.slug %}">
+        <form class="js-agregar mb-2" id="form-compra" method="post" action="{% url 'carrito:agregar' tienda.slug %}">
           {% csrf_token %}
           <input type="hidden" name="producto_id" value="{{ producto.pk }}">
           <input type="hidden" name="next" value="{{ request.get_full_path }}">
@@ -151,6 +157,8 @@
       <ul class="list-unstyled mm-garantias mt-4 mb-0">
         <li><i class="bi bi-truck"></i>Envío a domicilio o retiro en tienda. <a href="{% url 'core:envios' tienda.slug %}">Ver zonas y tarifas</a></li>
         <li><i class="bi bi-bank"></i>Paga por transferencia{% if tienda.permitir_contra_entrega %}, contra entrega{% endif %} o en efectivo al recoger.</li>
+        <li><i class="bi bi-shield-check"></i>La tienda verifica tu pago antes de preparar el pedido. Nunca te pedimos datos de tarjeta.</li>
+        {% if plataforma.dias_devolucion %}<li><i class="bi bi-arrow-repeat"></i>{{ plataforma.dias_devolucion }} días para cambios y devoluciones.</li>{% endif %}
       </ul>
     </div>
   </div>
@@ -207,13 +215,29 @@
     <section class="mm-seccion px-0">
       <div class="mm-seccion-cabecera">
         <h2>También te puede interesar</h2>
+        <a href="{% url 'catalogo:categoria' tienda.slug producto.categoria.slug %}">Ver {{ producto.categoria.nombre|lower }} <i class="bi bi-arrow-right"></i></a>
       </div>
-      <div class="row g-3">
-        {% for producto in relacionados %}
-          <div class="col-6 col-md-4 col-lg-3">{% include 'includes/tarjeta_producto.html' %}</div>
-        {% endfor %}
-      </div>
+      {% include 'includes/fila_productos.html' with productos=relacionados %}
+    </section>
+  {% endif %}
+
+  {% if vistos %}
+    <section class="mm-seccion px-0">
+      <div class="mm-seccion-cabecera"><h2><i class="bi bi-clock-history me-2"></i>Vistos recientemente</h2></div>
+      {% include 'includes/fila_productos.html' with productos=vistos %}
     </section>
   {% endif %}
 </div>
+
+{% if not producto.agotado %}
+  {# En el celular, al bajar, el boton de compra queda siempre a mano (como en las apps de las grandes tiendas). #}
+  <div class="mm-compra-fija d-lg-none" aria-hidden="true">
+    <div class="mm-compra-fija-datos">
+      <span class="mm-compra-fija-nombre">{{ producto.nombre }}</span>
+      <span class="mm-precio-final">{{ producto.precio_final|moneda }}</span>
+    </div>
+    <button class="btn btn-acento" type="submit" form="form-compra" name="comprar" value="1" tabindex="-1">Comprar</button>
+    <button class="btn btn-primary" type="submit" form="form-compra" tabindex="-1" aria-label="Agregar al carrito"><i class="bi bi-bag-plus"></i></button>
+  </div>
+{% endif %}
 {% endblock %}

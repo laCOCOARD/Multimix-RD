@@ -19,6 +19,11 @@
   <div class="mm-tarjeta-cuerpo">
     <p class="mm-tarjeta-categoria">{% if tienda %}{{ producto.categoria.nombre }}{% else %}<i class="bi bi-shop me-1"></i>{{ producto.tienda.nombre }}{% endif %}</p>
     <h3 class="mm-tarjeta-nombre"><a href="{{ producto.get_absolute_url }}">{{ producto.nombre }}</a></h3>
+    {% if producto.valoracion_total %}
+      <p class="mm-tarjeta-valoracion" aria-label="{{ producto.valoracion_promedio|floatformat:"1u" }} de 5 estrellas, {{ producto.valoracion_total }} opiniones">
+        <i class="bi bi-star-fill"></i>{{ producto.valoracion_promedio|floatformat:"1u" }} <span>({{ producto.valoracion_total }})</span>
+      </p>
+    {% endif %}
     <p class="mm-precio mb-3">
       <span class="mm-precio-final">{{ producto.precio_final|moneda }}</span>
       {% if producto.en_oferta %}<s class="mm-precio-anterior">{{ producto.precio|moneda }}</s>{% endif %}

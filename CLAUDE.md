@@ -223,13 +223,23 @@ Al cerrar cada modulo: check, makemigrations, migrate, test y commit.
 - "Comprar ahora" es el mismo POST de agregar al carrito con `comprar=1`: redirige al checkout.
 - Busqueda sin tildes: `Producto.texto_busqueda` (nombre + marca + SKU + descripcion normalizados en `save()`).
   Ojo: `queryset.update()` de nombre/descripcion no lo refresca.
-- Cuenta obligatoria (pedido del dueño el 2026-10-14): `config.middleware.CuentaObligatoriaMiddleware` (el
-  `LoginRequiredMiddleware` de Django) manda a `/cuenta/entrar/` todo el sitio. Abren sin sesion, con
+- Cuenta para comprar: se navega y se arma el carrito sin cuenta (Google ve el catalogo); el checkout lleva
+  `@login_required` y el carrito ofrece "Iniciar sesion y continuar" (el carrito de la sesion se conserva al
+  entrar). El dueño pidio primero cerrar todo el sitio y despues, el 2026-10-14, abrirlo: el cierre sigue
+  disponible con la variable `CUENTA_OBLIGATORIA=1` (`config.middleware.CuentaObligatoriaMiddleware`, el
+  `LoginRequiredMiddleware` de Django), que manda a `/cuenta/entrar/` todo el sitio. Abren sin sesion, con
   `@login_not_required`: entrar, crear cuenta, recuperar contraseña, terminos, politicas, preguntas, robots,
   sitemap, `/salud/`, el panel (se protege solo) y las paginas por token del pedido (los enlaces de los correos y
   los pedidos de invitado anteriores). Una vista nueva del sitio queda cerrada sin hacer nada. En las pruebas esta
   apagado (`CUENTA_OBLIGATORIA`); `clientes/tests/test_cuenta_obligatoria.py` lo prueba encendido. Sin sesion la
   plantilla oculta menu, buscador y carrito (`puede_navegar`). El checkout lleva ademas `@login_required`.
+- Experiencia de compra (tomado de las grandes tiendas): barra inferior en el celular, estrellas en las tarjetas
+  (`ProductoQuerySet.con_valoracion`, subconsultas, dentro de `para_listado`), vistos recientemente en la sesion
+  (`catalogo.services.recordar_visto`/`vistos`; dentro de una tienda solo los suyos, porque la tarjeta agrega al
+  carrito de esa tienda), cuenta regresiva si la oferta termina en 7 dias o menos, barra de compra fija en la
+  ficha (celular), "Completa tu pedido" en el carrito (`sugerencias_para_el_carrito`, con `q_comprable`),
+  sugerencias cuando una busqueda no encuentra nada y JSON-LD del sitio (SearchAction) y de la ruta del producto.
+  Las valoraciones se muestran con punto decimal (`floatformat:"1u"`): el locale `es` pondria coma.
 - El checkout no pide correo: el pedido lleva el de la cuenta (`request.user.email`) y los avisos van alli. El
   telefono es obligatorio.
 - Los pedidos no se crean desde el panel; en su formulario solo se editan las notas internas.

@@ -51,3 +51,38 @@ def producto_json_ld(producto, url, imagenes, resumen_resenas):
             'reviewCount': resumen_resenas['total'],
         }
     return json_ld(datos)
+
+
+def sitio_json_ld(nombre, url_inicio, url_busqueda, logo=''):
+    """El sitio y su buscador: Google puede mostrar una caja de busqueda bajo el resultado."""
+    organizacion = {'@type': 'Organization', 'name': nombre, 'url': url_inicio}
+    if logo:
+        organizacion['logo'] = logo
+    return json_ld({
+        '@context': 'https://schema.org',
+        '@graph': [
+            organizacion,
+            {
+                '@type': 'WebSite',
+                'name': nombre,
+                'url': url_inicio,
+                'potentialAction': {
+                    '@type': 'SearchAction',
+                    'target': {'@type': 'EntryPoint', 'urlTemplate': f'{url_busqueda}?q={{search_term_string}}'},
+                    'query-input': 'required name=search_term_string',
+                },
+            },
+        ],
+    })
+
+
+def ruta_json_ld(pasos):
+    """Ruta de navegacion (BreadcrumbList) a partir de pares (nombre, url absoluta)."""
+    return json_ld({
+        '@context': 'https://schema.org',
+        '@type': 'BreadcrumbList',
+        'itemListElement': [
+            {'@type': 'ListItem', 'position': posicion, 'name': nombre, 'item': url}
+            for posicion, (nombre, url) in enumerate(pasos, start=1)
+        ],
+    })

@@ -94,6 +94,13 @@
 </section>
 {% endif %}
 
+{% if vistos %}
+<section class="container mm-seccion">
+  <div class="mm-seccion-cabecera"><h2><i class="bi bi-clock-history me-2"></i>Vistos recientemente</h2></div>
+  {% include 'includes/fila_productos.html' with productos=vistos %}
+</section>
+{% endif %}
+
 {% for seccion in secciones %}
 <section class="container mm-seccion">
   <div class="mm-seccion-cabecera">

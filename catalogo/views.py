@@ -3,10 +3,11 @@ from django.http import JsonResponse
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.views.decorators.http import require_GET, require_POST
 
 from clientes.services import es_favorito
-from core.seo import producto_json_ld
+from core.seo import producto_json_ld, ruta_json_ld
 from core.templatetags.moneda import formatear_monto
 from opiniones import services as opiniones
 
@@ -38,6 +39,7 @@ def inicio(request):
         'secciones': [s for s in secciones if s['productos']],
         'categorias': services.categorias_de_portada(tienda),
         'banners': banners_de(tienda),
+        'vistos': services.vistos(request.session, tienda),
     })
 
 
@@ -57,6 +59,8 @@ def lista(request, slug=None):
         'orden_actual': filtros.get('orden') or 'nuevos',
         'pagina': pagina,
         'hay_filtros': any(filtros.get(c) for c in ('q', 'marca', 'precio_min', 'precio_max', 'oferta', 'disponibles')),
+        'sugeridos': (services.destacados(request.tienda, 10) or services.nuevos(request.tienda, 10))
+        if not pagina.object_list else [],
     })
 
 
@@ -90,14 +94,24 @@ def producto(request, slug):
     resumen_resenas = opiniones.resumen(item)
     imagenes = [request.build_absolute_uri(f.imagen.url) for f in item.fotos_ordenadas]
     consulta = f'Hola, me interesa este producto: {item.nombre} (SKU {item.sku})\n{url_absoluta}'
+    vistos_antes = services.vistos(request.session, tienda, excluir=item.pk)
+    services.recordar_visto(request.session, item)
     return render(request, 'catalogo/producto.html', {
         'producto': item,
         'fotos': item.fotos_ordenadas,
         'relacionados': services.relacionados(item),
+        'vistos': vistos_antes,
+        'oferta_termina': services.oferta_por_terminar(item),
         'es_favorito': es_favorito(request.user, item),
         'resenas': opiniones.publicadas(item),
         'resumen_resenas': resumen_resenas,
         'json_ld': producto_json_ld(item, url_absoluta, imagenes, resumen_resenas),
+        'ruta_json_ld': ruta_json_ld([
+            (tienda.nombre, request.build_absolute_uri(tienda.get_absolute_url())),
+            (item.categoria.nombre, request.build_absolute_uri(
+                reverse('catalogo:categoria', args=[tienda.slug, item.categoria.slug]))),
+            (item.nombre, url_absoluta),
+        ]),
         'mi_resena': opiniones.resena_de(request.user, item),
         'opciones_estrellas': OPCIONES_ESTRELLAS,
         'cantidad_maxima': item.limite_compra,

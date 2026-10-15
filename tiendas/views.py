@@ -1,11 +1,14 @@
 from django.core.paginator import Paginator
 from django.http import Http404
 from django.shortcuts import redirect, render
+from django.urls import reverse
 from django.views.decorators.http import require_GET
 
 from catalogo.forms import ORDENES, FiltroCatalogoForm
-from catalogo.services import en_oferta, filtrar_catalogo, nuevos, sugerencias as sugerencias_de_productos
+from catalogo.services import en_oferta, filtrar_catalogo, nuevos, sugerencias as sugerencias_de_productos, vistos
 from catalogo.views import respuesta_de_sugerencias
+from core.models import ConfiguracionTienda
+from core.seo import sitio_json_ld
 
 from . import services
 
@@ -23,6 +26,11 @@ def portada(request):
         # Productos de todas las tiendas: la portada se mueve con lo que hay a la venta.
         'ofertas': en_oferta(None, limite=12),
         'nuevos': nuevos(None, limite=12),
+        'vistos': vistos(request.session),
+        'sitio_json_ld': sitio_json_ld(
+            ConfiguracionTienda.obtener().nombre, request.build_absolute_uri('/'),
+            request.build_absolute_uri(reverse('tiendas:buscar')),
+        ),
     })
 
 
@@ -32,6 +40,8 @@ def buscar(request):
     filtros = FiltroCatalogoForm(request.GET).filtros()
     pagina = Paginator(filtrar_catalogo(filtros), RESULTADOS_POR_PAGINA).get_page(request.GET.get('pagina'))
     return render(request, 'tiendas/buscar.html', {
+        # Sin resultados no se deja la pagina vacia: se sugieren ofertas o lo nuevo.
+        'sugeridos': (en_oferta(None, limite=10) or nuevos(None, limite=10)) if not pagina.object_list else [],
         'filtros': filtros,
         'ordenes': ORDENES,
         'orden_actual': filtros.get('orden') or 'nuevos',

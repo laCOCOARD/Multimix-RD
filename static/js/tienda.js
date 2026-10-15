@@ -112,8 +112,20 @@
     boton.disabled = true;
     try {
       const datos = await enviar(formulario.action, new FormData(formulario));
+      // En el carrito, lo agregado desde las sugerencias tiene que verse en las lineas y el total.
+      if (datos.ok && document.querySelector('[data-recargar-al-agregar]')) {
+        window.location.reload();
+        return;
+      }
       actualizarContador(datos.cantidad_total);
       avisar(datos.mensaje, datos.ok ? 'exito' : 'error');
+      if (datos.ok && boton) {
+        // El boton confirma por un momento que el producto ya esta en el carrito.
+        const original = boton.innerHTML;
+        boton.innerHTML = '<i class="bi bi-check-lg me-1"></i>Agregado';
+        boton.classList.add('mm-agregado');
+        setTimeout(() => { boton.innerHTML = original; boton.classList.remove('mm-agregado'); }, 1600);
+      }
     } catch (error) {
       formulario.classList.remove('js-agregar');
       formulario.submit();
@@ -310,4 +322,35 @@
       }, 4500);
     }
   });
+
+  // Cuenta regresiva de las ofertas que terminan pronto.
+  document.querySelectorAll('.mm-cuenta-atras[data-fin]').forEach((nodo) => {
+    const fin = new Date(nodo.dataset.fin).getTime();
+    const tiempo = nodo.querySelector('.js-tiempo');
+    if (!tiempo || Number.isNaN(fin)) return;
+    const dos = (n) => String(n).padStart(2, '0');
+    const pintar = () => {
+      const resta = Math.max(0, Math.floor((fin - Date.now()) / 1000));
+      if (!resta) { tiempo.textContent = 'hoy'; return false; }
+      const dias = Math.floor(resta / 86400);
+      const reloj = `${dos(Math.floor(resta / 3600) % 24)}:${dos(Math.floor(resta / 60) % 60)}:${dos(resta % 60)}`;
+      tiempo.textContent = `en ${dias ? `${dias} d ` : ''}${reloj}`;
+      return true;
+    };
+    if (pintar()) {
+      const reloj = setInterval(() => { if (!pintar()) clearInterval(reloj); }, 1000);
+    }
+  });
+
+  // Barra de compra fija: aparece cuando el boton principal ya quedo arriba.
+  const compraFija = document.querySelector('.mm-compra-fija');
+  const formCompra = document.getElementById('form-compra');
+  if (compraFija && formCompra && 'IntersectionObserver' in window) {
+    new IntersectionObserver(([entrada]) => {
+      const mostrar = !entrada.isIntersecting && entrada.boundingClientRect.top < 0;
+      compraFija.classList.toggle('visible', mostrar);
+      compraFija.setAttribute('aria-hidden', String(!mostrar));
+      compraFija.querySelectorAll('button').forEach((boton) => { boton.tabIndex = mostrar ? 0 : -1; });
+    }).observe(formCompra);
+  }
 })();

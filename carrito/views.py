@@ -5,6 +5,7 @@ from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.http import require_GET, require_POST
 
 from catalogo.models import Producto
+from catalogo.services import sugerencias_para_el_carrito
 from core.templatetags.moneda import formatear_monto
 from promociones.services import CuponInvalido
 from tiendas.decoradores import de_tienda
@@ -68,9 +69,11 @@ def detalle(request):
     resumen = carrito.resumen()
     if resumen.aviso_cupon:
         messages.warning(request, resumen.aviso_cupon)
+    lineas = carrito.lineas()
     return render(request, 'carrito/detalle.html', {
-        'lineas': carrito.lineas(),
+        'lineas': lineas,
         'resumen': resumen,
+        'sugeridos': sugerencias_para_el_carrito(request.tienda, [linea.producto.pk for linea in lineas]),
     })
 
 

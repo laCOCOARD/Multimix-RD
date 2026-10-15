@@ -28,7 +28,7 @@ class CuentaObligatoriaTests(TestCase):
 
     def test_la_pagina_de_entrar_no_ofrece_el_menu_de_la_tienda(self):
         pagina = self.client.get(reverse('clientes:entrar'))
-        self.assertContains(pagina, 'necesitas una cuenta')
+        self.assertContains(pagina, 'Entra para comprar')
         self.assertNotContains(pagina, 'Todos los productos')
         self.assertContains(self.client.get(reverse('clientes:registro')), 'política de privacidad')
 

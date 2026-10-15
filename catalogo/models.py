@@ -6,7 +6,8 @@ from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator
 from django.db import models
-from django.db.models import BooleanField, Case, DecimalField, F, Q, Value, When
+from django.db.models import Avg, BooleanField, Case, Count, DecimalField, F, OuterRef, Q, Subquery, Value, When
+from django.db.models.functions import Coalesce
 from django.db.models.signals import post_delete
 from django.dispatch import receiver
 from django.urls import reverse
@@ -116,7 +117,21 @@ class ProductoQuerySet(models.QuerySet):
         )
 
     def para_listado(self):
-        return self.select_related('categoria', 'tienda').prefetch_related('fotos')
+        return self.select_related('categoria', 'tienda').prefetch_related('fotos').con_valoracion()
+
+    def con_valoracion(self):
+        """Promedio y cantidad de reseñas publicadas, para las estrellas de las tarjetas. Con subconsultas: un
+        JOIN repetiria filas al combinarse con otros agregados del listado."""
+        from opiniones.models import Resena
+
+        publicadas = Resena.objects.filter(producto=OuterRef('pk'), estado=Resena.Estado.APROBADA).values('producto')
+        return self.annotate(
+            valoracion_promedio=Subquery(publicadas.annotate(valor=Avg('estrellas')).values('valor')[:1]),
+            valoracion_total=Coalesce(
+                Subquery(publicadas.annotate(valor=Count('id')).values('valor')[:1]), 0,
+                output_field=models.IntegerField(),
+            ),
+        )
 
 
 class Producto(models.Model):

@@ -50,7 +50,9 @@ def registro(request):
     return render(request, PLANTILLA, {
         'formulario': formulario,
         'titulo': 'Crear cuenta',
-        'intro': 'Con tu cuenta ves tus pedidos, no escribes tus datos en cada compra y los avisos te llegan a tu correo.',
+        'intro': ('Crea tu cuenta en un minuto para terminar tu compra. Tu carrito te espera.'
+                  if '/pedido/checkout/' in _destino(request, '') else
+                  'Con tu cuenta ves tus pedidos, no escribes tus datos en cada compra y los avisos te llegan a tu correo.'),
         'aviso_legal': True,
         'boton': 'Crear mi cuenta',
         'siguiente': _destino(request, ''),
@@ -65,7 +67,7 @@ class Entrar(acceso.LoginView):
     next_page = reverse_lazy('clientes:cuenta')
     extra_context = {
         'titulo': 'Iniciar sesión',
-        'intro': 'Para ver las tiendas y comprar necesitas una cuenta. Es gratis y tus pedidos quedan guardados en ella.',
+        'intro': 'Entra para comprar, seguir tus pedidos y guardar tus favoritos.',
         'boton': 'Entrar',
         'enlaces': [
             ('clientes:registro', '¿No tienes cuenta? Créala gratis'),
@@ -75,7 +77,11 @@ class Entrar(acceso.LoginView):
 
     def get_context_data(self, **kwargs):
         contexto = super().get_context_data(**kwargs)
-        contexto.update(formulario=contexto['form'], siguiente=_destino(self.request, ''))
+        siguiente = _destino(self.request, '')
+        contexto.update(formulario=contexto['form'], siguiente=siguiente)
+        if '/pedido/checkout/' in siguiente:
+            # Viene del carrito: el carrito se conserva al entrar o al crear la cuenta.
+            contexto['intro'] = 'Inicia sesión para terminar tu compra. Tu carrito te espera.'
         return contexto
 
 

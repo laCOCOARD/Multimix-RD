@@ -579,3 +579,36 @@ html:not(.js) .solo-con-js { display: none !important; }
 .mm-tarjeta-foto::after { content: ""; position: absolute; inset: 0; background: linear-gradient(115deg, transparent 35%, rgba(255, 255, 255, .35) 50%, transparent 65%); transform: translateX(-100%); transition: transform .8s ease; pointer-events: none; }
 .mm-tarjeta:hover .mm-tarjeta-foto::after { transform: translateX(100%); }
 @media (prefers-reduced-motion: reduce) { .mm-progreso { display: none; } }
+
+/* --- Barra inferior del celular ----------------------------------------- */
+.mm-barra-inferior { position: fixed; left: 0; right: 0; bottom: 0; z-index: 1035; display: grid; grid-template-columns: repeat(5, 1fr); padding: .3rem .25rem calc(.3rem + env(safe-area-inset-bottom)); background: rgba(255, 255, 255, .96); border-top: 1px solid var(--mm-borde); box-shadow: 0 -6px 20px rgba(8, 42, 92, .08); backdrop-filter: blur(10px); }
+.mm-barra-inferior a, .mm-barra-inferior button { display: grid; justify-items: center; gap: .1rem; padding: .3rem 0; border: 0; background: none; color: var(--mm-texto-suave); font-size: .7rem; font-weight: 600; }
+.mm-barra-inferior i { font-size: 1.3rem; transition: transform var(--mm-transicion); }
+.mm-barra-inferior a:hover, .mm-barra-inferior button:hover { color: var(--mm-primario); text-decoration: none; }
+.mm-barra-inferior .activa { color: var(--mm-primario); }
+.mm-barra-inferior .activa i { transform: translateY(-2px); }
+.mm-barra-inferior .mm-contador { top: 0; right: calc(50% - 1.35rem); }
+@media (max-width: 991.98px) {
+  body { padding-bottom: calc(4rem + env(safe-area-inset-bottom)); }
+  .mm-whatsapp-flotante, .mm-arriba { bottom: calc(4.75rem + env(safe-area-inset-bottom)) !important; }
+  #avisos { bottom: 4.5rem !important; }
+}
+
+/* --- Ficha de producto: valoracion, cuenta regresiva y compra fija -------- */
+.mm-tarjeta-valoracion { display: flex; align-items: center; gap: .25rem; margin: -.2rem 0 .45rem; font-size: .8rem; font-weight: 600; color: var(--mm-texto); }
+.mm-tarjeta-valoracion i { color: #f5a524; }
+.mm-tarjeta-valoracion span { font-weight: 400; color: var(--mm-texto-suave); }
+.mm-cuenta-atras { display: inline-flex; align-items: center; gap: .45rem; margin: -.5rem 0 1rem; padding: .4rem .8rem; border-radius: 999px; background: #fdecec; color: var(--mm-peligro); font-size: .88rem; font-weight: 600; }
+.mm-cuenta-atras .js-tiempo { font-variant-numeric: tabular-nums; }
+.mm-cuenta-atras i { animation: mm-latido 1.2s ease-in-out infinite; }
+@keyframes mm-latido { 50% { transform: scale(1.18); } }
+.mm-compra-fija { position: fixed; left: 0; right: 0; bottom: calc(3.9rem + env(safe-area-inset-bottom)); z-index: 1034; display: flex; align-items: center; gap: .5rem; padding: .6rem .9rem; background: var(--mm-superficie); border-top: 1px solid var(--mm-borde); box-shadow: 0 -8px 24px rgba(8, 42, 92, .12); transform: translateY(130%); transition: transform .35s cubic-bezier(.2, .75, .2, 1); }
+.mm-compra-fija.visible { transform: none; }
+.mm-compra-fija-datos { display: grid; flex: 1; min-width: 0; line-height: 1.2; }
+.mm-compra-fija-nombre { overflow: hidden; font-size: .82rem; color: var(--mm-texto-suave); white-space: nowrap; text-overflow: ellipsis; }
+.mm-compra-fija .mm-precio-final { font-size: 1.05rem; }
+@media (max-width: 991.98px) {
+  body:has(.mm-compra-fija.visible) .mm-whatsapp-flotante,
+  body:has(.mm-compra-fija.visible) .mm-arriba { bottom: calc(8.6rem + env(safe-area-inset-bottom)) !important; }
+}
+.btn.mm-agregado { --bs-btn-bg: var(--mm-acento); --bs-btn-border-color: var(--mm-acento); --bs-btn-disabled-bg: var(--mm-acento); --bs-btn-disabled-border-color: var(--mm-acento); animation: mm-salto .45s ease; }

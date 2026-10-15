@@ -58,9 +58,16 @@
   {% else %}
     <div class="mm-vacio">
       <i class="bi bi-search"></i>
-      <p class="lead mb-2">No encontramos productos con esa búsqueda.</p>
+      <p class="lead mb-1">No encontramos productos con esa búsqueda.</p>
+      <p class="text-muted mb-3">Revisa cómo está escrita o prueba con una palabra más general.</p>
       <a class="btn btn-primary" href="{% url 'tiendas:portada' %}#tiendas">Ver las tiendas</a>
     </div>
+    {% if sugeridos %}
+      <section class="mm-seccion">
+        <div class="mm-seccion-cabecera"><h2>Quizás te interese</h2></div>
+        {% include 'includes/fila_productos.html' with productos=sugeridos %}
+      </section>
+    {% endif %}
   {% endif %}
 </div>
 {% endblock %}

@@ -1,6 +1,11 @@
 {% extends 'base.html' %}
 
 {# La portada del sitio es el directorio de tiendas: no lleva banner y trae su propio buscador. #}
+{% block meta %}
+{{ block.super }}
+<script type="application/ld+json">{{ sitio_json_ld }}</script>
+{% endblock %}
+
 {% block buscador_cabecera %}
 {% endblock %}
 
@@ -62,6 +67,13 @@
     </div>
   {% endif %}
 </section>
+
+{% if vistos %}
+<section class="container mm-seccion">
+  <div class="mm-seccion-cabecera"><h2><i class="bi bi-clock-history me-2"></i>Vistos recientemente</h2></div>
+  {% include 'includes/fila_productos.html' with productos=vistos %}
+</section>
+{% endif %}
 
 {% if ofertas %}
 <section class="container mm-seccion">

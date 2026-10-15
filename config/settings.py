@@ -292,8 +292,9 @@ IMPORT_EXPORT_FORMATS = [XLSX, CSV]
 # Mantenimiento que corre solo con las visitas (ver core/tareas.py). En las pruebas se activa a mano.
 TAREAS_AUTOMATICAS = not EN_TESTS
 
-# Todo el sitio pide iniciar sesion (ver config/middleware.py). En las pruebas se activa a mano.
-CUENTA_OBLIGATORIA = not EN_TESTS
+# Con CUENTA_OBLIGATORIA=1 todo el sitio pide iniciar sesion (ver config/middleware.py). Apagado: se navega
+# libre (Google ve el catalogo) y la cuenta se pide solo para comprar, porque el checkout lleva @login_required.
+CUENTA_OBLIGATORIA = os.getenv('CUENTA_OBLIGATORIA', '0') == '1' and not EN_TESTS
 
 # --- Seguridad en produccion ---
 # Scripts y estilos solo del propio sitio y del CDN de Bootstrap; las fotos pueden venir del almacenamiento.
