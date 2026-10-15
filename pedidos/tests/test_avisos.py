@@ -134,7 +134,11 @@ class AvisosPorCorreoTests(TestCase):
 
         mensaje = EmailMessage('Nuevo pedido', 'Entró un pedido.', None, ['tienda@example.com'])
         with mock.patch('core.correo_brevo.urllib.request.urlopen') as abrir:
-            self.assertEqual(BrevoBackend().send_messages([mensaje]), 1)
+            abrir.return_value.__enter__.return_value.read.return_value = b'{"messageId": "<abc@smtp-relay>"}'
+            with self.assertLogs('multimix.correo', 'INFO') as registro:
+                self.assertEqual(BrevoBackend().send_messages([mensaje]), 1)
+        # Queda el numero de Brevo para buscar el correo en su panel si no llega.
+        self.assertIn('<abc@smtp-relay>', registro.output[0])
         peticion = abrir.call_args.args[0]
         self.assertEqual((peticion.full_url, peticion.get_method()), (URL_DE_ENVIO, 'POST'))
         self.assertEqual(peticion.get_header('Api-key'), 'clave-de-prueba')

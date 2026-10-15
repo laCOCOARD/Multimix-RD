@@ -44,7 +44,7 @@ def registro(request):
         elif formulario.is_valid():
             services.anotar_intento('registro', ip)
             usuario = formulario.save()
-            login(request, usuario, backend='django.contrib.auth.backends.ModelBackend')
+            login(request, usuario, backend='clientes.autenticacion.CorreoOUsuarioBackend')
             messages.success(request, f'¡Bienvenido, {usuario.first_name}! Tu cuenta ya está creada.')
             return redirect(_destino(request))
     return render(request, PLANTILLA, {

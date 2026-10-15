@@ -105,6 +105,10 @@ Al cerrar cada modulo: check, makemigrations, migrate, test y commit.
   de vencimiento) son los de la configuracion al migrar: si cambian, se corrige el texto en el panel. Sin publicar
   solo las ve el superusuario. El contenido se muestra con el filtro
   `texto_legal` (`core/templatetags/textos.py`: titulos, listas y parrafos, todo escapado), nunca como HTML. El pie las lee de `core.models.contenido_del_pie` (cache de 5 minutos, se limpia al guardar).
+- Entrar: `clientes.autenticacion.CorreoOUsuarioBackend` acepta el usuario o el correo (si es de una sola cuenta):
+  el superusuario de Render es `MULTIMIX_ADMIN` y el formulario del sitio pide el correo. Ojo: el arranque de
+  Render vuelve a poner la contraseña del superusuario desde `DJANGO_SUPERUSER_PASSWORD` en cada despliegue, asi
+  que recuperarla por correo dura hasta el siguiente. `BrevoBackend` registra cada envio aceptado con su messageId.
 - Cuentas de clientes: son usuarios de Django sin acceso al panel, con el correo como nombre de usuario, y son
   del sitio, no de una tienda (`/cuenta/`). `clientes.Perfil` guarda el telefono y la ultima direccion de entrega;
   la zona no, porque es de cada tienda. `Pedido.cliente` solo se llena si compro con la sesion iniciada: un pedido

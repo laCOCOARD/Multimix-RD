@@ -155,6 +155,10 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 # Cuentas de clientes. El panel tiene su propia pantalla de entrada.
+# Se entra con el usuario o con el correo de la cuenta (el administrador no tiene el correo como usuario).
+# ModelBackend sigue en la lista para no cerrar las sesiones abiertas antes de este cambio.
+AUTHENTICATION_BACKENDS = ['clientes.autenticacion.CorreoOUsuarioBackend', 'django.contrib.auth.backends.ModelBackend']
+
 LOGIN_URL = 'clientes:entrar'
 LOGIN_REDIRECT_URL = 'clientes:cuenta'
 # El enlace para recuperar la contraseña vale un dia.

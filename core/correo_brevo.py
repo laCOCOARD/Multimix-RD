@@ -4,6 +4,7 @@ El plan gratis de Render corta las conexiones SMTP salientes: el correo por SMTP
 agotar el tiempo. La API va por el puerto 443, que no se bloquea. Se activa con `BREVO_API_KEY`.
 """
 import json
+import logging
 import urllib.error
 import urllib.request
 from email.utils import parseaddr
@@ -12,6 +13,8 @@ from django.conf import settings
 from django.core.mail.backends.base import BaseEmailBackend
 
 URL_DE_ENVIO = 'https://api.brevo.com/v3/smtp/email'
+
+logger = logging.getLogger('multimix.correo')
 
 
 class BrevoBackend(BaseEmailBackend):
@@ -41,7 +44,7 @@ class BrevoBackend(BaseEmailBackend):
         )
         try:
             with urllib.request.urlopen(peticion, timeout=settings.EMAIL_TIMEOUT) as respuesta:
-                respuesta.read()
+                datos = respuesta.read()
         except urllib.error.HTTPError as error:
             if self.fail_silently:
                 return False
@@ -52,4 +55,10 @@ class BrevoBackend(BaseEmailBackend):
             if self.fail_silently:
                 return False
             raise
+        # Que Brevo lo acepte no asegura que llegue: con este numero se busca en su panel (Transaccional > Registros).
+        try:
+            numero = json.loads(datos or b'{}').get('messageId', '')
+        except (TypeError, ValueError, AttributeError):
+            numero = ''
+        logger.info('Brevo aceptó "%s" para %s (%s)', mensaje.subject, ', '.join(mensaje.to), numero or 'sin número')
         return True

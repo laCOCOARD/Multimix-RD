@@ -93,6 +93,19 @@ class EntrarTests(TestCase):
         respuesta = self.client.post(self.url, {'username': 'ana@example.com', 'password': 'mala'})
         self.assertContains(respuesta, 'El correo o la contraseña no son correctos.')
 
+    def test_el_administrador_entra_con_su_correo_aunque_su_usuario_sea_otro(self):
+        get_user_model().objects.create_superuser('MULTIMIX_ADMIN', 'Dueno@Example.com', CLAVE)
+        respuesta = self.client.post(self.url, {'username': 'dueno@example.com', 'password': CLAVE})
+        self.assertRedirects(respuesta, reverse('clientes:cuenta'), fetch_redirect_response=False)
+        self.assertEqual(self.client.get('/panel/').status_code, 200)
+
+    def test_un_correo_repetido_en_dos_cuentas_no_entra_por_correo(self):
+        Usuario = get_user_model()
+        Usuario.objects.create_user('vendedor1', 'compartido@example.com', CLAVE)
+        Usuario.objects.create_user('vendedor2', 'compartido@example.com', CLAVE)
+        respuesta = self.client.post(self.url, {'username': 'compartido@example.com', 'password': CLAVE})
+        self.assertContains(respuesta, 'El correo o la contraseña no son correctos.')
+
     @override_settings(CACHES=CACHE_REAL)
     def test_bloquea_despues_de_varios_intentos_y_no_afecta_a_otro_correo(self):
         for _ in range(services.INTENTOS_MAXIMOS):
