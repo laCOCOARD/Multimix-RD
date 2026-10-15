@@ -233,7 +233,8 @@ Al cerrar cada modulo: check, makemigrations, migrate, test y commit.
   los pedidos de invitado anteriores). Una vista nueva del sitio queda cerrada sin hacer nada. En las pruebas esta
   apagado (`CUENTA_OBLIGATORIA`); `clientes/tests/test_cuenta_obligatoria.py` lo prueba encendido. Sin sesion la
   plantilla oculta menu, buscador y carrito (`puede_navegar`). El checkout lleva ademas `@login_required`.
-- Experiencia de compra (tomado de las grandes tiendas): barra inferior en el celular, estrellas en las tarjetas
+- Experiencia de compra (tomado de las grandes tiendas; la barra inferior del celular se quito: al dueño no le
+  gusto): estrellas en las tarjetas
   (`ProductoQuerySet.con_valoracion`, subconsultas, dentro de `para_listado`), vistos recientemente en la sesion
   (`catalogo.services.recordar_visto`/`vistos`; dentro de una tienda solo los suyos, porque la tarjeta agrega al
   carrito de esa tienda), cuenta regresiva si la oferta termina en 7 dias o menos, barra de compra fija en la
