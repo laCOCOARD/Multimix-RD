@@ -28,6 +28,7 @@
 </head>
 <body class="d-flex flex-column min-vh-100">
   <a class="visually-hidden-focusable" href="#contenido">Saltar al contenido</a>
+  <div class="mm-progreso" aria-hidden="true"></div>
 
   {% if tienda %}
     <div class="mm-barra-sitio">
@@ -205,6 +206,8 @@
       <i class="bi bi-whatsapp"></i>
     </a>
   {% endif %}
+
+  <button class="mm-arriba" type="button" aria-label="Volver arriba"><i class="bi bi-arrow-up"></i></button>
 
   <div class="toast-container position-fixed bottom-0 start-50 translate-middle-x p-3" id="avisos" aria-live="polite"></div>
 

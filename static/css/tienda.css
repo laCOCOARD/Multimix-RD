@@ -321,9 +321,13 @@ img { max-width: 100%; height: auto; }
 .mm-whatsapp-flotante:hover { transform: scale(1.08); background: var(--mm-whatsapp-oscuro); color: #fff; text-decoration: none; }
 
 /* --- Animacion al hacer scroll y alternativas sin JavaScript ------------- */
-.js .revelar { opacity: 0; transform: translateY(18px); transition: opacity .55s ease, transform .55s ease, box-shadow var(--mm-transicion); }
+.js .revelar { opacity: 0; transform: translateY(26px) scale(.98); transition: opacity .6s ease, transform .7s cubic-bezier(.2, .75, .2, 1), box-shadow var(--mm-transicion), border-color var(--mm-transicion); transition-delay: var(--retraso, 0s); }
+.js .revelar-izq { transform: translateX(-32px); }
+.js .revelar-der { transform: translateX(40px) scale(.97); }
+.js .revelar-zoom { transform: scale(.6); transition-timing-function: ease, cubic-bezier(.34, 1.56, .64, 1); }
 .js .revelar.visible { opacity: 1; transform: none; }
 .js .mm-tarjeta.revelar.visible:hover { transform: translateY(-4px); }
+.js .mm-tienda-tarjeta.revelar.visible:hover, .js .mm-llamado.revelar.visible:hover { transform: translateY(-2px); }
 html:not(.js) .solo-con-js { display: none !important; }
 .js .solo-sin-js { display: none !important; }
 .js .mm-oculto { display: none !important; }
@@ -562,3 +566,16 @@ html:not(.js) .solo-con-js { display: none !important; }
   .mm-cinta-pista { animation: none; }
   .mm-fila-pista { scroll-behavior: auto; }
 }
+
+/* --- Al deslizar: progreso, cabecera y volver arriba --------------------- */
+.mm-progreso { position: fixed; top: 0; left: 0; right: 0; z-index: 1040; height: 3px; background: linear-gradient(90deg, var(--mm-hoja), var(--mm-primario)); transform: scaleX(0); transform-origin: 0 50%; pointer-events: none; }
+.mm-cabecera { transition: box-shadow var(--mm-transicion), background-color var(--mm-transicion); }
+.mm-cabecera.con-sombra { box-shadow: 0 6px 24px rgba(8, 42, 92, .1); background-color: rgba(255, 255, 255, .92); backdrop-filter: saturate(1.4) blur(10px); }
+.mm-arriba { position: fixed; left: 1rem; bottom: 1rem; z-index: 1030; display: grid; place-items: center; width: 2.9rem; height: 2.9rem; border: 0; border-radius: 50%; background: var(--mm-oscuro); color: #fff; font-size: 1.2rem; box-shadow: var(--mm-sombra-alta); opacity: 0; transform: translateY(20px) scale(.8); pointer-events: none; transition: opacity .3s ease, transform .3s ease, background-color var(--mm-transicion); }
+.mm-arriba.visible { opacity: 1; transform: none; pointer-events: auto; }
+.mm-arriba:hover { background: var(--mm-primario); }
+.mm-portada > .container, .mm-banner .container { will-change: transform; }
+/* La tarjeta de producto levanta la foto y muestra un brillo al pasar el raton. */
+.mm-tarjeta-foto::after { content: ""; position: absolute; inset: 0; background: linear-gradient(115deg, transparent 35%, rgba(255, 255, 255, .35) 50%, transparent 65%); transform: translateX(-100%); transition: transform .8s ease; pointer-events: none; }
+.mm-tarjeta:hover .mm-tarjeta-foto::after { transform: translateX(100%); }
+@media (prefers-reduced-motion: reduce) { .mm-progreso { display: none; } }

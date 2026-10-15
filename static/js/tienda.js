@@ -47,21 +47,58 @@
 
   window.Multimix = { enviar, avisar, actualizarContador };
 
-  // Aparicion suave de los elementos al entrar en pantalla.
+  // Aparicion al deslizar. Cada grupo entra con su estilo y, si entran varios a la vez, en cascada.
+  const quieto = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const animar = (selector, ...clases) => document.querySelectorAll(selector).forEach((nodo) => nodo.classList.add('revelar', ...clases));
+  animar('.mm-seccion-cabecera, .mm-legal-cabecera, main h1:not(.mm-portada-titulo):not(.mm-banner-titulo)', 'revelar-izq');
+  animar('.mm-burbuja', 'revelar-zoom');
+  animar('.mm-tienda-tarjeta, .mm-llamado, .mm-filtros, .mm-panel, .mm-legal-indice');
+  document.querySelectorAll('.mm-fila .mm-tarjeta').forEach((tarjeta) => tarjeta.classList.add('revelar-der'));
+
   const elementos = document.querySelectorAll('.revelar');
-  if ('IntersectionObserver' in window) {
+  if ('IntersectionObserver' in window && !quieto) {
     const observador = new IntersectionObserver((entradas) => {
-      entradas.forEach((entrada) => {
-        if (entrada.isIntersecting) {
-          entrada.target.classList.add('visible');
-          observador.unobserve(entrada.target);
-        }
+      const nuevas = entradas.filter((entrada) => entrada.isIntersecting)
+        .sort((a, b) => (a.boundingClientRect.top - b.boundingClientRect.top) || (a.boundingClientRect.left - b.boundingClientRect.left));
+      nuevas.forEach((entrada, orden) => {
+        const nodo = entrada.target;
+        nodo.style.setProperty('--retraso', `${Math.min(orden, 7) * 70}ms`);
+        nodo.classList.add('visible');
+        observador.unobserve(nodo);
+        // Ya en su sitio, sin retraso: el efecto al pasar el raton responde al instante.
+        setTimeout(() => nodo.style.removeProperty('--retraso'), 1200);
       });
     }, { rootMargin: '0px 0px -40px 0px', threshold: 0.05 });
     elementos.forEach((elemento) => observador.observe(elemento));
   } else {
     elementos.forEach((elemento) => elemento.classList.add('visible'));
   }
+
+  // Al deslizar: barra de progreso, cabecera con sombra, boton para volver arriba y fondo de la portada mas lento.
+  const progreso = document.querySelector('.mm-progreso');
+  const cabecera = document.querySelector('.mm-cabecera');
+  const arriba = document.querySelector('.mm-arriba');
+  const capas = quieto ? [] : Array.from(document.querySelectorAll('.mm-portada > .container, .mm-banner .container'));
+  let pendiente = false;
+  const alDeslizar = () => {
+    pendiente = false;
+    const y = window.scrollY;
+    const alto = document.documentElement.scrollHeight - window.innerHeight;
+    if (progreso) progreso.style.transform = `scaleX(${alto > 0 ? Math.min(1, y / alto) : 0})`;
+    if (cabecera) cabecera.classList.toggle('con-sombra', y > 8);
+    if (arriba) arriba.classList.toggle('visible', y > 700);
+    capas.forEach((capa) => {
+      const caja = capa.parentElement.getBoundingClientRect();
+      if (caja.bottom < 0) return;
+      capa.style.transform = `translateY(${Math.max(0, -caja.top) * 0.3}px)`;
+      capa.style.opacity = String(Math.max(0.2, 1 - Math.max(0, -caja.top) / caja.height));
+    });
+  };
+  window.addEventListener('scroll', () => {
+    if (!pendiente) { pendiente = true; requestAnimationFrame(alDeslizar); }
+  }, { passive: true });
+  alDeslizar();
+  if (arriba) arriba.addEventListener('click', () => window.scrollTo({ top: 0, behavior: quieto ? 'auto' : 'smooth' }));
 
   // Agregar al carrito sin recargar. Si algo falla, el formulario se envia de la forma normal.
   document.addEventListener('submit', async (evento) => {

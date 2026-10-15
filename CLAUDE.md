@@ -161,6 +161,9 @@ Al cerrar cada modulo: check, makemigrations, migrate, test y commit.
   portada es buscador + filas que se deslizan (tiendas, ofertas y lo nuevo de todas las tiendas). Filas:
   `includes/fila_productos.html` + `[data-fila]` en `tienda.js` (flechas, `data-auto` avanza solo). El inicio de
   cada tienda: cinta en movimiento (`mm-cinta`), categorias en burbujas y una fila por seccion.
+  Animaciones al deslizar en `tienda.js`: `revelar` (en cascada con `--retraso`; variantes `revelar-izq`,
+  `-der`, `-zoom`, que el JS pone a titulos, burbujas, tarjetas y paneles), barra `mm-progreso`, cabecera
+  `con-sombra`, boton `mm-arriba` y el fondo de portada y banner mas lento. Con "reducir movimiento" no se anima.
   Letra: Inter servida desde `static/fonts/` (no por CDN). Pantallas de entrar/crear/recuperar con panel de marca
   (`mm-acceso con-marca`); politicas, terminos y preguntas con indice lateral (`paginas/_indice_legal.html`).
   Tampoco hay guia "Como comprar" (quitada a pedido del dueño): su ruta redirige al
