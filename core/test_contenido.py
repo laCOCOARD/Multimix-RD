@@ -16,13 +16,17 @@ CLAVE = 'clave-segura-123'
 
 
 class PaginasInformativasTests(TestCase):
-    def test_las_politicas_nacen_vacias_y_sin_publicar(self):
+    def test_las_politicas_nacen_escritas_y_publicadas(self):
         slugs = set(PaginaInformativa.objects.values_list('slug', flat=True))
         self.assertTrue({'privacidad', 'entregas', 'cambios-y-devoluciones', 'reembolsos', 'garantias'} <= slugs)
-        self.assertFalse(PaginaInformativa.objects.filter(publicada=True).exists())
-        self.assertFalse(PaginaInformativa.objects.exclude(contenido='').exists())
+        self.assertFalse(PaginaInformativa.objects.filter(publicada=False).exists())
+        self.assertFalse(PaginaInformativa.objects.filter(contenido='').exists())
+        # Los plazos salen de la configuracion por defecto.
+        self.assertIn('dentro de los 7 días', PaginaInformativa.objects.get(slug='cambios-y-devoluciones').contenido)
+        self.assertIn('48 horas', PaginaInformativa.objects.get(slug='metodos-de-pago').contenido)
 
     def test_sin_publicar_solo_la_ve_el_administrador(self):
+        PaginaInformativa.objects.filter(slug='privacidad').update(publicada=False)
         url = reverse('core:pagina', args=['privacidad'])
         self.assertEqual(self.client.get(url).status_code, 404)
         self.assertNotContains(self.client.get(reverse('tiendas:portada')), 'Política de privacidad')

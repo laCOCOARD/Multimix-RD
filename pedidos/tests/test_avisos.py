@@ -15,7 +15,7 @@ from pagos import services as pagos
 from pedidos import avisos
 from pedidos.models import Pedido
 from pedidos.services import cambiar_estado, eliminar_pedido
-from tiendas.tests.utiles import ruta, tienda_de_prueba
+from tiendas.tests.utiles import entrar_como_cliente, ruta, tienda_de_prueba
 
 from .utiles import pedido_de_prueba
 
@@ -93,11 +93,12 @@ class AvisosPorCorreoTests(TestCase):
         self.assertIn('Motivo: No aparece en el banco', correo.body)
 
     def test_si_el_correo_falla_la_compra_sigue(self):
+        entrar_como_cliente(self.client, 'ana@example.com')
         self.client.post(ruta('carrito:agregar'), {'producto_id': self.producto.pk, 'cantidad': 1})
         with mock.patch('core.correo.send_mail', side_effect=OSError('sin conexion')):
             with self.captureOnCommitCallbacks(execute=True):
                 respuesta = self.client.post(ruta('pedidos:checkout'), {
-                    'nombre': 'Ana Pérez', 'telefono': '8095551234', 'correo': 'ana@example.com',
+                    'nombre': 'Ana Pérez', 'telefono': '8095551234',
                     'metodo_entrega': 'recoger', 'metodo_pago': 'transferencia', 'acepta_terminos': 'on',
                 })
         pedido = Pedido.objects.get()

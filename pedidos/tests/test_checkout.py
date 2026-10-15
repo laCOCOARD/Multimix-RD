@@ -9,7 +9,7 @@ from catalogo.tests.test_modelos import crear_producto
 from core.models import CuentaBancaria
 from pedidos.models import Pedido
 from pedidos.whatsapp import construir_mensaje
-from tiendas.tests.utiles import ruta, tienda_de_prueba
+from tiendas.tests.utiles import entrar_como_cliente, ruta, tienda_de_prueba
 
 from .utiles import cupon_de_prueba, zona_de_prueba
 
@@ -25,13 +25,14 @@ class CheckoutTests(TestCase):
             tienda=self.tienda, banco='Banco Popular', numero='123456789', titular='Multimix RD SRL',
         )
         self.url = ruta('pedidos:checkout')
+        self.cliente = entrar_como_cliente(self.client, 'ana@example.com')
 
     def llenar_carrito(self, cantidad=2):
         self.client.post(ruta('carrito:agregar'), {'producto_id': self.producto.pk, 'cantidad': cantidad})
 
     def datos(self, **cambios):
         datos = {
-            'nombre': 'Ana Pérez', 'telefono': '(809) 555-1234', 'correo': '',
+            'nombre': 'Ana Pérez', 'telefono': '(809) 555-1234',
             'metodo_entrega': 'recoger', 'zona': '', 'direccion': '', 'referencia': '',
             'metodo_pago': 'transferencia', 'referencia_transferencia': '', 'cupon': '', 'notas': '',
             'sitio_web': '', 'acepta_terminos': 'on',
@@ -101,8 +102,11 @@ class CheckoutTests(TestCase):
 
     def test_validaciones_del_servidor(self):
         self.llenar_carrito(1)
-        respuesta = self.client.post(self.url, self.datos(nombre='A', telefono='555-1234', correo='malo'))
-        self.assertEqual(set(self.errores(respuesta)), {'nombre', 'telefono', 'correo'})
+        respuesta = self.client.post(self.url, self.datos(nombre='A', telefono='555-1234'))
+        self.assertEqual(set(self.errores(respuesta)), {'nombre', 'telefono'})
+        # El telefono es obligatorio: la tienda coordina la entrega por el.
+        respuesta = self.client.post(self.url, self.datos(telefono=''))
+        self.assertIn('Escribe tu teléfono', self.errores(respuesta)['telefono'][0])
 
         respuesta = self.client.post(self.url, self.datos(metodo_entrega='envio'))
         self.assertEqual(set(self.errores(respuesta)), {'zona', 'sector', 'direccion'})

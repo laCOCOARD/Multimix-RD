@@ -5,7 +5,7 @@ from django.urls import reverse
 
 from catalogo.models import Producto
 from catalogo.services import marcas_de
-from tiendas.tests.utiles import ruta, tienda_de_prueba
+from tiendas.tests.utiles import entrar_como_cliente, ruta, tienda_de_prueba
 
 from .test_modelos import crear_producto
 
@@ -88,6 +88,7 @@ class SugerenciasTests(TestCase):
 class ComprarAhoraTests(TestCase):
     def test_lleva_directo_al_checkout_con_el_producto_en_el_carrito(self):
         producto = crear_producto(nombre='Taza')
+        entrar_como_cliente(self.client)
         respuesta = self.client.post(ruta('carrito:agregar'), {'producto_id': producto.pk, 'cantidad': 2, 'comprar': '1'})
         self.assertRedirects(respuesta, ruta('pedidos:checkout'), fetch_redirect_response=False)
         self.assertContains(self.client.get(ruta('pedidos:checkout')), 'Taza')

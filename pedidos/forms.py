@@ -10,8 +10,10 @@ from .services import metodos_pago_disponibles, zonas_activas
 
 class CheckoutForm(forms.Form):
     nombre = forms.CharField(label='Nombre completo', min_length=3, max_length=120)
-    telefono = forms.CharField(label='Teléfono / WhatsApp', max_length=20)
-    correo = forms.EmailField(label='Correo (opcional)', required=False)
+    telefono = forms.CharField(
+        label='Teléfono / WhatsApp', max_length=20,
+        error_messages={'required': 'Escribe tu teléfono: la tienda lo usa para coordinar tu pedido.'},
+    )
     metodo_entrega = forms.ChoiceField(
         label='¿Cómo quieres recibirlo?', choices=Pedido.Entrega.choices, widget=forms.RadioSelect,
     )

@@ -43,7 +43,6 @@
         {% if tienda.banner_subtitulo %}<p class="mm-banner-subtitulo">{{ tienda.banner_subtitulo }}</p>{% endif %}
         <div class="d-flex flex-wrap gap-2">
           <a class="btn btn-acento btn-lg" href="{% url 'catalogo:lista' tienda.slug %}">{{ tienda.banner_texto_boton|default:'Ver catálogo' }}</a>
-          <a class="btn btn-outline-light btn-lg" href="{% url 'core:como_comprar' tienda.slug %}">Cómo comprar</a>
         </div>
       </div>
       {% if tienda.logo and not tienda.banner_imagen %}

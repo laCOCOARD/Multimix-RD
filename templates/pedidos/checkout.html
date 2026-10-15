@@ -33,14 +33,10 @@
 
         <section class="mm-panel mb-4" data-paso="1" aria-labelledby="titulo-paso-1">
           <h2 class="h5 mb-3" id="titulo-paso-1" tabindex="-1"><span class="mm-paso solo-sin-js">1</span>Tus datos</h2>
-          {% if user.is_authenticated %}
-            <p class="small text-muted">Compras con tu cuenta ({{ user.email }}): el pedido queda en tu historial.</p>
-          {% else %}
-            <p class="small text-muted">
-              Puedes comprar sin cuenta. Si ya tienes una, <a href="{% url 'clientes:entrar' %}?next={{ request.path|urlencode }}">inicia sesión</a>
-              y llenamos tus datos; o <a href="{% url 'clientes:registro' %}?next={{ request.path|urlencode }}">créala</a> para ver tus pedidos.
-            </p>
-          {% endif %}
+          <p class="small text-muted">
+            Compras con tu cuenta{% if user.email %}: los avisos del pedido te llegan a <strong>{{ user.email }}</strong>{% endif %}
+            y el pedido queda en tu historial.
+          </p>
           <div class="row g-3">
             <div class="col-12">
               <label class="form-label" for="id_nombre">{{ formulario.nombre.label }}</label>
@@ -48,18 +44,12 @@
                      value="{{ formulario.nombre.value|default:'' }}" minlength="3" maxlength="120" autocomplete="name" required>
               <div class="invalid-feedback">{{ formulario.nombre.errors.0|default:'Escribe tu nombre completo.' }}</div>
             </div>
-            <div class="col-sm-6">
+            <div class="col-12">
               <label class="form-label" for="id_telefono">{{ formulario.telefono.label }}</label>
               <input class="form-control{% if formulario.telefono.errors %} is-invalid{% endif %}" type="tel" id="id_telefono" name="telefono"
                      value="{{ formulario.telefono.value|default:'' }}" maxlength="20" placeholder="809-555-1234"
                      autocomplete="tel" inputmode="tel" required>
               <div class="invalid-feedback">{{ formulario.telefono.errors.0|default:'Escribe un teléfono dominicano válido (809, 829 o 849).' }}</div>
-            </div>
-            <div class="col-sm-6">
-              <label class="form-label" for="id_correo">{{ formulario.correo.label }}</label>
-              <input class="form-control{% if formulario.correo.errors %} is-invalid{% endif %}" type="email" id="id_correo" name="correo"
-                     value="{{ formulario.correo.value|default:'' }}" autocomplete="email">
-              <div class="invalid-feedback">{{ formulario.correo.errors.0|default:'Escribe un correo válido.' }}</div>
             </div>
           </div>
           <div class="mm-paso-botones solo-con-js">

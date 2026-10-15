@@ -58,17 +58,21 @@
              aria-label="{% if user.is_authenticated %}Mi cuenta{% else %}Iniciar sesión{% endif %}" title="{% if user.is_authenticated %}Mi cuenta{% else %}Iniciar sesión{% endif %}">
             <i class="bi {% if user.is_authenticated %}bi-person-check{% else %}bi-person{% endif %}"></i>
           </a>
-          {% if tienda %}
+          {% if tienda and puede_navegar %}
             <a class="btn mm-btn-carrito position-relative" href="{% url 'carrito:detalle' tienda.slug %}" aria-label="Ver carrito de {{ tienda.nombre }}">
               <i class="bi bi-bag"></i>
               <span class="badge rounded-pill mm-contador js-contador-carrito{% if not carrito_cantidad %} d-none{% endif %}">{{ carrito_cantidad }}</span>
             </a>
           {% endif %}
+          {% if puede_navegar %}
           <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#menu-principal"
                   aria-controls="menu-principal" aria-expanded="false" aria-label="Abrir menú">
             <span class="navbar-toggler-icon"></span>
           </button>
+          {% endif %}
         </div>
+
+        {% if puede_navegar %}
 
         <div class="collapse navbar-collapse order-lg-2" id="menu-principal">
           <ul class="navbar-nav me-auto mb-2 mb-lg-0">
@@ -85,7 +89,6 @@
                 </ul>
               </li>
               <li class="nav-item"><a class="nav-link" href="{% url 'catalogo:lista' tienda.slug %}?oferta=on">Ofertas</a></li>
-              <li class="nav-item"><a class="nav-link" href="{% url 'core:como_comprar' tienda.slug %}">Cómo comprar</a></li>
               <li class="nav-item"><a class="nav-link" href="{% url 'core:envios' tienda.slug %}">Envíos y retiros</a></li>
             {% else %}
               <li class="nav-item"><a class="nav-link" href="{% url 'tiendas:portada' %}#tiendas">Tiendas</a></li>
@@ -104,6 +107,7 @@
           </form>
           {% endblock %}
         </div>
+        {% endif %}
       </div>
     </nav>
   </header>
@@ -130,7 +134,8 @@
           <p class="mb-0 small">{{ marca.descripcion }}</p>
         </div>
         <div class="col-6 col-md-2">
-          {% if tienda %}
+          {% if not puede_navegar %}
+          {% elif tienda %}
             <h2 class="h6">Tienda</h2>
             <ul class="list-unstyled small mb-0">
               <li><a href="{% url 'catalogo:lista' tienda.slug %}">Catálogo</a></li>
@@ -150,7 +155,6 @@
           <h2 class="h6">Ayuda</h2>
           <ul class="list-unstyled small mb-0">
             {% if tienda %}
-              <li><a href="{% url 'core:como_comprar' tienda.slug %}">Cómo comprar</a></li>
               <li><a href="{% url 'core:envios' tienda.slug %}">Envíos y retiros</a></li>
             {% endif %}
             {% if contenido_pie.hay_preguntas %}<li><a href="{% url 'core:preguntas' %}">Preguntas frecuentes</a></li>{% endif %}

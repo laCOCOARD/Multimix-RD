@@ -1,4 +1,5 @@
 """Vistas para mostrar la factura y verificar su código QR."""
+from django.contrib.auth.decorators import login_not_required
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, render
 from django.urls import reverse
@@ -10,6 +11,7 @@ from .models import Pedido
 from .views import pedido_del_enlace
 
 
+@login_not_required
 @require_GET
 def factura(request, token):
     pedido = get_object_or_404(
@@ -28,6 +30,7 @@ def factura(request, token):
     return respuesta
 
 
+@login_not_required
 @require_GET
 def verificar_factura(request, token):
     pedido = pedido_del_enlace(request, token)

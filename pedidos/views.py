@@ -1,6 +1,7 @@
 import logging
 
 from django.contrib import messages
+from django.contrib.auth.decorators import login_not_required, login_required
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
@@ -53,6 +54,7 @@ def _contexto_checkout(request, carrito, formulario):
 
 
 @de_tienda
+@login_required
 def checkout(request):
     tienda = request.tienda
     carrito = Carrito(request, tienda)
@@ -65,11 +67,11 @@ def checkout(request):
             messages.warning(request, aviso)
         return redirect('carrito:detalle', tienda.slug)
 
+    cliente = request.user
     if request.method != 'POST':
-        cliente = request.user if request.user.is_authenticated else None
         formulario = CheckoutForm(carrito=carrito, initial={
-            # Quien tiene cuenta no vuelve a escribir sus datos.
-            **(clientes.datos_para_el_checkout(cliente) if cliente else {}),
+            # El cliente no vuelve a escribir los datos que ya tiene su cuenta.
+            **clientes.datos_para_el_checkout(cliente),
             'metodo_entrega': Pedido.Entrega.RECOGER,
             'metodo_pago': Pedido.Pago.TRANSFERENCIA,
             'cupon': carrito.codigo_cupon,
@@ -82,9 +84,10 @@ def checkout(request):
         if services.supera_limite_por_ip(ip):
             formulario.add_error(None, 'Recibimos varios pedidos desde tu conexión. Espera un rato y vuelve a intentarlo.')
         else:
+            # Los avisos del pedido van al correo de la cuenta: el checkout ya no lo pide.
+            datos = {**formulario.cleaned_data, 'correo': cliente.email}
             try:
-                cliente = request.user if request.user.is_authenticated else None
-                pedido = services.crear_pedido(carrito, formulario.cleaned_data, ip=ip, cliente=cliente)
+                pedido = services.crear_pedido(carrito, datos, ip=ip, cliente=cliente)
             except services.StockInsuficiente as error:
                 carrito.sincronizar()
                 messages.error(request, f'{error.mensaje} Revisa tu carrito y vuelve a confirmar.')
@@ -94,8 +97,7 @@ def checkout(request):
                 formulario.add_error(None, error.mensaje)
             else:
                 carrito.vaciar()
-                if cliente:
-                    clientes.recordar_pedido(cliente, pedido)
+                clientes.recordar_pedido(cliente, pedido)
                 return redirect(pedido)
     return render(request, 'pedidos/checkout.html', _contexto_checkout(request, carrito, formulario))
 
@@ -158,6 +160,7 @@ def pedido_del_enlace(request, token, consulta=None):
     return pedido
 
 
+@login_not_required
 def confirmacion(request, token):
     pedido = pedido_del_enlace(
         request, token, Pedido.objects.select_related('zona').prefetch_related('detalles'),
@@ -179,6 +182,8 @@ def confirmacion(request, token):
     })
 
 
+# El enlace privado del pedido abre sin sesion: el token es la llave (pedidos de antes de las cuentas).
+@login_not_required
 @require_POST
 def avisar_transferencia(request, token):
     pedido = get_object_or_404(Pedido, token=token)
@@ -200,6 +205,7 @@ def avisar_transferencia(request, token):
     return redirect(pedido)
 
 
+@login_not_required
 @require_POST
 def cancelar(request, token):
     """El cliente cancela su pedido desde su enlace privado. Solo antes de pagar."""
@@ -213,6 +219,7 @@ def cancelar(request, token):
     return redirect(pedido)
 
 
+@login_not_required
 @require_POST
 def pedir_devolucion(request, token):
     pedido = get_object_or_404(Pedido, token=token)

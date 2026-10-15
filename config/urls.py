@@ -1,8 +1,10 @@
 from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib import admin
+from django.contrib.auth.decorators import login_not_required
 from django.contrib.sitemaps.views import sitemap
 from django.urls import include, path
+from django.views.static import serve
 
 from core.sitemaps import SITEMAPS
 from tiendas.decoradores import RUTA_DE_TIENDA
@@ -10,7 +12,7 @@ from tiendas.decoradores import RUTA_DE_TIENDA
 urlpatterns = [
     path(f'{settings.ADMIN_URL}/', admin.site.urls),
     path('cuenta/', include('clientes.urls')),
-    path('sitemap.xml', sitemap, {'sitemaps': SITEMAPS}, name='sitemap'),
+    path('sitemap.xml', login_not_required(sitemap), {'sitemaps': SITEMAPS}, name='sitemap'),
     # Dentro de una tienda: su catalogo y su carrito.
     path(RUTA_DE_TIENDA + 'carrito/', include('carrito.urls')),
     path(RUTA_DE_TIENDA, include('catalogo.urls')),
@@ -21,4 +23,5 @@ urlpatterns = [
 ]
 
 if settings.DEBUG:
-    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+    # Las imagenes se ven tambien en la pagina de entrar (logo de la tienda).
+    urlpatterns += static(settings.MEDIA_URL, login_not_required(serve), document_root=settings.MEDIA_ROOT)

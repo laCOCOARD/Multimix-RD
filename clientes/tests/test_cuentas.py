@@ -117,7 +117,7 @@ class MiCuentaTests(TestCase):
     def comprar(self, **cambios):
         self.client.post(ruta('carrito:agregar'), {'producto_id': self.producto.pk, 'cantidad': 1})
         datos = {
-            'nombre': 'Ana Pérez', 'telefono': '8095551234', 'correo': 'ana@example.com', 'metodo_entrega': 'recoger',
+            'nombre': 'Ana Pérez', 'telefono': '8095551234', 'metodo_entrega': 'recoger',
             'metodo_pago': 'transferencia', 'acepta_terminos': 'on',
         }
         datos.update(cambios)
@@ -150,19 +150,28 @@ class MiCuentaTests(TestCase):
         self.client.post(ruta('carrito:agregar'), {'producto_id': self.producto.pk, 'cantidad': 1})
         pagina = self.client.get(ruta('pedidos:checkout'))
         inicial = pagina.context['formulario'].initial
-        self.assertEqual((inicial['nombre'], inicial['correo'], inicial['telefono'], inicial['sector'], inicial['direccion']),
-                         ('Ana Pérez', 'ana@example.com', '8495557777', 'Naco', 'Calle 1 #5'))
+        self.assertEqual((inicial['nombre'], inicial['telefono'], inicial['sector'], inicial['direccion']),
+                         ('Ana Pérez', '8495557777', 'Naco', 'Calle 1 #5'))
         self.assertContains(pagina, 'value="Calle 1 #5"')
         self.assertContains(pagina, 'Compras con tu cuenta')
 
-    def test_se_puede_comprar_sin_cuenta(self):
-        self.client.post(reverse('clientes:salir'))
-        respuesta = self.comprar()
+    def test_los_avisos_van_al_correo_de_la_cuenta(self):
+        # Aunque el navegador mande otro correo, el pedido lleva el de la cuenta.
+        self.comprar(correo='otro@example.com')
         pedido = Pedido.objects.get()
-        self.assertRedirects(respuesta, pedido.get_absolute_url(), fetch_redirect_response=False)
-        self.assertIsNone(pedido.cliente)
+        self.assertEqual((pedido.cliente, pedido.correo), (self.ana, 'ana@example.com'))
         self.client.post(ruta('carrito:agregar'), {'producto_id': self.producto.pk, 'cantidad': 1})
-        self.assertContains(self.client.get(ruta('pedidos:checkout')), 'Puedes comprar sin cuenta')
+        pagina = self.client.get(ruta('pedidos:checkout'))
+        self.assertContains(pagina, 'ana@example.com')
+        self.assertNotContains(pagina, 'name="correo"')
+
+    def test_sin_cuenta_no_se_compra(self):
+        self.client.post(reverse('clientes:salir'))
+        self.client.post(ruta('carrito:agregar'), {'producto_id': self.producto.pk, 'cantidad': 1})
+        respuesta = self.comprar()
+        self.assertRedirects(respuesta, f"{reverse('clientes:entrar')}?next={ruta('pedidos:checkout')}",
+                             fetch_redirect_response=False)
+        self.assertFalse(Pedido.objects.exists())
 
     def test_edita_sus_datos(self):
         self.client.post(reverse('clientes:perfil'), {

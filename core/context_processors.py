@@ -1,3 +1,5 @@
+from django.conf import settings
+
 from carrito.carrito import cantidad_en_sesion
 from catalogo.services import categorias_de
 from pedidos.whatsapp import construir_enlace
@@ -22,6 +24,8 @@ def tienda(request):
         'carrito_cantidad': 0,
         'enlace_whatsapp_tienda': '',
         'contenido_pie': contenido_del_pie(),
+        # Sin sesion (pagina de entrar, enlace de un pedido) el menu, el buscador y el carrito llevarian a entrar.
+        'puede_navegar': not settings.CUENTA_OBLIGATORIA or getattr(getattr(request, 'user', None), 'is_authenticated', False),
     }
     if marca.whatsapp:
         saludo = f'Hola, les escribo desde la tienda en línea de {marca.nombre}.'

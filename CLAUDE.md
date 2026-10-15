@@ -100,14 +100,15 @@ Al cerrar cada modulo: check, makemigrations, migrate, test y commit.
   estado de cada pedido quedan en `EventoPedido` con el usuario que los hizo.
 - Contenido administrable: `tiendas.Banner` (carrusel del inicio de cada tienda; sin banners activos se ve el
   banner fijo de la tienda), `core.PaginaInformativa` (`/pagina/<slug>/`, politicas del sitio) y
-  `core.PreguntaFrecuente`. Las politicas se crean por migracion vacias y sin publicar: son compromisos legales y
-  el texto lo pone el dueño; sin publicar solo las ve el superusuario. El contenido se muestra con `linebreaks`,
+  `core.PreguntaFrecuente`. Las politicas las crea `core/0014` y `core/0015` les pone un texto estandar y las
+  publica (pedido del dueño el 2026-10-14; solo llena las vacias). Los plazos del texto (dias de devolucion, horas
+  de vencimiento) son los de la configuracion al migrar: si cambian, se corrige el texto en el panel. Sin publicar
+  solo las ve el superusuario. El contenido se muestra con `linebreaks`,
   nunca como HTML. El pie las lee de `core.models.contenido_del_pie` (cache de 5 minutos, se limpia al guardar).
 - Cuentas de clientes: son usuarios de Django sin acceso al panel, con el correo como nombre de usuario, y son
   del sitio, no de una tienda (`/cuenta/`). `clientes.Perfil` guarda el telefono y la ultima direccion de entrega;
   la zona no, porque es de cada tienda. `Pedido.cliente` solo se llena si compro con la sesion iniciada: un pedido
-  de invitado nunca se asocia despues a una cuenta por coincidir el correo (el correo no esta verificado). Se puede
-  seguir comprando sin cuenta. Las plantillas de acceso estan en `templates/clientes/` y no en
+  de invitado (de antes de la cuenta obligatoria) nunca se asocia despues a una cuenta por coincidir el correo. Las plantillas de acceso estan en `templates/clientes/` y no en
   `templates/registration/`, que pisaria las pantallas de contraseña del panel.
 - Limite de intentos (`clientes.services.bloqueado`): 5 en 15 minutos para entrar (por conexion y correo), crear
   cuentas y pedir enlaces de recuperacion (por conexion). Vive en la cache: con varios procesos cada uno cuenta
@@ -151,7 +152,8 @@ Al cerrar cada modulo: check, makemigrations, migrate, test y commit.
   (o nada en las paginas del sitio), `plataforma` la configuracion y `marca` la que firme la pagina
   (`tienda or plataforma`).
 - La portada del sitio (directorio) no lleva banner ni boton de catalogo, a pedido del dueño: se veia igual
-  que el inicio de una tienda. El banner (`mm-banner`) es solo de las tiendas; la portada usa `mm-directorio`.
+  que el inicio de una tienda. Tampoco hay guia "Como comprar" (quitada a pedido del dueño): su ruta redirige al
+  inicio de la tienda. El banner (`mm-banner`) es solo de las tiendas; la portada usa `mm-directorio`.
 - WhatsApp siempre con codigo de pais: `core.telefonos.normalizar_whatsapp` antepone el 1 a los numeros
   dominicanos de 10 digitos. Se aplica al validar y guardar Tienda y ConfiguracionTienda y, por si acaso, al
   armar cada enlace (`construir_enlace`). Sin el 1, wa.me abre un numero de otro pais.
@@ -207,7 +209,15 @@ Al cerrar cada modulo: check, makemigrations, migrate, test y commit.
 - "Comprar ahora" es el mismo POST de agregar al carrito con `comprar=1`: redirige al checkout.
 - Busqueda sin tildes: `Producto.texto_busqueda` (nombre + marca + SKU + descripcion normalizados en `save()`).
   Ojo: `queryset.update()` de nombre/descripcion no lo refresca.
-- Correo del cliente opcional en el checkout (el contacto es por WhatsApp).
+- Cuenta obligatoria (pedido del dueño el 2026-10-14): `config.middleware.CuentaObligatoriaMiddleware` (el
+  `LoginRequiredMiddleware` de Django) manda a `/cuenta/entrar/` todo el sitio. Abren sin sesion, con
+  `@login_not_required`: entrar, crear cuenta, recuperar contraseña, terminos, politicas, preguntas, robots,
+  sitemap, `/salud/`, el panel (se protege solo) y las paginas por token del pedido (los enlaces de los correos y
+  los pedidos de invitado anteriores). Una vista nueva del sitio queda cerrada sin hacer nada. En las pruebas esta
+  apagado (`CUENTA_OBLIGATORIA`); `clientes/tests/test_cuenta_obligatoria.py` lo prueba encendido. Sin sesion la
+  plantilla oculta menu, buscador y carrito (`puede_navegar`). El checkout lleva ademas `@login_required`.
+- El checkout no pide correo: el pedido lleva el de la cuenta (`request.user.email`) y los avisos van alli. El
+  telefono es obligatorio.
 - Los pedidos no se crean desde el panel; en su formulario solo se editan las notas internas.
 - Los pedidos si se eliminan desde el panel (boton del detalle y accion de la lista), siempre con
   `pedidos.services.eliminar_pedido`: si aun se podia cancelar lo cancela primero (reserva y cupon); lo

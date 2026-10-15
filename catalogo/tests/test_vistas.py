@@ -148,8 +148,7 @@ class CatalogoVistasTests(TestCase):
         self.assertTemplateUsed(respuesta, '404.html')
 
     def test_paginas_informativas_sitemap_y_robots(self):
-        for nombre in ('core:como_comprar', 'core:envios'):
-            self.assertEqual(self.client.get(ruta(nombre)).status_code, 200)
+        self.assertEqual(self.client.get(ruta('core:envios')).status_code, 200)
         sitemap = self.client.get('/sitemap.xml')
         self.assertContains(sitemap, self.taza.get_absolute_url())
         self.assertNotContains(sitemap, self.oculto.get_absolute_url())

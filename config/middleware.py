@@ -1,12 +1,23 @@
 import logging
 
 from django.conf import settings
+from django.contrib.auth.middleware import LoginRequiredMiddleware
 from django.core.exceptions import PermissionDenied
 from django.http import Http404
 
 from core.tareas import ejecutar_si_toca
 
 logger = logging.getLogger('django.request')
+
+
+class CuentaObligatoriaMiddleware(LoginRequiredMiddleware):
+    """Para entrar al sitio hay que iniciar sesion. Las vistas abiertas llevan `@login_not_required`: entrar,
+    crear cuenta, recuperar la contraseña, las politicas, las paginas por token del pedido y lo tecnico."""
+
+    def process_view(self, request, view_func, view_args, view_kwargs):
+        if not settings.CUENTA_OBLIGATORIA:
+            return None
+        return super().process_view(request, view_func, view_args, view_kwargs)
 
 
 class TareasPeriodicasMiddleware:

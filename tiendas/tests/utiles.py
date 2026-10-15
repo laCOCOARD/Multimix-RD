@@ -17,3 +17,16 @@ def tienda_de_prueba(nombre=TIENDA_POR_DEFECTO, **datos):
 def ruta(nombre, *args, tienda=None):
     """`reverse` de una ruta que vive dentro de una tienda; por defecto, la tienda de prueba."""
     return reverse(nombre, args=[(tienda or tienda_de_prueba()).slug, *args])
+
+
+def entrar_como_cliente(cliente, correo='cliente@example.com', nombre='Ana Pérez'):
+    """Inicia sesion en el cliente de pruebas con una cuenta de cliente (se crea la primera vez): para comprar hace falta."""
+    from django.contrib.auth import get_user_model
+
+    from clientes.services import registrar_cliente
+
+    usuario = get_user_model().objects.filter(username=correo).first()
+    if usuario is None:
+        usuario = registrar_cliente(nombre, correo, 'clave-de-prueba-123', '8095551234')
+    cliente.force_login(usuario)
+    return usuario

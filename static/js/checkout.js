@@ -128,7 +128,7 @@
       return nodo ? nodo.firstChild.textContent.trim() : '';
     };
     texto(revision.querySelector('[data-revision="cliente"]'), [
-      campo('nombre').value.trim(), campo('telefono').value.trim(), campo('correo').value.trim(),
+      campo('nombre').value.trim(), campo('telefono').value.trim(),
     ]);
     const entrega = formulario.querySelector('.js-entrega:checked');
     const lineasEntrega = [etiqueta(entrega)];

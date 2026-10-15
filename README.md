@@ -137,7 +137,7 @@ De cada tienda, todas bajo `/tienda/<tienda>/`:
 | `producto/<slug>/`                   | Detalle del producto                               |
 | `carrito/`                           | Carrito y cupón de la tienda                       |
 | `pedido/checkout/`                   | Checkout                                           |
-| `como-comprar/`, `envios-y-retiros/` | Formas de pago, cuentas y zonas de la tienda       |
+| `envios-y-retiros/`                 | Zonas de envio y retiro de la tienda               |
 
 Los enlaces de cuando había una sola tienda (`/catalogo/`, `/producto/<slug>/`, `/carrito/`...) redirigen
 a la tienda más antigua.

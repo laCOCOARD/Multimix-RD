@@ -12,7 +12,7 @@ from pedidos.models import Pedido
 from pedidos.services import calcular_totales, crear_pedido
 from pedidos.whatsapp import construir_mensaje
 from tiendas.models import Tienda
-from tiendas.tests.utiles import ruta, tienda_de_prueba
+from tiendas.tests.utiles import entrar_como_cliente, ruta, tienda_de_prueba
 
 from .utiles import carrito_con, cupon_de_prueba, datos_pedido, zona_de_prueba
 
@@ -47,6 +47,7 @@ class PedidoConItbisTests(TestCase):
         self.tienda = tienda_de_prueba(itbis_porcentaje=D('18'))
         self.gravado = crear_producto(nombre='Lámpara', sku='G', precio=D('1000'))
         self.exento = crear_producto(nombre='Libro', sku='E', precio=D('500'), exento_itbis=True)
+        entrar_como_cliente(self.client)
 
     def test_el_carrito_y_el_checkout_muestran_el_impuesto(self):
         carrito = carrito_con((self.gravado, 2), (self.exento, 1))
@@ -109,6 +110,7 @@ class TerminosTests(TestCase):
     def test_sin_aceptar_los_terminos_no_hay_pedido(self):
         tienda_de_prueba()
         producto = crear_producto()
+        entrar_como_cliente(self.client)
         self.client.post(ruta('carrito:agregar'), {'producto_id': producto.pk, 'cantidad': 1})
         respuesta = self.client.post(ruta('pedidos:checkout'), {
             'nombre': 'Ana Pérez', 'telefono': '8095551234', 'metodo_entrega': 'recoger', 'metodo_pago': 'transferencia',

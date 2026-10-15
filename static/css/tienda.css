@@ -266,7 +266,6 @@ img { max-width: 100%; height: auto; }
 .mm-resumen-lineas li span:last-child { white-space: nowrap; font-weight: 600; }
 
 .mm-paso { display: inline-grid; place-items: center; width: 1.8rem; height: 1.8rem; margin-right: .55rem; border-radius: 50%; background: var(--mm-primario); color: #fff; font-size: .9rem; font-weight: 700; }
-.mm-paso-compra .mm-paso { margin-bottom: .7rem; }
 .mm-pago-pendiente { background: #8a6d1f; }
 .mm-pago-en_revision { background: #7a4fd6; }
 .mm-pago-aprobado { background: var(--mm-exito); }

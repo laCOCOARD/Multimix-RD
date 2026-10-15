@@ -33,7 +33,6 @@ def datos_para_el_checkout(usuario):
     perfil = perfil_de(usuario)
     return {
         'nombre': usuario.get_full_name() or usuario.first_name,
-        'correo': usuario.email,
         'telefono': perfil.telefono,
         'sector': perfil.sector,
         'direccion': perfil.direccion,

@@ -15,7 +15,7 @@ from pedidos.models import Pedido
 from pedidos.services import cambiar_estado, eliminar_pedido
 from pedidos.tests.utiles import pedido_de_prueba
 from tiendas.services import dar_acceso_al_panel
-from tiendas.tests.utiles import tienda_de_prueba
+from tiendas.tests.utiles import entrar_como_cliente, tienda_de_prueba
 
 Estado = Pago.Estado
 CARPETA = tempfile.mkdtemp()
@@ -31,6 +31,7 @@ class PagoTests(TestCase):
         self.producto = crear_producto(nombre='Lámpara', precio=Decimal('1000'))
         self.pedido = pedido_de_prueba(self.producto, 2)
         self.url = reverse('pedidos:avisar_transferencia', args=[self.pedido.token])
+        entrar_como_cliente(self.client)
 
     def pago(self):
         return Pago.objects.get(pedido=self.pedido, estado__in=Pago.VIGENTES)

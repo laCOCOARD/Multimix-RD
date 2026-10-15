@@ -13,7 +13,7 @@ from pedidos.models import Pedido
 from pedidos.tests.utiles import cupon_de_prueba, zona_de_prueba
 from tiendas.models import Tienda
 
-from .utiles import ruta, tienda_de_prueba
+from .utiles import entrar_como_cliente, ruta, tienda_de_prueba
 
 FETCH = {'HTTP_X_REQUESTED_WITH': 'fetch'}
 
@@ -34,6 +34,9 @@ class DosTiendas(TestCase):
         CuentaBancaria.objects.create(tienda=cls.multimix, banco='Banco Popular', numero='111', titular='Multimix')
         CuentaBancaria.objects.create(tienda=cls.fitnes, banco='Banreservas', numero='222', titular='Fitnes')
 
+    def setUp(self):
+        entrar_como_cliente(self.client)
+
     def agregar(self, producto, tienda, cantidad=1, **extra):
         return self.client.post(
             ruta('carrito:agregar', tienda=tienda), {'producto_id': producto.pk, 'cantidad': cantidad}, **extra,
@@ -41,7 +44,7 @@ class DosTiendas(TestCase):
 
     def pedir(self, tienda, **cambios):
         datos = {
-            'nombre': 'Ana Pérez', 'telefono': '809-555-1234', 'correo': '', 'metodo_entrega': 'recoger',
+            'nombre': 'Ana Pérez', 'telefono': '809-555-1234', 'metodo_entrega': 'recoger',
             'zona': '', 'direccion': '', 'referencia': '', 'metodo_pago': 'transferencia',
             'referencia_transferencia': '', 'cupon': '', 'notas': '', 'sitio_web': '', 'acepta_terminos': 'on',
         }
@@ -113,7 +116,12 @@ class DirectorioTests(DosTiendas):
         )
         respuesta = self.client.get(f'/producto/{self.lampara.slug}/')
         self.assertRedirects(respuesta, self.lampara.get_absolute_url())
-        self.assertRedirects(self.client.get('/como-comprar/'), ruta('core:como_comprar'))
+        # La guia "Como comprar" ya no existe: su enlace lleva al inicio de la tienda.
+        self.assertRedirects(
+            self.client.get('/como-comprar/'), '/tienda/multimix-rd/como-comprar/', target_status_code=301,
+        )
+        self.assertRedirects(self.client.get('/tienda/multimix-rd/como-comprar/'), self.multimix.get_absolute_url(),
+                             status_code=301)
         Tienda.objects.update(activa=False)
         self.assertEqual(self.client.get('/catalogo/').status_code, 404)
 
@@ -131,10 +139,7 @@ class CatalogoPorTiendaTests(DosTiendas):
         self.assertEqual(self.client.get(ajena).status_code, 404)
         self.assertEqual(self.client.get(self.pesas.get_absolute_url()).status_code, 200)
 
-    def test_como_comprar_y_envios_son_de_la_tienda(self):
-        pagos = self.client.get(ruta('core:como_comprar', tienda=self.fitnes))
-        self.assertContains(pagos, 'Banreservas')
-        self.assertNotContains(pagos, 'Banco Popular')
+    def test_envios_son_de_la_tienda(self):
         envios = self.client.get(ruta('core:envios', tienda=self.fitnes))
         self.assertEqual(list(envios.context['zonas']), [self.zona_fitnes])
 

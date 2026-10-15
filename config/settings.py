@@ -64,6 +64,7 @@ MIDDLEWARE = [
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'config.middleware.CuentaObligatoriaMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'config.middleware.PoliticaDeContenidoMiddleware',
@@ -286,6 +287,9 @@ IMPORT_EXPORT_FORMATS = [XLSX, CSV]
 
 # Mantenimiento que corre solo con las visitas (ver core/tareas.py). En las pruebas se activa a mano.
 TAREAS_AUTOMATICAS = not EN_TESTS
+
+# Todo el sitio pide iniciar sesion (ver config/middleware.py). En las pruebas se activa a mano.
+CUENTA_OBLIGATORIA = not EN_TESTS
 
 # --- Seguridad en produccion ---
 # Scripts y estilos solo del propio sitio y del CDN de Bootstrap; las fotos pueden venir del almacenamiento.

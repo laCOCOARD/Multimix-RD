@@ -1,7 +1,7 @@
 from django.contrib import messages
 from django.contrib.auth import login
 from django.contrib.auth import views as acceso
-from django.contrib.auth.decorators import login_required
+from django.contrib.auth.decorators import login_not_required, login_required
 from django.core.paginator import Paginator
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse_lazy
@@ -30,6 +30,7 @@ def _destino(request, por_defecto='clientes:cuenta'):
     return por_defecto
 
 
+@login_not_required
 @sensitive_post_parameters('clave', 'clave_repetida')
 @never_cache
 def registro(request):
@@ -49,7 +50,8 @@ def registro(request):
     return render(request, PLANTILLA, {
         'formulario': formulario,
         'titulo': 'Crear cuenta',
-        'intro': 'Con tu cuenta ves tus pedidos y no tienes que escribir tus datos en cada compra.',
+        'intro': 'Con tu cuenta ves tus pedidos, no escribes tus datos en cada compra y los avisos te llegan a tu correo.',
+        'aviso_legal': True,
         'boton': 'Crear mi cuenta',
         'siguiente': _destino(request, ''),
         'enlaces': [('clientes:entrar', '¿Ya tienes cuenta? Inicia sesión')],
@@ -63,6 +65,7 @@ class Entrar(acceso.LoginView):
     next_page = reverse_lazy('clientes:cuenta')
     extra_context = {
         'titulo': 'Iniciar sesión',
+        'intro': 'Para ver las tiendas y comprar necesitas una cuenta. Es gratis y tus pedidos quedan guardados en ella.',
         'boton': 'Entrar',
         'enlaces': [
             ('clientes:registro', '¿No tienes cuenta? Créala gratis'),
@@ -77,7 +80,7 @@ class Entrar(acceso.LoginView):
 
 
 class Salir(acceso.LogoutView):
-    next_page = reverse_lazy('tiendas:portada')
+    next_page = reverse_lazy('clientes:entrar')
 
 
 @login_required
