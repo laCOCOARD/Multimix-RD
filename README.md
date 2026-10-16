@@ -1,10 +1,11 @@
 # Multimix RD
 
 Sitio de tiendas en línea hecho con Django 5.2, con precios en pesos dominicanos (RD$). Reúne varias
-**tiendas** de emprendedores: cada una tiene su catálogo, su carrito, su WhatsApp, sus cuentas y sus
+**tiendas** de emprendedores: cada una tiene su catálogo, su carrito, su WhatsApp y sus
 pedidos. El cliente entra a una tienda, arma su carrito y confirma el pedido en el sitio, paso a paso;
-WhatsApp queda como canal opcional de atención. El pago (transferencia o efectivo) lo recibe y lo confirma
-el vendedor desde su panel.
+WhatsApp queda como canal opcional de atención. Las transferencias llegan a las cuentas del sitio y las
+confirma el administrador; el efectivo lo cobra la tienda. El sitio le liquida a cada tienda lo suyo menos su
+comisión.
 
 - **Sitio:** portada con el directorio de tiendas (sin banner, para que no se confunda con una tienda) y
   buscador de productos de todas las tiendas.

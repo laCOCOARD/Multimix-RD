@@ -93,13 +93,6 @@ class Tienda(models.Model):
         validators=[MinValueValidator(Decimal('0')), MaxValueValidator(Decimal('100'))],
         help_text='Lo que se queda el sitio de cada venta, sobre los productos (no sobre el envío).',
     )
-    el_sitio_cobra = models.BooleanField(
-        'el sitio recibe las transferencias', default=False,
-        help_text='Márcalo y el cliente verá las "Cuentas del sitio" (las tuyas) en lugar de las de la tienda: tú '
-                  'compruebas el pago en tu banco y lo apruebas, la tienda recibe un correo para prepararlo y se lo '
-                  'depositas en la liquidación. Sin marcar, la tienda cobra y confirma en sus propias cuentas. '
-                  'Aplica a los pedidos nuevos.',
-    )
     creada = models.DateTimeField('fecha de creación', auto_now_add=True)
 
     objects = TiendaQuerySet.as_manager()

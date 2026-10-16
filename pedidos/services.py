@@ -199,7 +199,7 @@ def crear_pedido(carrito, datos, ip=None, cliente=None):
         metodo_pago=datos['metodo_pago'],
         transferencia_realizada=bool(datos.get('transferencia_realizada')) and por_transferencia,
         referencia_transferencia=(datos.get('referencia_transferencia') or '').strip() if por_transferencia else '',
-        cobra_el_sitio=por_transferencia and tienda.el_sitio_cobra,
+        cobra_el_sitio=por_transferencia,
         cupon=cupon,
         codigo_cupon=cupon.codigo if cupon else '',
         subtotal=subtotal,

@@ -360,7 +360,7 @@ class CargarDemoTests(TestCase):
 class OtrosAdminTests(PanelBase):
     def test_listas_cargan(self):
         cupon_de_prueba('BIENVENIDO10', usos_maximos=5)
-        for nombre in ('promociones_cupon', 'pedidos_zonaenvio', 'catalogo_categoria', 'core_cuentabancaria'):
+        for nombre in ('promociones_cupon', 'pedidos_zonaenvio', 'catalogo_categoria', 'core_cuentadelsitio'):
             respuesta = self.client.get(reverse(f'admin:{nombre}_changelist'))
             self.assertEqual(respuesta.status_code, 200, nombre)
         self.assertContains(self.client.get(reverse('admin:promociones_cupon_changelist')), '0 / 5')

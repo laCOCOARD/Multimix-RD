@@ -71,18 +71,23 @@ class AvisosPorCorreoTests(TestCase):
         for estado, texto in (('pagado', 'Confirmamos el pago'), ('listo', 'listo para recoger'), ('entregado', 'fue entregado')):
             with self.captureOnCommitCallbacks(execute=True):
                 cambiar_estado(pedido, estado)
-            correo = mail.outbox[-1]
-            self.assertEqual(correo.to, ['ana@example.com'])
+            correo = [correo for correo in mail.outbox if correo.to == ['ana@example.com']][-1]
             self.assertIn(texto, correo.body)
-        self.assertEqual(len(mail.outbox), 3)
+        # Tres al cliente y, al confirmarse la transferencia, uno a la tienda para que prepare el pedido.
+        self.assertEqual([correo.to for correo in mail.outbox].count(['ventas@tienda.example']), 1)
+        self.assertEqual(len(mail.outbox), 4)
 
-    def test_comprobante_avisa_a_la_tienda_y_rechazo_al_cliente(self):
+    def test_comprobante_avisa_al_sitio_y_rechazo_al_cliente(self):
+        configuracion = ConfiguracionTienda.obtener()
+        configuracion.correo = 'hola@sitio.example'
+        configuracion.save()
         pedido = self.pedido()
         mail.outbox.clear()
         with self.captureOnCommitCallbacks(execute=True):
             pago = pagos.registrar_comprobante(pedido, None, 'REF-77')
         correo = mail.outbox[-1]
-        self.assertEqual(correo.to, ['ventas@tienda.example'])
+        # La transferencia llego a las cuentas del sitio: el aviso es para el dueño, no para la tienda.
+        self.assertEqual(correo.to, ['hola@sitio.example'])
         self.assertIn('Referencia: REF-77', correo.body)
         self.assertIn(f'/panel/pagos/pago/{pago.pk}/change/', correo.body)
 

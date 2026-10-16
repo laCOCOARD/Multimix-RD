@@ -15,7 +15,7 @@ Cada pedido tiene un **pago** (`pagos.Pago`) con su propia referencia (`MMX-2026
 | Cancelado         | El pedido se canceló antes de cobrarse.                                     |
 | Reembolsado       | Reservado para devoluciones; todavía no hay pantalla para registrarlas.     |
 
-- **Transferencia:** el cliente ve las cuentas de la tienda, transfiere y, desde la página de su pedido, adjunta
+- **Transferencia:** el cliente ve las cuentas del sitio (las del dueño, iguales en todas las tiendas), transfiere y, desde la página de su pedido, adjunta
   la foto o captura del comprobante y la referencia. El vendedor lo revisa en **Panel → Pagos** y lo aprueba o lo
   rechaza. El cliente nunca marca un pedido como pagado.
 - **Efectivo (al recoger o contra entrega):** el pago queda pendiente y se confirma solo cuando el vendedor
@@ -53,19 +53,19 @@ referencia del pago y el código de autorización.
 
 **Panel → Liquidaciones → Saldos por tienda** (solo el administrador principal).
 
-- Cada tienda tiene su propia **comisión del sitio (%)** y la casilla **"el sitio recibe las transferencias"**.
+- Cada tienda tiene su propia **comisión del sitio (%)**.
   Se cambian en **Tiendas → la tienda → Reparto**. El vendedor no las ve.
 - Entra en cuenta un pedido **cobrado y ya entregado**. Lo cobrado sin entregar aparece como "en curso".
 - La comisión se calcula sobre los productos (subtotal menos descuento). El envío es completo de la tienda.
-- Si el sitio recibe las transferencias, se le depositan a la tienda menos la comisión. El efectivo lo cobra la
+- Las transferencias las recibe el sitio y se le depositan a la tienda menos la comisión. El efectivo lo cobra la
   tienda al entregar: va en su propio apartado ("Lo cobró la tienda"), no se le deposita, y la comisión de esas
   ventas se descuenta del depósito. Un saldo negativo significa que la tienda le debe al sitio. Cada saldo trae
   la lista de sus pedidos con la forma de pago y quién cobró.
 
-### Cuando el sitio recibe las transferencias
+### Las transferencias las recibe el sitio
 
-1. El cliente ve las **Cuentas del sitio** (Panel → Cuentas del sitio, solo el administrador principal) en lugar de
-   las de la tienda. Queda anotado en el pedido (`cobra_el_sitio`) y no cambia aunque luego se cambie la tienda.
+1. El cliente de cualquier tienda ve las **cuentas bancarias del sitio** (Panel → Cuentas bancarias del sitio, solo
+   el administrador principal). Las tiendas no registran cuentas. Queda anotado en el pedido (`cobra_el_sitio`).
 2. El aviso de transferencia y el comprobante le llegan al correo del sitio (Configuración general; si no tiene,
    a los administradores principales).
 3. El administrador comprueba en la app del banco que el dinero llegó y aprueba o rechaza en **Pagos**. El

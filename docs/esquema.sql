@@ -1132,3 +1132,23 @@ DROP TABLE "pagos_liquidacion";
 ALTER TABLE "new__pagos_liquidacion" RENAME TO "pagos_liquidacion";
 CREATE INDEX "pagos_liquidacion_creada_por_id_dc71ed1a" ON "pagos_liquidacion" ("creada_por_id");
 CREATE INDEX "pagos_liquidacion_tienda_id_b32bdd81" ON "pagos_liquidacion" ("tienda_id");
+
+-- ============================================================
+-- core 0018
+-- ============================================================
+--
+-- Change Meta options on cuentadelsitio
+--
+-- (no-op)
+--
+-- Delete model CuentaBancaria
+--
+DROP TABLE "core_cuentabancaria";
+
+-- ============================================================
+-- tiendas 0012
+-- ============================================================
+--
+-- Remove field el_sitio_cobra from tienda
+--
+ALTER TABLE "tiendas_tienda" DROP COLUMN "el_sitio_cobra";

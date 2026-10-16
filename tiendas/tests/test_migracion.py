@@ -59,7 +59,7 @@ class DeUnaTiendaASubtiendasTests(TransactionTestCase):
 
         # A partir de aqui, los modelos de hoy.
         from catalogo.models import Producto
-        from core.models import DESCRIPCION_DEL_SITIO, ConfiguracionTienda, CuentaBancaria
+        from core.models import DESCRIPCION_DEL_SITIO, ConfiguracionTienda, CuentaDelSitio
         from pedidos.models import Pedido, SecuenciaTienda, ZonaEnvio
         from pedidos.tests.utiles import pedido_de_prueba
         from promociones.models import Cupon
@@ -81,9 +81,13 @@ class DeUnaTiendaASubtiendasTests(TransactionTestCase):
         self.assertEqual(tienda.banner_subtitulo, LEMA_DE_LA_TIENDA)
         self.assertEqual((config.descripcion, config.whatsapp), (DESCRIPCION_DEL_SITIO, '18295550123'))
 
-        for modelo in (Producto, Pedido, ZonaEnvio, Cupon, CuentaBancaria):
+        for modelo in (Producto, Pedido, ZonaEnvio, Cupon):
             self.assertEqual(list(modelo.objects.values_list('tienda_id', flat=True)), [tienda.pk], modelo.__name__)
         self.assertEqual(Pedido.objects.get().numero, f'MMX-{anio}-00007')
+        # La cuenta que tenia la primera tienda queda como cuenta del sitio: a ella transfieren todos los clientes.
+        self.assertEqual(
+            list(CuentaDelSitio.objects.values_list('banco', 'numero', 'titular')), [('Popular', '111', 'Multimix')],
+        )
 
         # La numeracion de pedidos sigue donde iba.
         self.assertEqual(list(SecuenciaTienda.objects.values_list('tienda_id', 'anio', 'ultimo')), [(tienda.pk, anio, 7)])

@@ -6,7 +6,7 @@ from django.urls import reverse
 
 from catalogo.models import Producto
 from catalogo.tests.test_modelos import crear_producto
-from core.models import CuentaBancaria
+from core.models import CuentaDelSitio
 from pedidos.models import Pedido
 from pedidos.whatsapp import construir_mensaje
 from tiendas.tests.utiles import entrar_como_cliente, ruta, tienda_de_prueba
@@ -21,8 +21,8 @@ class CheckoutTests(TestCase):
         self.tienda.save()
         self.producto = crear_producto(nombre='Lámpara', precio=Decimal('1000'), stock_almacen=5)
         self.zona = zona_de_prueba()
-        CuentaBancaria.objects.create(
-            tienda=self.tienda, banco='Banco Popular', numero='123456789', titular='Multimix RD SRL',
+        CuentaDelSitio.objects.create(
+            banco='Banco Popular', numero='123456789', titular='Multimix RD SRL',
         )
         self.url = ruta('pedidos:checkout')
         self.cliente = entrar_como_cliente(self.client, 'ana@example.com')

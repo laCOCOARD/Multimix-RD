@@ -41,7 +41,7 @@ def _contexto_checkout(request, carrito, formulario):
         'lineas': carrito.lineas(),
         'totales': services.calcular_totales(carrito, entrega, zona),
         'zonas': services.zonas_activas(tienda),
-        'cuentas': cuentas_para_transferir(tienda),
+        'cuentas': cuentas_para_transferir(),
         'pagos_recoger': services.metodos_pago_disponibles(Pedido.Entrega.RECOGER, tienda),
         'pagos_envio': services.metodos_pago_disponibles(Pedido.Entrega.ENVIO, tienda),
         # Sin pasarela conectada la tarjeta se anuncia, pero no se puede elegir ni se piden sus datos.
@@ -169,7 +169,7 @@ def confirmacion(request, token):
         'puede_cancelar': services.puede_cancelar_el_cliente(pedido),
         'puede_pedir_devolucion': services.puede_pedir_devolucion(pedido),
         'devolucion': services.devolucion_abierta(pedido),
-        'cuentas': cuentas_para_transferir(tienda, pedido.cobra_el_sitio) if pedido.paga_por_transferencia else [],
+        'cuentas': cuentas_para_transferir() if pedido.paga_por_transferencia else [],
         # WhatsApp ya no es un paso de la compra: queda como canal opcional para hablar con la tienda.
         'enlace_whatsapp': enlace_del_pedido(pedido, tienda.whatsapp) if tienda.whatsapp else '',
         'puede_avisar_transferencia': (

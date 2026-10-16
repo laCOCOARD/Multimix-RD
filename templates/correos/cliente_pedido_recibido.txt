@@ -10,7 +10,7 @@ Descuento: -{{ pedido.descuento|moneda }}{% endif %}{% if pedido.impuesto %}
 Envío: {% if pedido.recoge_en_tienda %}recoges en la tienda{% else %}{{ pedido.costo_envio|moneda }}{% endif %}
 Total: {{ pedido.total|moneda }}
 
-{% if pedido.paga_por_transferencia %}Para pagar por transferencia, entra a la página de tu pedido: ahí están las cuentas de la tienda y puedes adjuntar tu comprobante.{% elif pedido.recoge_en_tienda %}Pagas en efectivo al recoger tu pedido.{% else %}Pagas en efectivo al recibir tu pedido.{% endif %}
+{% if pedido.paga_por_transferencia %}Para pagar por transferencia, entra a la página de tu pedido: ahí están las cuentas de {{ sitio }} y puedes adjuntar tu comprobante.{% elif pedido.recoge_en_tienda %}Pagas en efectivo al recoger tu pedido.{% else %}Pagas en efectivo al recibir tu pedido.{% endif %}
 
 Sigue tu pedido aquí:
 {{ enlace_pedido }}

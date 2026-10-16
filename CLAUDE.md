@@ -31,7 +31,7 @@ Al cerrar cada modulo: check, makemigrations, migrate, test y commit.
 - `config/` — settings, urls, wsgi.
 - `tiendas/` — Tienda (subtienda) y sus vendedores; `@de_tienda` para las vistas, `AdminDeTienda` para el
   panel, grupo Vendedores, portada (directorio), buscador del sitio y enlaces anteriores.
-- `core/` — ConfiguracionTienda (fila unica, ajustes del sitio), CuentaBancaria y CuentaDelSitio, panel (AdminSite propio),
+- `core/` — ConfiguracionTienda (fila unica, ajustes del sitio), CuentaDelSitio (las unicas cuentas bancarias), panel (AdminSite propio),
   filtro `moneda`, telefonos RD, paginas informativas, sitemap/robots, comando `cargar_demo`.
 - `catalogo/` — Categoria (comun a todas las tiendas), Producto, FotoProducto; inicio, catalogo y detalle de cada tienda.
 - `promociones/` — Cupon y su validacion.
@@ -49,7 +49,7 @@ Al cerrar cada modulo: check, makemigrations, migrate, test y commit.
   (referencia; las tablas las crea `migrate`).
 
 ## Reglas que no se rompen
-- Nada cruza de una tienda a otra. Producto, Pedido, Pago, Cupon, ZonaEnvio y CuentaBancaria llevan `tienda`.
+- Nada cruza de una tienda a otra. Producto, Pedido, Pago, Cupon y ZonaEnvio llevan `tienda`.
   En el sitio toda vista de tienda usa `@de_tienda` y filtra por `request.tienda`; en el panel todo
   ModelAdmin con datos de tienda hereda `tiendas.panel.AdminDeTienda`. Un modelo o una pantalla nueva
   entra con su prueba de aislamiento (`tiendas/tests/`).
@@ -73,16 +73,18 @@ Al cerrar cada modulo: check, makemigrations, migrate, test y commit.
 ## Decisiones tomadas
 - Reparto a las tiendas (`pagos/liquidaciones.py`, Panel > Liquidaciones > Saldos por tienda, solo superusuario):
   entra en cuenta el pedido cobrado y entregado. Comision del sitio (`Tienda.comision_porcentaje`) sobre
-  subtotal - descuento; el envio es de la tienda. Con `Tienda.el_sitio_cobra` las transferencias las tiene el sitio
-  y se le depositan a la tienda menos la comision; el efectivo siempre lo cobra la tienda y va en su propio apartado
+  subtotal - descuento; el envio es de la tienda. Las transferencias las tiene el sitio y se le depositan a la
+  tienda menos la comision; el efectivo siempre lo cobra la tienda y va en su propio apartado
   (`Saldo.del_sitio` / `Saldo.de_la_tienda`): no se le deposita, pero su comision se descuenta. Saldo negativo = la
   tienda le debe al sitio. `liquidar` crea la `Liquidacion` y marca cada pedido (`liquidacion`, `monto_liquidado`)
   para no pagarlo dos veces; un pedido liquidado que luego se reembolsa se descuenta en la siguiente
   (`ajuste_liquidacion`). Lo que cobre el banco por enviar el deposito (`Liquidacion.costo_transferencia`, un monto
   que se escribe al liquidar) se le descuenta a la tienda. El vendedor ve sus liquidaciones pero no la comision ni quien cobra en el formulario.
-- Cobro del sitio (pedido del dueño el 2026-10-15): `Pedido.cobra_el_sitio` se fija al crear el pedido
-  (transferencia en una tienda con `el_sitio_cobra`) y nunca se recalcula; lo usan las cuentas que ve el cliente
-  (`core.models.cuentas_para_transferir`: `CuentaDelSitio`, las del dueño, o las de la tienda) y la liquidacion.
+- Cobro del sitio (pedido del dueño el 2026-10-15): todas las transferencias de todas las tiendas van a las cuentas
+  del dueño (`CuentaDelSitio`, `core.models.cuentas_para_transferir`); las tiendas no tienen cuentas (se quitaron
+  `CuentaBancaria` y `Tienda.el_sitio_cobra`; `core/0017` paso al sitio las de la tienda mas antigua).
+  `Pedido.cobra_el_sitio` se fija al crear el pedido (toda transferencia) y lo usa la liquidacion: los pedidos de
+  antes, transferidos a la tienda, quedaron en False y cuentan como cobrados por ella.
   En esos pedidos el comprobante le llega al sitio (`avisos.correos_del_sitio`), solo el superusuario aprueba o
   rechaza (`pagos.services.puede_resolver`) y marca Pagado o Reembolsado (`transiciones_permitidas(pedido,
   usuario)`), y al pasar a Pagado la tienda recibe "Pago confirmado" (`avisos.pago_confirmado_a_la_tienda`).

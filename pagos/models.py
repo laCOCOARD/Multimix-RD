@@ -100,7 +100,7 @@ class Liquidacion(models.Model):
     cobrado_por_el_sitio = models.DecimalField('cobró el sitio', max_digits=12, decimal_places=2)
     cobrado_por_la_tienda = models.DecimalField(
         'cobró la tienda (efectivo)', max_digits=12, decimal_places=2, default=0,
-        help_text='Lo que la tienda cobró directamente (efectivo o en sus cuentas): no se le deposita.',
+        help_text='Lo que la tienda cobró directamente (en efectivo): no se le deposita.',
     )
     comision_de_lo_cobrado_por_la_tienda = models.DecimalField(
         'comisión de lo que cobró la tienda', max_digits=12, decimal_places=2, default=0,

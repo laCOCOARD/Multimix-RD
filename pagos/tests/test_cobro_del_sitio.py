@@ -1,5 +1,5 @@
-"""Tiendas en las que el sitio recibe las transferencias: el cliente ve las cuentas del dueño, el dueño comprueba el
-pago en su banco y lo aprueba, y la tienda se entera por correo y en el panel."""
+"""El sitio recibe todas las transferencias: el cliente ve las cuentas del dueño, el dueño comprueba el pago en su
+banco y lo aprueba, y la tienda se entera por correo y en el panel."""
 from decimal import Decimal
 
 from django.contrib.auth import get_user_model
@@ -8,7 +8,7 @@ from django.test import TestCase
 from django.urls import reverse
 
 from catalogo.tests.test_modelos import crear_producto
-from core.models import CuentaBancaria, CuentaDelSitio, cuentas_para_transferir
+from core.models import CuentaDelSitio, cuentas_para_transferir
 from pagos import services
 from pagos.models import Pago
 from pedidos.models import Pedido
@@ -25,33 +25,27 @@ class CobroDelSitioTests(TestCase):
     def setUp(self):
         Usuario = get_user_model()
         self.admin = Usuario.objects.create_superuser('admin', 'dueno@example.com', CLAVE)
-        self.tienda = tienda_de_prueba(el_sitio_cobra=True, correo='tienda@example.com')
+        self.tienda = tienda_de_prueba(correo='tienda@example.com')
         self.vendedor = Usuario.objects.create_user('vendedor', 'vendedor@example.com', CLAVE)
         self.tienda.usuarios.add(self.vendedor)
         dar_acceso_al_panel([self.vendedor])
         self.del_sitio = CuentaDelSitio.objects.create(banco='Banco del dueño', numero='111', titular='Dueño')
-        self.de_la_tienda = CuentaBancaria.objects.create(
-            tienda=self.tienda, banco='Banco de la tienda', numero='222', titular='Tienda',
-        )
         self.producto = crear_producto(precio=Decimal('1000'), tienda=self.tienda)
 
     def pedido(self, **cambios):
         return pedido_de_prueba(self.producto, 1, **cambios)
 
     def test_el_cliente_ve_las_cuentas_del_sitio(self):
-        self.assertEqual(list(cuentas_para_transferir(self.tienda)), [self.del_sitio])
+        CuentaDelSitio.objects.create(banco='Banco viejo', numero='999', titular='Dueño', activa=False)
+        self.assertEqual(list(cuentas_para_transferir()), [self.del_sitio])
         pedido = self.pedido()
         self.assertTrue(pedido.cobra_el_sitio)
         pagina = self.client.get(pedido.get_absolute_url())
         self.assertContains(pagina, 'Banco del dueño')
-        self.assertNotContains(pagina, 'Banco de la tienda')
+        self.assertNotContains(pagina, 'Banco viejo')
 
-    def test_sin_el_ajuste_ve_las_de_la_tienda_y_el_efectivo_nunca_lo_cobra_el_sitio(self):
+    def test_el_efectivo_lo_cobra_la_tienda(self):
         self.assertFalse(self.pedido(metodo_pago=Pedido.Pago.EFECTIVO_RECOGER).cobra_el_sitio)
-        self.producto.tienda.el_sitio_cobra = False
-        self.producto.tienda.save()
-        self.assertEqual(list(cuentas_para_transferir(self.producto.tienda)), [self.de_la_tienda])
-        self.assertFalse(self.pedido().cobra_el_sitio)
 
     def test_el_comprobante_le_llega_al_dueno_no_a_la_tienda(self):
         pedido = self.pedido()

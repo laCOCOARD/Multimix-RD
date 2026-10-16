@@ -14,7 +14,7 @@ from django.urls import reverse
 from catalogo.models import Categoria, Producto
 from catalogo.resources import COLUMNAS
 from catalogo.tests.test_modelos import crear_producto, imagen_de_prueba
-from core.models import ConfiguracionTienda, CuentaBancaria
+from core.models import ConfiguracionTienda
 from pedidos.models import Pedido, ZonaEnvio
 from pedidos.services import cambiar_estado
 from pedidos.tests.utiles import cupon_de_prueba, pedido_de_prueba, zona_de_prueba
@@ -54,8 +54,6 @@ class PanelDeVendedores(TestCase):
         cls.cupon_ajeno = cupon_de_prueba('FIT10', tienda=cls.ajena)
         cls.zona_propia = zona_de_prueba('Santo Domingo')
         cls.zona_ajena = zona_de_prueba('Zona de Fitnes', tienda=cls.ajena)
-        cls.cuenta_propia = CuentaBancaria.objects.create(tienda=cls.propia, banco='Popular', numero='111', titular='M')
-        cls.cuenta_ajena = CuentaBancaria.objects.create(tienda=cls.ajena, banco='Banreservas', numero='222', titular='F')
         cls.pedido_propio = pedido_de_prueba(cls.lampara, 2, nombre='Ana Pérez', telefono='8095551234')
         cls.pedido_ajeno = pedido_de_prueba(
             cls.pesas, 1, nombre='Carlos Ajeno', telefono='8295557777',
@@ -73,7 +71,7 @@ class PanelDeVendedores(TestCase):
 class ListasYDetalleTests(PanelDeVendedores):
     AJENOS = [
         ('catalogo_producto', 'pesas'), ('pedidos_pedido', 'pedido_ajeno'), ('promociones_cupon', 'cupon_ajeno'),
-        ('pedidos_zonaenvio', 'zona_ajena'), ('core_cuentabancaria', 'cuenta_ajena'),
+        ('pedidos_zonaenvio', 'zona_ajena'),
     ]
 
     def test_las_listas_solo_traen_lo_de_su_tienda(self):
@@ -81,8 +79,8 @@ class ListasYDetalleTests(PanelDeVendedores):
         self.assertEqual(self.lista('pedidos_pedido'), [self.pedido_propio])
         self.assertEqual(self.lista('promociones_cupon'), [self.cupon_propio])
         self.assertEqual(self.lista('pedidos_zonaenvio'), [self.zona_propia])
-        # Las cuentas bancarias las registra solo el administrador: el vendedor ni siquiera las ve.
-        self.assertEqual(self.client.get(reverse('admin:core_cuentabancaria_changelist')).status_code, 403)
+        # Las cuentas bancarias son del sitio y las registra solo el administrador: el vendedor ni siquiera las ve.
+        self.assertEqual(self.client.get(reverse('admin:core_cuentadelsitio_changelist')).status_code, 403)
         # Buscar tampoco encuentra lo de otra tienda.
         self.assertEqual(self.lista('catalogo_producto', q='P1'), [])
         self.assertEqual(self.lista('pedidos_pedido', q=self.pedido_ajeno.numero), [])
@@ -126,10 +124,11 @@ class ListasYDetalleTests(PanelDeVendedores):
         self.assertEqual(self.client.post(url, {'estado': 'pagado'}).status_code, 404)
         self.pedido_ajeno.refresh_from_db()
         self.assertEqual(self.pedido_ajeno.estado, Estado.PENDIENTE)
+        # El suyo si lo cambia (Pagado no: las transferencias las confirma el administrador).
         propio = reverse('admin:pedidos_pedido_estado', args=[self.pedido_propio.pk])
-        self.client.post(propio, {'estado': 'pagado'})
+        self.client.post(propio, {'estado': 'cancelado'})
         self.pedido_propio.refresh_from_db()
-        self.assertEqual(self.pedido_propio.estado, Estado.PAGADO)
+        self.assertEqual(self.pedido_propio.estado, Estado.CANCELADO)
 
     def test_lo_del_administrador_principal_esta_cerrado(self):
         cerradas = [
@@ -387,7 +386,7 @@ class TiendaAdminTests(PanelDeVendedores):
 
     def test_al_migrar_el_grupo_pierde_los_permisos_que_ya_no_son_del_vendedor(self):
         grupo = Group.objects.get(name=services.GRUPO_VENDEDORES)
-        grupo.permissions.add(Permission.objects.get(codename='add_cuentabancaria'))
+        grupo.permissions.add(Permission.objects.get(codename='add_cuentadelsitio'))
         services.preparar_grupo_vendedores()
         self.assertFalse(grupo.permissions.filter(content_type__app_label='core').exists())
         self.assertTrue(grupo.permissions.filter(codename='change_producto').exists())

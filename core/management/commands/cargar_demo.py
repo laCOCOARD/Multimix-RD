@@ -18,7 +18,7 @@ from catalogo.imagenes import convertir_a_webp
 from catalogo.models import Categoria, FotoProducto, Producto
 from catalogo.services import clave_mas_vendidos
 from core.fuentes import cargar_fuente
-from core.models import ConfiguracionTienda, CuentaBancaria
+from core.models import ConfiguracionTienda, CuentaDelSitio
 from core.texto import quitar_tildes
 from pedidos.models import Pedido, ZonaEnvio
 from pedidos.services import cambiar_estado, crear_pedido
@@ -223,9 +223,12 @@ class Command(BaseCommand):
 
     def cuenta_y_zonas(self, tienda, demo):
         banco, numero, titular, documento = demo['cuenta']
-        CuentaBancaria.objects.get_or_create(tienda=tienda, banco=banco, numero=numero, defaults={
-            'tipo_cuenta': CuentaBancaria.Tipo.CORRIENTE, 'titular': titular, 'cedula_rnc': documento,
-        })
+        # Las cuentas son del sitio (todas las transferencias llegan alli): solo se crea la de la primera tienda.
+        if not CuentaDelSitio.objects.exists():
+            CuentaDelSitio.objects.create(
+                banco=banco, numero=numero, tipo_cuenta=CuentaDelSitio.Tipo.CORRIENTE, titular=titular,
+                cedula_rnc=documento,
+            )
         for orden, (nombre, tarifa) in enumerate(demo['zonas']):
             ZonaEnvio.objects.get_or_create(
                 tienda=tienda, nombre=nombre, defaults={'tarifa': Decimal(tarifa), 'orden': orden},

@@ -3,9 +3,10 @@
 Reglas:
 - Entra en cuenta un pedido cobrado y ya entregado. Hasta entonces esta "en curso".
 - La comision del sitio se calcula sobre los productos (subtotal menos descuento); el envio es de la tienda.
-- Si el cliente transfirio a las cuentas del sitio (`Pedido.cobra_el_sitio`, que se fija al comprar segun
-  `Tienda.el_sitio_cobra`), el dinero lo tiene el sitio y hay que depositarselo a la tienda menos la comision.
-- El efectivo (y la transferencia a las cuentas de la tienda) lo cobra la tienda: no se le deposita, pero la
+- Toda transferencia llega a las cuentas del sitio (`Pedido.cobra_el_sitio`): el dinero lo tiene el sitio y hay que
+  depositarselo a la tienda menos la comision. Los pedidos de antes de esto, transferidos a las cuentas que tenia
+  cada tienda, quedaron con `cobra_el_sitio` apagado y cuentan como cobrados por la tienda.
+- El efectivo (y las transferencias de antes, a las cuentas que tenia cada tienda) lo cobra la tienda: no se le deposita, pero la
   comision del sitio si cuenta, porque fue una venta de la tienda. Esa parte la tienda se la debe al sitio.
 - Saldo = lo que el sitio cobro por la tienda - la comision de todos sus pedidos - reembolsos ya depositados.
   Positivo: el sitio le deposita a la tienda. Negativo: la tienda le debe al sitio.

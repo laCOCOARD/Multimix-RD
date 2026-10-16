@@ -32,7 +32,8 @@ class SeguimientoTests(TestCase):
         )
 
     def test_recorrido_de_un_envio_y_su_historial(self):
-        vendedor = get_user_model().objects.create_user('vendedor')
+        # Quien marca Pagado una transferencia es el administrador principal.
+        vendedor = get_user_model().objects.create_superuser('admin', 'admin@example.com', 'clave-segura-123')
         pedido = self.envio()
         for estado in (Estado.PAGADO, Estado.PREPARANDO, Estado.ENVIADO, Estado.EN_REPARTO, Estado.ENTREGADO):
             self.assertIn(estado, services.transiciones_permitidas(pedido))

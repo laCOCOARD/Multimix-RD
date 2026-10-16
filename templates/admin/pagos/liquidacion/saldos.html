@@ -15,7 +15,7 @@
     Tu comisión se calcula sobre los productos (no sobre el envío) y cuenta en todas las ventas de la tienda.
     Lo que el cliente transfirió a <strong>tus cuentas</strong> se le deposita a la tienda menos tu comisión.
     Lo que la tienda cobró <strong>en efectivo</strong> ya lo tiene ella: no se le deposita, y tu comisión de esas ventas
-    se descuenta del depósito (o te la debe). La comisión y quién cobra se configuran en cada tienda.
+    se descuenta del depósito (o te la debe). La comisión se configura en cada tienda.
   </p>
 
   {% for saldo in saldos %}
@@ -24,7 +24,6 @@
         <caption>
           {{ saldo.tienda.nombre }}
           · comisión {{ saldo.tienda.comision_porcentaje|floatformat:'-2' }}%
-          · {% if saldo.tienda.el_sitio_cobra %}el sitio recibe sus transferencias{% else %}la tienda cobra todo en sus cuentas{% endif %}
           · <a href="{% url 'admin:tiendas_tienda_change' saldo.tienda.pk %}" style="color: inherit; text-decoration: underline;">editar tienda</a>
         </caption>
         <tbody>

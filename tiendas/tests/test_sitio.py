@@ -8,7 +8,7 @@ from django.urls import reverse
 from django.utils import timezone
 
 from catalogo.tests.test_modelos import crear_producto
-from core.models import CuentaBancaria
+from core.models import CuentaDelSitio
 from pedidos.models import Pedido
 from pedidos.tests.utiles import cupon_de_prueba, zona_de_prueba
 from tiendas.models import Tienda
@@ -31,8 +31,7 @@ class DosTiendas(TestCase):
         cls.zona_fitnes = zona_de_prueba('Santiago', '150', tienda=cls.fitnes)
         cupon_de_prueba('MULTI10')
         cupon_de_prueba('FIT10', tienda=cls.fitnes)
-        CuentaBancaria.objects.create(tienda=cls.multimix, banco='Banco Popular', numero='111', titular='Multimix')
-        CuentaBancaria.objects.create(tienda=cls.fitnes, banco='Banreservas', numero='222', titular='Fitnes')
+        CuentaDelSitio.objects.create(banco='Banco Popular', numero='111', titular='Multimix')
 
     def setUp(self):
         entrar_como_cliente(self.client)
@@ -213,8 +212,8 @@ class PedidoPorTiendaTests(DosTiendas):
         pagina = self.client.get(self.pedir(self.fitnes).url)
         self.assertEqual(pagina.context['tienda'], self.fitnes)
         self.assertTrue(pagina.context['enlace_whatsapp'].startswith('https://wa.me/18295559999?text='))
-        self.assertContains(pagina, 'Banreservas')
-        self.assertNotContains(pagina, 'Banco Popular')
+        # Las cuentas son las del sitio en todas las tiendas.
+        self.assertContains(pagina, 'Banco Popular')
         self.assertContains(pagina, 'Compra en <strong>Fitnes RD</strong>')
 
     def test_cada_tienda_numera_sus_pedidos_por_separado(self):

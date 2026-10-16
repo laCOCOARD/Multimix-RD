@@ -27,7 +27,7 @@ def entregado(producto, cantidad=1, **cambios):
 
 class SaldoTests(TestCase):
     def setUp(self):
-        self.tienda = tienda_de_prueba(comision_porcentaje=D('10'), el_sitio_cobra=True)
+        self.tienda = tienda_de_prueba(comision_porcentaje=D('10'))
         self.producto = crear_producto(nombre='Lámpara', precio=D('1000'))
 
     def test_el_sitio_cobro_la_transferencia_y_le_deposita_menos_su_comision(self):
@@ -53,21 +53,15 @@ class SaldoTests(TestCase):
         saldo = liquidaciones.saldo_de(self.tienda)
         self.assertEqual((saldo.cobrado_por_el_sitio, saldo.comision, saldo.monto), (D('0.00'), D('100.00'), D('-100.00')))
 
-    def test_si_la_tienda_cobra_en_sus_cuentas_solo_debe_la_comision(self):
-        # El carrito usa la instancia de producto.tienda: el ajuste se cambia en esa.
-        self.producto.tienda.el_sitio_cobra = False
-        self.producto.tienda.save()
-        entregado(self.producto, 3)
+    def test_un_pedido_de_antes_transferido_a_la_tienda_solo_debe_la_comision(self):
+        pedido = entregado(self.producto, 3)
+        Pedido.objects.filter(pk=pedido.pk).update(cobra_el_sitio=False)
         saldo = liquidaciones.saldo_de(self.tienda)
         self.assertEqual((saldo.cobrado_por_el_sitio, saldo.monto), (D('0.00'), D('-300.00')))
 
-    def test_quien_cobra_se_fija_al_comprar(self):
-        pedido = entregado(self.producto, 1)
-        self.producto.tienda.el_sitio_cobra = False
-        self.producto.tienda.save()
-        # El cliente ya transfirio a las cuentas del sitio: apagar el ajuste despues no cambia quien tiene el dinero.
-        self.assertTrue(pedido.cobra_el_sitio)
-        self.assertEqual(liquidaciones.saldo_de(self.tienda).monto, D('900.00'))
+    def test_toda_transferencia_la_cobra_el_sitio(self):
+        self.assertTrue(entregado(self.producto, 1).cobra_el_sitio)
+        self.assertFalse(entregado(self.producto, 1, metodo_pago=Pedido.Pago.EFECTIVO_RECOGER).cobra_el_sitio)
 
     def test_el_efectivo_va_aparte_no_se_deposita_pero_paga_comision(self):
         transferido = entregado(self.producto, 2)
@@ -88,7 +82,7 @@ class SaldoTests(TestCase):
         )
 
     def test_cada_tienda_con_su_porcentaje(self):
-        otra = tienda_de_prueba('Fitnes RD', comision_porcentaje=D('25'), el_sitio_cobra=True)
+        otra = tienda_de_prueba('Fitnes RD', comision_porcentaje=D('25'))
         entregado(self.producto, 1)
         entregado(crear_producto(sku='P1', precio=D('1000'), tienda=otra), 1)
         self.assertEqual(liquidaciones.saldo_de(self.tienda).monto, D('900.00'))
@@ -157,8 +151,8 @@ class PanelDeLiquidacionesTests(TestCase):
     def setUpTestData(cls):
         Usuario = get_user_model()
         cls.admin = Usuario.objects.create_superuser('admin', 'a@example.com', CLAVE)
-        cls.propia = tienda_de_prueba(comision_porcentaje=D('10'), el_sitio_cobra=True)
-        cls.ajena = tienda_de_prueba('Fitnes RD', comision_porcentaje=D('20'), el_sitio_cobra=True)
+        cls.propia = tienda_de_prueba(comision_porcentaje=D('10'))
+        cls.ajena = tienda_de_prueba('Fitnes RD', comision_porcentaje=D('20'))
         cls.vendedor = Usuario.objects.create_user('vendedor', password=CLAVE)
         cls.propia.usuarios.add(cls.vendedor)
         dar_acceso_al_panel([cls.vendedor])
@@ -199,10 +193,10 @@ class PanelDeLiquidacionesTests(TestCase):
         self.client.post(editar, {
             'nombre': 'Multimix RD', 'banner_titulo': '', 'banner_subtitulo': '', 'banner_texto_boton': 'Ver catálogo',
             'whatsapp': '', 'telefono': '', 'correo': '', 'horario': '', 'direccion_tienda': '', 'facebook': '',
-            'instagram': '', 'tiktok': '', 'itbis_porcentaje': '0', 'comision_porcentaje': '0', 'el_sitio_cobra': '',
+            'instagram': '', 'tiktok': '', 'itbis_porcentaje': '0', 'comision_porcentaje': '0',
         })
         self.propia.refresh_from_db()
-        self.assertEqual((self.propia.comision_porcentaje, self.propia.el_sitio_cobra), (D('10.00'), True))
+        self.assertEqual(self.propia.comision_porcentaje, D('10.00'))
 
     def test_el_administrador_cambia_el_porcentaje_de_cada_tienda_por_separado(self):
         self.client.force_login(self.admin)
@@ -213,7 +207,7 @@ class PanelDeLiquidacionesTests(TestCase):
             'nombre': 'Fitnes RD', 'slug': self.ajena.slug, 'activa': 'on', 'orden': '0', 'banner_titulo': '',
             'banner_subtitulo': '', 'banner_texto_boton': 'Ver catálogo', 'whatsapp': '', 'telefono': '', 'correo': '',
             'horario': '', 'direccion_tienda': '', 'facebook': '', 'instagram': '', 'tiktok': '',
-            'itbis_porcentaje': '0', 'comision_porcentaje': '15', 'el_sitio_cobra': 'on',
+            'itbis_porcentaje': '0', 'comision_porcentaje': '15',
         })
         self.ajena.refresh_from_db()
         self.propia.refresh_from_db()

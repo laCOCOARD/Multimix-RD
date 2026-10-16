@@ -28,7 +28,7 @@ class TiendaAdmin(AvisaImagenesSinGuardar, admin.ModelAdmin):
         ('Redes', {'fields': ['facebook', 'instagram', 'tiktok']}),
         ('Pedidos', {'fields': ['permitir_contra_entrega']}),
         ('Cobro y reparto (solo lo ve el administrador principal)', {
-            'fields': ['comision_porcentaje', 'el_sitio_cobra', 'itbis_porcentaje'],
+            'fields': ['comision_porcentaje', 'itbis_porcentaje'],
         }),
     ]
 
