@@ -5,6 +5,7 @@ from unittest import mock
 
 import tablib
 from django.contrib.auth import get_user_model
+from django.contrib.auth.models import Group, Permission
 from django.core.files.storage import FileSystemStorage
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase
@@ -80,7 +81,8 @@ class ListasYDetalleTests(PanelDeVendedores):
         self.assertEqual(self.lista('pedidos_pedido'), [self.pedido_propio])
         self.assertEqual(self.lista('promociones_cupon'), [self.cupon_propio])
         self.assertEqual(self.lista('pedidos_zonaenvio'), [self.zona_propia])
-        self.assertEqual(self.lista('core_cuentabancaria'), [self.cuenta_propia])
+        # Las cuentas bancarias las registra solo el administrador: el vendedor ni siquiera las ve.
+        self.assertEqual(self.client.get(reverse('admin:core_cuentabancaria_changelist')).status_code, 403)
         # Buscar tampoco encuentra lo de otra tienda.
         self.assertEqual(self.lista('catalogo_producto', q='P1'), [])
         self.assertEqual(self.lista('pedidos_pedido', q=self.pedido_ajeno.numero), [])
@@ -371,15 +373,24 @@ class TiendaAdminTests(PanelDeVendedores):
     def test_el_vendedor_no_cambia_lo_que_decide_el_administrador(self):
         editar = reverse('admin:tiendas_tienda_change', args=[self.propia.pk])
         formulario = self.client.get(editar)
-        for campo in ('name="slug"', 'name="prefijo"', 'name="activa"', 'name="usuarios"', 'name="orden"'):
+        for campo in ('name="slug"', 'name="prefijo"', 'name="activa"', 'name="usuarios"', 'name="orden"',
+                      'name="itbis_porcentaje"'):
             self.assertNotContains(formulario, campo)
         self.client.post(editar, self.datos(
             slug='robada', prefijo='ZZZ', orden='9', usuarios=[self.vendedor.pk, self.otro_vendedor.pk],
         ))
         self.propia.refresh_from_db()
         self.assertEqual((self.propia.slug, self.propia.prefijo, self.propia.orden), ('multimix-rd', 'MMX', 0))
+        self.assertEqual(self.propia.itbis_porcentaje, 0)  # los datos de la prueba mandan 18
         self.assertTrue(self.propia.activa)
         self.assertEqual(list(self.propia.usuarios.all()), [self.vendedor])
+
+    def test_al_migrar_el_grupo_pierde_los_permisos_que_ya_no_son_del_vendedor(self):
+        grupo = Group.objects.get(name=services.GRUPO_VENDEDORES)
+        grupo.permissions.add(Permission.objects.get(codename='add_cuentabancaria'))
+        services.preparar_grupo_vendedores()
+        self.assertFalse(grupo.permissions.filter(content_type__app_label='core').exists())
+        self.assertTrue(grupo.permissions.filter(codename='change_producto').exists())
 
     def test_el_vendedor_no_abre_la_tienda_de_otro(self):
         ajena = reverse('admin:tiendas_tienda_change', args=[self.ajena.pk])

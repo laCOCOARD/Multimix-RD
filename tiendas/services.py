@@ -28,7 +28,8 @@ PERMISOS_VENDEDOR = {
     'pagos': ['view_pago', 'change_pago', 'view_liquidacion'],
     # Las reseñas se ven; publicarlas o rechazarlas es del administrador principal.
     'opiniones': ['view_resena'],
-    'core': ['view_cuentabancaria', 'add_cuentabancaria', 'change_cuentabancaria', 'delete_cuentabancaria'],
+    # Sin 'core': las cuentas bancarias que ve el cliente las registra solo el administrador principal, para que
+    # nadie cambie a donde transfieren los clientes.
 }
 
 
@@ -54,10 +55,11 @@ def preparar_grupo_vendedores(using=DEFAULT_DB_ALIAS, **kwargs):
     for app in PERMISOS_VENDEDOR:
         create_permissions(apps.get_app_config(app), verbosity=0, using=using)
     grupo, _ = Group.objects.using(using).get_or_create(name=GRUPO_VENDEDORES)
+    # `set` y no `add`: un permiso que se quita de la lista tambien se le quita al grupo al migrar.
+    filtro = Q()
     for app, codigos in PERMISOS_VENDEDOR.items():
-        grupo.permissions.add(
-            *Permission.objects.using(using).filter(content_type__app_label=app, codename__in=codigos)
-        )
+        filtro |= Q(content_type__app_label=app, codename__in=codigos)
+    grupo.permissions.set(Permission.objects.using(using).filter(filtro))
     return grupo
 
 

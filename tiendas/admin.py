@@ -26,8 +26,10 @@ class TiendaAdmin(AvisaImagenesSinGuardar, admin.ModelAdmin):
         ('Marca', {'fields': ['logo', 'banner_titulo', 'banner_subtitulo', 'banner_texto_boton', 'banner_imagen']}),
         ('Contacto', {'fields': ['whatsapp', 'telefono', 'correo', 'horario', 'direccion_tienda']}),
         ('Redes', {'fields': ['facebook', 'instagram', 'tiktok']}),
-        ('Pedidos', {'fields': ['permitir_contra_entrega', 'itbis_porcentaje']}),
-        ('Reparto (solo lo ve el administrador principal)', {'fields': ['comision_porcentaje', 'el_sitio_cobra']}),
+        ('Pedidos', {'fields': ['permitir_contra_entrega']}),
+        ('Cobro y reparto (solo lo ve el administrador principal)', {
+            'fields': ['comision_porcentaje', 'el_sitio_cobra', 'itbis_porcentaje'],
+        }),
     ]
 
     def get_queryset(self, request):
@@ -52,7 +54,7 @@ class TiendaAdmin(AvisaImagenesSinGuardar, admin.ModelAdmin):
     def get_fieldsets(self, request, obj=None):
         if ve_todas(request.user):
             return self.fieldsets
-        # El vendedor no ve ni cambia la comision ni quien cobra: el ultimo bloque es del administrador.
+        # El vendedor no ve ni cambia la comision, quien cobra ni el ITBIS: el ultimo bloque es del administrador.
         (titulo, _), *resto = self.fieldsets[:-1]
         return [(titulo, {'fields': ['nombre', 'enlace_publico']}), *resto]
 

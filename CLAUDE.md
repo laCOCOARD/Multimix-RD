@@ -191,6 +191,9 @@ Al cerrar cada modulo: check, makemigrations, migrate, test y commit.
 - Rutas de tienda bajo `/tienda/<tienda_slug>/` (`tiendas.decoradores.RUTA_DE_TIENDA`). `pedidos` y `core`
   mezclan rutas de tienda y del sitio, por eso declaran las suyas completas y se incluyen en la raiz.
   Las paginas por token (confirmacion, factura) ponen `request.tienda = pedido.tienda`.
+- El vendedor no toca nada que decida a donde va el dinero (pedido del dueño el 2026-10-15): las cuentas
+  bancarias (de tienda y del sitio), la comision, quien cobra y el ITBIS son solo del superusuario. Los permisos
+  del grupo se fijan con `set` al migrar, asi que quitar uno de `PERMISOS_VENDEDOR` se lo quita al grupo.
 - Las tiendas las crea el superusuario. Al asignar usuarios en `TiendaAdmin` se llama
   `dar_acceso_al_panel` (personal + grupo Vendedores); `tienda.usuarios.add()` a secas no da permisos.
   El grupo y sus permisos (`PERMISOS_VENDEDOR`) se crean con `post_migrate`.
