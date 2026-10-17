@@ -1,4 +1,5 @@
 from django import forms
+from django.contrib.admin.forms import AdminAuthenticationForm
 from django.contrib.auth import get_user_model, password_validation
 from django.contrib.auth.forms import AuthenticationForm, PasswordChangeForm, PasswordResetForm, SetPasswordForm
 
@@ -72,8 +73,30 @@ class RegistroForm(ConEstilo, forms.Form):
         return services.registrar_cliente(datos['nombre'], datos['correo'], datos['clave'], datos['telefono'])
 
 
-class EntrarForm(ConEstilo, AuthenticationForm):
-    """Inicio de sesion con limite de intentos por conexion y correo."""
+class LimiteDeEntrada:
+    """Limite de intentos al entrar, por conexion y correo y por la cuenta sola (desde cualquier conexion).
+
+    Lo usan el formulario del sitio y el del panel: los dos cuentan juntos, porque los dos entran a la misma cuenta.
+    """
+
+    MENSAJE_BLOQUEO = 'Demasiados intentos. Espera 15 minutos o recupera tu contraseña.'
+
+    def clean(self):
+        usuario = (self.cleaned_data.get('username') or '').strip().lower()
+        ip = ip_del_cliente(self.request) if self.request else None
+        if services.entrada_bloqueada(ip, usuario):
+            raise forms.ValidationError(self.MENSAJE_BLOQUEO)
+        try:
+            datos = super().clean()
+        except forms.ValidationError:
+            services.anotar_entrada_fallida(ip, usuario)
+            raise
+        services.olvidar_entradas(ip, usuario)
+        return datos
+
+
+class EntrarForm(ConEstilo, LimiteDeEntrada, AuthenticationForm):
+    """Inicio de sesion del sitio. Pide el correo, aunque tambien acepta el nombre de usuario."""
 
     error_messages = {
         **AuthenticationForm.error_messages,
@@ -89,17 +112,9 @@ class EntrarForm(ConEstilo, AuthenticationForm):
     def clean_username(self):
         return self.cleaned_data['username'].strip().lower()
 
-    def clean(self):
-        partes = (ip_del_cliente(self.request) or 'sin-ip', self.cleaned_data.get('username', ''))
-        if services.bloqueado('entrar', *partes):
-            raise forms.ValidationError('Demasiados intentos. Espera 15 minutos o recupera tu contraseña.')
-        try:
-            datos = super().clean()
-        except forms.ValidationError:
-            services.anotar_intento('entrar', *partes)
-            raise
-        services.olvidar_intentos('entrar', *partes)
-        return datos
+
+class EntrarAlPanelForm(LimiteDeEntrada, AdminAuthenticationForm):
+    """Inicio de sesion del panel, con el mismo limite de intentos que el del sitio."""
 
 
 class PerfilForm(ConEstilo, forms.Form):

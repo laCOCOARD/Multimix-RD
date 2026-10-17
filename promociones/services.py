@@ -3,6 +3,7 @@ from decimal import ROUND_HALF_UP, Decimal
 from django.db.models import F
 from django.utils import timezone
 
+from core import limites
 from core.templatetags.moneda import formatear_monto
 
 from .models import Cupon
@@ -46,6 +47,29 @@ def validar_cupon(codigo, subtotal, tienda, bloquear=False):
             f'Este cupón aplica a compras desde {formatear_monto(cupon.compra_minima)}.'
         )
     return cupon
+
+
+# Cupones que no aplican, por quien los prueba, cada 15 minutos: sin limite se podia adivinar un codigo corto
+# probando uno tras otro. El de la tienda frena al que no deja ni sesion ni IP (ver core.red).
+CUPONES_FALLIDOS_POR_PERSONA = 10
+CUPONES_FALLIDOS_POR_TIENDA = 100
+
+
+def probar_cupon(codigo, subtotal, tienda, quien):
+    """`validar_cupon` para un codigo que escribio el cliente, con limite de intentos fallidos.
+
+    `quien` son las formas de reconocer a la persona (cuenta, conexion, sesion); vale con que una llegue al limite.
+    """
+    claves = [('cupon', tienda.pk, *parte) for parte in quien] + [('cupon-tienda', tienda.pk)]
+    maximos = [CUPONES_FALLIDOS_POR_PERSONA] * len(quien) + [CUPONES_FALLIDOS_POR_TIENDA]
+    if any(limites.bloqueado(*clave, maximo=maximo) for clave, maximo in zip(claves, maximos)):
+        raise CuponInvalido('Probaste muchos cupones seguidos. Espera 15 minutos y vuelve a intentarlo.')
+    try:
+        return validar_cupon(codigo, subtotal, tienda)
+    except CuponInvalido:
+        for clave in claves:
+            limites.anotar_intento(*clave)
+        raise
 
 
 def calcular_descuento(cupon, subtotal):

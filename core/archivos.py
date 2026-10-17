@@ -29,3 +29,17 @@ class NombreUnico:
         if extension not in EXTENSIONES_IMAGEN:
             extension = ''
         return f'{self.carpeta}/{uuid4().hex}{extension}'
+
+
+def almacenamiento_privado():
+    """Donde van los archivos que no deben ser publicos (comprobantes de pago). Ver STORAGES['privado']."""
+    from django.core.files.storage import storages
+
+    return storages['privado']
+
+
+def hay_almacenamiento_privado():
+    """False si 'privado' es el mismo almacenamiento publico (falta configurar el bucket privado)."""
+    from django.conf import settings
+
+    return settings.STORAGES['privado'] is not settings.STORAGES['default']

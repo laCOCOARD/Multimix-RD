@@ -364,6 +364,12 @@
     foto.replaceWith(vacio);
   }, true);
 
+  // Botones que piden confirmacion antes de enviar (cancelar un pedido). Sin JavaScript el formulario se envia igual.
+  document.addEventListener('click', (evento) => {
+    const boton = evento.target.closest('[data-confirmar]');
+    if (boton && !window.confirm(boton.dataset.confirmar)) evento.preventDefault();
+  });
+
   // Lupa en la foto del producto: con el raton, la foto se amplia donde apunta.
   const marco = document.querySelector('.mm-galeria-principal');
   if (marco && window.matchMedia('(hover: hover) and (pointer: fine)').matches) {

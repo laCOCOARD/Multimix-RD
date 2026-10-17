@@ -166,7 +166,7 @@
       {% if puede_cancelar %}
         <form class="text-center mb-4" method="post" action="{% url 'pedidos:cancelar' pedido.token %}">
           {% csrf_token %}
-          <button class="btn btn-link text-danger" type="submit" onclick="return confirm('¿Cancelar este pedido?');">Cancelar este pedido</button>
+          <button class="btn btn-link text-danger" type="submit" data-confirmar="¿Cancelar este pedido?">Cancelar este pedido</button>
         </form>
       {% endif %}
 

@@ -10,7 +10,11 @@ from django.conf import settings
 from catalogo.models import Disponibilidad, Producto
 from core.impuestos import calcular_itbis
 from promociones.models import Cupon
-from promociones.services import CuponInvalido, calcular_descuento, normalizar_codigo, validar_cupon
+from core.red import ip_del_cliente
+from promociones.services import CuponInvalido, calcular_descuento, normalizar_codigo, probar_cupon, validar_cupon
+
+
+CUPON_FALLIDO = 'cupon_fallido'
 
 
 class CarritoError(Exception):
@@ -84,6 +88,7 @@ def cantidad_en_sesion(session, tienda):
 
 class Carrito:
     def __init__(self, request, tienda):
+        self.request = request
         self.session = request.session
         self.tienda = tienda
         self.datos = _carrito_de(self.session, tienda) or {'items': {}, 'cupon': ''}
@@ -184,10 +189,31 @@ class Carrito:
 
     def aplicar_cupon(self, codigo):
         """Valida el cupon de la tienda contra el subtotal actual y lo recuerda. Lanza CuponInvalido."""
-        cupon = validar_cupon(codigo, self.subtotal, self.tienda)
+        # El resumen del checkout reenvia el mismo codigo en cada cambio: un codigo que ya fallo no se vuelve a contar.
+        if normalizar_codigo(codigo) and normalizar_codigo(codigo) == self.session.get(CUPON_FALLIDO):
+            cupon = validar_cupon(codigo, self.subtotal, self.tienda)
+        else:
+            try:
+                cupon = probar_cupon(codigo, self.subtotal, self.tienda, self._quien())
+            except CuponInvalido:
+                self.session[CUPON_FALLIDO] = normalizar_codigo(codigo)
+                raise
         self.datos['cupon'] = cupon.codigo
         self._guardar()
         return cupon
+
+    def _quien(self):
+        """Como se reconoce a quien prueba un cupon: su cuenta, su conexion y su sesion."""
+        usuario = getattr(self.request, 'user', None)
+        if not self.session.session_key:
+            self.session.save()
+        quien = [('sesion', self.session.session_key)]
+        if usuario is not None and usuario.is_authenticated:
+            quien.append(('cuenta', usuario.pk))
+        ip = ip_del_cliente(self.request) if hasattr(self.request, 'META') else None
+        if ip:
+            quien.append(('ip', ip))
+        return quien
 
     def quitar_cupon(self):
         if self.datos.get('cupon'):

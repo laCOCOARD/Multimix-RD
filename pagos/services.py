@@ -6,6 +6,7 @@ from django.db import transaction
 from django.utils import timezone
 
 from catalogo.imagenes import convertir_a_webp
+from core.archivos import ERRORES_DE_ALMACENAMIENTO, hay_almacenamiento_privado
 from pedidos import avisos
 from pedidos import services as pedidos
 from pedidos.models import Pedido
@@ -73,14 +74,16 @@ def registrar_comprobante(pedido, archivo=None, referencia=''):
         raise PagoError('Este pedido ya no admite avisos de transferencia.')
     pago = pago_vigente(pedido)
     anterior = pago.comprobante.name if archivo and pago.comprobante else ''
+    almacen_anterior = pago.almacenamiento_del_comprobante
     if archivo:
         # Se guarda siempre como WebP: achica la foto y descarta los metadatos del telefono.
         pago.comprobante.save(f'{uuid4().hex}.webp', convertir_a_webp(archivo, LADO_COMPROBANTE), save=False)
+        pago.comprobante_privado = hay_almacenamiento_privado()
     pago.referencia_cliente = (referencia or '').strip()[:60]
     pago.estado = Estado.EN_REVISION
     pago.save()
     if anterior:
-        pago.comprobante.storage.delete(anterior)
+        almacen_anterior.delete(anterior)
     pedidos.marcar_transferencia(pedido, pago.referencia_cliente)
     avisos.comprobante_recibido(pago)
     logger.info('Pago %s en revision%s', pago.referencia, ' con comprobante' if pago.comprobante else '')
@@ -144,3 +147,32 @@ def sincronizar_con_pedido(pedido):
             pago.estado = Estado.APROBADO
             pago.revisado_en = pedido.fecha_pago
             pago.save(update_fields=['estado', 'revisado_en', 'actualizado'])
+
+
+def mover_comprobantes_al_privado(limite=5):
+    """Pasa al almacenamiento privado los comprobantes que quedaron en el publico. Devuelve cuantos movio.
+
+    Lo llaman las tareas periodicas, de a pocos: cada uno es una descarga y una subida, y la visita que dispara
+    la tarea espera a que terminen.
+    """
+    if not hay_almacenamiento_privado():
+        return 0
+    from django.core.files.storage import storages
+
+    publico, privado = storages['default'], storages['privado']
+    movidos = 0
+    for pago in Pago.objects.exclude(comprobante='').filter(comprobante_privado=False)[:limite]:
+        nombre = pago.comprobante.name
+        try:
+            nuevo = nombre
+            if publico.exists(nombre):
+                with publico.open(nombre) as archivo:
+                    nuevo = privado.save(nombre, archivo)
+            Pago.objects.filter(pk=pago.pk).update(comprobante=nuevo, comprobante_privado=True)
+            if publico.exists(nombre):
+                publico.delete(nombre)
+        except ERRORES_DE_ALMACENAMIENTO:
+            logger.exception('No se pudo mover el comprobante del pago %s', pago.referencia)
+            break
+        movidos += 1
+    return movidos

@@ -99,6 +99,12 @@ def supera_limite_por_ip(ip):
     return Pedido.objects.filter(ip=ip, creado__gte=desde).count() >= settings.PEDIDOS_MAX_POR_IP
 
 
+def supera_limite_por_cuenta(cliente):
+    """Anti-spam que no depende de la IP: pedidos de una misma cuenta dentro de la ventana configurada."""
+    desde = timezone.now() - timedelta(minutes=settings.PEDIDOS_VENTANA_IP_MINUTOS)
+    return Pedido.objects.filter(cliente=cliente, creado__gte=desde).count() >= settings.PEDIDOS_MAX_POR_CUENTA
+
+
 # --- Creacion del pedido -------------------------------------------------------------
 
 def _siguiente_numero(tienda):

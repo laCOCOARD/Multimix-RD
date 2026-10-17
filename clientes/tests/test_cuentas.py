@@ -242,10 +242,10 @@ class RecuperarClaveTests(TestCase):
         self.assertRedirects(respuesta, reverse('clientes:recuperar_enviado'))
         self.assertEqual(mail.outbox, [])
 
-    @override_settings(CACHES=CACHE_REAL)
-    def test_limite_de_enlaces_por_conexion(self):
+    def test_limite_de_enlaces_por_conexion_y_por_correo(self):
         for _ in range(services.INTENTOS_MAXIMOS):
             self.client.post(self.url, {'email': 'ana@example.com'})
         respuesta = self.client.post(self.url, {'email': 'ana@example.com'})
         self.assertContains(respuesta, 'Ya pediste varios enlaces')
-        self.assertEqual(len(mail.outbox), services.INTENTOS_MAXIMOS)
+        # Al mismo correo le llegan como mucho ENLACES_POR_CORREO por hora; los demas se responden igual, sin enviar.
+        self.assertEqual(len(mail.outbox), services.ENLACES_POR_CORREO)

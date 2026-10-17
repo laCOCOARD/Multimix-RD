@@ -1,11 +1,15 @@
 from django.contrib import admin
 
+from clientes.forms import EntrarAlPanelForm
+
 
 class PanelAdminSite(admin.AdminSite):
     site_header = 'Multimix RD'
     site_title = 'Panel Multimix RD'
     index_title = 'Resumen del sitio'
     site_url = '/'
+    # Con limite de intentos: la pantalla de Django no lo trae.
+    login_form = EntrarAlPanelForm
 
     def index(self, request, extra_context=None):
         # Se importa aqui: los modelos aun no existen al crear el sitio.

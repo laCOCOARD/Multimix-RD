@@ -1152,3 +1152,62 @@ DROP TABLE "core_cuentabancaria";
 -- Remove field el_sitio_cobra from tienda
 --
 ALTER TABLE "tiendas_tienda" DROP COLUMN "el_sitio_cobra";
+
+-- ============================================================
+-- clientes 0003
+-- ============================================================
+BEGIN;
+--
+-- Add field correo_verificado to perfil
+--
+CREATE TABLE "new__clientes_perfil" ("id" integer NOT NULL PRIMARY KEY AUTOINCREMENT, "correo_verificado" bool NOT NULL, "telefono" varchar(10) NOT NULL, "sector" varchar(80) NOT NULL, "direccion" varchar(255) NOT NULL, "referencia" varchar(255) NOT NULL, "usuario_id" integer NOT NULL UNIQUE REFERENCES "auth_user" ("id") DEFERRABLE INITIALLY DEFERRED);
+INSERT INTO "new__clientes_perfil" ("id", "telefono", "sector", "direccion", "referencia", "usuario_id", "correo_verificado") SELECT "id", "telefono", "sector", "direccion", "referencia", "usuario_id", 0 FROM "clientes_perfil";
+DROP TABLE "clientes_perfil";
+ALTER TABLE "new__clientes_perfil" RENAME TO "clientes_perfil";
+COMMIT;
+
+-- ============================================================
+-- core 0019
+-- ============================================================
+BEGIN;
+--
+-- Create model Intento
+--
+CREATE TABLE "core_intento" ("id" integer NOT NULL PRIMARY KEY AUTOINCREMENT, "clave" varchar(64) NOT NULL, "creado" datetime NOT NULL);
+CREATE INDEX "core_intento_clave_67dffd24" ON "core_intento" ("clave");
+CREATE INDEX "core_intento_creado_258480fd" ON "core_intento" ("creado");
+COMMIT;
+
+-- ============================================================
+-- pagos 0006
+-- ============================================================
+BEGIN;
+--
+-- Add field comprobante_privado to pago
+--
+CREATE TABLE "new__pagos_pago" ("id" integer NOT NULL PRIMARY KEY AUTOINCREMENT, "comprobante_privado" bool NOT NULL, "referencia" varchar(40) NOT NULL UNIQUE, "metodo" varchar(20) NOT NULL, "proveedor" varchar(20) NOT NULL, "monto" decimal NOT NULL, "estado" varchar(12) NOT NULL, "comprobante" varchar(100) NOT NULL, "referencia_cliente" varchar(60) NOT NULL, "codigo_autorizacion" varchar(40) NOT NULL, "respuesta_proveedor" text NOT NULL CHECK ((JSON_VALID("respuesta_proveedor") OR "respuesta_proveedor" IS NULL)), "nota" varchar(255) NOT NULL, "creado" datetime NOT NULL, "actualizado" datetime NOT NULL, "revisado_en" datetime NULL, "pedido_id" bigint NOT NULL REFERENCES "pedidos_pedido" ("id") DEFERRABLE INITIALLY DEFERRED, "revisado_por_id" integer NULL REFERENCES "auth_user" ("id") DEFERRABLE INITIALLY DEFERRED, "tienda_id" bigint NOT NULL REFERENCES "tiendas_tienda" ("id") DEFERRABLE INITIALLY DEFERRED, CONSTRAINT "pago_monto_no_negativo" CHECK ("monto" >= '0'));
+INSERT INTO "new__pagos_pago" ("id", "referencia", "metodo", "proveedor", "monto", "estado", "comprobante", "referencia_cliente", "codigo_autorizacion", "respuesta_proveedor", "nota", "creado", "actualizado", "revisado_en", "pedido_id", "revisado_por_id", "tienda_id", "comprobante_privado") SELECT "id", "referencia", "metodo", "proveedor", "monto", "estado", "comprobante", "referencia_cliente", "codigo_autorizacion", "respuesta_proveedor", "nota", "creado", "actualizado", "revisado_en", "pedido_id", "revisado_por_id", "tienda_id", 0 FROM "pagos_pago";
+DROP TABLE "pagos_pago";
+ALTER TABLE "new__pagos_pago" RENAME TO "pagos_pago";
+CREATE UNIQUE INDEX "un_pago_aprobado_por_pedido" ON "pagos_pago" ("pedido_id") WHERE "estado" = 'aprobado';
+CREATE INDEX "pagos_pago_pedido_id_b527cca2" ON "pagos_pago" ("pedido_id");
+CREATE INDEX "pagos_pago_revisado_por_id_bf842120" ON "pagos_pago" ("revisado_por_id");
+CREATE INDEX "pagos_pago_tienda_id_0acba72a" ON "pagos_pago" ("tienda_id");
+CREATE INDEX "pago_tienda_estado_idx" ON "pagos_pago" ("tienda_id", "estado", "creado" DESC);
+--
+-- Alter field cobrado_por_la_tienda on liquidacion
+--
+-- (no-op)
+--
+-- Alter field comprobante on pago
+--
+CREATE TABLE "new__pagos_pago" ("id" integer NOT NULL PRIMARY KEY AUTOINCREMENT, "referencia" varchar(40) NOT NULL UNIQUE, "metodo" varchar(20) NOT NULL, "proveedor" varchar(20) NOT NULL, "monto" decimal NOT NULL, "estado" varchar(12) NOT NULL, "referencia_cliente" varchar(60) NOT NULL, "codigo_autorizacion" varchar(40) NOT NULL, "respuesta_proveedor" text NOT NULL CHECK ((JSON_VALID("respuesta_proveedor") OR "respuesta_proveedor" IS NULL)), "nota" varchar(255) NOT NULL, "creado" datetime NOT NULL, "actualizado" datetime NOT NULL, "revisado_en" datetime NULL, "pedido_id" bigint NOT NULL REFERENCES "pedidos_pedido" ("id") DEFERRABLE INITIALLY DEFERRED, "revisado_por_id" integer NULL REFERENCES "auth_user" ("id") DEFERRABLE INITIALLY DEFERRED, "tienda_id" bigint NOT NULL REFERENCES "tiendas_tienda" ("id") DEFERRABLE INITIALLY DEFERRED, "comprobante_privado" bool NOT NULL, "comprobante" varchar(100) NOT NULL, CONSTRAINT "pago_monto_no_negativo" CHECK ("monto" >= '0'));
+INSERT INTO "new__pagos_pago" ("id", "referencia", "metodo", "proveedor", "monto", "estado", "referencia_cliente", "codigo_autorizacion", "respuesta_proveedor", "nota", "creado", "actualizado", "revisado_en", "pedido_id", "revisado_por_id", "tienda_id", "comprobante_privado", "comprobante") SELECT "id", "referencia", "metodo", "proveedor", "monto", "estado", "referencia_cliente", "codigo_autorizacion", "respuesta_proveedor", "nota", "creado", "actualizado", "revisado_en", "pedido_id", "revisado_por_id", "tienda_id", "comprobante_privado", "comprobante" FROM "pagos_pago";
+DROP TABLE "pagos_pago";
+ALTER TABLE "new__pagos_pago" RENAME TO "pagos_pago";
+CREATE UNIQUE INDEX "un_pago_aprobado_por_pedido" ON "pagos_pago" ("pedido_id") WHERE "estado" = 'aprobado';
+CREATE INDEX "pagos_pago_pedido_id_b527cca2" ON "pagos_pago" ("pedido_id");
+CREATE INDEX "pagos_pago_revisado_por_id_bf842120" ON "pagos_pago" ("revisado_por_id");
+CREATE INDEX "pagos_pago_tienda_id_0acba72a" ON "pagos_pago" ("tienda_id");
+CREATE INDEX "pago_tienda_estado_idx" ON "pagos_pago" ("tienda_id", "estado", "creado" DESC);
+COMMIT;

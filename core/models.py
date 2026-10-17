@@ -198,3 +198,21 @@ def contenido_del_pie():
         }
         cache.set(CACHE_CONTENIDO, datos, 300)
     return datos
+
+
+class Intento(models.Model):
+    """Un intento contado por `core.limites` (entrar, crear cuenta, pedir un enlace, probar un cupon...).
+
+    Vive en la base y no en la cache: asi lo comparten todos los procesos y no se borra cuando Render reinicia el
+    servicio. La clave se guarda resumida (sha256), sin el correo ni la IP a la vista.
+    """
+
+    clave = models.CharField(max_length=64, db_index=True)
+    creado = models.DateTimeField(auto_now_add=True, db_index=True)
+
+    class Meta:
+        verbose_name = 'intento'
+        verbose_name_plural = 'intentos'
+
+    def __str__(self):
+        return f'{self.clave[:12]} · {self.creado:%Y-%m-%d %H:%M}'

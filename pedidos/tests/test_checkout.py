@@ -154,20 +154,25 @@ class CheckoutTests(TestCase):
         self.assertContains(respuesta, 'varios pedidos desde tu conexión')
         self.assertEqual(Pedido.objects.count(), 1)
 
-    @override_settings(CONFIAR_IP_PROXY=True, PEDIDOS_MAX_POR_IP=1)
-    def test_usa_ip_del_cliente_en_x_forwarded_for(self):
+    @override_settings(CONFIAR_IP_PROXY=True, CABECERA_IP='HTTP_X_REAL_IP', PEDIDOS_MAX_POR_IP=1)
+    def test_usa_la_ip_que_pone_el_proxy(self):
         self.llenar_carrito(1)
-        primera = self.client.post(
-            self.url, self.datos(), HTTP_X_FORWARDED_FOR='203.0.113.10, 10.0.0.1',
-        )
+        primera = self.client.post(self.url, self.datos(), HTTP_X_REAL_IP='203.0.113.10')
         self.assertEqual(primera.status_code, 302)
 
         self.llenar_carrito(1)
-        segunda = self.client.post(
-            self.url, self.datos(), HTTP_X_FORWARDED_FOR='203.0.113.11, 10.0.0.1',
-        )
+        segunda = self.client.post(self.url, self.datos(), HTTP_X_REAL_IP='203.0.113.11')
         self.assertEqual(segunda.status_code, 302)
         self.assertEqual(Pedido.objects.count(), 2)
+
+    @override_settings(CONFIAR_IP_PROXY=True, CABECERA_IP='HTTP_X_REAL_IP', PEDIDOS_MAX_POR_CUENTA=1)
+    def test_cambiar_de_ip_no_salta_el_limite_de_pedidos_de_la_cuenta(self):
+        self.llenar_carrito(1)
+        self.assertEqual(self.client.post(self.url, self.datos(), HTTP_X_REAL_IP='203.0.113.10').status_code, 302)
+        self.llenar_carrito(1)
+        respuesta = self.client.post(self.url, self.datos(), HTTP_X_REAL_IP='203.0.113.11')
+        self.assertContains(respuesta, 'varios pedidos desde tu conexión')
+        self.assertEqual(Pedido.objects.count(), 1)
 
     def test_cupon_en_el_checkout(self):
         cupon_de_prueba('BIENVENIDO10')

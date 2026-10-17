@@ -14,6 +14,13 @@
     </form>
   </div>
 
+  {% if not correo_confirmado %}
+    <div class="alert alert-warning d-flex flex-wrap align-items-center justify-content-between gap-2" role="alert">
+      <span><i class="bi bi-envelope-exclamation me-1"></i>Confirma tu correo ({{ user.email }}) para poder comprar.</span>
+      <a class="btn btn-sm btn-outline-dark" href="{% url 'clientes:confirma_tu_correo' %}">Confirmar mi correo</a>
+    </div>
+  {% endif %}
+
   <div class="row g-4">
     <div class="col-lg-8">
       <div class="mm-panel">

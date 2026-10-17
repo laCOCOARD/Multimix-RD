@@ -14,6 +14,8 @@ class Perfil(models.Model):
     sector = models.CharField(max_length=80, blank=True)
     direccion = models.CharField('calle y número', max_length=255, blank=True)
     referencia = models.CharField('referencia de la dirección', max_length=255, blank=True)
+    # Abrio el enlace que se le envio al correo (o el de recuperar la contraseña): el correo es suyo.
+    correo_verificado = models.BooleanField('correo confirmado', default=False)
 
     class Meta:
         verbose_name = 'perfil de cliente'

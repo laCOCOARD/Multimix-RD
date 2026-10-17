@@ -4,6 +4,8 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_not_required, login_required
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
+from django.utils.http import urlencode
 from django.views.decorators.http import require_POST
 
 from carrito.carrito import Carrito
@@ -53,6 +55,9 @@ def _contexto_checkout(request, carrito, formulario):
 @login_required
 def checkout(request):
     tienda = request.tienda
+    if not clientes.correo_confirmado(request.user):
+        # Los avisos del pedido van al correo de la cuenta: tiene que ser de quien compra.
+        return redirect(f"{reverse('clientes:confirma_tu_correo')}?{urlencode({'next': request.path})}")
     carrito = Carrito(request, tienda)
     if not carrito:
         messages.info(request, 'Tu carrito está vacío. Agrega productos para hacer tu pedido.')
@@ -77,7 +82,7 @@ def checkout(request):
     formulario = CheckoutForm(request.POST, carrito=carrito)
     if formulario.is_valid():
         ip = _ip_cliente(request)
-        if services.supera_limite_por_ip(ip):
+        if services.supera_limite_por_ip(ip) or services.supera_limite_por_cuenta(cliente):
             formulario.add_error(None, 'Recibimos varios pedidos desde tu conexión. Espera un rato y vuelve a intentarlo.')
         else:
             # Los avisos del pedido van al correo de la cuenta: el checkout ya no lo pide.

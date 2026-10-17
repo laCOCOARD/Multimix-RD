@@ -1,6 +1,7 @@
 """Configuracion de Multimix RD. Todo lo sensible se lee desde .env."""
 import os
 import sys
+import tempfile
 from pathlib import Path
 
 import dj_database_url
@@ -225,8 +226,32 @@ if MEDIA_STORAGE == 'supabase' and not EN_TESTS:
         },
     }
 
+# Comprobantes de pago: llevan datos bancarios, asi que no van al bucket publico de las fotos. Se guardan en un
+# bucket privado de Supabase (SUPABASE_S3_BUCKET_PRIVADO) y solo se ven desde el panel, que los lee con la clave
+# del almacenamiento (pagos.admin). En desarrollo van a la carpeta `privado/`, que el sitio no sirve.
+PRIVADO_ROOT = BASE_DIR / 'privado' if not EN_TESTS else Path(tempfile.gettempdir()) / 'multimix-privado-pruebas'
+storage_privado = {
+    'BACKEND': 'django.core.files.storage.FileSystemStorage',
+    'OPTIONS': {'location': PRIVADO_ROOT},
+}
+SUPABASE_BUCKET_PRIVADO = os.getenv('SUPABASE_S3_BUCKET_PRIVADO', '').strip()
+if storage_default['BACKEND'] == 'storages.backends.s3.S3Storage':
+    if SUPABASE_BUCKET_PRIVADO:
+        opciones = {
+            clave: valor for clave, valor in storage_default['OPTIONS'].items()
+            if clave not in ('custom_domain', 'object_parameters')
+        }
+        storage_privado = {
+            'BACKEND': 'storages.backends.s3.S3Storage',
+            'OPTIONS': {**opciones, 'bucket_name': SUPABASE_BUCKET_PRIVADO, 'querystring_auth': True},
+        }
+    else:
+        # Sin el bucket privado siguen en el publico, como antes; el panel lo avisa (pagos.admin).
+        storage_privado = storage_default
+
 STORAGES = {
     'default': storage_default,
+    'privado': storage_privado,
     'staticfiles': {
         'BACKEND': (
             'django.contrib.staticfiles.storage.StaticFilesStorage' if EN_TESTS
@@ -240,6 +265,11 @@ MEDIA_ROOT = BASE_DIR / 'media'
 # Imagenes: limite de subida y lado maximo al redimensionar las fotos de producto.
 IMAGEN_MAX_BYTES = 5 * 1024 * 1024
 IMAGEN_LADO_MAXIMO = 1200
+# Pixeles por imagen: por encima, convertirla se come la memoria del servidor (512 MB en Render free). Un PNG o
+# WebP se abre entero (40 MP en RGBA = 160 MB); un JPG se lee ya reducido, asi que admite las fotos de 48 o 50 MP
+# de los celulares y aun mas.
+IMAGEN_MAX_PIXELES = 40_000_000
+IMAGEN_MAX_PIXELES_JPEG = 120_000_000
 DATA_UPLOAD_MAX_MEMORY_SIZE = 12 * 1024 * 1024
 
 # --- Correo ---
@@ -260,6 +290,8 @@ elif EMAIL_HOST:
 else:
     EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 CORREO_CONFIGURADO = bool(BREVO_API_KEY or EMAIL_HOST)
+# Las cuentas nuevas confirman su correo antes de comprar. Sin correo configurado no se podria: no se pide.
+VERIFICAR_CORREO = CORREO_CONFIGURADO and not EN_TESTS and env_bool('VERIFICAR_CORREO', True)
 DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', '').strip() or 'Multimix RD <no-responder@localhost>'
 SERVER_EMAIL = DEFAULT_FROM_EMAIL
 # Direccion publica del sitio, para los enlaces de los correos.
@@ -281,6 +313,8 @@ CARRITO_MAX_POR_PRODUCTO = 99
 # Anti-spam: pedidos permitidos por IP dentro de la ventana indicada.
 PEDIDOS_MAX_POR_IP = 5
 PEDIDOS_VENTANA_IP_MINUTOS = 60
+# Y por cuenta, en la misma ventana: la IP no siempre se sabe, la cuenta si (el checkout la pide).
+PEDIDOS_MAX_POR_CUENTA = 10
 MAS_VENDIDOS_CACHE_SEGUNDOS = 300
 # Pasarela de tarjeta (codigo de un proveedor registrado en pagos/proveedores.py). Vacio = no se ofrece tarjeta.
 PAGOS_PROVEEDOR_TARJETA = os.getenv('PAGOS_PROVEEDOR_TARJETA', '').strip().lower()
@@ -298,11 +332,12 @@ CUENTA_OBLIGATORIA = os.getenv('CUENTA_OBLIGATORIA', '0') == '1' and not EN_TEST
 
 # --- Seguridad en produccion ---
 # Scripts y estilos solo del propio sitio y del CDN de Bootstrap; las fotos pueden venir del almacenamiento.
-# 'unsafe-inline' sigue permitido porque el panel y algunas plantillas traen scripts y estilos en linea.
+# Los scripts NO pueden ir en linea (ni <script> sin src ni onclick=): asi un texto inyectado no se ejecuta. Todo
+# script va en static/js/. Los estilos si admiten 'unsafe-inline' porque las plantillas usan atributos style.
 # Los formularios solo envian a este sitio: al conectar una pasarela de pago hay que agregar aqui su dominio.
 POLITICA_DE_CONTENIDO = '; '.join([
     "default-src 'self'",
-    "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net",
+    "script-src 'self' https://cdn.jsdelivr.net",
     "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net",
     "font-src 'self' data: https://cdn.jsdelivr.net",
     "img-src 'self' data: blob: https:",
@@ -315,8 +350,13 @@ POLITICA_DE_CONTENIDO = '; '.join([
 X_FRAME_OPTIONS = 'DENY'
 SECURE_CONTENT_TYPE_NOSNIFF = True
 SECURE_REFERRER_POLICY = 'strict-origin-when-cross-origin'
-# Detras de Nginx la IP real del cliente llega en X-Real-IP.
+# Detras de un proxy, la IP del visitante sale de la cabecera que el proxy reescribe en cada visita: en Render
+# (que va detras de Cloudflare) CF-Connecting-IP; con Nginx, X-Real-IP (docs/DESPLIEGUE.md). Se cambia con
+# CABECERA_IP (por ejemplo CABECERA_IP=True-Client-IP). X-Forwarded-For no: su primera IP la escribe el visitante.
 CONFIAR_IP_PROXY = not DEBUG
+CABECERA_IP = 'HTTP_' + (
+    os.getenv('CABECERA_IP', '').strip() or ('CF-Connecting-IP' if RENDER_EXTERNAL_HOSTNAME else 'X-Real-IP')
+).upper().replace('-', '_')
 
 if not DEBUG:
     SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')

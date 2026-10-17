@@ -4,7 +4,7 @@ from django.db.models import Q
 from django.db.models.signals import post_delete
 from django.dispatch import receiver
 
-from core.archivos import NombreUnico
+from core.archivos import NombreUnico, almacenamiento_privado
 from core.validators import validar_imagen
 from pedidos.models import Pedido
 
@@ -41,9 +41,11 @@ class Pago(models.Model):
     estado = models.CharField(max_length=12, choices=Estado.choices, default=Estado.PENDIENTE)
 
     comprobante = models.ImageField(
-        upload_to=NombreUnico('comprobantes'), blank=True, validators=[validar_imagen],
+        upload_to=NombreUnico('comprobantes'), blank=True, validators=[validar_imagen], storage=almacenamiento_privado,
         help_text='Foto o captura de la transferencia que envió el cliente.',
     )
+    # Los comprobantes de antes iban al bucket publico de las fotos; las tareas periodicas los pasan al privado.
+    comprobante_privado = models.BooleanField(default=False, editable=False)
     referencia_cliente = models.CharField('referencia que dio el cliente', max_length=60, blank=True)
     codigo_autorizacion = models.CharField('código de autorización', max_length=40, blank=True)
     respuesta_proveedor = models.JSONField('respuesta del proveedor', default=dict, blank=True, editable=False)
@@ -79,11 +81,17 @@ class Pago(models.Model):
     def por_resolver(self):
         return self.estado in self.POR_RESOLVER
 
+    @property
+    def almacenamiento_del_comprobante(self):
+        from django.core.files.storage import storages
+
+        return storages['privado'] if self.comprobante_privado else storages['default']
+
 
 @receiver(post_delete, sender=Pago)
 def borrar_comprobante(sender, instance, **kwargs):
     if instance.comprobante:
-        instance.comprobante.delete(save=False)
+        instance.almacenamiento_del_comprobante.delete(instance.comprobante.name)
 
 
 class Liquidacion(models.Model):

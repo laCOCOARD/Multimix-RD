@@ -89,12 +89,5 @@
   {% empty %}
     <p>No hay tiendas.</p>
   {% endfor %}
-  <script>
-    document.querySelectorAll('[data-confirmar]').forEach((boton) => {
-      boton.addEventListener('click', (evento) => {
-        if (!window.confirm(boton.dataset.confirmar)) evento.preventDefault();
-      });
-    });
-  </script>
 </div>
 {% endblock %}

@@ -1,10 +1,13 @@
 from django.contrib import admin, messages
+from django.contrib.admin.utils import unquote
 from django.core.exceptions import PermissionDenied
+from django.http import FileResponse, Http404
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import path, reverse
 from django.views.decorators.http import require_POST
 from django.utils.html import format_html, format_html_join
 
+from core.archivos import ERRORES_DE_ALMACENAMIENTO, hay_almacenamiento_privado
 from core.templatetags.moneda import formatear_monto
 from pedidos.services import PedidoError
 from tiendas.models import Tienda
@@ -61,6 +64,32 @@ class PagoAdmin(AdminDeTienda, admin.ModelAdmin):
     def change_view(self, request, object_id, form_url='', extra_context=None):
         return super().change_view(request, object_id, form_url, {'show_delete': False, **(extra_context or {})})
 
+    def get_urls(self):
+        propias = [
+            path(
+                '<path:object_id>/comprobante/', self.admin_site.admin_view(self.comprobante_vista),
+                name='pagos_pago_comprobante',
+            ),
+        ]
+        return propias + super().get_urls()
+
+    def comprobante_vista(self, request, object_id):
+        """El comprobante, leido del almacenamiento privado. Solo para quien ve ese pago (`get_object` filtra por
+        tienda): el archivo no tiene una direccion publica."""
+        pago = self.get_object(request, unquote(object_id))
+        if pago is None or not self.has_view_permission(request, pago):
+            raise Http404
+        if not pago.comprobante:
+            raise Http404
+        try:
+            archivo = pago.almacenamiento_del_comprobante.open(pago.comprobante.name)
+        except (FileNotFoundError, *ERRORES_DE_ALMACENAMIENTO):
+            raise Http404('No se encontró el archivo del comprobante.')
+        respuesta = FileResponse(archivo, content_type='image/webp')
+        respuesta['Cache-Control'] = 'private, no-store'
+        respuesta['Content-Disposition'] = f'inline; filename="comprobante-{pago.referencia}.webp"'
+        return respuesta
+
     def _resolver(self, request, queryset, accion, hecho):
         if not self.has_change_permission(request):
             raise PermissionDenied
@@ -111,10 +140,17 @@ class PagoAdmin(AdminDeTienda, admin.ModelAdmin):
     def vista_del_comprobante(self, pago):
         if not pago.comprobante:
             return 'El cliente no adjuntó comprobante.'
-        return format_html(
+        enlace = format_html(
             '<a href="{0}" target="_blank" rel="noopener"><img src="{0}" alt="Comprobante" class="panel-comprobante"></a>',
-            pago.comprobante.url,
+            reverse('admin:pagos_pago_comprobante', args=[pago.pk]),
         )
+        if not hay_almacenamiento_privado():
+            enlace += format_html(
+                '<p class="help">{}</p>',
+                'Este comprobante está en el almacenamiento público de las fotos. Para guardarlos aparte, configura '
+                'SUPABASE_S3_BUCKET_PRIVADO (docs/RENDER.md).',
+            )
+        return enlace
 
 
 @admin.register(Liquidacion)

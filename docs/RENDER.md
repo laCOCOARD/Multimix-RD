@@ -27,7 +27,10 @@ Cómo está desplegado el sitio hoy y cómo mantenerlo. Para un servidor propio 
 | `ALLOWED_HOSTS`, `CSRF_TRUSTED_ORIGINS`                 | Solo si se usa un dominio propio; el de Render se agrega solo.        |
 | `ADMIN_URL`                                             | Ruta del panel (por defecto `panel`). Conviene cambiarla.             |
 | `DJANGO_SUPERUSER_USERNAME`, `_EMAIL`, `_PASSWORD`      | Administrador principal. Su contraseña se repone en cada arranque.    |
-| `MEDIA_STORAGE=supabase` y las seis `SUPABASE_*`        | Fotos y comprobantes en Supabase.                                     |
+| `MEDIA_STORAGE=supabase` y las seis `SUPABASE_*`        | Fotos en Supabase.                                                    |
+| `SUPABASE_S3_BUCKET_PRIVADO`                            | Bucket **privado** para los comprobantes de pago (ver abajo).         |
+| `CABECERA_IP`                                           | Solo si cambia el proxy. Por defecto `CF-Connecting-IP` en Render.    |
+| `VERIFICAR_CORREO`                                      | `0` para no pedir que se confirme el correo antes de comprar.         |
 | `BREVO_API_KEY`                                         | Clave **API** de Brevo (no la SMTP). Sin ella no sale ningún correo.  |
 | `DEFAULT_FROM_EMAIL`                                    | Remitente verificado en Brevo: `Multimix RD <correo@dominio>`.        |
 | `SITIO_URL`                                             | Solo con dominio propio, para los enlaces de los correos.             |
@@ -36,14 +39,33 @@ Cómo está desplegado el sitio hoy y cómo mantenerlo. Para un servidor propio 
 El plan gratis de Render bloquea SMTP: por eso el correo va por la API de Brevo. Se prueba en
 **Panel → Configuración general → Enviar correo de prueba**.
 
+### Comprobantes en un bucket privado
+
+Los comprobantes de transferencia llevan datos bancarios: no deben estar en el bucket público de las fotos.
+
+1. En Supabase → Storage → *New bucket*: nombre `multimix-privado`, **sin** marcar *Public bucket*.
+2. En Render, la variable `SUPABASE_S3_BUCKET_PRIVADO=multimix-privado` (usa las mismas claves S3).
+3. Despliega. Los comprobantes nuevos van al privado y los de antes se pasan solos, de cinco en cinco, con
+   las tareas periódicas. En el panel se ven igual (Pagos → el pago → Comprobante), a través del sitio.
+
+Mientras falte la variable, siguen en el bucket público y el detalle del pago lo avisa.
+
+### IP del visitante
+
+Los límites por IP (pedidos, cuentas nuevas, intentos de entrar) leen `CF-Connecting-IP`, que pone Cloudflare
+delante de Render en cada visita. `X-Forwarded-For` no sirve: Render deja la primera IP tal como la manda el
+visitante. Si los registros de Render muestran *La visita no trae la IP en HTTP_CF_CONNECTING_IP*, esa cabecera
+no está llegando: los límites por cuenta y por correo siguen funcionando, pero hay que elegir otra con
+`CABECERA_IP`. Para comprobarlo, la IP queda guardada en cada pedido (Panel → Pedidos → el pedido).
+
 ## Lo que el plan gratis no tiene
 
 - **Tareas programadas.** El sitio las reemplaza: como mucho una vez por hora, una visita cualquiera cancela
   los pedidos pendientes vencidos y limpia sesiones caducadas (`core/tareas.py`).
 - **Disco permanente.** Nada se guarda en el servidor: las fotos van a Supabase y los registros a la consola
   de Render.
-- **Siempre encendido.** El servicio se duerme sin visitas; la primera carga tarda. Al dormirse se reinician
-  los contadores del límite de intentos de inicio de sesión.
+- **Siempre encendido.** El servicio se duerme sin visitas; la primera carga tarda. Los límites de intentos
+  se cuentan en la base (`core.Intento`), así que no se reinician al dormirse.
 - **Respaldos de la base.** No hay ninguno automático.
 
 ## Respaldar la base y pasarla a otra

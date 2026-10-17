@@ -5,7 +5,7 @@ from django.contrib.auth.decorators import login_not_required, login_required
 from django.core.paginator import Paginator
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse_lazy
-from django.utils.http import url_has_allowed_host_and_scheme
+from django.utils.http import url_has_allowed_host_and_scheme, urlencode
 from django.views.decorators.cache import never_cache
 from django.views.decorators.debug import sensitive_post_parameters
 from django.views.decorators.http import require_POST
@@ -36,16 +36,23 @@ def _destino(request, por_defecto='clientes:cuenta'):
 def registro(request):
     if request.user.is_authenticated:
         return redirect('clientes:cuenta')
-    ip = ip_del_cliente(request) or 'sin-ip'
+    ip = ip_del_cliente(request)
     formulario = RegistroForm(request.POST or None)
     if request.method == 'POST':
-        if services.bloqueado('registro', ip):
+        if services.registro_bloqueado(ip):
             formulario.add_error(None, 'Se crearon varias cuentas desde tu conexión. Espera unos minutos.')
         elif formulario.is_valid():
-            services.anotar_intento('registro', ip)
+            services.anotar_registro(ip)
             usuario = formulario.save()
             login(request, usuario, backend='clientes.autenticacion.CorreoOUsuarioBackend')
-            messages.success(request, f'¡Bienvenido, {usuario.first_name}! Tu cuenta ya está creada.')
+            if services.correo_confirmado(usuario):
+                messages.success(request, f'¡Bienvenido, {usuario.first_name}! Tu cuenta ya está creada.')
+            else:
+                services.enviar_confirmacion(usuario)
+                messages.success(
+                    request, f'¡Bienvenido, {usuario.first_name}! Te enviamos un enlace a {usuario.email} para '
+                             'confirmar tu correo antes de tu primera compra.',
+                )
             return redirect(_destino(request))
     return render(request, PLANTILLA, {
         'formulario': formulario,
@@ -89,6 +96,40 @@ class Salir(acceso.LogoutView):
     next_page = reverse_lazy('clientes:entrar')
 
 
+@login_not_required
+@never_cache
+def confirmar_correo(request, token):
+    """El enlace del correo de confirmacion."""
+    usuario = services.confirmar_correo(token)
+    if usuario is None:
+        return render(request, 'clientes/mensaje.html', {
+            'titulo': 'Enlace vencido',
+            'texto': 'Este enlace ya no vale. Entra a tu cuenta y pide uno nuevo.',
+            'enlace': ('clientes:confirma_tu_correo', 'Pedir otro enlace'),
+            'icono': 'bi-envelope-exclamation text-warning',
+        })
+    messages.success(request, 'Listo, confirmamos tu correo. Ya puedes comprar.')
+    if request.user.is_authenticated and request.user.pk == usuario.pk:
+        return redirect('clientes:cuenta')
+    return redirect('clientes:entrar')
+
+
+@login_required
+@never_cache
+def confirma_tu_correo(request):
+    """Antes de comprar: el correo de la cuenta todavia no esta confirmado. Aqui se reenvia el enlace."""
+    if services.correo_confirmado(request.user):
+        return redirect(_destino(request))
+    if request.method == 'POST':
+        if services.enviar_confirmacion(request.user):
+            messages.success(request, f'Te enviamos un enlace nuevo a {request.user.email}.')
+        else:
+            messages.error(request, 'Ya te enviamos varios enlaces. Revisa tu correo (y la carpeta de spam) o espera una hora.')
+        siguiente = _destino(request, '')
+        return redirect(f"{request.path}?{urlencode({'next': siguiente})}" if siguiente else request.path)
+    return render(request, 'clientes/confirmar_correo.html', {'siguiente': _destino(request, '')})
+
+
 @login_required
 def cuenta(request):
     """Los pedidos del cliente en todas las tiendas. Solo los suyos."""
@@ -96,6 +137,7 @@ def cuenta(request):
     return render(request, 'clientes/cuenta.html', {
         'pagina': Paginator(pedidos, PEDIDOS_POR_PAGINA).get_page(request.GET.get('pagina')),
         'perfil': services.perfil_de(request.user),
+        'correo_confirmado': services.correo_confirmado(request.user),
     })
 
 
@@ -170,12 +212,15 @@ class Recuperar(_ConFormulario, acceso.PasswordResetView):
     }
 
     def form_valid(self, form):
-        # Un limite por conexion: nadie puede usar el formulario para llenar de correos a otra persona.
-        ip = ip_del_cliente(self.request) or 'sin-ip'
-        if services.bloqueado('recuperar', ip):
+        # Un limite por conexion y otro por correo: nadie puede usar el formulario para llenar de correos a otra
+        # persona, aunque cambie de IP. Pasado el del correo se responde igual, sin enviar, para no revelar nada.
+        ip = ip_del_cliente(self.request)
+        if services.recuperacion_bloqueada(ip):
             form.add_error(None, 'Ya pediste varios enlaces. Espera 15 minutos.')
             return self.form_invalid(form)
-        services.anotar_intento('recuperar', ip)
+        services.anotar_recuperacion(ip)
+        if not services.puede_recibir_enlace(form.cleaned_data['email']):
+            return redirect(self.get_success_url())
         return super().form_valid(form)
 
 
@@ -192,6 +237,11 @@ class NuevaClave(_ConFormulario, acceso.PasswordResetConfirmView):
     form_class = NuevaClaveForm
     success_url = reverse_lazy('clientes:recuperar_listo')
     extra_context = {'titulo': 'Nueva contraseña', 'boton': 'Guardar contraseña'}
+
+    def form_valid(self, form):
+        # El enlace llego a su correo: eso tambien lo confirma.
+        services.marcar_correo_confirmado(form.user)
+        return super().form_valid(form)
 
 
 class RecuperarListo(acceso.PasswordResetCompleteView):

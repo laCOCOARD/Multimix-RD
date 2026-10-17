@@ -18,13 +18,6 @@
       </button>
     {% endfor %}
   </form>
-  <script>
-    document.querySelectorAll('[data-confirmar]').forEach((boton) => {
-      boton.addEventListener('click', (evento) => {
-        if (!window.confirm(boton.dataset.confirmar)) evento.preventDefault();
-      });
-    });
-  </script>
 {% elif original %}
   <p class="panel-transiciones panel-transiciones-titulo">Este pedido está en un estado final y ya no cambia.</p>
 {% endif %}

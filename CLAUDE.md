@@ -42,7 +42,7 @@ Al cerrar cada modulo: check, makemigrations, migrate, test y commit.
   pedidos) y limite de intentos.
 - `opiniones/` — Resena: una por cliente y producto, moderada (solo el superusuario publica o rechaza; el
   vendedor las ve) y con "compra verificada" si lo recibio en un pedido hecho con su cuenta.
-- `pagos/` — Pago (un intento de pago por pedido), comprobantes de transferencia, conciliacion en el panel y
+- `pagos/` — Pago (un intento de pago por pedido), comprobantes de transferencia (privados), conciliacion en el panel y
   el contrato de las pasarelas de tarjeta (`proveedores.py`, ninguna conectada). Ver `docs/PAGOS.md`.
 - `templates/`, `static/` — plantillas y recursos de la tienda y del panel.
 - `docs/` — RENDER.md (despliegue real y traslado de la base), PAGOS.md, DESPLIEGUE.md (VPS) y esquema.sql
@@ -98,9 +98,12 @@ Al cerrar cada modulo: check, makemigrations, migrate, test y commit.
 - Sin cron en Render free: `config.middleware.TareasPeriodicasMiddleware` llama a `core.tareas.ejecutar_si_toca`,
   que como mucho una vez por hora (candado en la cache) cancela los pedidos vencidos y borra sesiones caducadas.
   En las pruebas esta apagado (`TAREAS_AUTOMATICAS`).
-- Cabecera CSP (`POLITICA_DE_CONTENIDO` en settings): scripts y estilos solo del sitio y de cdn.jsdelivr.net, con
-  'unsafe-inline' porque hay scripts en linea en el panel y las plantillas. `form-action 'self'`: al conectar una
-  pasarela que reciba un formulario hay que agregar su dominio.
+- Cabecera CSP (`POLITICA_DE_CONTENIDO` en settings): scripts y estilos solo del sitio y de cdn.jsdelivr.net. Los
+  scripts SIN 'unsafe-inline': nada de `<script>` sin `src` ni `onclick=` en las plantillas (lo comprueba
+  `core/test_seguridad.py`); va en `static/js/` (`panel.js` en el panel, `tienda.js`, `js-activo.js`). Los botones
+  que piden confirmacion llevan `data-confirmar`. Los estilos si llevan 'unsafe-inline' (atributos `style`). El
+  JSON-LD (`application/ld+json`) no se ejecuta y no lo afecta. `form-action 'self'`: al conectar una pasarela
+  que reciba un formulario hay que agregar su dominio.
 - `/salud/` responde "ok" si la aplicacion y la base funcionan (para el Health Check Path de Render).
 - JSON-LD del producto (`core.seo.producto_json_ld`): precio, disponibilidad y marca reales; la valoracion solo
   aparece si hay reseñas publicadas. Es la unica excepcion a "nada de |safe": el JSON se escapa como `json_script`.
@@ -123,9 +126,31 @@ Al cerrar cada modulo: check, makemigrations, migrate, test y commit.
   la zona no, porque es de cada tienda. `Pedido.cliente` solo se llena si compro con la sesion iniciada: un pedido
   de invitado (de antes de la cuenta obligatoria) nunca se asocia despues a una cuenta por coincidir el correo. Las plantillas de acceso estan en `templates/clientes/` y no en
   `templates/registration/`, que pisaria las pantallas de contraseña del panel.
-- Limite de intentos (`clientes.services.bloqueado`): 5 en 15 minutos para entrar (por conexion y correo), crear
-  cuentas y pedir enlaces de recuperacion (por conexion). Vive en la cache: con varios procesos cada uno cuenta
-  aparte, y en las pruebas (DummyCache) hay que activar una cache real para comprobarlo.
+- Limite de intentos (`core.limites`, filas `core.Intento` con la clave en sha256; las viejas las borran las
+  tareas periodicas): vive en la base, no en la cache, para que lo compartan los procesos y no se borre al
+  reiniciar. La IP no es fiable, asi que lo que importa cuenta tambien sin ella (`clientes.services`): entrar, 5
+  por conexion y correo y 10 por cuenta desde cualquier IP, y el panel (`EntrarAlPanelForm`, `PanelAdminSite.
+  login_form`) cuenta junto con el sitio; cuentas nuevas, 5 por conexion y 30 en todo el sitio; enlaces de
+  recuperacion o confirmacion, 3 por hora a un mismo correo (pasado el limite responde igual, sin enviar);
+  pedidos, `PEDIDOS_MAX_POR_CUENTA`; cupones que no aplican (`promociones.services.probar_cupon`, desde
+  `Carrito.aplicar_cupon`), 10 por cuenta, sesion o IP y 100 por tienda, sin contar dos veces el mismo codigo.
+- IP del visitante (`core.red.ip_del_cliente`): solo la cabecera que el proxy reescribe (`settings.CABECERA_IP`:
+  `CF-Connecting-IP` en Render, que va detras de Cloudflare; `X-Real-IP` con Nginx). Nunca la primera de
+  `X-Forwarded-For`: Render la deja como la mando el visitante y se podia inventar una IP en cada intento. Sin la
+  cabecera devuelve None (no hay limite por IP) y lo registra una vez.
+- Correo confirmado (`clientes.Perfil.correo_verificado`): al crear la cuenta se envia un enlace firmado
+  (`signing`, 3 dias, ligado al correo); el checkout lo exige (`correo_confirmado`) y manda a
+  `/cuenta/confirmar/`. Recuperar la contraseña tambien lo confirma. Las cuentas anteriores quedaron confirmadas
+  (`clientes/0004`); el personal del panel no lo necesita. Apagado sin correo configurado y en las pruebas
+  (`VERIFICAR_CORREO`).
+- Comprobantes privados: `Pago.comprobante` usa `STORAGES['privado']` (bucket `SUPABASE_S3_BUCKET_PRIVADO`; en
+  desarrollo la carpeta `privado/`, que no se sirve). Sin ese bucket es el mismo publico de antes.
+  `Pago.comprobante_privado` dice donde esta cada archivo (`almacenamiento_del_comprobante`); las tareas
+  periodicas pasan los de antes (`pagos.services.mover_comprobantes_al_privado`). El panel lo muestra con
+  `admin:pagos_pago_comprobante`, que lo lee del almacenamiento y filtra por tienda; el archivo no tiene URL publica.
+- Imagenes: `validar_imagen` mide los pixeles leyendo solo la cabecera (`IMAGEN_MAX_PIXELES` 40 MP;
+  `IMAGEN_MAX_PIXELES_JPEG` 120 MP, porque un JPG se abre reducido con `draft`). `convertir_a_webp` achica antes de
+  girar segun el EXIF, para no tener dos copias grandes en memoria (Render free tiene 512 MB).
 - Correos: `core.correo.enviar` (texto, plantillas en `templates/correos/`, nunca lanza: registra el fallo) y
   `pedidos.avisos` (pedido nuevo, cambio de estado, comprobante, pago rechazado). Salen con
   `transaction.on_commit`, asi que en las pruebas hay que envolver con `captureOnCommitCallbacks(execute=True)`.

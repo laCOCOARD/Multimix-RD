@@ -1,0 +1,10 @@
+{% autoescape off %}Hola, {{ usuario.first_name|default:"" }}:
+
+Gracias por crear tu cuenta en Multimix RD. Para confirmar que este correo es tuyo, entra a este enlace:
+
+{{ enlace }}
+
+El enlace vale {{ dias }} días. Si no creaste una cuenta, ignora este correo: nadie podrá comprar con él.
+
+Multimix RD
+{% endautoescape %}
