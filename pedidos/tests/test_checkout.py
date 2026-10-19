@@ -174,6 +174,36 @@ class CheckoutTests(TestCase):
         self.assertContains(respuesta, 'varios pedidos desde tu conexión')
         self.assertEqual(Pedido.objects.count(), 1)
 
+    def test_un_cupon_de_bienvenida_se_usa_una_vez_por_cliente(self):
+        cupon_de_prueba('BIENVENIDO', usos_por_cliente=1)
+        self.llenar_carrito(1)
+        self.assertEqual(self.client.post(self.url, self.datos(cupon='bienvenido')).status_code, 302)
+        primero = Pedido.objects.get()
+        self.assertEqual(primero.descuento, Decimal('100.00'))
+
+        # Ni en el carrito ni en el checkout se puede usar otra vez con la misma cuenta.
+        self.llenar_carrito(1)
+        respuesta = self.client.post(ruta('carrito:cupon_aplicar'), {'codigo': 'BIENVENIDO'}, HTTP_X_REQUESTED_WITH='fetch')
+        self.assertIn('Ya usaste este cupón', respuesta.json()['mensaje'])
+        respuesta = self.client.post(self.url, self.datos(cupon='BIENVENIDO'))
+        self.assertIn('Ya usaste este cupón', ' '.join(self.errores(respuesta)['cupon']))
+        self.assertEqual(Pedido.objects.count(), 1)
+
+        # Si cancela el pedido, el uso vuelve.
+        from pedidos.services import cambiar_estado
+
+        cambiar_estado(primero, Pedido.Estado.CANCELADO)
+        self.assertEqual(self.client.post(self.url, self.datos(cupon='BIENVENIDO')).status_code, 302)
+
+    def test_otra_cuenta_si_puede_usar_el_cupon(self):
+        cupon_de_prueba('BIENVENIDO', usos_por_cliente=1)
+        self.llenar_carrito(1)
+        self.client.post(self.url, self.datos(cupon='BIENVENIDO'))
+        entrar_como_cliente(self.client, 'luis@example.com', 'Luis Gil')
+        self.llenar_carrito(1)
+        self.assertEqual(self.client.post(self.url, self.datos(cupon='BIENVENIDO')).status_code, 302)
+        self.assertEqual(Pedido.objects.filter(codigo_cupon='BIENVENIDO').count(), 2)
+
     def test_cupon_en_el_checkout(self):
         cupon_de_prueba('BIENVENIDO10')
         self.llenar_carrito(2)

@@ -176,7 +176,7 @@ def crear_pedido(carrito, datos, ip=None, cliente=None):
     codigo = normalizar_codigo(carrito.codigo_cupon)
     if codigo:
         try:
-            cupon = validar_cupon(codigo, subtotal, tienda, bloquear=True)
+            cupon = validar_cupon(codigo, subtotal, tienda, bloquear=True, cliente=cliente)
         except CuponInvalido as error:
             raise PedidoError(f'El cupón {codigo} ya no se puede usar: {error.mensaje}') from error
     descuento = calcular_descuento(cupon, subtotal)
@@ -264,7 +264,9 @@ def transiciones_permitidas(pedido, usuario=None):
     estados = _transiciones(pedido)
     if usuario is not None and pedido.cobra_el_sitio and not ve_todas(usuario):
         reservados = [Estado.PAGADO, Estado.REEMBOLSADO]
-        if pedido.estado == Estado.PENDIENTE and pedido.transferencia_realizada:
+        # Cancelar un pedido cuyo dinero ya esta (o dicen que esta) en las cuentas del dueño obliga a devolverlo:
+        # lo decide el administrador.
+        if pedido.fecha_pago or (pedido.estado == Estado.PENDIENTE and pedido.transferencia_realizada):
             reservados.append(Estado.CANCELADO)
         estados = [estado for estado in estados if estado not in reservados]
     return estados
@@ -368,14 +370,30 @@ def cambiar_estado(pedido, nuevo_estado, usuario=None, nota=''):
     return pedido
 
 
+def puede_eliminar(pedido, usuario=None):
+    """Un pedido con dinero de por medio (cobrado, con la transferencia avisada o ya liquidado) es el registro de
+    ese dinero y de la comision del sitio: solo lo borra el administrador principal. `usuario` vacio es el sistema."""
+    if usuario is None or ve_todas(usuario):
+        return True
+    return (
+        pedido.fecha_pago is None and not pedido.transferencia_realizada
+        and pedido.liquidacion_id is None and pedido.ajuste_liquidacion_id is None
+    )
+
+
 @transaction.atomic
-def eliminar_pedido(pedido):
+def eliminar_pedido(pedido, usuario=None):
     """Borra el pedido del historial y devuelve su numero.
 
     Si todavia se podia cancelar, antes lo cancela: asi libera su reserva y el uso del cupon.
     Lo enviado o entregado ya salio del almacen y se borra sin devolver stock.
     """
     pedido = Pedido.objects.select_for_update().get(pk=pedido.pk)
+    if not puede_eliminar(pedido, usuario):
+        raise PedidoError(
+            f'El pedido {pedido.numero} ya tiene un pago registrado o avisado: solo el administrador principal puede '
+            'eliminarlo.'
+        )
     numero, estado = pedido.numero, pedido.estado
     if Estado.CANCELADO in transiciones_permitidas(pedido):
         pedido = cambiar_estado(pedido, Estado.CANCELADO)
@@ -385,16 +403,26 @@ def eliminar_pedido(pedido):
 
 
 def cancelar_pedidos_vencidos():
-    """Cancela los pendientes mas viejos que las horas configuradas. Devuelve sus numeros."""
+    """Cancela los pendientes mas viejos que las horas configuradas. Devuelve sus numeros.
+
+    Nunca los que tienen la transferencia avisada: el cliente dice que ya pago y su comprobante espera a que lo
+    revisen. Esos solo los cancela una persona desde el panel, despues de mirar el banco.
+    """
     horas = ConfiguracionTienda.obtener().horas_vencimiento_pedido
     limite = timezone.now() - timedelta(hours=horas)
+    vencidos = Pedido.objects.filter(estado=Estado.PENDIENTE, creado__lt=limite, transferencia_realizada=False)
     cancelados = []
-    for pedido in Pedido.objects.filter(estado=Estado.PENDIENTE, creado__lt=limite).order_by('creado'):
-        try:
-            cambiar_estado(pedido, Estado.CANCELADO)
-        except TransicionInvalida:
-            # Otro proceso lo cambio entre la consulta y el bloqueo.
-            continue
+    for pedido in vencidos.order_by('creado'):
+        with transaction.atomic():
+            # Se mira otra vez con el pedido bloqueado: el cliente pudo avisar la transferencia (o la tienda
+            # cambiar el estado) entre la consulta y este momento.
+            pedido = Pedido.objects.select_for_update().get(pk=pedido.pk)
+            if pedido.estado != Estado.PENDIENTE or pedido.transferencia_realizada:
+                continue
+            try:
+                cambiar_estado(pedido, Estado.CANCELADO, nota='Cancelado porque venció el plazo para pagar')
+            except TransicionInvalida:
+                continue
         cancelados.append(pedido.numero)
     return cancelados
 

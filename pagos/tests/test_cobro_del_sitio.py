@@ -102,3 +102,51 @@ class CobroDelSitioTests(TestCase):
         self.assertEqual(self.client.get(lista).status_code, 403)
         self.client.force_login(self.admin)
         self.assertContains(self.client.get(lista), 'Banco del dueño')
+
+
+class PedidosConDineroTests(TestCase):
+    """El vendedor no borra ni cancela pedidos con dinero de por medio: son el registro de lo que cobro el dueño y de
+    la comision del sitio."""
+
+    setUp = CobroDelSitioTests.setUp
+    pedido = CobroDelSitioTests.pedido
+
+    def borrar(self, usuario, pedido):
+        self.client.force_login(usuario)
+        return self.client.post(reverse('admin:pedidos_pedido_delete', args=[pedido.pk]), {'post': 'yes'})
+
+    def test_el_vendedor_no_borra_lo_cobrado_avisado_ni_liquidado(self):
+        from pagos.liquidaciones import liquidar
+
+        pagado = cambiar_estado(self.pedido(), Estado.PAGADO, usuario=self.admin)
+        avisado = self.pedido(transferencia_realizada=True)
+        efectivo = self.pedido(metodo_pago=Pedido.Pago.EFECTIVO_RECOGER)
+        for estado in (Estado.PAGADO, Estado.ENTREGADO):
+            efectivo = cambiar_estado(efectivo, estado, usuario=self.vendedor)
+        liquidar(self.tienda, self.admin)
+        for pedido in (pagado, avisado, efectivo):
+            self.assertEqual(self.borrar(self.vendedor, pedido).status_code, 403, pedido.numero)
+            self.assertTrue(Pedido.objects.filter(pk=pedido.pk).exists())
+        # Tampoco con la accion de la lista.
+        self.client.post(reverse('admin:pedidos_pedido_changelist'), {
+            'action': 'delete_selected', '_selected_action': [pagado.pk, avisado.pk], 'post': 'yes',
+        })
+        self.assertEqual(Pedido.objects.filter(pk__in=[pagado.pk, avisado.pk]).count(), 2)
+
+    def test_el_vendedor_si_borra_uno_sin_pagar_y_el_administrador_cualquiera(self):
+        sin_pagar = self.pedido()
+        self.assertEqual(self.borrar(self.vendedor, sin_pagar).status_code, 302)
+        self.assertFalse(Pedido.objects.filter(pk=sin_pagar.pk).exists())
+
+        pagado = cambiar_estado(self.pedido(), Estado.PAGADO, usuario=self.admin)
+        self.assertEqual(self.borrar(self.admin, pagado).status_code, 302)
+        self.assertFalse(Pedido.objects.filter(pk=pagado.pk).exists())
+
+    def test_el_vendedor_no_cancela_un_pedido_ya_cobrado_por_el_sitio(self):
+        pagado = cambiar_estado(self.pedido(), Estado.PAGADO, usuario=self.admin)
+        self.assertNotIn(Estado.CANCELADO, transiciones_permitidas(pagado, self.vendedor))
+        with self.assertRaises(TransicionInvalida):
+            cambiar_estado(pagado, Estado.CANCELADO, usuario=self.vendedor)
+        # Lo sigue preparando y entregando como siempre.
+        self.assertIn(Estado.PREPARANDO, transiciones_permitidas(pagado, self.vendedor))
+        self.assertIn(Estado.CANCELADO, transiciones_permitidas(pagado, self.admin))

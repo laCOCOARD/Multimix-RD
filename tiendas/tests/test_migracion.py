@@ -3,7 +3,7 @@ from decimal import Decimal
 
 from django.db import connection
 from django.db.migrations.executor import MigrationExecutor
-from django.test import TransactionTestCase
+from django.test import TestCase, TransactionTestCase
 from django.utils import timezone
 
 LEMA_DE_LA_TIENDA = 'Salud, belleza y equilibrio: vitaminas, cuidado personal y más, con entrega en todo el país.'
@@ -100,3 +100,24 @@ class DeUnaTiendaASubtiendasTests(TransactionTestCase):
         from tiendas.models import Tienda
 
         self.assertFalse(Tienda.objects.exists())
+
+
+class QuitarVendedorSinTiendaTests(TestCase):
+    def test_borra_la_cuenta_solo_si_sigue_sin_tienda(self):
+        from importlib import import_module
+
+        from django.apps import apps as registro
+        from django.contrib.auth import get_user_model
+
+        from tiendas.tests.utiles import tienda_de_prueba
+
+        migracion = import_module('tiendas.migrations.0013_quitar_vendedor_sin_tienda')
+        Usuario = get_user_model()
+        Usuario.objects.create_user('Marcosfit', is_staff=True)
+        migracion.quitar_vendedor(registro, None)
+        self.assertFalse(Usuario.objects.filter(username='Marcosfit').exists())
+
+        con_tienda = Usuario.objects.create_user('Marcosfit', is_staff=True)
+        tienda_de_prueba().usuarios.add(con_tienda)
+        migracion.quitar_vendedor(registro, None)
+        self.assertTrue(Usuario.objects.filter(username='Marcosfit').exists())

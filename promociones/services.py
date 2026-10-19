@@ -23,10 +23,19 @@ def normalizar_codigo(codigo):
     return (codigo or '').strip().upper()
 
 
-def validar_cupon(codigo, subtotal, tienda, bloquear=False):
+def usos_del_cliente(cupon, cliente):
+    """Pedidos de esa cuenta con el cupon. Un pedido cancelado devuelve el uso, como en `devolver_uso`."""
+    from pedidos.models import Pedido
+
+    return Pedido.objects.filter(cliente=cliente, cupon=cupon).exclude(estado=Pedido.Estado.CANCELADO).count()
+
+
+def validar_cupon(codigo, subtotal, tienda, bloquear=False, cliente=None):
     """Devuelve el cupon de la tienda si aplica al subtotal; si no, lanza CuponInvalido.
 
-    Con bloquear=True toma la fila con select_for_update (requiere una transaccion abierta).
+    Con bloquear=True toma la fila con select_for_update (requiere una transaccion abierta): asi dos pedidos a la
+    vez de la misma cuenta no pasan los dos el limite por cliente. Sin `cliente` (carrito sin sesion) ese limite no
+    se mira; el checkout pide la cuenta y lo vuelve a validar.
     """
     codigo = normalizar_codigo(codigo)
     if not codigo:
@@ -42,6 +51,12 @@ def validar_cupon(codigo, subtotal, tienda, bloquear=False):
         raise CuponInvalido('Ese cupón ya venció.')
     if cupon.usos_maximos is not None and cupon.usos_actuales >= cupon.usos_maximos:
         raise CuponInvalido('Ese cupón ya alcanzó su límite de usos.')
+    if (
+        cupon.usos_por_cliente is not None and cliente is not None and getattr(cliente, 'is_authenticated', False)
+        and usos_del_cliente(cupon, cliente) >= cupon.usos_por_cliente
+    ):
+        veces = 'una vez' if cupon.usos_por_cliente == 1 else f'{cupon.usos_por_cliente} veces'
+        raise CuponInvalido(f'Ya usaste este cupón. Se puede usar {veces} por cliente.')
     if subtotal < cupon.compra_minima:
         raise CuponInvalido(
             f'Este cupón aplica a compras desde {formatear_monto(cupon.compra_minima)}.'
@@ -55,7 +70,7 @@ CUPONES_FALLIDOS_POR_PERSONA = 10
 CUPONES_FALLIDOS_POR_TIENDA = 100
 
 
-def probar_cupon(codigo, subtotal, tienda, quien):
+def probar_cupon(codigo, subtotal, tienda, quien, cliente=None):
     """`validar_cupon` para un codigo que escribio el cliente, con limite de intentos fallidos.
 
     `quien` son las formas de reconocer a la persona (cuenta, conexion, sesion); vale con que una llegue al limite.
@@ -65,7 +80,7 @@ def probar_cupon(codigo, subtotal, tienda, quien):
     if any(limites.bloqueado(*clave, maximo=maximo) for clave, maximo in zip(claves, maximos)):
         raise CuponInvalido('Probaste muchos cupones seguidos. Espera 15 minutos y vuelve a intentarlo.')
     try:
-        return validar_cupon(codigo, subtotal, tienda)
+        return validar_cupon(codigo, subtotal, tienda, cliente=cliente)
     except CuponInvalido:
         for clave in claves:
             limites.anotar_intento(*clave)

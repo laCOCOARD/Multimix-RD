@@ -26,6 +26,10 @@ class Cupon(models.Model):
     vigente_desde = models.DateTimeField(null=True, blank=True)
     vigente_hasta = models.DateTimeField(null=True, blank=True)
     usos_maximos = models.PositiveIntegerField('usos máximos', null=True, blank=True, help_text='Vacío = ilimitado.')
+    usos_por_cliente = models.PositiveIntegerField(
+        'usos por cliente', null=True, blank=True,
+        help_text='Cuántas veces puede usarlo una misma cuenta. 1 para un cupón de bienvenida. Vacío = sin límite.',
+    )
     usos_actuales = models.PositiveIntegerField(default=0, editable=False)
     activo = models.BooleanField(default=True)
 

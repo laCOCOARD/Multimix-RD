@@ -16,6 +16,10 @@ Cómo está desplegado el sitio hoy y cómo mantenerlo. Para un servidor propio 
   Gunicorn. Las migraciones corren solas en cada despliegue.
 - **Despliegue:** manual. Tras subir a GitHub: *Manual Deploy → Deploy latest commit*.
 - **Health Check Path** (Settings): `/salud/`. Responde `ok` si el sitio y la base funcionan.
+- **Panel:** la ruta sale de `ADMIN_URL` y no es `/panel/`. Nada del sitio la enlaza ni la menciona (tampoco
+  `robots.txt`): guárdala en tus favoritos.
+- **Google:** en `*.onrender.com` el `robots.txt` lo responde Render con `Disallow: /` (la petición no llega a
+  Django), así que el sitio no se indexa. Con un dominio propio se sirve el nuestro, que sí deja ver el catálogo.
 
 ## Variables de entorno
 
@@ -43,7 +47,8 @@ El plan gratis de Render bloquea SMTP: por eso el correo va por la API de Brevo.
 
 Los comprobantes de transferencia llevan datos bancarios: no deben estar en el bucket público de las fotos.
 
-1. En Supabase → Storage → *New bucket*: nombre `multimix-privado`, **sin** marcar *Public bucket*.
+1. En Supabase → Storage → *New bucket*: nombre `multimix-privado`, **sin** marcar *Public bucket*. (Ya está
+   creado desde el 2026-10-19; con las claves S3 también se crea con `create_bucket` y nace privado.)
 2. En Render, la variable `SUPABASE_S3_BUCKET_PRIVADO=multimix-privado` (usa las mismas claves S3).
 3. Despliega. Los comprobantes nuevos van al privado y los de antes se pasan solos, de cinco en cinco, con
    las tareas periódicas. En el panel se ven igual (Pagos → el pago → Comprobante), a través del sitio.

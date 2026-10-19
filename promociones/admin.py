@@ -17,7 +17,7 @@ class CuponAdmin(AdminDeTienda, admin.ModelAdmin):
     readonly_fields = ['usos_actuales', 'pedidos_con_cupon']
     fieldsets = [
         (None, {'fields': ['tienda', 'codigo', 'tipo', 'valor', 'compra_minima', 'activo']}),
-        ('Vigencia y límite', {'fields': ['vigente_desde', 'vigente_hasta', 'usos_maximos']}),
+        ('Vigencia y límite', {'fields': ['vigente_desde', 'vigente_hasta', 'usos_maximos', 'usos_por_cliente']}),
         ('Usos', {'fields': ['usos_actuales', 'pedidos_con_cupon']}),
     ]
 

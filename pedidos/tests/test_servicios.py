@@ -369,6 +369,22 @@ class PedidosVencidosTests(BaseServicios):
         self.assertEqual(estados[reciente.pk], Estado.PENDIENTE)
         self.assertEqual(self.stock(), (10, 2))
 
+    def test_no_cancela_solo_un_pedido_con_la_transferencia_avisada(self):
+        """El cliente ya pago y su comprobante espera revision: cancelarlo solo le avisaria que se cancelo."""
+        from pagos.models import Pago
+        from pagos.services import registrar_comprobante
+
+        avisado = pedido_de_prueba(self.producto, 1)
+        registrar_comprobante(avisado, referencia='REF-77')
+        sin_avisar = pedido_de_prueba(self.producto, 1)
+        Pedido.objects.filter(pk__in=[avisado.pk, sin_avisar.pk]).update(creado=timezone.now() - timedelta(hours=200))
+
+        self.assertEqual(services.cancelar_pedidos_vencidos(), [sin_avisar.numero])
+        avisado.refresh_from_db()
+        self.assertEqual(avisado.estado, Estado.PENDIENTE)
+        self.assertEqual(avisado.pagos.get().estado, Pago.Estado.EN_REVISION)
+        self.assertEqual(sin_avisar.eventos.last().nota, 'Cancelado porque venció el plazo para pagar')
+
     def test_respeta_las_horas_configuradas(self):
         pedido = pedido_de_prueba(self.producto, 1)
         Pedido.objects.filter(pk=pedido.pk).update(creado=timezone.now() - timedelta(hours=10))

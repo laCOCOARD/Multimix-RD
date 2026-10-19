@@ -63,7 +63,8 @@ Al cerrar cada modulo: check, makemigrations, migrate, test y commit.
   paso en `EventoPedido`. Estados: pendiente, pagado, preparando, listo (recoger) o enviado y en reparto (envio),
   entregado, cancelado y reembolsado. Cancelado y reembolsado no cuentan como venta (`Pedido.ESTADOS_SIN_VENTA`).
 - El cliente cancela su pedido solo antes de pagar (`puede_cancelar_el_cliente`): pendiente y sin haber avisado
-  la transferencia. Las devoluciones se solicitan hasta `ConfiguracionTienda.dias_devolucion` dias tras la entrega.
+  la transferencia. La cancelacion automatica de vencidos (`cancelar_pedidos_vencidos`) tampoco toca un pedido con
+  la transferencia avisada (lo vuelve a mirar con el pedido bloqueado): ese lo cancela una persona tras ver el banco. Las devoluciones se solicitan hasta `ConfiguracionTienda.dias_devolucion` dias tras la entrega.
 - El cliente nunca marca un pedido como pagado; solo "Ya hice la transferencia" y su comprobante.
 - El pago de un pedido solo cambia con `pagos.services` (`registrar_comprobante`, `aprobar_pago`, `rechazar_pago`);
   `cambiar_estado` lo mantiene de acuerdo con el pedido (`sincronizar_con_pedido`). Nunca se guardan datos de tarjeta.
@@ -144,7 +145,8 @@ Al cerrar cada modulo: check, makemigrations, migrate, test y commit.
   (`clientes/0004`); el personal del panel no lo necesita. Apagado sin correo configurado y en las pruebas
   (`VERIFICAR_CORREO`).
 - Comprobantes privados: `Pago.comprobante` usa `STORAGES['privado']` (bucket `SUPABASE_S3_BUCKET_PRIVADO`; en
-  desarrollo la carpeta `privado/`, que no se sirve). Sin ese bucket es el mismo publico de antes.
+  desarrollo la carpeta `privado/`, que no se sirve; en produccion el bucket `multimix-privado`, creado el
+  2026-10-19). Sin ese bucket es el mismo publico de antes.
   `Pago.comprobante_privado` dice donde esta cada archivo (`almacenamiento_del_comprobante`); las tareas
   periodicas pasan los de antes (`pagos.services.mover_comprobantes_al_privado`). El panel lo muestra con
   `admin:pagos_pago_comprobante`, que lo lee del almacenamiento y filtra por tienda; el archivo no tiene URL publica.
@@ -161,7 +163,7 @@ Al cerrar cada modulo: check, makemigrations, migrate, test y commit.
 - Pagos: `pedidos.services` importa `pagos.services` dentro de las funciones (pagos usa pedidos para cambiar el
   estado). `pago_vigente(pedido)` abre el pago si falta, asi que los pedidos anteriores no necesitaron migracion.
   Un comprobante rechazado deja el pago como historial y el siguiente aviso abre otro (`-P2`). Los comprobantes
-  se convierten a WebP y van a `comprobantes/` del mismo bucket publico de las fotos (nombre imposible de adivinar).
+  se convierten a WebP y van a `comprobantes/` del almacenamiento privado (ver "Comprobantes privados").
   `PagoAdmin` da permiso de borrado solo para que el panel deje eliminar el pedido en cascada; no tiene boton ni accion.
 - ITBIS: apagado. El dueño pidio quitarlo el 2026-10-13: `Tienda.itbis_porcentaje` vale 0 en todas las tiendas
   y por defecto, asi que no se suma ni se menciona. El calculo sigue disponible por si una tienda lo activa:
@@ -284,6 +286,9 @@ Al cerrar cada modulo: check, makemigrations, migrate, test y commit.
 - Los pedidos si se eliminan desde el panel (boton del detalle y accion de la lista), siempre con
   `pedidos.services.eliminar_pedido`: si aun se podia cancelar lo cancela primero (reserva y cupon); lo
   enviado o entregado no devuelve stock. El numero no se reutiliza y el pedido sale de las ventas del panel.
+  El vendedor solo borra pedidos sin dinero de por medio (`puede_eliminar`: sin pago, sin transferencia avisada y
+  sin liquidar); lo demas es el registro de lo cobrado y de la comision, y solo lo borra el superusuario. Tampoco
+  cancela un pedido que el sitio ya cobro (`transiciones_permitidas`).
 - Importacion Excel: `catalogo/resources.py`, identifica por `sku` dentro de la tienda elegida en el
   formulario y valida con `full_clean`. Solo el superusuario crea categorias al importar. No importa fotos
   ni `stock_reservado`.
@@ -300,6 +305,12 @@ Al cerrar cada modulo: check, makemigrations, migrate, test y commit.
   almacenamiento; en una sola peticion se agotaria el tiempo de Gunicorn). Sin JavaScript funciona con un POST normal.
 - Acciones del admin: las descripciones pasan por formato `%`, asi que un `%` literal se escribe `%%`.
 - `docs/esquema.sql` se genera con `sqlmigrate` sobre SQLite; regenerarlo si cambian las migraciones.
+- QR de la factura: lleva `pedidos.factura.codigo_de_verificacion` (el id firmado con `Signer`, sin fecha) en
+  `/factura/<codigo>/`, nunca el token: el token abre la pagina privada del pedido y la factura se comparte en
+  fotos. Las facturas de antes (`/pedido/<token>/verificar/`) redirigen a la nueva.
+- Cupones: `usos_maximos` (en total) y `usos_por_cliente` (por cuenta; 1 = bienvenida). El limite por cliente
+  lo mira `validar_cupon(..., cliente=)` contando sus pedidos no cancelados con el cupon; sin sesion no se mira, y
+  el checkout (con cuenta) y `crear_pedido` (con el cupon bloqueado) lo vuelven a validar.
 - Factura PNG: usa una fuente del sistema (`core.fuentes.cargar_fuente`); con la de Pillow, que no trae
   tildes, escribe sin ellas para que no salgan recuadros.
 

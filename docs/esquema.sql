@@ -1211,3 +1211,13 @@ CREATE INDEX "pagos_pago_revisado_por_id_bf842120" ON "pagos_pago" ("revisado_po
 CREATE INDEX "pagos_pago_tienda_id_0acba72a" ON "pagos_pago" ("tienda_id");
 CREATE INDEX "pago_tienda_estado_idx" ON "pagos_pago" ("tienda_id", "estado", "creado" DESC);
 COMMIT;
+
+-- ============================================================
+-- promociones 0005
+-- ============================================================
+BEGIN;
+--
+-- Add field usos_por_cliente to cupon
+--
+ALTER TABLE "promociones_cupon" ADD COLUMN "usos_por_cliente" integer unsigned NULL CHECK ("usos_por_cliente" >= 0);
+COMMIT;

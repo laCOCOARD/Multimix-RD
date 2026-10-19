@@ -191,16 +191,22 @@ class Carrito:
         """Valida el cupon de la tienda contra el subtotal actual y lo recuerda. Lanza CuponInvalido."""
         # El resumen del checkout reenvia el mismo codigo en cada cambio: un codigo que ya fallo no se vuelve a contar.
         if normalizar_codigo(codigo) and normalizar_codigo(codigo) == self.session.get(CUPON_FALLIDO):
-            cupon = validar_cupon(codigo, self.subtotal, self.tienda)
+            cupon = validar_cupon(codigo, self.subtotal, self.tienda, cliente=self.cliente)
         else:
             try:
-                cupon = probar_cupon(codigo, self.subtotal, self.tienda, self._quien())
+                cupon = probar_cupon(codigo, self.subtotal, self.tienda, self._quien(), cliente=self.cliente)
             except CuponInvalido:
                 self.session[CUPON_FALLIDO] = normalizar_codigo(codigo)
                 raise
         self.datos['cupon'] = cupon.codigo
         self._guardar()
         return cupon
+
+    @property
+    def cliente(self):
+        """La cuenta con la sesion iniciada, o None. Con ella se mira el limite de usos por cliente del cupon."""
+        usuario = getattr(self.request, 'user', None)
+        return usuario if usuario is not None and usuario.is_authenticated else None
 
     def _quien(self):
         """Como se reconoce a quien prueba un cupon: su cuenta, su conexion y su sesion."""
@@ -227,7 +233,7 @@ class Carrito:
         cupon, aviso = None, ''
         if codigo:
             try:
-                cupon = validar_cupon(codigo, subtotal, self.tienda)
+                cupon = validar_cupon(codigo, subtotal, self.tienda, cliente=self.cliente)
             except CuponInvalido as error:
                 self.quitar_cupon()
                 aviso = f'Quitamos el cupón {codigo}: {error.mensaje}'

@@ -134,12 +134,20 @@ class PedidoAdmin(AdminDeTienda, admin.ModelAdmin):
 
     # Eliminar tambien pasa por la capa de servicios, para que el stock y el cupon queden bien.
 
+    def has_delete_permission(self, request, obj=None):
+        # Lo cobrado, avisado o liquidado solo lo borra el administrador principal (services.puede_eliminar).
+        permitido = super().has_delete_permission(request, obj)
+        return permitido and (obj is None or services.puede_eliminar(obj, request.user))
+
     def delete_model(self, request, obj):
-        services.eliminar_pedido(obj)
+        services.eliminar_pedido(obj, usuario=request.user)
 
     def delete_queryset(self, request, queryset):
         for pedido in queryset.order_by('creado'):
-            services.eliminar_pedido(pedido)
+            try:
+                services.eliminar_pedido(pedido, usuario=request.user)
+            except services.PedidoError as error:
+                self.message_user(request, f'No se eliminó: {error.mensaje}', messages.ERROR)
 
     def get_urls(self):
         propias = [

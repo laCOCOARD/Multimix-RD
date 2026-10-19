@@ -4,6 +4,7 @@ from textwrap import wrap
 
 import qrcode
 from PIL import Image, ImageDraw
+from django.core import signing
 from django.utils import timezone
 
 from core.fuentes import cargar_fuente
@@ -20,6 +21,24 @@ COLOR_TINTA = '#0b2239'
 COLOR_AZUL = '#0f4c81'
 COLOR_SUAVE = '#5b6b7c'
 COLOR_BORDE = '#e3e8ee'
+
+
+# El QR de la factura lleva este codigo y no el token del pedido: el token abre la pagina privada (datos del
+# cliente, cancelar, devolucion) y la factura se comparte en fotos. Este solo sirve para verificar.
+SAL_VERIFICACION = 'pedidos.verificar-factura'
+
+
+def codigo_de_verificacion(pedido):
+    """Siempre el mismo para el mismo pedido (sin fecha): el QR de una factura vale para siempre."""
+    return signing.Signer(salt=SAL_VERIFICACION).sign(str(pedido.pk))
+
+
+def pedido_de_la_verificacion(codigo):
+    """El id del pedido del codigo del QR, o None si el codigo no es uno que haya firmado el sitio."""
+    try:
+        return int(signing.Signer(salt=SAL_VERIFICACION).unsign(codigo))
+    except (signing.BadSignature, TypeError, ValueError):
+        return None
 
 
 def sin_tildes(texto):

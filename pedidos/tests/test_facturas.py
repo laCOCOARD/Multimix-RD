@@ -8,6 +8,7 @@ from PIL import Image
 
 from catalogo.tests.test_modelos import crear_producto
 from pedidos import factura
+from pedidos.factura import codigo_de_verificacion
 from pedidos.tests.utiles import pedido_de_prueba
 
 
@@ -72,11 +73,23 @@ class FacturaTests(TestCase):
 
         self.assertEqual(len(urls_qr), 2)
         self.assertNotEqual(urls_qr[0], urls_qr[1])
-        self.assertIn(reverse('pedidos:verificar_factura', args=[self.pedido.token]), urls_qr[0])
-        self.assertIn(reverse('pedidos:verificar_factura', args=[otro_pedido.token]), urls_qr[1])
+        self.assertIn(reverse('pedidos:verificar_factura', args=[codigo_de_verificacion(self.pedido)]), urls_qr[0])
+        self.assertIn(reverse('pedidos:verificar_factura', args=[codigo_de_verificacion(otro_pedido)]), urls_qr[1])
+        # El QR no lleva el token: con el se abre la pagina privada del pedido.
+        for url, pedido in zip(urls_qr, (self.pedido, otro_pedido)):
+            self.assertNotIn(str(pedido.token), url)
+
+    def test_un_codigo_inventado_o_alterado_no_verifica_nada(self):
+        codigo = codigo_de_verificacion(self.pedido)
+        for malo in ('123', codigo[:-2] + 'xx', str(self.pedido.pk)):
+            self.assertEqual(self.client.get(reverse('pedidos:verificar_factura', args=[malo])).status_code, 404)
+
+    def test_el_qr_de_las_facturas_de_antes_sigue_funcionando(self):
+        respuesta = self.client.get(reverse('pedidos:verificar_factura_anterior', args=[self.pedido.token]))
+        self.assertRedirects(respuesta, reverse('pedidos:verificar_factura', args=[codigo_de_verificacion(self.pedido)]))
 
     def test_verificacion_no_expone_datos_personales(self):
-        respuesta = self.client.get(reverse('pedidos:verificar_factura', args=[self.pedido.token]))
+        respuesta = self.client.get(reverse('pedidos:verificar_factura', args=[codigo_de_verificacion(self.pedido)]))
 
         self.assertContains(respuesta, self.pedido.numero)
         self.assertContains(respuesta, 'Pedido verificado')

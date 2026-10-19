@@ -262,5 +262,7 @@ class PedidoPorTiendaTests(DosTiendas):
         with patch('pedidos.factura_views.generar_imagen_factura', return_value=b'png') as generar:
             self.client.get(reverse('pedidos:factura', args=[pedido.token]))
         self.assertEqual(generar.call_args.args[:2], (pedido, 'Fitnes RD'))
-        verificacion = self.client.get(reverse('pedidos:verificar_factura', args=[pedido.token]))
+        from pedidos.factura import codigo_de_verificacion
+
+        verificacion = self.client.get(reverse('pedidos:verificar_factura', args=[codigo_de_verificacion(pedido)]))
         self.assertContains(verificacion, 'registrado en Fitnes RD')
