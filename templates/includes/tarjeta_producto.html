@@ -1,5 +1,5 @@
 {% load moneda %}
-{# Dentro de una tienda (`tienda`) se agrega al carrito de esa tienda; en el buscador del sitio la tarjeta lleva a la tienda del producto. #}
+{# Agregar y Comprar van siempre al carrito de la tienda del producto, aunque la tarjeta salga en el buscador del sitio o en favoritos. #}
 <article class="mm-tarjeta h-100 revelar">
   <a class="mm-tarjeta-foto" href="{{ producto.get_absolute_url }}" tabindex="-1" aria-hidden="true">
     {% with foto=producto.foto_principal %}
@@ -28,17 +28,18 @@
       <span class="mm-precio-final">{{ producto.precio_final|moneda }}</span>
       {% if producto.en_oferta %}<s class="mm-precio-anterior">{{ producto.precio|moneda }}</s>{% endif %}
     </p>
-    {% if not tienda %}
-      <a class="btn btn-outline-primary w-100 mt-auto" href="{{ producto.get_absolute_url }}">Ver en la tienda</a>
-    {% elif producto.agotado %}
+    {% if producto.agotado %}
       <button class="btn btn-outline-secondary w-100 mt-auto" type="button" disabled>{% if producto.estado_venta == 'agotado' %}Agotado{% else %}No disponible{% endif %}</button>
     {% else %}
-      <form class="mt-auto js-agregar" method="post" action="{% url 'carrito:agregar' tienda.slug %}">
+      {# "Comprar" es el mismo envio con comprar=1: el producto queda en el carrito y se va directo a pagar. #}
+      <form class="mt-auto js-agregar mm-tarjeta-acciones" method="post" action="{% url 'carrito:agregar' producto.tienda.slug %}">
         {% csrf_token %}
         <input type="hidden" name="producto_id" value="{{ producto.pk }}">
         <input type="hidden" name="cantidad" value="1">
         <input type="hidden" name="next" value="{{ request.get_full_path }}">
-        <button class="btn btn-primary w-100" type="submit"><i class="bi bi-bag-plus me-1"></i>Agregar</button>
+        <button class="btn btn-outline-primary mm-tarjeta-agregar" type="submit" data-solo-icono
+                aria-label="Agregar {{ producto.nombre }} al carrito" title="Agregar al carrito"><i class="bi bi-bag-plus"></i></button>
+        <button class="btn btn-acento flex-grow-1" type="submit" name="comprar" value="1"><i class="bi bi-lightning-charge-fill me-1"></i>Comprar</button>
       </form>
     {% endif %}
   </div>

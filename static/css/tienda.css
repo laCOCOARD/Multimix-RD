@@ -186,6 +186,18 @@ img { max-width: 100%; height: auto; }
 .mm-etiqueta-agotado { background: #6b7785; }
 .mm-etiqueta-pedido { background: var(--mm-primario); }
 .mm-tarjeta-cuerpo { display: flex; flex-direction: column; flex: 1; padding: .85rem; }
+/* Agregar (solo el icono) y Comprar, lado a lado aunque la tarjeta sea angosta (dos por fila en el celular). */
+.mm-tarjeta-acciones { display: flex; gap: .4rem; }
+.mm-tarjeta-acciones .btn { padding-left: .5rem; padding-right: .5rem; white-space: nowrap; }
+.mm-tarjeta-agregar { flex: 0 0 auto; width: 2.6rem; }
+.mm-tarjeta-acciones .btn-acento { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+/* Celulares de 360-420 px: las tarjetas van de dos en dos y quedan muy angostas. */
+@media (max-width: 420px) {
+  .mm-tarjeta-acciones { gap: .3rem; }
+  .mm-tarjeta-acciones .btn { padding-left: .3rem; padding-right: .3rem; }
+  .mm-tarjeta-acciones .btn-acento i { display: none; }
+  .mm-tarjeta-agregar { width: 2.3rem; }
+}
 .mm-tarjeta-categoria { margin: 0 0 .15rem; font-size: .72rem; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; color: var(--mm-texto-suave); }
 .mm-tarjeta-nombre { font-size: .98rem; font-weight: 600; line-height: 1.3; margin: 0 0 .5rem; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; min-height: 2.55em; }
 .mm-tarjeta-nombre a { color: var(--mm-oscuro); }
@@ -251,25 +263,16 @@ img { max-width: 100%; height: auto; }
 .mm-resumen-lineas li span:last-child { white-space: nowrap; font-weight: 600; }
 
 .mm-paso { display: inline-grid; place-items: center; width: 1.8rem; height: 1.8rem; margin-right: .55rem; border-radius: 50%; background: var(--mm-primario); color: #fff; font-size: .9rem; font-weight: 700; }
+/* Checkout en una pantalla: el total a la vista junto al boton de confirmar. */
+.mm-confirmar { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: .75rem; }
+.mm-confirmar-total { font-size: 1.1rem; }
+.mm-confirmar-total strong { font-size: 1.35rem; margin-left: .35rem; }
+@media (max-width: 575.98px) { .mm-confirmar .btn { width: 100%; } }
 .mm-pago-pendiente { background: #8a6d1f; }
 .mm-pago-en_revision { background: #7a4fd6; }
 .mm-pago-aprobado { background: var(--mm-exito); }
 .mm-pago-rechazado, .mm-pago-cancelado { background: var(--mm-peligro); }
 .mm-pago-reembolsado { background: #6b7785; }
-.mm-pasos { display: flex; gap: .5rem; margin: 0 0 1.25rem; padding: 0; list-style: none; counter-reset: none; }
-.mm-pasos li { flex: 1; display: flex; align-items: center; gap: .1rem; padding: .55rem .7rem; border-radius: .7rem; background: var(--mm-superficie); border: 1px solid var(--mm-borde); font-weight: 600; font-size: .92rem; color: var(--mm-texto-suave); cursor: pointer; transition: border-color var(--mm-transicion), color var(--mm-transicion), background-color var(--mm-transicion); }
-.mm-pasos li .mm-paso { flex: 0 0 auto; background: #c5d1de; }
-.mm-pasos li.hecho { color: var(--mm-texto); }
-.mm-pasos li.hecho .mm-paso { background: var(--mm-acento); }
-.mm-pasos li.activo { color: var(--mm-oscuro); border-color: var(--mm-primario); background: var(--mm-primario-suave); }
-.mm-pasos li.activo .mm-paso { background: var(--mm-primario); }
-.mm-pasos li:focus-visible { outline: 0; box-shadow: 0 0 0 .2rem rgba(10, 95, 180, .25); }
-.mm-paso-botones { display: flex; justify-content: space-between; align-items: center; gap: .75rem; margin-top: 1.25rem; }
-@media (max-width: 575.98px) {
-  .mm-pasos { gap: .3rem; }
-  .mm-pasos li { flex-direction: column; gap: .25rem; padding: .45rem .2rem; font-size: .74rem; text-align: center; }
-  .mm-pasos li .mm-paso { margin-right: 0; }
-}
 .mm-opcion { display: flex; align-items: center; gap: .75rem; height: 100%; padding: .85rem 1rem; border: 2px solid var(--mm-borde); border-radius: .7rem; cursor: pointer; font-weight: 600; transition: border-color var(--mm-transicion), background-color var(--mm-transicion); }
 .mm-opcion i { font-size: 1.4rem; color: var(--mm-primario); }
 .mm-opcion small { display: block; font-weight: 400; color: var(--mm-texto-suave); }

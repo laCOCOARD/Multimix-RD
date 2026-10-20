@@ -47,6 +47,22 @@ class CheckoutTests(TestCase):
         self.assertRedirects(self.client.get(self.url), ruta('carrito:detalle'))
         self.assertRedirects(self.client.post(self.url, self.datos()), ruta('carrito:detalle'))
 
+    def test_todo_en_una_sola_pantalla(self):
+        """Datos, entrega, pago y confirmar en la misma pagina: sin pasos ni pantalla de revision."""
+        self.llenar_carrito()
+        respuesta = self.client.get(self.url)
+        for texto in ('Tus datos', 'Entrega', 'Pago', 'id="confirmar"', 'id="total-confirmar"', 'name="acepta_terminos"'):
+            self.assertContains(respuesta, texto)
+        for viejo in ('data-paso', 'js-siguiente', 'Revisa y confirma', 'pasos-checkout'):
+            self.assertNotContains(respuesta, viejo)
+
+    def test_comprar_desde_la_tarjeta_lleva_directo_a_pagar(self):
+        lista = self.client.get(ruta('catalogo:lista'))
+        self.assertContains(lista, 'name="comprar"')
+        respuesta = self.client.post(ruta('carrito:agregar'), {'producto_id': self.producto.pk, 'cantidad': 1, 'comprar': '1'})
+        self.assertRedirects(respuesta, self.url, fetch_redirect_response=False)
+        self.assertContains(self.client.get(self.url), 'Lámpara')
+
     def test_muestra_el_formulario_con_cuentas(self):
         self.llenar_carrito()
         respuesta = self.client.get(self.url)

@@ -1,4 +1,5 @@
-/* Checkout: lo recorre paso a paso, muestra los campos segun la entrega y el pago y pide los totales al servidor. */
+/* Checkout en una sola pantalla: muestra los campos segun la entrega y el pago, pide los totales al servidor y, al
+   confirmar, lleva al primer campo que falte. Sin JavaScript el formulario funciona igual. */
 (() => {
   'use strict';
 
@@ -72,6 +73,7 @@
       document.getElementById('fila-impuesto').classList.toggle('d-none', !info.hay_impuesto);
       document.getElementById('total-envio').textContent = info.envio;
       document.getElementById('total-total').textContent = info.total;
+      document.getElementById('total-confirmar').textContent = info.total;
       if (conCupon || info.cupon_mensaje) {
         mensajeCupon.textContent = info.cupon_mensaje;
         mensajeCupon.className = `small mb-3 ${info.cupon_ok ? 'text-success' : 'text-danger'}`;
@@ -95,99 +97,25 @@
     return valido;
   }
 
-  // --- Pasos ---------------------------------------------------------------------------
-  const pasos = Array.from(formulario.querySelectorAll('[data-paso]'));
-  const indicadores = Array.from(document.querySelectorAll('#pasos-checkout [data-ir]'));
-  let actual = 0;
+  // --- Validacion al confirmar ---------------------------------------------------------
+  const secciones = Array.from(formulario.querySelectorAll('.js-seccion'));
+  const camposDe = (seccion) => Array.from(seccion.querySelectorAll('input, select, textarea')).filter((c) => !c.disabled);
 
-  const camposDe = (paso) => Array.from(paso.querySelectorAll('input, select, textarea')).filter((c) => !c.disabled);
-  const pasoDe = (elemento) => pasos.indexOf(elemento.closest('[data-paso]'));
-
-  function pasoValido(indice) {
+  /** Marca las secciones con errores y lleva al primer campo que falte. Devuelve true si todo esta bien. */
+  function todoValido() {
     validarTelefono();
-    const paso = pasos[indice];
-    const invalido = camposDe(paso).find((c) => !c.checkValidity());
-    paso.classList.toggle('was-validated', !!invalido);
-    if (invalido) invalido.focus();
-    return !invalido;
-  }
-
-  function texto(nodo, lineas) {
-    nodo.replaceChildren();
-    lineas.filter(Boolean).forEach((linea, i) => {
-      if (i) nodo.appendChild(document.createElement('br'));
-      nodo.appendChild(document.createTextNode(linea));
+    let primero = null;
+    secciones.forEach((seccion) => {
+      const invalido = camposDe(seccion).find((c) => !c.checkValidity());
+      seccion.classList.toggle('was-validated', !!invalido);
+      if (invalido && !primero) primero = invalido;
     });
-  }
-
-  function pintarRevision() {
-    const revision = document.getElementById('revision');
-    if (!revision) return;
-    const etiqueta = (radio) => {
-      const nodo = radio && formulario.querySelector(`label[for="${radio.id}"] span`);
-      return nodo ? nodo.firstChild.textContent.trim() : '';
-    };
-    texto(revision.querySelector('[data-revision="cliente"]'), [
-      campo('nombre').value.trim(), campo('telefono').value.trim(),
-    ]);
-    const entrega = formulario.querySelector('.js-entrega:checked');
-    const lineasEntrega = [etiqueta(entrega)];
-    if (entregaElegida() === 'envio') {
-      const zona = campo('zona').selectedOptions[0];
-      lineasEntrega.push(
-        [campo('direccion').value.trim(), campo('sector').value.trim()].filter(Boolean).join(', '),
-        zona && zona.value ? zona.dataset.nombre : '',
-        campo('referencia').value.trim(),
-      );
+    if (primero) {
+      primero.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      primero.focus({ preventScroll: true });
     }
-    texto(revision.querySelector('[data-revision="entrega"]'), lineasEntrega);
-    texto(revision.querySelector('[data-revision="pago"]'), [etiqueta(formulario.querySelector('.js-pago:checked'))]);
+    return !primero;
   }
-
-  function mostrar(indice, enfocar) {
-    actual = Math.max(0, Math.min(indice, pasos.length - 1));
-    pasos.forEach((paso, i) => paso.classList.toggle('mm-oculto', i !== actual));
-    indicadores.forEach((indicador, i) => {
-      indicador.classList.toggle('activo', i === actual);
-      indicador.classList.toggle('hecho', i < actual);
-      if (i === actual) indicador.setAttribute('aria-current', 'step');
-      else indicador.removeAttribute('aria-current');
-    });
-    if (actual === pasos.length - 1) pintarRevision();
-    if (enfocar) {
-      const titulo = pasos[actual].querySelector('h2');
-      if (titulo) titulo.focus({ preventScroll: true });
-      document.getElementById('pasos-checkout').scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
-  }
-
-  /** Avanza hasta `destino` mientras los pasos anteriores esten completos. */
-  function irA(destino) {
-    if (destino <= actual) { mostrar(destino, true); return; }
-    for (let i = actual; i < destino; i += 1) {
-      if (!pasoValido(i)) { mostrar(i, false); return; }
-    }
-    mostrar(destino, true);
-  }
-
-  formulario.querySelectorAll('.js-siguiente').forEach((boton) => boton.addEventListener('click', () => irA(actual + 1)));
-  formulario.querySelectorAll('.js-anterior').forEach((boton) => boton.addEventListener('click', () => irA(actual - 1)));
-  indicadores.forEach((indicador, i) => {
-    indicador.tabIndex = 0;
-    indicador.setAttribute('role', 'button');
-    indicador.addEventListener('click', () => irA(i));
-    indicador.addEventListener('keydown', (evento) => {
-      if (evento.key === 'Enter' || evento.key === ' ') { evento.preventDefault(); irA(i); }
-    });
-  });
-  // Enter en un campo de texto avanza de paso en vez de enviar el pedido a medias.
-  formulario.addEventListener('keydown', (evento) => {
-    if (evento.key !== 'Enter' || actual === pasos.length - 1) return;
-    if (evento.target.matches('input:not([type="checkbox"]):not([type="radio"]), select') && evento.target.name !== 'cupon') {
-      evento.preventDefault();
-      irA(actual + 1);
-    }
-  });
 
   formulario.querySelectorAll('.js-entrega').forEach((radio) => radio.addEventListener('change', () => {
     ajustarCampos();
@@ -205,12 +133,9 @@
   });
 
   formulario.addEventListener('submit', (evento) => {
-    for (let i = 0; i < pasos.length; i += 1) {
-      if (!pasoValido(i)) {
-        evento.preventDefault();
-        mostrar(i, false);
-        return;
-      }
+    if (!todoValido()) {
+      evento.preventDefault();
+      return;
     }
     botonConfirmar.disabled = true;
     botonConfirmar.textContent = 'Creando tu pedido…';
@@ -226,8 +151,7 @@
   });
 
   ajustarCampos();
-  // Si el servidor devolvio errores, se abre el paso que tiene el primero; si no, se empieza por el principio.
-  const conError = formulario.querySelector('[data-paso] .is-invalid, [data-paso] .text-danger');
-  if (conError) mostrar(pasoDe(conError), false);
-  else mostrar(formulario.dataset.enviado ? pasos.length - 1 : 0, false);
+  // Si el servidor devolvio errores, se lleva al cliente al primero.
+  const conError = formulario.querySelector('.js-seccion .is-invalid, .js-seccion .text-danger, .alert-danger');
+  if (conError) conError.scrollIntoView({ block: 'center' });
 })();

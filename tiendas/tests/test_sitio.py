@@ -62,6 +62,16 @@ class DirectorioTests(DosTiendas):
         # En el sitio no hay carrito: se compra dentro de cada tienda.
         self.assertNotContains(respuesta, 'js-contador-carrito')
 
+    def test_la_portada_solo_muestra_tiendas_no_productos(self):
+        from catalogo.models import Producto
+
+        Producto.objects.update(precio_oferta=1)  # aunque haya ofertas y productos nuevos
+        portada = self.client.get('/')
+        self.assertContains(portada, 'Fitnes RD')
+        for producto in Producto.objects.all():
+            self.assertNotContains(portada, producto.nombre)
+        self.assertNotContains(portada, 'mm-tarjeta ')
+
     def test_la_portada_no_se_parece_al_inicio_de_una_tienda(self):
         portada = self.client.get('/')
         # Sin banner, sin boton de catalogo y sin el lema de ninguna tienda en su encabezado.
@@ -96,8 +106,10 @@ class DirectorioTests(DosTiendas):
         self.assertCountEqual([p.nombre for p in respuesta.context['pagina']], ['Lámpara', 'Pesas rusas'])
         self.assertContains(respuesta, self.pesas.get_absolute_url())
         self.assertContains(respuesta, 'Fitnes RD')
-        self.assertContains(respuesta, 'Ver en la tienda')
-        self.assertNotContains(respuesta, 'js-agregar')
+        # Cada resultado se agrega o se compra en el carrito de su propia tienda.
+        self.assertContains(respuesta, ruta('carrito:agregar', tienda=self.fitnes))
+        self.assertContains(respuesta, ruta('carrito:agregar', tienda=self.multimix))
+        self.assertContains(respuesta, 'name="comprar"')
         respuesta = self.client.get(reverse('tiendas:buscar'), {'q': 'pesas'})
         self.assertEqual([p.nombre for p in respuesta.context['pagina']], ['Pesas rusas'])
 

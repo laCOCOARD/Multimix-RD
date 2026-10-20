@@ -54,8 +54,8 @@ class FichaDeProductoTests(TestCase):
         pagina = self.client.get(self.mesa.get_absolute_url())
         # Dentro de una tienda solo salen los suyos: su boton agrega al carrito de esa tienda.
         self.assertEqual(pagina.context['vistos'], [self.lampara])
-        # En la portada del sitio salen todos, el mas reciente primero.
-        self.assertEqual(self.client.get('/').context['vistos'], [self.mesa, self.lampara, pesas])
+        # La portada del sitio no lleva productos: solo las tiendas (pedido del dueño).
+        self.assertNotIn('vistos', self.client.get('/').context)
 
     def test_cuenta_regresiva_solo_si_la_oferta_termina_pronto(self):
         ahora = timezone.now()

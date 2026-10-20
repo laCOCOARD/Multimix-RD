@@ -108,7 +108,7 @@
     // "Comprar ahora" lleva al checkout: se envia de la forma normal.
     if (evento.submitter && evento.submitter.name === 'comprar') return;
     evento.preventDefault();
-    const boton = formulario.querySelector('[type="submit"]');
+    const boton = evento.submitter || formulario.querySelector('[type="submit"]');
     boton.disabled = true;
     try {
       const datos = await enviar(formulario.action, new FormData(formulario));
@@ -122,7 +122,7 @@
       if (datos.ok && boton) {
         // El boton confirma por un momento que el producto ya esta en el carrito.
         const original = boton.innerHTML;
-        boton.innerHTML = '<i class="bi bi-check-lg me-1"></i>Agregado';
+        boton.innerHTML = 'soloIcono' in boton.dataset ? '<i class="bi bi-check-lg"></i>' : '<i class="bi bi-check-lg me-1"></i>Agregado';
         boton.classList.add('mm-agregado');
         setTimeout(() => { boton.innerHTML = original; boton.classList.remove('mm-agregado'); }, 1600);
       }

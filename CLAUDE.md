@@ -173,8 +173,10 @@ Al cerrar cada modulo: check, makemigrations, migrate, test y commit.
   `core.impuestos.calcular_itbis` sobre los productos no exentos (`Producto.exento_itbis`), despues del
   descuento y sin el envio. El pedido guarda `impuesto` y
   `porcentaje_impuesto`. `tienda_de_prueba()` va con 0 para que los totales de las pruebas sean los de los productos.
-- Checkout por pasos: es un solo formulario y un solo POST; `checkout.js` muestra un paso a la vez y valida cada
-  uno. Sin JavaScript se ven todos seguidos. El cliente debe aceptar los terminos (`acepta_terminos`).
+- Checkout en una sola pantalla (pedido del dueño el 2026-10-19; antes eran 4 pasos con una pantalla de revision):
+  datos, entrega, pago, notas y terminos a la vista, con el total junto al boton de confirmar. Un solo formulario y
+  un solo POST; `checkout.js` muestra los campos segun entrega y pago, pide los totales y al confirmar lleva al
+  primer campo que falte. El cliente debe aceptar los terminos (`acepta_terminos`).
 - La entrega a domicilio pide zona (de las que la tienda tenga), sector, calle y referencia.
 - La confirmacion ya no abre WhatsApp ni lo pide: solo ofrece un boton para escribirle a la tienda.
 - Disponibilidad comercial: el negocio no cuenta unidades fiables, asi que cada producto se vende segun
@@ -197,7 +199,8 @@ Al cerrar cada modulo: check, makemigrations, migrate, test y commit.
 - La portada del sitio (directorio) no lleva banner ni boton de catalogo, a pedido del dueño: se veia igual
   que el inicio de una tienda. Tampoco lleva bloques de informacion (pedido del dueño): "Tu compra, protegida",
   la ayuda y lo legal van en el menu de 3 barras (`includes/menu_lateral.html`, offcanvas, visible siempre). La
-  portada es buscador + filas que se deslizan (tiendas, ofertas y lo nuevo de todas las tiendas). Filas:
+  portada es buscador + la fila de tiendas + preguntas frecuentes: sin productos (pedido del dueño el 2026-10-19:
+  donde salen las tiendas no salen productos). Filas:
   `includes/fila_productos.html` + `[data-fila]` en `tienda.js` (flechas, `data-auto` avanza solo). El inicio de
   cada tienda: cinta en movimiento (`mm-cinta`), categorias en burbujas y una fila por seccion.
   Animaciones al deslizar en `tienda.js`: `revelar` (en cascada con `--retraso`; variantes `revelar-izq`,
@@ -263,7 +266,9 @@ Al cerrar cada modulo: check, makemigrations, migrate, test y commit.
   mayusculas (`catalogo.services.marcas_de`). Asi el vendedor no depende del administrador para una marca nueva.
 - Buscador con sugerencias: `catalogo.services.sugerencias` (minimo 2 letras) en `/tienda/<slug>/sugerencias/` y
   `/sugerencias/` (todo el sitio). El desplegable se arma en `tienda.js` con nodos, nunca con HTML del servidor.
-- "Comprar ahora" es el mismo POST de agregar al carrito con `comprar=1`: redirige al checkout.
+- "Comprar ahora" es el mismo POST de agregar al carrito con `comprar=1`: redirige al checkout. Cada tarjeta de
+  producto (`includes/tarjeta_producto.html`) lleva Agregar (icono) y Comprar, siempre contra el carrito de la
+  tienda del producto (`producto.tienda.slug`), asi que sirve tambien en el buscador del sitio y en favoritos.
 - Busqueda sin tildes: `Producto.texto_busqueda` (nombre + marca + SKU + descripcion normalizados en `save()`).
   Ojo: `queryset.update()` de nombre/descripcion no lo refresca.
 - Cuenta para comprar: se navega y se arma el carrito sin cuenta (Google ve el catalogo); el checkout lleva

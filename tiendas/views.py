@@ -5,7 +5,7 @@ from django.urls import reverse
 from django.views.decorators.http import require_GET
 
 from catalogo.forms import ORDENES, FiltroCatalogoForm
-from catalogo.services import en_oferta, filtrar_catalogo, nuevos, sugerencias as sugerencias_de_productos, vistos
+from catalogo.services import en_oferta, filtrar_catalogo, nuevos, sugerencias as sugerencias_de_productos
 from catalogo.views import respuesta_de_sugerencias
 from core.models import ConfiguracionTienda
 from core.seo import sitio_json_ld
@@ -23,10 +23,6 @@ def portada(request):
     return render(request, 'tiendas/portada.html', {
         'tiendas': services.directorio(),
         'preguntas': PreguntaFrecuente.objects.filter(activa=True)[:6],
-        # Productos de todas las tiendas: la portada se mueve con lo que hay a la venta.
-        'ofertas': en_oferta(None, limite=12),
-        'nuevos': nuevos(None, limite=12),
-        'vistos': vistos(request.session),
         'sitio_json_ld': sitio_json_ld(
             ConfiguracionTienda.obtener().nombre, request.build_absolute_uri('/'),
             request.build_absolute_uri(reverse('tiendas:buscar')),
