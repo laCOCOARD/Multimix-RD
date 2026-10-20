@@ -19,6 +19,7 @@ logger = logging.getLogger('multimix.pagos')
 Estado = Pago.Estado
 # Lado maximo del comprobante: suficiente para leer una captura del banco sin guardar fotos enormes.
 LADO_COMPROBANTE = 1600
+MENSAJE_FALTA_COMPROBANTE = 'Adjunta la foto o captura del comprobante de la transferencia: sin ella no se puede verificar.'
 
 
 class PagoError(Exception):
@@ -65,20 +66,22 @@ def pago_vigente(pedido):
 
 @transaction.atomic
 def registrar_comprobante(pedido, archivo=None, referencia=''):
-    """El cliente avisa que transfirio y, si quiere, adjunta el comprobante. El pago queda en revision.
+    """El cliente avisa que transfirio con su comprobante, que es obligatorio. El pago queda en revision.
 
-    No cambia el estado del pedido: eso lo hace el vendedor al aprobar el pago.
+    No cambia el estado del pedido: eso lo hace el administrador al aprobar el pago. Sin comprobante no hay aviso
+    (pedido del dueño el 2026-10-19): el pago se comprueba con el.
     """
     pedido = Pedido.objects.select_for_update().get(pk=pedido.pk)
     if not pedido.paga_por_transferencia or pedido.estado != Pedido.Estado.PENDIENTE:
         raise PagoError('Este pedido ya no admite avisos de transferencia.')
+    if not archivo:
+        raise PagoError(MENSAJE_FALTA_COMPROBANTE)
     pago = pago_vigente(pedido)
-    anterior = pago.comprobante.name if archivo and pago.comprobante else ''
+    anterior = pago.comprobante.name if pago.comprobante else ''
     almacen_anterior = pago.almacenamiento_del_comprobante
-    if archivo:
-        # Se guarda siempre como WebP: achica la foto y descarta los metadatos del telefono.
-        pago.comprobante.save(f'{uuid4().hex}.webp', convertir_a_webp(archivo, LADO_COMPROBANTE), save=False)
-        pago.comprobante_privado = hay_almacenamiento_privado()
+    # Se guarda siempre como WebP: achica la foto y descarta los metadatos del telefono.
+    pago.comprobante.save(f'{uuid4().hex}.webp', convertir_a_webp(archivo, LADO_COMPROBANTE), save=False)
+    pago.comprobante_privado = hay_almacenamiento_privado()
     pago.referencia_cliente = (referencia or '').strip()[:60]
     pago.estado = Estado.EN_REVISION
     pago.save()
@@ -86,7 +89,7 @@ def registrar_comprobante(pedido, archivo=None, referencia=''):
         almacen_anterior.delete(anterior)
     pedidos.marcar_transferencia(pedido, pago.referencia_cliente)
     avisos.comprobante_recibido(pago)
-    logger.info('Pago %s en revision%s', pago.referencia, ' con comprobante' if pago.comprobante else '')
+    logger.info('Pago %s en revision con comprobante', pago.referencia)
     return pago
 
 

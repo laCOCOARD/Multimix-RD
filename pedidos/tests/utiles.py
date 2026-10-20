@@ -31,12 +31,20 @@ def datos_pedido(**cambios):
         'direccion': '',
         'referencia': '',
         'metodo_pago': Pedido.Pago.TRANSFERENCIA,
-        'transferencia_realizada': False,
         'referencia_transferencia': '',
         'notas': '',
     }
+    # "Ya transferi" ahora es subir el comprobante: las pruebas lo piden como antes y aqui se les da la foto.
+    if cambios.pop('transferencia_realizada', False):
+        cambios.setdefault('comprobante', comprobante_de_prueba())
     datos.update(cambios)
     return datos
+
+
+def comprobante_de_prueba():
+    from catalogo.tests.test_modelos import imagen_de_prueba
+
+    return imagen_de_prueba('comprobante.png', tamano=(120, 80))
 
 
 def zona_de_prueba(nombre='Santo Domingo', tarifa='250.00', tienda=None):

@@ -16,7 +16,7 @@
     <li data-ir="4"><span class="mm-paso">4</span>Confirmar</li>
   </ol>
 
-  <form method="post" action="{% url 'pedidos:checkout' tienda.slug %}" id="checkout" novalidate
+  <form method="post" action="{% url 'pedidos:checkout' tienda.slug %}" id="checkout" novalidate enctype="multipart/form-data"
         data-url-totales="{% url 'pedidos:totales' tienda.slug %}"
         data-pagos-recoger="{{ pagos_recoger|join:',' }}" data-pagos-envio="{{ pagos_envio|join:',' }}"
         {% if formulario.is_bound %}data-enviado="1"{% endif %}>
@@ -147,10 +147,11 @@
           <div class="js-bloque-transferencia mt-3">
             <p class="small text-muted">Transfiere el total a cualquiera de estas cuentas. Tu pedido queda registrado y la tienda lo confirma al verificar el pago.</p>
             {% include 'includes/cuentas_bancarias.html' %}
-            <div class="form-check mt-3">
-              <input class="form-check-input" type="checkbox" id="id_transferencia_realizada" name="transferencia_realizada"
-                     {% if formulario.transferencia_realizada.value %}checked{% endif %}>
-              <label class="form-check-label" for="id_transferencia_realizada">{{ formulario.transferencia_realizada.label }}</label>
+            <div class="mt-3">
+              <label class="form-label small fw-semibold" for="id_comprobante">¿Ya transferiste? Sube tu comprobante</label>
+              <input class="form-control" type="file" id="id_comprobante" name="comprobante" accept="image/jpeg,image/png,image/webp">
+              <div class="form-text">Foto o captura de la transferencia (JPG, PNG o WebP, hasta 5 MB). Si todavía no transfieres, podrás subirla después en la página de tu pedido: sin comprobante no se puede confirmar el pago.</div>
+              {% for error in formulario.comprobante.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
             </div>
             <div class="mt-2">
               <label class="form-label small" for="id_referencia_transferencia">{{ formulario.referencia_transferencia.label }}</label>

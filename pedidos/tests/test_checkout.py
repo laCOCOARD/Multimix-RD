@@ -246,13 +246,37 @@ class CheckoutTests(TestCase):
         self.assertEqual(datos['total'], 'RD$ 2,000.00')
         self.assertEqual(self.client.get(url).status_code, 405)
 
-    def test_el_cliente_solo_avisa_la_transferencia(self):
+    def test_el_cliente_avisa_la_transferencia_con_su_comprobante(self):
+        from pagos.models import Pago
+
+        from .utiles import comprobante_de_prueba
+
+        self.llenar_carrito(1)
+        self.client.post(self.url, self.datos(comprobante=comprobante_de_prueba(), referencia_transferencia='TRX-1'))
+        pedido = Pedido.objects.get()
+        self.assertTrue(pedido.transferencia_realizada)
+        self.assertEqual(pedido.referencia_transferencia, 'TRX-1')
+        self.assertEqual(pedido.estado, Pedido.Estado.PENDIENTE)
+        pago = pedido.pagos.get()
+        self.assertEqual(pago.estado, Pago.Estado.EN_REVISION)
+        self.assertTrue(pago.comprobante)
+        self.assertContains(self.client.get(pedido.get_absolute_url()), 'Nos avisaste que ya transferiste')
+
+    def test_sin_comprobante_no_queda_como_transferido(self):
+        """La casilla "ya hice la transferencia" de antes ya no basta: sin la foto no se puede verificar el pago."""
         self.llenar_carrito(1)
         self.client.post(self.url, self.datos(transferencia_realizada='on', referencia_transferencia='TRX-1'))
         pedido = Pedido.objects.get()
-        self.assertTrue(pedido.transferencia_realizada)
-        self.assertEqual(pedido.estado, Pedido.Estado.PENDIENTE)
-        self.assertContains(self.client.get(pedido.get_absolute_url()), 'Nos avisaste que ya transferiste')
+        self.assertFalse(pedido.transferencia_realizada)
+        self.assertEqual(pedido.pagos.get().estado, 'pendiente')
+
+    def test_un_comprobante_que_no_es_imagen_no_crea_el_pedido(self):
+        from django.core.files.uploadedfile import SimpleUploadedFile
+
+        self.llenar_carrito(1)
+        respuesta = self.client.post(self.url, self.datos(comprobante=SimpleUploadedFile('pago.png', b'no soy una foto')))
+        self.assertIn('comprobante', self.errores(respuesta))
+        self.assertFalse(Pedido.objects.exists())
 
     def test_aviso_de_transferencia_desde_la_confirmacion(self):
         self.llenar_carrito(1)
@@ -260,7 +284,15 @@ class CheckoutTests(TestCase):
         pedido = Pedido.objects.get()
         url = reverse('pedidos:avisar_transferencia', args=[pedido.token])
         self.assertEqual(self.client.get(url).status_code, 405)
-        self.client.post(url, {'referencia_transferencia': 'REF-7', 'estado': 'pagado'})
+        # Sin el comprobante no se acepta el aviso.
+        respuesta = self.client.post(url, {'referencia_transferencia': 'REF-7'}, follow=True)
+        self.assertContains(respuesta, 'Adjunta la foto o captura del comprobante')
+        pedido.refresh_from_db()
+        self.assertFalse(pedido.transferencia_realizada)
+
+        from .utiles import comprobante_de_prueba
+
+        self.client.post(url, {'referencia_transferencia': 'REF-7', 'estado': 'pagado', 'comprobante': comprobante_de_prueba()})
         pedido.refresh_from_db()
         self.assertEqual(
             (pedido.transferencia_realizada, pedido.referencia_transferencia, pedido.estado),

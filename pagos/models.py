@@ -119,12 +119,11 @@ class Liquidacion(models.Model):
     ajustes = models.DecimalField('reembolsos descontados', max_digits=12, decimal_places=2, default=0)
     costo_transferencia = models.DecimalField(
         'comisión de la transferencia', max_digits=12, decimal_places=2, default=0,
-        help_text='Lo que cobró el banco por enviar el depósito. Se descuenta de lo que recibe la tienda.',
+        help_text='Lo que cobró el banco por enviar el depósito. Lo paga el sitio: no se descuenta a la tienda.',
     )
     monto = models.DecimalField(
         'saldo', max_digits=12, decimal_places=2,
-        help_text='Lo que recibió la tienda, ya descontada la comisión de la transferencia. '
-                  'Negativo: la tienda le debía al sitio.',
+        help_text='Lo que recibió la tienda. Negativo: la tienda le debía al sitio.',
     )
     nota = models.CharField('referencia del depósito', max_length=255, blank=True)
 

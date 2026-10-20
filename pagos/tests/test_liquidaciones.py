@@ -122,14 +122,15 @@ class SaldoTests(TestCase):
         liquidacion.refresh_from_db()
         self.assertEqual(liquidacion.monto, D('1800.00'))
 
-    def test_la_comision_del_banco_por_la_transferencia_se_le_descuenta_a_la_tienda(self):
-        entregado(self.producto, 2)
+    def test_la_comision_del_banco_la_paga_el_sitio_y_no_la_tienda(self):
+        entregado(self.producto, 2)  # saldo a depositar: 1800
         liquidacion = liquidaciones.liquidar(self.tienda, costo_transferencia='150')
-        self.assertEqual((liquidacion.costo_transferencia, liquidacion.monto), (D('150.00'), D('1650.00')))
+        # Queda anotada como gasto del sitio, pero la tienda recibe su saldo completo.
+        self.assertEqual((liquidacion.costo_transferencia, liquidacion.monto), (D('150.00'), D('1800.00')))
 
     def test_la_comision_de_la_transferencia_tiene_que_ser_un_monto_valido(self):
         entregado(self.producto, 1)  # saldo a depositar: 900
-        for malo in ('-5', 'abc', '901'):
+        for malo in ('-5', 'abc'):
             with self.assertRaises(liquidaciones.LiquidacionError):
                 liquidaciones.liquidar(self.tienda, costo_transferencia=malo)
         self.assertFalse(Liquidacion.objects.exists())
@@ -170,10 +171,10 @@ class PanelDeLiquidacionesTests(TestCase):
             reverse('admin:pagos_liquidacion_liquidar', args=[self.propia.pk]),
             {'nota': 'Dep. 123', 'costo_transferencia': '100'}, follow=True,
         )
-        self.assertContains(respuesta, 'RD$ 800.00 depositados')
-        self.assertContains(respuesta, 'Se descontaron RD$ 100.00 de la transferencia')
+        self.assertContains(respuesta, 'RD$ 900.00 depositados')
+        self.assertContains(respuesta, 'Comisión del banco anotada como gasto tuyo: RD$ 100.00')
         liquidacion = Liquidacion.objects.get()
-        self.assertEqual((liquidacion.tienda, liquidacion.monto, liquidacion.creada_por), (self.propia, D('800.00'), self.admin))
+        self.assertEqual((liquidacion.tienda, liquidacion.monto, liquidacion.creada_por), (self.propia, D('900.00'), self.admin))
         self.assertEqual(self.client.get(reverse('admin:pagos_liquidacion_liquidar', args=[self.propia.pk])).status_code, 405)
 
     def test_el_vendedor_no_ve_saldos_ni_liquida_pero_si_sus_liquidaciones(self):
@@ -185,6 +186,10 @@ class PanelDeLiquidacionesTests(TestCase):
         lista = self.client.get(reverse('admin:pagos_liquidacion_changelist'))
         self.assertEqual([l.tienda for l in lista.context['cl'].queryset], [self.propia])
         self.assertNotContains(lista, 'Saldos por tienda')
+        # Lo que cobra el banco por el deposito es gasto del sitio: el vendedor no lo ve en su liquidacion.
+        detalle = self.client.get(reverse('admin:pagos_liquidacion_change', args=[lista.context['cl'].queryset[0].pk]))
+        self.assertEqual(detalle.status_code, 200)
+        self.assertNotContains(detalle, 'comisión de la transferencia', status_code=200)
 
     def test_el_vendedor_no_puede_ver_ni_cambiar_su_comision(self):
         self.client.force_login(self.vendedor)

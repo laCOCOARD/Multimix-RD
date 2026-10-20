@@ -65,7 +65,9 @@ Al cerrar cada modulo: check, makemigrations, migrate, test y commit.
 - El cliente cancela su pedido solo antes de pagar (`puede_cancelar_el_cliente`): pendiente y sin haber avisado
   la transferencia. La cancelacion automatica de vencidos (`cancelar_pedidos_vencidos`) tampoco toca un pedido con
   la transferencia avisada (lo vuelve a mirar con el pedido bloqueado): ese lo cancela una persona tras ver el banco. Las devoluciones se solicitan hasta `ConfiguracionTienda.dias_devolucion` dias tras la entrega.
-- El cliente nunca marca un pedido como pagado; solo "Ya hice la transferencia" y su comprobante.
+- El cliente nunca marca un pedido como pagado; solo avisa que transfirio subiendo el comprobante, que es
+  obligatorio (pedido del dueño el 2026-10-19): `pagos.services.registrar_comprobante` rechaza el aviso sin foto y
+  `crear_pedido` solo lo marca si `datos['comprobante']` la trae.
 - El pago de un pedido solo cambia con `pagos.services` (`registrar_comprobante`, `aprobar_pago`, `rechazar_pago`);
   `cambiar_estado` lo mantiene de acuerdo con el pedido (`sincronizar_con_pedido`). Nunca se guardan datos de tarjeta.
 - Montos en plantillas con `{{ valor|moneda }}` -> `RD$ 1,250.00`.
@@ -80,7 +82,8 @@ Al cerrar cada modulo: check, makemigrations, migrate, test y commit.
   tienda le debe al sitio. `liquidar` crea la `Liquidacion` y marca cada pedido (`liquidacion`, `monto_liquidado`)
   para no pagarlo dos veces; un pedido liquidado que luego se reembolsa se descuenta en la siguiente
   (`ajuste_liquidacion`). Lo que cobre el banco por enviar el deposito (`Liquidacion.costo_transferencia`, un monto
-  que se escribe al liquidar) se le descuenta a la tienda. El vendedor ve sus liquidaciones pero no la comision ni quien cobra en el formulario.
+  que se escribe al liquidar) lo paga el sitio (pedido del dueño el 2026-10-19): se anota como gasto del sitio y
+  la tienda recibe su saldo completo; el vendedor no ve ese campo. El vendedor ve sus liquidaciones pero no la comision ni quien cobra en el formulario.
 - Cobro del sitio (pedido del dueño el 2026-10-15): todas las transferencias de todas las tiendas van a las cuentas
   del dueño (`CuentaDelSitio`, `core.models.cuentas_para_transferir`); las tiendas no tienen cuentas (se quitaron
   `CuentaBancaria` y `Tienda.el_sitio_cobra`; `core/0017` paso al sitio las de la tienda mas antigua).
@@ -254,7 +257,8 @@ Al cerrar cada modulo: check, makemigrations, migrate, test y commit.
 - El carrito de la sesion es `{id_tienda: {'items': ..., 'cupon': ...}}`; el formato anterior (un solo
   carrito) se descarta. El cupon vive ahi; el checkout lo revalida y `crear_pedido` lo bloquea y cuenta el uso.
   `crear_pedido` toma la tienda del carrito y exige que productos, zona y cupon sean de ella.
-- "Ya hice la transferencia" se marca en el checkout o en la pagina de confirmacion; nunca cambia el estado.
+- El comprobante se sube en el checkout (campo `comprobante`, formulario multipart; se guarda en la misma
+  transaccion del pedido) o despues en la pagina del pedido; nunca cambia el estado. No hay casilla "ya transferi".
 - Marca del producto: texto libre (`Producto.marca`), sin modelo aparte; el filtro del catalogo la compara sin
   mayusculas (`catalogo.services.marcas_de`). Asi el vendedor no depende del administrador para una marca nueva.
 - Buscador con sugerencias: `catalogo.services.sugerencias` (minimo 2 letras) en `/tienda/<slug>/sugerencias/` y

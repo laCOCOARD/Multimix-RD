@@ -17,7 +17,7 @@ from pedidos.models import Pedido
 from pedidos.services import cambiar_estado, eliminar_pedido
 from tiendas.tests.utiles import entrar_como_cliente, ruta, tienda_de_prueba
 
-from .utiles import pedido_de_prueba
+from .utiles import comprobante_de_prueba, pedido_de_prueba
 
 
 @override_settings(SITIO_URL='https://multimix.example')
@@ -84,7 +84,7 @@ class AvisosPorCorreoTests(TestCase):
         pedido = self.pedido()
         mail.outbox.clear()
         with self.captureOnCommitCallbacks(execute=True):
-            pago = pagos.registrar_comprobante(pedido, None, 'REF-77')
+            pago = pagos.registrar_comprobante(pedido, comprobante_de_prueba(), 'REF-77')
         correo = mail.outbox[-1]
         # La transferencia llego a las cuentas del sitio: el aviso es para el dueño, no para la tienda.
         self.assertEqual(correo.to, ['hola@sitio.example'])

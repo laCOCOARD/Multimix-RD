@@ -9,23 +9,22 @@ Cada pedido tiene un **pago** (`pagos.Pago`) con su propia referencia (`MMX-2026
 | Estado            | Qué significa                                                              |
 | ----------------- | -------------------------------------------------------------------------- |
 | Pendiente de pago | El pedido existe y todavía no se ha cobrado.                               |
-| Pago en revisión  | El cliente avisó que transfirió (con o sin comprobante).                    |
+| Pago en revisión  | El cliente subió el comprobante de su transferencia.                        |
 | Pago confirmado   | El vendedor verificó el dinero. El pedido pasa a **Pagado**.               |
 | Rechazado         | El comprobante no sirvió. El cliente puede enviar otro (se abre otro pago). |
 | Cancelado         | El pedido se canceló antes de cobrarse.                                     |
 | Reembolsado       | Reservado para devoluciones; todavía no hay pantalla para registrarlas.     |
 
-- **Transferencia:** el cliente ve las cuentas del sitio (las del dueño, iguales en todas las tiendas), transfiere y, desde la página de su pedido, adjunta
-  la foto o captura del comprobante y la referencia. El vendedor lo revisa en **Panel → Pagos** y lo aprueba o lo
-  rechaza. El cliente nunca marca un pedido como pagado.
+- **Transferencia:** el cliente ve las cuentas del sitio (las del dueño, iguales en todas las tiendas), transfiere y
+  sube la foto o captura del comprobante (en el checkout o después, en la página de su pedido), con la referencia
+  si quiere. **El comprobante es obligatorio:** sin él no hay aviso de transferencia. El administrador lo revisa en
+  **Panel → Pagos** y lo aprueba o lo rechaza. El cliente nunca marca un pedido como pagado.
 - **Efectivo (al recoger o contra entrega):** el pago queda pendiente y se confirma solo cuando el vendedor
   marca el pedido como entregado.
 - Un pedido no se cobra dos veces: aprobar un pago ya aprobado no hace nada y la base de datos impide dos pagos
   aprobados para el mismo pedido.
-- Los comprobantes se guardan como imagen (JPG, PNG o WebP de hasta 5 MB, convertidos a WebP) en la carpeta
-  `comprobantes/` del mismo almacenamiento de las fotos. **Ese almacenamiento es público:** el enlace de un
-  comprobante es imposible de adivinar, pero quien lo tenga puede abrirlo. Antes de manejar mucho volumen
-  conviene pasarlos a un bucket privado.
+- Los comprobantes se guardan como imagen (JPG, PNG o WebP de hasta 5 MB, convertidos a WebP) en el bucket
+  **privado** `multimix-privado`: no tienen dirección pública y solo se ven desde el panel, a quien le toca ese pago.
 
 ## Tarjetas: qué falta
 
@@ -73,8 +72,9 @@ referencia del pago y el código de autorización.
    pedido como pagado o reembolsado, ni cancelarlo si el cliente ya dijo que transfirió.
 4. Al aprobar, la tienda recibe el correo **"Pago confirmado"** con los productos y la entrega, y sigue con el
    pedido (preparando, enviado, entregado) como siempre.
-- Al registrar el depósito se puede anotar la **comisión del banco por la transferencia**: se le descuenta a la
-  tienda y queda guardada en la liquidación.
+- Al registrar el depósito se puede anotar la **comisión del banco por la transferencia**: la paga el sitio. Queda
+  guardada en la liquidación como gasto del sitio, pero **no** se le descuenta a la tienda, que recibe su saldo
+  completo. El vendedor no ve ese dato.
 - **Registrar liquidación** guarda el depósito (con su referencia) y marca los pedidos para no pagarlos dos veces.
   Cambiar la comisión después no altera lo ya liquidado. Un pedido liquidado que luego se reembolsa se descuenta
   en la siguiente liquidación.

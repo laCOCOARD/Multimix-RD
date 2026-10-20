@@ -10,7 +10,8 @@ Reglas:
   comision del sitio si cuenta, porque fue una venta de la tienda. Esa parte la tienda se la debe al sitio.
 - Saldo = lo que el sitio cobro por la tienda - la comision de todos sus pedidos - reembolsos ya depositados.
   Positivo: el sitio le deposita a la tienda. Negativo: la tienda le debe al sitio.
-- Al depositar, lo que cobre el banco por la transferencia se descuenta de lo que recibe la tienda.
+- Al depositar, lo que cobre el banco por la transferencia lo paga el sitio (pedido del dueño el 2026-10-19): se
+  anota en la liquidacion como gasto del sitio, pero la tienda recibe su saldo completo.
 """
 from dataclasses import dataclass, field
 from decimal import ROUND_HALF_UP, Decimal, InvalidOperation
@@ -118,16 +119,14 @@ def saldo_de(tienda, bloquear=False):
     return saldo
 
 
-def _costo(valor, saldo):
-    """Comision del banco por la transferencia: un monto en RD$ que no puede pasar de lo que se deposita."""
+def _costo(valor):
+    """Comision del banco por la transferencia: un monto en RD$, no negativo. La paga el sitio."""
     try:
         costo = Decimal(str(valor or '0').replace(',', '').strip() or '0').quantize(CENTAVO, rounding=ROUND_HALF_UP)
     except InvalidOperation as error:
         raise LiquidacionError('Escribe la comisión de la transferencia como un monto. Ej.: 150.00') from error
     if costo < 0:
         raise LiquidacionError('La comisión de la transferencia no puede ser negativa.')
-    if costo > max(saldo.monto, CERO):
-        raise LiquidacionError('La comisión de la transferencia no puede ser mayor que lo que se le deposita a la tienda.')
     return costo
 
 
@@ -135,17 +134,18 @@ def _costo(valor, saldo):
 def liquidar(tienda, usuario=None, nota='', costo_transferencia=0):
     """Cierra el saldo de la tienda: registra el deposito y marca los pedidos para no pagarlos dos veces.
 
-    `costo_transferencia` es lo que cobro el banco por enviar el deposito; se le descuenta a la tienda.
+    `costo_transferencia` es lo que cobro el banco por enviar el deposito. Lo paga el sitio: queda anotado, pero no
+    se le descuenta a la tienda.
     """
     saldo = saldo_de(tienda, bloquear=True)
     if not saldo.hay_movimientos:
         raise LiquidacionError(f'{tienda.nombre} no tiene pedidos entregados por liquidar.')
-    costo = _costo(costo_transferencia, saldo)
+    costo = _costo(costo_transferencia)
     liquidacion = Liquidacion.objects.create(
         tienda=tienda, creada_por=usuario, nota=(nota or '').strip()[:255], pedidos_incluidos=len(saldo.pedidos),
         ventas=saldo.ventas, cobrado_por_el_sitio=saldo.cobrado_por_el_sitio, comision=saldo.comision,
         cobrado_por_la_tienda=saldo.de_la_tienda.ventas, comision_de_lo_cobrado_por_la_tienda=saldo.de_la_tienda.comision,
-        ajustes=saldo.ajustes, costo_transferencia=costo, monto=saldo.monto - costo,
+        ajustes=saldo.ajustes, costo_transferencia=costo, monto=saldo.monto,
         comision_porcentaje=tienda.comision_porcentaje,
     )
     for pedido in saldo.pedidos:

@@ -138,6 +138,9 @@ def crear_pedido(carrito, datos, ip=None, cliente=None):
     `datos` trae los campos ya validados del checkout. Ningun monto viene del cliente. Productos,
     zona y cupon deben ser de esa misma tienda. Solo se aparta el stock de los productos que llevan
     inventario; los demas se venden por su disponibilidad.
+
+    Si el cliente ya transfirio, `datos['comprobante']` trae la foto: sin ella el pedido no queda como transferido
+    (pedido del dueño el 2026-10-19). Se guarda en la misma transaccion: si falla, no queda el pedido a medias.
     """
     tienda = carrito.tienda
     cantidades = {int(pk): cantidad for pk, cantidad in carrito.items.items() if cantidad > 0}
@@ -203,8 +206,9 @@ def crear_pedido(carrito, datos, ip=None, cliente=None):
         direccion=(datos.get('direccion') or '').strip() if a_domicilio else '',
         referencia=(datos.get('referencia') or '').strip() if a_domicilio else '',
         metodo_pago=datos['metodo_pago'],
-        transferencia_realizada=bool(datos.get('transferencia_realizada')) and por_transferencia,
-        referencia_transferencia=(datos.get('referencia_transferencia') or '').strip() if por_transferencia else '',
+        # Lo marca registrar_comprobante, y solo con el comprobante.
+        transferencia_realizada=False,
+        referencia_transferencia='',
         cobra_el_sitio=por_transferencia,
         cupon=cupon,
         codigo_cupon=cupon.codigo if cupon else '',
@@ -233,8 +237,11 @@ def crear_pedido(carrito, datos, ip=None, cliente=None):
     if cupon:
         registrar_uso(cupon)
     # Se importa aqui: pagos.services usa este modulo para cambiar el estado del pedido.
-    from pagos.services import pago_vigente
+    from pagos.services import pago_vigente, registrar_comprobante
     pago_vigente(pedido)
+    if por_transferencia and datos.get('comprobante'):
+        registrar_comprobante(pedido, datos['comprobante'], datos.get('referencia_transferencia') or '')
+        pedido.refresh_from_db()
     EventoPedido.objects.create(pedido=pedido, estado=Estado.PENDIENTE, nota='Pedido recibido')
     avisos.pedido_creado(pedido)
 

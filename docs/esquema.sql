@@ -1221,3 +1221,17 @@ BEGIN;
 --
 ALTER TABLE "promociones_cupon" ADD COLUMN "usos_por_cliente" integer unsigned NULL CHECK ("usos_por_cliente" >= 0);
 COMMIT;
+
+-- ============================================================
+-- pagos 0007
+-- ============================================================
+BEGIN;
+--
+-- Alter field costo_transferencia on liquidacion
+--
+-- (no-op)
+--
+-- Alter field monto on liquidacion
+--
+-- (no-op)
+COMMIT;

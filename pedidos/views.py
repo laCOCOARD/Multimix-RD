@@ -79,7 +79,7 @@ def checkout(request):
         })
         return render(request, 'pedidos/checkout.html', _contexto_checkout(request, carrito, formulario))
 
-    formulario = CheckoutForm(request.POST, carrito=carrito)
+    formulario = CheckoutForm(request.POST, request.FILES, carrito=carrito)
     if formulario.is_valid():
         ip = _ip_cliente(request)
         if services.supera_limite_por_ip(ip) or services.supera_limite_por_cuenta(cliente):
@@ -93,9 +93,12 @@ def checkout(request):
                 carrito.sincronizar()
                 messages.error(request, f'{error.mensaje} Revisa tu carrito y vuelve a confirmar.')
                 return redirect('carrito:detalle', tienda.slug)
-            except services.PedidoError as error:
+            except (services.PedidoError, pagos.PagoError) as error:
                 carrito.resumen()
                 formulario.add_error(None, error.mensaje)
+            except ERRORES_DE_ALMACENAMIENTO:
+                logger.exception('No se pudo guardar el comprobante del checkout')
+                formulario.add_error('comprobante', 'No pudimos guardar tu comprobante. Inténtalo otra vez en un momento.')
             else:
                 carrito.vaciar()
                 clientes.recordar_pedido(cliente, pedido)

@@ -170,6 +170,12 @@ class LiquidacionAdmin(AdminDeTienda, admin.ModelAdmin):
     ]
     readonly_fields = fields
 
+    def get_fields(self, request, obj=None):
+        # Lo que cobra el banco por el deposito es un gasto del sitio: no es asunto de la tienda.
+        if ve_todas(request.user):
+            return self.fields
+        return [campo for campo in self.fields if campo != 'costo_transferencia']
+
     def has_add_permission(self, request):
         return False
 
@@ -220,7 +226,10 @@ class LiquidacionAdmin(AdminDeTienda, admin.ModelAdmin):
             if liquidacion.monto >= 0:
                 texto = f'Liquidación de {tienda.nombre} registrada: {formatear_monto(liquidacion.monto)} depositados.'
                 if liquidacion.costo_transferencia:
-                    texto += f' Se descontaron {formatear_monto(liquidacion.costo_transferencia)} de la transferencia.'
+                    texto += (
+                        f' Comisión del banco anotada como gasto tuyo: {formatear_monto(liquidacion.costo_transferencia)}'
+                        ' (no se le descontó a la tienda).'
+                    )
             else:
                 texto = f'Liquidación de {tienda.nombre} registrada: la tienda te debía {formatear_monto(-liquidacion.monto)}.'
             self.message_user(request, texto, messages.SUCCESS)

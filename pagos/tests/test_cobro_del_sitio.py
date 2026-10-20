@@ -13,7 +13,7 @@ from pagos import services
 from pagos.models import Pago
 from pedidos.models import Pedido
 from pedidos.services import TransicionInvalida, cambiar_estado, transiciones_permitidas
-from pedidos.tests.utiles import pedido_de_prueba
+from pedidos.tests.utiles import comprobante_de_prueba, pedido_de_prueba
 from tiendas.services import dar_acceso_al_panel
 from tiendas.tests.utiles import tienda_de_prueba
 
@@ -50,7 +50,7 @@ class CobroDelSitioTests(TestCase):
     def test_el_comprobante_le_llega_al_dueno_no_a_la_tienda(self):
         pedido = self.pedido()
         with self.captureOnCommitCallbacks(execute=True):
-            services.registrar_comprobante(pedido, referencia='REF-1')
+            services.registrar_comprobante(pedido, comprobante_de_prueba(), referencia='REF-1')
         aviso = [correo for correo in mail.outbox if 'Transferencia por revisar' in correo.subject][0]
         self.assertEqual(aviso.to, ['dueno@example.com'])
         self.assertIn('app del banco', aviso.body)

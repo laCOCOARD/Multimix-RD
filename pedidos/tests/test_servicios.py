@@ -15,7 +15,7 @@ from pedidos.services import PedidoError, StockInsuficiente, TransicionInvalida,
 from promociones.models import Cupon
 from tiendas.tests.utiles import tienda_de_prueba
 
-from .utiles import carrito_con, cupon_de_prueba, datos_pedido, pedido_de_prueba, zona_de_prueba
+from .utiles import carrito_con, comprobante_de_prueba, cupon_de_prueba, datos_pedido, pedido_de_prueba, zona_de_prueba
 
 Estado = Pedido.Estado
 Entrega = Pedido.Entrega
@@ -375,7 +375,7 @@ class PedidosVencidosTests(BaseServicios):
         from pagos.services import registrar_comprobante
 
         avisado = pedido_de_prueba(self.producto, 1)
-        registrar_comprobante(avisado, referencia='REF-77')
+        registrar_comprobante(avisado, comprobante_de_prueba(), referencia='REF-77')
         sin_avisar = pedido_de_prueba(self.producto, 1)
         Pedido.objects.filter(pk__in=[avisado.pk, sin_avisar.pk]).update(creado=timezone.now() - timedelta(hours=200))
 

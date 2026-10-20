@@ -22,7 +22,11 @@ class CheckoutForm(forms.Form):
     direccion = forms.CharField(label='Calle y número', max_length=255, required=False)
     referencia = forms.CharField(label='Referencia (opcional)', max_length=255, required=False)
     metodo_pago = forms.ChoiceField(label='Forma de pago', choices=Pedido.Pago.choices, widget=forms.RadioSelect)
-    transferencia_realizada = forms.BooleanField(label='Ya hice la transferencia', required=False)
+    # Si ya transfirio, el comprobante es lo que lo dice: no hay casilla de "ya transferi" sin foto.
+    comprobante = forms.ImageField(
+        label='Comprobante de la transferencia', required=False, validators=[validar_imagen],
+        help_text='Si ya transferiste, sube la foto o captura. Si no, puedes subirla después en la página de tu pedido.',
+    )
     referencia_transferencia = forms.CharField(
         label='Referencia de la transferencia (opcional)', max_length=60, required=False,
     )
@@ -85,5 +89,8 @@ class CheckoutForm(forms.Form):
 
 class AvisoTransferenciaForm(forms.Form):
     referencia_transferencia = forms.CharField(max_length=60, required=False)
-    # forms.ImageField comprueba con Pillow que el archivo sea de verdad una imagen.
-    comprobante = forms.ImageField(required=False, validators=[validar_imagen])
+    # forms.ImageField comprueba con Pillow que el archivo sea de verdad una imagen. Es obligatorio.
+    comprobante = forms.ImageField(
+        validators=[validar_imagen],
+        error_messages={'required': 'Adjunta la foto o captura del comprobante de la transferencia.'},
+    )

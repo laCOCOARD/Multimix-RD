@@ -77,7 +77,7 @@
           <label for="nota-{{ saldo.tienda.pk }}">Referencia del depósito (opcional):</label>
           <input type="text" name="nota" id="nota-{{ saldo.tienda.pk }}" maxlength="255" size="30">
           {% if saldo.monto > 0 %}
-            <label for="costo-{{ saldo.tienda.pk }}">Comisión del banco por la transferencia (RD$):</label>
+            <label for="costo-{{ saldo.tienda.pk }}" title="La pagas tú: la tienda recibe su saldo completo. Se anota para tus cuentas.">Comisión que te cobró el banco, si hubo (RD$, la pagas tú):</label>
             <input type="number" name="costo_transferencia" id="costo-{{ saldo.tienda.pk }}" min="0" step="0.01" value="0" style="width: 7em;">
           {% endif %}
           <input type="submit" value="Registrar liquidación" data-confirmar="¿Registrar la liquidación de {{ saldo.tienda.nombre }}? Sus pedidos quedarán marcados como liquidados.">

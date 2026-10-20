@@ -45,6 +45,14 @@ class PagoTests(TestCase):
         self.assertEqual(services.pago_vigente(self.pedido), pago)
         self.assertEqual(Pago.objects.count(), 1)
 
+    def test_sin_comprobante_no_hay_aviso_de_transferencia(self):
+        for vacio in (None, ''):
+            with self.assertRaisesMessage(services.PagoError, 'comprobante'):
+                services.registrar_comprobante(self.pedido, vacio, 'REF-1')
+        self.pedido.refresh_from_db()
+        self.assertFalse(self.pedido.transferencia_realizada)
+        self.assertEqual(self.pago().estado, Estado.PENDIENTE)
+
     def test_si_el_cliente_dice_en_el_checkout_que_ya_transfirio_queda_en_revision(self):
         pedido = pedido_de_prueba(self.producto, 1, transferencia_realizada=True, referencia_transferencia='REF-9')
         pago = pedido.pagos.get()
