@@ -155,7 +155,11 @@
       {% endif %}
 
       <ul class="list-unstyled mm-garantias mt-4 mb-0">
-        <li><i class="bi bi-truck"></i>Envío a domicilio o retiro en tienda. <a href="{% url 'core:envios' tienda.slug %}">Ver zonas y tarifas</a></li>
+        {% if not producto.agotado %}
+          {% if plazo_envio %}<li class="mm-plazo"><i class="bi bi-calendar-check"></i><span>A domicilio: llega <strong>{{ plazo_envio.texto }}</strong>, según tu zona.</span></li>{% endif %}
+          <li class="mm-plazo"><i class="bi bi-shop"></i><span>Para recoger: listo <strong>{{ plazo_recoger.texto }}</strong>.</span></li>
+        {% endif %}
+        <li><i class="bi bi-truck"></i><span>{% if tienda.envio_gratis_desde %}Envío gratis en pedidos desde {{ tienda.envio_gratis_desde|moneda }}.{% else %}Envío a domicilio o retiro en tienda.{% endif %} <a href="{% url 'core:envios' tienda.slug %}">Ver zonas y tarifas</a></span></li>
         <li><i class="bi bi-bank"></i>Paga por transferencia{% if tienda.permitir_contra_entrega %}, contra entrega{% endif %} o en efectivo al recoger.</li>
         <li><i class="bi bi-shield-check"></i>La tienda verifica tu pago antes de preparar el pedido. Nunca te pedimos datos de tarjeta.</li>
         {% if plataforma.dias_devolucion %}<li><i class="bi bi-arrow-repeat"></i>{{ plataforma.dias_devolucion }} días para cambios y devoluciones.</li>{% endif %}

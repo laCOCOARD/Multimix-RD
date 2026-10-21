@@ -7,6 +7,7 @@ from django.views.decorators.http import require_GET, require_POST
 from catalogo.models import Producto
 from catalogo.services import sugerencias_para_el_carrito
 from core.templatetags.moneda import formatear_monto
+from pedidos.services import progreso_envio_gratis
 from promociones.services import CuponInvalido
 from tiendas.decoradores import de_tienda
 
@@ -24,9 +25,16 @@ def _entero(valor, defecto=1):
         return defecto
 
 
+def _envio_gratis_json(progreso):
+    if progreso is None:
+        return None
+    return {'logrado': progreso.logrado, 'falta': formatear_monto(progreso.falta), 'porcentaje': progreso.porcentaje}
+
+
 def _estado_json(carrito):
     resumen = carrito.resumen()
     return {
+        'envio_gratis': _envio_gratis_json(progreso_envio_gratis(carrito.tienda, resumen.subtotal - resumen.descuento)),
         'cantidad_total': len(carrito),
         'vacio': not carrito,
         'lineas': {
@@ -73,6 +81,7 @@ def detalle(request):
     return render(request, 'carrito/detalle.html', {
         'lineas': lineas,
         'resumen': resumen,
+        'envio_gratis': progreso_envio_gratis(request.tienda, resumen.subtotal - resumen.descuento),
         'sugeridos': sugerencias_para_el_carrito(request.tienda, [linea.producto.pk for linea in lineas]),
     })
 

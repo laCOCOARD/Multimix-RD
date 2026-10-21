@@ -2,7 +2,7 @@ import uuid
 from decimal import Decimal
 
 from django.conf import settings
-from django.core.validators import MinValueValidator
+from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from django.db.models import F, Q
 from django.urls import reverse
@@ -15,8 +15,25 @@ class ZonaEnvio(models.Model):
     tienda = models.ForeignKey('tiendas.Tienda', on_delete=models.CASCADE, related_name='zonas_envio')
     nombre = models.CharField(max_length=80)
     tarifa = models.DecimalField(max_digits=12, decimal_places=2, validators=[MinValueValidator(Decimal('0.00'))])
+    dias_entrega_min = models.PositiveSmallIntegerField(
+        'entrega desde (días)', default=1, validators=[MaxValueValidator(30)],
+        help_text='Días hábiles (lunes a sábado) mínimos para entregar en esta zona. 0 = el mismo día.',
+    )
+    dias_entrega_max = models.PositiveSmallIntegerField(
+        'entrega hasta (días)', default=2, validators=[MaxValueValidator(30)],
+        help_text='Días hábiles máximos. El cliente ve "Llega entre el ... y el ...".',
+    )
     activa = models.BooleanField(default=True)
     orden = models.PositiveSmallIntegerField(default=0)
+
+    def clean(self):
+        from django.core.exceptions import ValidationError
+
+        if (
+            self.dias_entrega_min is not None and self.dias_entrega_max is not None
+            and self.dias_entrega_max < self.dias_entrega_min
+        ):
+            raise ValidationError({'dias_entrega_max': 'Debe ser igual o mayor que los días mínimos.'})
 
     class Meta:
         verbose_name = 'zona de envío'
@@ -135,6 +152,9 @@ class Pedido(models.Model):
     creado = models.DateTimeField('fecha de creación', auto_now_add=True)
     fecha_pago = models.DateTimeField('fecha de pago', null=True, blank=True)
     fecha_entrega = models.DateTimeField('fecha de entrega', null=True, blank=True)
+    # Lo que se le prometio al cliente al comprar (pedidos.entregas); no cambia aunque la tienda cambie sus plazos.
+    entrega_desde = models.DateField('entrega estimada desde', null=True, blank=True, editable=False)
+    entrega_hasta = models.DateField('entrega estimada hasta', null=True, blank=True, editable=False)
     stock_descontado = models.BooleanField('stock ya descontado', default=False, editable=False)
     # Reparto a la tienda (pagos/liquidaciones.py). Solo los toca `pagos.liquidaciones.liquidar`.
     liquidacion = models.ForeignKey(

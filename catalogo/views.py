@@ -11,6 +11,8 @@ from core.seo import producto_json_ld, ruta_json_ld
 from core.templatetags.moneda import formatear_monto
 from opiniones import services as opiniones
 
+from pedidos import entregas
+from pedidos.services import zonas_activas
 from pedidos.whatsapp import construir_enlace
 from tiendas.decoradores import de_tienda
 from tiendas.services import banners_de
@@ -115,6 +117,8 @@ def producto(request, slug):
         'mi_resena': opiniones.resena_de(request.user, item),
         'opciones_estrellas': OPCIONES_ESTRELLAS,
         'cantidad_maxima': item.limite_compra,
+        'plazo_recoger': entregas.estimar(tienda, True, bajo_pedido=item.bajo_pedido),
+        'plazo_envio': entregas.estimar_envio(tienda, zonas_activas(tienda), item.bajo_pedido),
         'url_absoluta': url_absoluta,
         'og_imagen': request.build_absolute_uri(foto.imagen.url) if foto else '',
         'enlace_consulta': construir_enlace(tienda.whatsapp, consulta) if tienda.whatsapp else '',

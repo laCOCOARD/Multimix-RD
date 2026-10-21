@@ -34,14 +34,35 @@ def _zona_elegida(valor, tienda):
         return None
 
 
+def _texto_envio(entrega, zona, calculo):
+    if entrega == Pedido.Entrega.RECOGER:
+        return 'Gratis'
+    if zona is None:
+        return 'Elige tu zona'
+    return formatear_monto(calculo.costo_envio) if calculo.costo_envio else 'Gratis'
+
+
+def _texto_plazo(carrito, entrega, zona):
+    plazo = services.entrega_estimada(carrito, entrega, zona)
+    if plazo is None:
+        return 'Elige tu zona para ver cuándo llega.'
+    if entrega == Pedido.Entrega.RECOGER:
+        return f'Listo para recoger {plazo.texto}.'
+    return f'Llega {plazo.texto}.'
+
+
 def _contexto_checkout(request, carrito, formulario):
     tienda = carrito.tienda
     entrega = formulario['metodo_entrega'].value() or Pedido.Entrega.RECOGER
     zona = _zona_elegida(formulario['zona'].value(), tienda) if entrega == Pedido.Entrega.ENVIO else None
+    totales = services.calcular_totales(carrito, entrega, zona)
     return {
         'formulario': formulario,
         'lineas': carrito.lineas(),
-        'totales': services.calcular_totales(carrito, entrega, zona),
+        'totales': totales,
+        'texto_envio': _texto_envio(entrega, zona, totales),
+        'texto_plazo': _texto_plazo(carrito, entrega, zona),
+        'envio_gratis': services.progreso_envio_gratis(tienda, totales.subtotal - totales.descuento),
         'zonas': services.zonas_activas(tienda),
         'cuentas': cuentas_para_transferir(),
         'pagos_recoger': services.metodos_pago_disponibles(Pedido.Entrega.RECOGER, tienda),
@@ -133,13 +154,6 @@ def totales(request):
     if calculo.aviso_cupon:
         cupon_mensaje, cupon_ok = calculo.aviso_cupon, False
 
-    if entrega == Pedido.Entrega.RECOGER:
-        envio_texto = 'Gratis'
-    elif zona is None:
-        envio_texto = 'Elige tu zona'
-    else:
-        envio_texto = formatear_monto(calculo.costo_envio)
-
     return JsonResponse({
         'vacio': not carrito,
         'subtotal': formatear_monto(calculo.subtotal),
@@ -147,7 +161,8 @@ def totales(request):
         'hay_descuento': calculo.descuento > 0,
         'impuesto': formatear_monto(calculo.impuesto),
         'hay_impuesto': calculo.impuesto > 0,
-        'envio': envio_texto,
+        'envio': _texto_envio(entrega, zona, calculo),
+        'plazo': _texto_plazo(carrito, entrega, zona),
         'total': formatear_monto(calculo.total),
         'cupon': calculo.cupon.codigo if calculo.cupon else '',
         'cupon_ok': cupon_ok,

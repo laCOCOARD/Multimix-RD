@@ -26,7 +26,9 @@ class TiendaAdmin(AvisaImagenesSinGuardar, admin.ModelAdmin):
         ('Marca', {'fields': ['logo', 'banner_titulo', 'banner_subtitulo', 'banner_texto_boton', 'banner_imagen']}),
         ('Contacto', {'fields': ['whatsapp', 'telefono', 'correo', 'horario', 'direccion_tienda']}),
         ('Redes', {'fields': ['facebook', 'instagram', 'tiktok']}),
-        ('Pedidos', {'fields': ['permitir_contra_entrega']}),
+        ('Pedidos y entregas', {'fields': [
+            'permitir_contra_entrega', 'envio_gratis_desde', 'dias_para_recoger', 'dias_bajo_pedido',
+        ]}),
         ('Cobro y reparto (solo lo ve el administrador principal)', {
             'fields': ['comision_porcentaje', 'itbis_porcentaje'],
         }),

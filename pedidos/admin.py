@@ -25,8 +25,8 @@ CLIENTES_POR_PAGINA = 50
 
 @admin.register(ZonaEnvio)
 class ZonaEnvioAdmin(AdminDeTienda, admin.ModelAdmin):
-    list_display = ['nombre', 'tarifa', 'activa', 'orden']
-    list_editable = ['tarifa', 'activa', 'orden']
+    list_display = ['nombre', 'tarifa', 'dias_entrega_min', 'dias_entrega_max', 'activa', 'orden']
+    list_editable = ['tarifa', 'dias_entrega_min', 'dias_entrega_max', 'activa', 'orden']
     list_filter = ['activa']
     search_fields = ['nombre']
 
@@ -114,7 +114,8 @@ class PedidoAdmin(AdminDeTienda, admin.ModelAdmin):
         ]}),
         ('Cliente', {'fields': ['nombre', 'whatsapp_cliente', 'correo', 'cuenta_del_cliente']}),
         ('Entrega', {'fields': [
-            'metodo_entrega', 'zona', 'sector', 'direccion', 'referencia', 'transportista', 'numero_seguimiento',
+            'metodo_entrega', 'zona', 'sector', 'direccion', 'referencia', 'entrega_prometida', 'transportista',
+            'numero_seguimiento',
         ]}),
         ('Pago', {'fields': ['metodo_pago', 'transferencia_realizada', 'referencia_transferencia', 'pago_registrado']}),
         ('Montos', {'fields': [
@@ -315,6 +316,14 @@ class PedidoAdmin(AdminDeTienda, admin.ModelAdmin):
         if pedido.liquidacion_id is None:
             return 'Sin liquidar'
         return f'Liquidado el {pedido.liquidacion.creada:%d/%m/%Y}'
+
+    @admin.display(description='Entrega prometida al cliente')
+    def entrega_prometida(self, pedido):
+        if pedido.entrega_desde is None:
+            return '—'
+        if pedido.entrega_desde == pedido.entrega_hasta:
+            return f'{pedido.entrega_desde:%d/%m/%Y}'
+        return f'{pedido.entrega_desde:%d/%m/%Y} al {pedido.entrega_hasta:%d/%m/%Y}'
 
     @admin.display(description='Cuenta')
     def cuenta_del_cliente(self, pedido):

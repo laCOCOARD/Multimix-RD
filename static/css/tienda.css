@@ -611,3 +611,12 @@ html:not(.js) .solo-con-js { display: none !important; }
 .mm-galeria-principal img { transition: transform .25s ease, opacity .2s ease; }
 .mm-galeria-principal.ampliada { cursor: zoom-in; }
 .mm-galeria-principal.ampliada img { transform: scale(1.9); }
+
+/* --- Envio gratis y fecha estimada de entrega ------------------------------------- */
+.mm-envio-gratis { margin-bottom: 1rem; padding: .7rem .8rem; border-radius: .7rem; background: var(--mm-primario-suave); }
+.mm-envio-gratis .progress { height: .45rem; background: rgba(10, 95, 180, .15); }
+.mm-envio-gratis .progress-bar { background: var(--mm-primario); transition: width .4s ease; }
+.mm-envio-gratis.logrado { background: #e7f5ea; color: var(--mm-acento-oscuro); }
+.mm-envio-gratis.logrado .progress-bar { background: var(--mm-acento); }
+.mm-plazo { color: var(--mm-acento-oscuro); }
+.mm-plazo i { color: var(--mm-acento); }

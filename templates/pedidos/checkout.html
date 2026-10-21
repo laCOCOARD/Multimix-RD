@@ -64,6 +64,7 @@
             {% endfor %}
           </div>
           {% if formulario.metodo_entrega.errors %}<p class="text-danger small">{{ formulario.metodo_entrega.errors.0 }}</p>{% endif %}
+          <p class="mm-plazo mb-0" role="status"><i class="bi bi-calendar-check me-1"></i><span id="plazo-entrega">{{ texto_plazo }}</span></p>
 
           <div class="js-bloque-recoger mt-3">
             <p class="mb-0"><i class="bi bi-geo-alt me-1"></i>
@@ -82,7 +83,7 @@
                 {% endfor %}
               </select>
               <div class="invalid-feedback">{{ formulario.zona.errors.0|default:'Elige tu zona de envío.' }}</div>
-              <div class="form-text">Por ahora entregamos solo en estas zonas.</div>
+              <div class="form-text">Por ahora entregamos solo en estas zonas.{% if envio_gratis %} Envío gratis en pedidos desde {{ envio_gratis.umbral|moneda }}.{% endif %}</div>
             </div>
             <div class="col-sm-6">
               <label class="form-label" for="id_sector">{{ formulario.sector.label }}</label>
@@ -207,7 +208,7 @@
             <div class="{% if not totales.impuesto %}d-none{% endif %}" id="fila-impuesto">
               <dt>ITBIS ({{ tienda.itbis_porcentaje|floatformat:'-2' }}%)</dt><dd id="total-impuesto">{{ totales.impuesto|moneda }}</dd>
             </div>
-            <div><dt>Envío</dt><dd id="total-envio">{% if formulario.metodo_entrega.value == 'envio' %}{{ totales.costo_envio|moneda }}{% else %}Gratis{% endif %}</dd></div>
+            <div><dt>Envío</dt><dd id="total-envio">{{ texto_envio }}</dd></div>
             <div class="mm-total"><dt>Total</dt><dd id="total-total">{{ totales.total|moneda }}</dd></div>
           </dl>
         </div>

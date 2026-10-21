@@ -58,6 +58,20 @@
       <div class="mm-panel mm-resumen">
         <h2 class="h5 mb-3">Resumen</h2>
 
+        {% if envio_gratis %}
+          {# Como en las grandes tiendas: cuanto falta para no pagar envio. #}
+          <div class="mm-envio-gratis js-envio-gratis{% if envio_gratis.logrado %} logrado{% endif %}">
+            <p class="small mb-1 js-envio-gratis-texto">
+              {% if envio_gratis.logrado %}<i class="bi bi-truck me-1"></i>¡Tu envío a domicilio es gratis!
+              {% else %}Te faltan <strong>{{ envio_gratis.falta|moneda }}</strong> para el envío gratis.{% endif %}
+            </p>
+            <div class="progress" role="progressbar" aria-label="Progreso hacia el envío gratis"
+                 aria-valuenow="{{ envio_gratis.porcentaje }}" aria-valuemin="0" aria-valuemax="100">
+              <div class="progress-bar js-envio-gratis-barra" style="width: {{ envio_gratis.porcentaje }}%"></div>
+            </div>
+          </div>
+        {% endif %}
+
         {% if resumen.cupon %}
           <form class="d-flex justify-content-between align-items-center mb-3" method="post" action="{% url 'carrito:cupon_quitar' tienda.slug %}">
             {% csrf_token %}

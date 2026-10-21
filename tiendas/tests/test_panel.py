@@ -155,7 +155,9 @@ class ListasYDetalleTests(PanelDeVendedores):
         self.client.force_login(suelto)
         for nombre in ('catalogo_producto', 'pedidos_pedido', 'promociones_cupon', 'tiendas_tienda'):
             self.assertEqual(self.lista(nombre), [], nombre)
-        self.client.post(reverse('admin:pedidos_zonaenvio_add'), {'nombre': 'Colada', 'tarifa': '10', 'orden': '0'})
+        self.client.post(reverse('admin:pedidos_zonaenvio_add'), {
+            'nombre': 'Colada', 'tarifa': '10', 'orden': '0', 'dias_entrega_min': '1', 'dias_entrega_max': '2',
+        })
         self.assertFalse(ZonaEnvio.objects.filter(nombre='Colada').exists())
 
 
@@ -352,7 +354,7 @@ class TiendaAdminTests(PanelDeVendedores):
     def datos(self, **cambios):
         datos = {
             'nombre': 'Multimix RD', 'banner_titulo': 'Bienvenidos', 'banner_subtitulo': '',
-            'banner_texto_boton': 'Ver catálogo', 'whatsapp': '18095551111', 'telefono': '', 'correo': '',
+            'banner_texto_boton': 'Ver catálogo', 'dias_para_recoger': '1', 'dias_bajo_pedido': '7', 'whatsapp': '18095551111', 'telefono': '', 'correo': '',
             'horario': '', 'direccion_tienda': 'Calle 1', 'facebook': '', 'instagram': '', 'tiktok': '',
             'itbis_porcentaje': '18', 'comision_porcentaje': '0',
         }

@@ -82,6 +82,20 @@ class Tienda(models.Model):
     tiktok = models.URLField(blank=True)
 
     permitir_contra_entrega = models.BooleanField('permitir efectivo contra entrega', default=False)
+    envio_gratis_desde = models.DecimalField(
+        'envío gratis desde', max_digits=12, decimal_places=2, null=True, blank=True,
+        validators=[MinValueValidator(Decimal('0.01'))],
+        help_text='Los pedidos a domicilio con productos por este monto o más (después del cupón) no pagan envío. '
+                  'Vacío = el envío se cobra siempre.',
+    )
+    dias_para_recoger = models.PositiveSmallIntegerField(
+        'días para tener listo un pedido', default=1, validators=[MaxValueValidator(30)],
+        help_text='Días hábiles (lunes a sábado) para que un pedido esté listo para recoger. 0 = el mismo día.',
+    )
+    dias_bajo_pedido = models.PositiveSmallIntegerField(
+        'días extra de los productos bajo pedido', default=7, validators=[MaxValueValidator(90)],
+        help_text='Días hábiles que se suman a la entrega cuando el pedido lleva productos bajo pedido.',
+    )
     itbis_porcentaje = models.DecimalField(
         'ITBIS (%)', max_digits=5, decimal_places=2, default=Decimal('0.00'),
         validators=[MinValueValidator(Decimal('0')), MaxValueValidator(Decimal('100'))],

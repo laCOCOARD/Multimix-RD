@@ -26,6 +26,13 @@
           {% if pago %}<span class="badge mm-estado mm-pago-{{ pago.estado }}">{{ pago.get_estado_display }}</span>{% endif %}
         </p>
 
+        {% if pedido.entrega_desde and pedido.estado in 'pendiente pagado preparando enviado en_reparto' %}
+          <p class="mm-plazo mb-3"><i class="bi bi-calendar-check me-1"></i>
+            {% if pedido.recoge_en_tienda %}Listo para recoger{% else %}Entrega estimada{% endif %}:
+            <strong>{% if pedido.entrega_desde == pedido.entrega_hasta %}{{ pedido.entrega_desde|date:"l j \d\e F" }}{% else %}{{ pedido.entrega_desde|date:"l j \d\e F" }} al {{ pedido.entrega_hasta|date:"l j \d\e F" }}{% endif %}</strong>
+          </p>
+        {% endif %}
+
         {% if pedido.estado == 'pendiente' %}
           <p class="text-muted mb-0">
             {% if pedido.paga_por_transferencia %}

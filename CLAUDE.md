@@ -320,6 +320,13 @@ Al cerrar cada modulo: check, makemigrations, migrate, test y commit.
 - Cupones: `usos_maximos` (en total) y `usos_por_cliente` (por cuenta; 1 = bienvenida). El limite por cliente
   lo mira `validar_cupon(..., cliente=)` contando sus pedidos no cancelados con el cupon; sin sesion no se mira, y
   el checkout (con cuenta) y `crear_pedido` (con el cupon bloqueado) lo vuelven a validar.
+- Envio gratis (`Tienda.envio_gratis_desde`, lo pone el vendedor): desde ese monto en productos, despues del
+  cupon, el envio a domicilio cuesta 0 (`pedidos.services.costo_de_envio`, que usan los totales y `crear_pedido`).
+  El carrito muestra cuanto falta (`progreso_envio_gratis`).
+- Fecha estimada de entrega (`pedidos/entregas.py`): dias habiles de lunes a sabado. Plazos de la tienda
+  (`dias_para_recoger`, `dias_bajo_pedido`, que se suma si el pedido lleva algo bajo pedido) y de cada zona
+  (`dias_entrega_min`/`max`). Se ve en la ficha, el checkout y la pagina de envios; el pedido guarda lo prometido
+  (`entrega_desde`/`entrega_hasta`).
 - Factura PNG: usa una fuente del sistema (`core.fuentes.cargar_fuente`); con la de Pillow, que no trae
   tildes, escribe sin ellas para que no salgan recuadros.
 

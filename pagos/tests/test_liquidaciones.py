@@ -196,7 +196,7 @@ class PanelDeLiquidacionesTests(TestCase):
         editar = reverse('admin:tiendas_tienda_change', args=[self.propia.pk])
         self.assertNotContains(self.client.get(editar), 'comision_porcentaje')
         self.client.post(editar, {
-            'nombre': 'Multimix RD', 'banner_titulo': '', 'banner_subtitulo': '', 'banner_texto_boton': 'Ver catálogo',
+            'nombre': 'Multimix RD', 'banner_titulo': '', 'banner_subtitulo': '', 'banner_texto_boton': 'Ver catálogo', 'dias_para_recoger': '1', 'dias_bajo_pedido': '7',
             'whatsapp': '', 'telefono': '', 'correo': '', 'horario': '', 'direccion_tienda': '', 'facebook': '',
             'instagram': '', 'tiktok': '', 'itbis_porcentaje': '0', 'comision_porcentaje': '0',
         })
@@ -210,7 +210,7 @@ class PanelDeLiquidacionesTests(TestCase):
         self.assertContains(self.client.get(editar), 'comision_porcentaje')
         self.client.post(editar, {
             'nombre': 'Fitnes RD', 'slug': self.ajena.slug, 'activa': 'on', 'orden': '0', 'banner_titulo': '',
-            'banner_subtitulo': '', 'banner_texto_boton': 'Ver catálogo', 'whatsapp': '', 'telefono': '', 'correo': '',
+            'banner_subtitulo': '', 'banner_texto_boton': 'Ver catálogo', 'dias_para_recoger': '1', 'dias_bajo_pedido': '7', 'whatsapp': '', 'telefono': '', 'correo': '',
             'horario': '', 'direccion_tienda': '', 'facebook': '', 'instagram': '', 'tiktok': '',
             'itbis_porcentaje': '0', 'comision_porcentaje': '15',
         })

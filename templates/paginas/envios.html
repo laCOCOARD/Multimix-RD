@@ -13,6 +13,7 @@
         <h2 class="h5"><i class="bi bi-shop me-2"></i>Retiro en tienda</h2>
         <p>Sin costo. En la página de tu pedido verás cuando esté listo para recoger.</p>
         <ul class="list-unstyled mb-0">
+          <li><i class="bi bi-calendar-check me-2"></i>{% if tienda.dias_para_recoger %}Listo en {{ tienda.dias_para_recoger }} día{{ tienda.dias_para_recoger|pluralize }} hábil{{ tienda.dias_para_recoger|pluralize:'es' }}{% else %}Listo el mismo día{% endif %}</li>
           {% if tienda.direccion_tienda %}<li><i class="bi bi-geo-alt me-2"></i>{{ tienda.direccion_tienda }}</li>{% endif %}
           {% if tienda.horario %}<li><i class="bi bi-clock me-2"></i>{{ tienda.horario }}</li>{% endif %}
           {% if tienda.telefono %}<li><i class="bi bi-telephone me-2"></i>{{ tienda.telefono }}</li>{% endif %}
@@ -23,17 +24,18 @@
       <div class="mm-panel h-100">
         <h2 class="h5"><i class="bi bi-truck me-2"></i>Envío a domicilio</h2>
         {% if zonas %}
-          <p>La tarifa depende de tu zona y se suma al total del pedido.</p>
+          <p>La tarifa depende de tu zona y se suma al total del pedido.{% if tienda.envio_gratis_desde %} <strong>Envío gratis en pedidos desde {{ tienda.envio_gratis_desde|moneda }}</strong> (en productos, después del cupón).{% endif %}</p>
           <div class="table-responsive">
             <table class="table align-middle mb-0">
-              <thead><tr><th scope="col">Zona</th><th scope="col" class="text-end">Tarifa</th></tr></thead>
+              <thead><tr><th scope="col">Zona</th><th scope="col">Entrega</th><th scope="col" class="text-end">Tarifa</th></tr></thead>
               <tbody>
                 {% for zona in zonas %}
-                  <tr><td>{{ zona.nombre }}</td><td class="text-end">{{ zona.tarifa|moneda }}</td></tr>
+                  <tr><td>{{ zona.nombre }}</td><td>{% if zona.dias_entrega_max == 0 %}El mismo día{% elif zona.dias_entrega_min == zona.dias_entrega_max %}{{ zona.dias_entrega_max }} día{{ zona.dias_entrega_max|pluralize }} hábil{{ zona.dias_entrega_max|pluralize:'es' }}{% else %}{{ zona.dias_entrega_min }} a {{ zona.dias_entrega_max }} días hábiles{% endif %}</td><td class="text-end">{{ zona.tarifa|moneda }}</td></tr>
                 {% endfor %}
               </tbody>
             </table>
           </div>
+          <p class="small text-muted mt-2 mb-0">Días hábiles de lunes a sábado.{% if tienda.dias_bajo_pedido %} Los productos bajo pedido suman {{ tienda.dias_bajo_pedido }} día{{ tienda.dias_bajo_pedido|pluralize }}.{% endif %}</p>
         {% else %}
           <p class="mb-0">Por ahora solo ofrecemos retiro en tienda. Escríbenos si necesitas envío.</p>
         {% endif %}

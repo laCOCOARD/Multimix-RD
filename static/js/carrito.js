@@ -28,6 +28,27 @@
     carrito.querySelector('.js-impuesto').textContent = datos.impuesto;
     carrito.querySelector('.js-fila-impuesto').classList.toggle('d-none', !datos.hay_impuesto);
     carrito.querySelector('.js-total').textContent = datos.total;
+    pintarEnvioGratis(datos.envio_gratis);
+  }
+
+  // La barra de envio gratis se arma con nodos: el texto viene del servidor, pero nunca como HTML.
+  function pintarEnvioGratis(progreso) {
+    const caja = carrito.querySelector('.js-envio-gratis');
+    if (!caja || !progreso) return;
+    caja.classList.toggle('logrado', progreso.logrado);
+    caja.querySelector('.js-envio-gratis-barra').style.width = `${progreso.porcentaje}%`;
+    caja.querySelector('[role="progressbar"]').setAttribute('aria-valuenow', progreso.porcentaje);
+    const texto = caja.querySelector('.js-envio-gratis-texto');
+    texto.replaceChildren();
+    if (progreso.logrado) {
+      const icono = document.createElement('i');
+      icono.className = 'bi bi-truck me-1';
+      texto.append(icono, '¡Tu envío a domicilio es gratis!');
+    } else {
+      const monto = document.createElement('strong');
+      monto.textContent = progreso.falta;
+      texto.append('Te faltan ', monto, ' para el envío gratis.');
+    }
   }
 
   async function mandar(fila, formulario) {

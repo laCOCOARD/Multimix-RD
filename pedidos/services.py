@@ -18,7 +18,7 @@ from promociones.services import (
 )
 from tiendas.services import ve_todas
 
-from . import avisos
+from . import avisos, entregas
 from .models import DetallePedido, EventoPedido, Pedido, SecuenciaTienda, SolicitudDevolucion, ZonaEnvio
 
 logger = logging.getLogger('multimix.pedidos')
@@ -61,11 +61,39 @@ class Totales:
         return self.subtotal - self.descuento + self.impuesto + self.costo_envio
 
 
-def costo_de_envio(metodo_entrega, zona):
-    """Recoger en tienda no paga envio; a domicilio paga la tarifa de la zona."""
-    if metodo_entrega == Entrega.ENVIO and zona is not None:
-        return zona.tarifa
-    return CERO
+def tiene_envio_gratis(tienda, monto):
+    """`monto` son los productos despues del cupon: desde el umbral de la tienda, el envio no se cobra."""
+    return tienda.envio_gratis_desde is not None and monto >= tienda.envio_gratis_desde
+
+
+def costo_de_envio(metodo_entrega, zona, tienda=None, monto=CERO):
+    """Recoger en tienda no paga envio; a domicilio paga la tarifa de la zona, salvo que alcance el envio gratis."""
+    if metodo_entrega != Entrega.ENVIO or zona is None:
+        return CERO
+    if tienda is not None and tiene_envio_gratis(tienda, monto):
+        return CERO
+    return zona.tarifa
+
+
+@dataclass
+class ProgresoEnvioGratis:
+    umbral: Decimal
+    falta: Decimal
+
+    @property
+    def logrado(self):
+        return self.falta <= 0
+
+    @property
+    def porcentaje(self):
+        return 100 if self.logrado else int((self.umbral - self.falta) * 100 / self.umbral)
+
+
+def progreso_envio_gratis(tienda, monto):
+    """Cuanto le falta al carrito para no pagar envio (la barra del carrito). None si la tienda no lo ofrece."""
+    if tienda.envio_gratis_desde is None:
+        return None
+    return ProgresoEnvioGratis(tienda.envio_gratis_desde, max(tienda.envio_gratis_desde - monto, CERO))
 
 
 def calcular_totales(carrito, metodo_entrega=Entrega.RECOGER, zona=None):
@@ -74,11 +102,17 @@ def calcular_totales(carrito, metodo_entrega=Entrega.RECOGER, zona=None):
     return Totales(
         subtotal=resumen.subtotal,
         descuento=resumen.descuento,
-        costo_envio=costo_de_envio(metodo_entrega, zona),
+        costo_envio=costo_de_envio(metodo_entrega, zona, carrito.tienda, resumen.subtotal - resumen.descuento),
         cupon=resumen.cupon,
         aviso_cupon=resumen.aviso_cupon,
         impuesto=resumen.impuesto,
     )
+
+
+def entrega_estimada(carrito, metodo_entrega, zona=None):
+    """Plazo de entrega del carrito: los productos bajo pedido lo alargan."""
+    bajo_pedido = entregas.lleva_bajo_pedido(linea.producto for linea in carrito.lineas())
+    return entregas.estimar(carrito.tienda, metodo_entrega != Entrega.ENVIO, zona, bajo_pedido)
 
 
 def metodos_pago_disponibles(metodo_entrega, tienda):
@@ -190,8 +224,11 @@ def crear_pedido(carrito, datos, ip=None, cliente=None):
     metodo_entrega = datos['metodo_entrega']
     a_domicilio = metodo_entrega == Entrega.ENVIO
     zona = datos.get('zona') if a_domicilio else None
-    costo_envio = costo_de_envio(metodo_entrega, zona)
+    costo_envio = costo_de_envio(metodo_entrega, zona, tienda, subtotal - descuento)
     por_transferencia = datos['metodo_pago'] == Pago.TRANSFERENCIA
+    plazo = entregas.estimar(
+        tienda, not a_domicilio, zona, entregas.lleva_bajo_pedido(producto for producto, _ in lineas),
+    )
 
     pedido = Pedido.objects.create(
         tienda=tienda,
@@ -219,6 +256,8 @@ def crear_pedido(carrito, datos, ip=None, cliente=None):
         costo_envio=costo_envio,
         total=subtotal - descuento + impuesto + costo_envio,
         notas_cliente=(datos.get('notas') or '').strip(),
+        entrega_desde=plazo.desde if plazo else None,
+        entrega_hasta=plazo.hasta if plazo else None,
         ip=ip,
     )
     DetallePedido.objects.bulk_create([

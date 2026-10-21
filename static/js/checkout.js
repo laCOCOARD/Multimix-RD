@@ -72,6 +72,7 @@
       document.getElementById('total-impuesto').textContent = info.impuesto;
       document.getElementById('fila-impuesto').classList.toggle('d-none', !info.hay_impuesto);
       document.getElementById('total-envio').textContent = info.envio;
+      document.getElementById('plazo-entrega').textContent = info.plazo;
       document.getElementById('total-total').textContent = info.total;
       document.getElementById('total-confirmar').textContent = info.total;
       if (conCupon || info.cupon_mensaje) {
