@@ -168,6 +168,13 @@
           <textarea class="form-control{% if formulario.notas.errors %} is-invalid{% endif %}" id="id_notas" name="notas" rows="3" maxlength="500">{{ formulario.notas.value|default:'' }}</textarea>
           <div class="invalid-feedback">{{ formulario.notas.errors.0 }}</div>
 
+          {% if whatsapp_automatico %}
+            <div class="form-check mt-3">
+              <input class="form-check-input" type="checkbox" id="id_avisos_whatsapp" name="avisos_whatsapp"{% if formulario.avisos_whatsapp.value %} checked{% endif %}>
+              <label class="form-check-label" for="id_avisos_whatsapp"><i class="bi bi-whatsapp text-success me-1"></i>{{ formulario.avisos_whatsapp.label }} (además del correo)</label>
+            </div>
+          {% endif %}
+
           <div class="form-check mt-3">
             <input class="form-check-input{% if formulario.acepta_terminos.errors %} is-invalid{% endif %}" type="checkbox" id="id_acepta_terminos" name="acepta_terminos"
                    {% if formulario.acepta_terminos.value %}checked{% endif %} required>

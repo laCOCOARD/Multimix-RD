@@ -17,7 +17,7 @@ from tiendas.services import ve_todas
 
 from . import reportes, services
 from .models import DetallePedido, EventoPedido, Pedido, SolicitudDevolucion, ZonaEnvio
-from .whatsapp import construir_enlace, enlace_al_cliente
+from .whatsapp import construir_enlace, enlace_al_cliente, enlace_aviso_de_estado
 
 Estado = Pedido.Estado
 CLIENTES_POR_PAGINA = 50
@@ -112,7 +112,7 @@ class PedidoAdmin(AdminDeTienda, admin.ModelAdmin):
         ('Pedido', {'fields': [
             'numero', 'tienda', 'estado_con_color', 'creado', 'fecha_pago', 'fecha_entrega', 'enlace_publico',
         ]}),
-        ('Cliente', {'fields': ['nombre', 'whatsapp_cliente', 'correo', 'cuenta_del_cliente']}),
+        ('Cliente', {'fields': ['nombre', 'whatsapp_cliente', 'correo', 'cuenta_del_cliente', 'avisos_whatsapp']}),
         ('Entrega', {'fields': [
             'metodo_entrega', 'zona', 'sector', 'direccion', 'referencia', 'entrega_prometida', 'transportista',
             'numero_seguimiento',
@@ -259,6 +259,10 @@ class PedidoAdmin(AdminDeTienda, admin.ModelAdmin):
                 (estado.value, estado.label) for estado in services.transiciones_permitidas(pedido, request.user)
             ]
             contexto['confirma_el_sitio'] = pedido.cobra_el_sitio and not ve_todas(request.user)
+        if pedido is not None:
+            contexto['aviso_whatsapp'] = enlace_aviso_de_estado(
+                pedido, request.build_absolute_uri(pedido.get_absolute_url()),
+            )
         return super().change_view(request, object_id, form_url, contexto)
 
     # --- Columnas -------------------------------------------------------------------

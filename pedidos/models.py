@@ -146,6 +146,10 @@ class Pedido(models.Model):
     numero_seguimiento = models.CharField(
         'número de seguimiento', max_length=60, blank=True, help_text='El que da el transportista, si lo hay.',
     )
+    avisos_whatsapp = models.BooleanField(
+        'acepta avisos por WhatsApp', default=False, editable=False,
+        help_text='El cliente pidió en el checkout que los cambios de su pedido le lleguen también por WhatsApp.',
+    )
     notas_cliente = models.TextField('notas del cliente', blank=True)
     notas_internas = models.TextField('notas internas', blank=True, help_text='Solo se ven en el panel.')
 

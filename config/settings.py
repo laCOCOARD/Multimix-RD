@@ -300,6 +300,14 @@ SITIO_URL = (
     or (f'https://{RENDER_EXTERNAL_HOSTNAME}' if RENDER_EXTERNAL_HOSTNAME else 'http://127.0.0.1:8000')
 )
 
+# --- WhatsApp (avisos automaticos del pedido, opcional; docs/WHATSAPP.md) ---
+# Con la API oficial de Meta (WhatsApp Cloud API). Sin token ni numero, apagado: el panel ofrece igual el boton
+# para avisarle al cliente a mano.
+WHATSAPP_TOKEN = os.getenv('WHATSAPP_TOKEN', '').strip()
+WHATSAPP_NUMERO_ID = os.getenv('WHATSAPP_NUMERO_ID', '').strip()
+WHATSAPP_PLANTILLA = os.getenv('WHATSAPP_PLANTILLA', '').strip() or 'estado_pedido'
+WHATSAPP_IDIOMA = os.getenv('WHATSAPP_IDIOMA', '').strip() or 'es'
+
 # --- Sesiones y mensajes ---
 SESSION_COOKIE_AGE = 60 * 60 * 24 * 14
 SESSION_COOKIE_HTTPONLY = True

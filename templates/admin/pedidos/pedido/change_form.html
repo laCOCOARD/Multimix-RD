@@ -21,5 +21,11 @@
 {% elif original %}
   <p class="panel-transiciones panel-transiciones-titulo">Este pedido está en un estado final y ya no cambia.</p>
 {% endif %}
+{% if aviso_whatsapp %}
+  <p class="panel-transiciones">
+    <a class="button panel-boton-whatsapp" href="{{ aviso_whatsapp }}" target="_blank" rel="noopener">Avisar al cliente por WhatsApp ↗</a>
+    <span class="panel-ayuda">Abre WhatsApp con el mensaje de "{{ original.get_estado_display }}" ya escrito; revísalo y envíalo.</span>
+  </p>
+{% endif %}
 {{ block.super }}
 {% endblock %}

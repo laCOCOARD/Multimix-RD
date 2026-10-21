@@ -18,7 +18,7 @@ from promociones.services import (
 )
 from tiendas.services import ve_todas
 
-from . import avisos, entregas
+from . import avisos, entregas, whatsapp_api
 from .models import DetallePedido, EventoPedido, Pedido, SecuenciaTienda, SolicitudDevolucion, ZonaEnvio
 
 logger = logging.getLogger('multimix.pedidos')
@@ -256,6 +256,7 @@ def crear_pedido(carrito, datos, ip=None, cliente=None):
         costo_envio=costo_envio,
         total=subtotal - descuento + impuesto + costo_envio,
         notas_cliente=(datos.get('notas') or '').strip(),
+        avisos_whatsapp=bool(datos.get('avisos_whatsapp')) and whatsapp_api.configurado(),
         entrega_desde=plazo.desde if plazo else None,
         entrega_hasta=plazo.hasta if plazo else None,
         ip=ip,

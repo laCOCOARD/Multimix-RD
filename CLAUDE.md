@@ -195,6 +195,11 @@ Al cerrar cada modulo: check, makemigrations, migrate, test y commit.
   primer campo que falte. El cliente debe aceptar los terminos (`acepta_terminos`).
 - La entrega a domicilio pide zona (de las que la tienda tenga), sector, calle y referencia.
 - La confirmacion ya no abre WhatsApp ni lo pide: solo ofrece un boton para escribirle a la tienda.
+- Avisos del pedido por WhatsApp (docs/WHATSAPP.md): en el detalle del pedido del panel, "Avisar al cliente por
+  WhatsApp" abre wa.me con el mensaje del estado (`pedidos.whatsapp.mensaje_de_estado`). Automatico y opcional con
+  la WhatsApp Cloud API de Meta (`pedidos/whatsapp_api.py`, `WHATSAPP_TOKEN` + `WHATSAPP_NUMERO_ID`, plantilla
+  aprobada `estado_pedido` con 4 variables): solo si el cliente lo acepto en el checkout (`Pedido.avisos_whatsapp`;
+  sin configurar no se ofrece) y sale con los correos de `pedidos.avisos`. Nunca lanza.
 - Disponibilidad comercial: el negocio no cuenta unidades fiables, asi que cada producto se vende segun
   `Producto.disponibilidad` (disponible, bajo pedido, agotado, temporalmente no disponible). El inventario es
   opcional por producto (`controla_stock`, apagado por defecto): solo entonces valen `stock_almacen` y

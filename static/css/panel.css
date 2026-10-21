@@ -129,3 +129,7 @@ a.panel-tarjeta:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba
 
 /* Variante de otro producto, en la lista de productos. */
 .panel-variante { color: var(--body-quiet-color, #666); }
+
+/* Aviso al cliente por WhatsApp desde el detalle del pedido. */
+.panel-boton-whatsapp { background: #1da851 !important; color: #fff !important; border-radius: 8px; font-weight: 700; padding: 9px 16px !important; }
+.panel-ayuda { color: var(--body-quiet-color); font-size: .85rem; }

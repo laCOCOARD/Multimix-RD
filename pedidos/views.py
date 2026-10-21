@@ -19,7 +19,7 @@ from pagos.proveedores import proveedor_de_tarjeta
 from promociones.services import CuponInvalido
 from tiendas.decoradores import de_tienda
 
-from . import services
+from . import services, whatsapp_api
 from .forms import AvisoTransferenciaForm, CheckoutForm
 from .models import Pedido
 from .whatsapp import enlace_del_pedido
@@ -70,6 +70,7 @@ def _contexto_checkout(request, carrito, formulario):
         'pagos_envio': services.metodos_pago_disponibles(Pedido.Entrega.ENVIO, tienda),
         # Sin pasarela conectada la tarjeta se anuncia, pero no se puede elegir ni se piden sus datos.
         'tarjeta_disponible': proveedor_de_tarjeta() is not None,
+        'whatsapp_automatico': whatsapp_api.configurado(),
     }
 
 

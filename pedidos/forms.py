@@ -34,6 +34,7 @@ class CheckoutForm(forms.Form):
     notas = forms.CharField(
         label='Notas (opcional)', max_length=500, required=False, widget=forms.Textarea(attrs={'rows': 3}),
     )
+    avisos_whatsapp = forms.BooleanField(label='Avisarme por WhatsApp cuando cambie mi pedido', required=False)
     acepta_terminos = forms.BooleanField(
         label='Acepto los términos del sitio',
         error_messages={'required': 'Para confirmar el pedido debes aceptar los términos del sitio.'},

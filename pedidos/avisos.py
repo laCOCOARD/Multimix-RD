@@ -7,6 +7,7 @@ from django.urls import reverse
 from core.correo import enviar, url_absoluta
 from core.models import ConfiguracionTienda
 
+from . import whatsapp_api
 from .models import Pedido
 
 
@@ -49,11 +50,13 @@ def pedido_creado(pedido):
         contexto = _contexto(fresco)
         enviar(f'Nuevo pedido {fresco.numero}', 'tienda_pedido_nuevo', contexto, correos_de_la_tienda(fresco.tienda))
         enviar(f'Recibimos tu pedido {fresco.numero}', 'cliente_pedido_recibido', contexto, [fresco.correo])
+        whatsapp_api.enviar_estado(fresco)
     _al_confirmar(enviar_avisos)
 
 
 def estado_cambiado(pedido):
-    """Al cliente: su pedido fue pagado, esta listo, va en camino, se entrego o se cancelo."""
+    """Al cliente: su pedido fue pagado, esta listo, va en camino, se entrego o se cancelo. Por correo y, si lo
+    pidio y esta conectado, por WhatsApp."""
     def enviar_aviso():
         fresco = Pedido.objects.select_related('tienda').filter(pk=pedido.pk).first()
         # Al eliminar un pedido se cancela primero: para entonces ya no existe y no hay nada que avisar.
@@ -61,6 +64,7 @@ def estado_cambiado(pedido):
             return
         asunto = f'Tu pedido {fresco.numero}: {fresco.get_estado_display().lower()}'
         enviar(asunto, 'cliente_estado', _contexto(fresco), [fresco.correo])
+        whatsapp_api.enviar_estado(fresco)
     _al_confirmar(enviar_aviso)
 
 

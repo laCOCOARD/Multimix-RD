@@ -61,6 +61,35 @@ def enlace_del_pedido(pedido, numero_tienda):
     return construir_enlace(numero_tienda, construir_mensaje(pedido))
 
 
+MENSAJES_DE_ESTADO = {
+    'pendiente': 'recibimos tu pedido {numero}. Te avisamos cuando confirmemos el pago.',
+    'pagado': 'confirmamos el pago de tu pedido {numero}. Ya lo estamos preparando.',
+    'preparando': 'estamos preparando tu pedido {numero}.',
+    'listo': 'tu pedido {numero} está listo para recoger{donde}.',
+    'enviado': 'tu pedido {numero} va en camino.',
+    'en_reparto': 'tu pedido {numero} está en reparto: llega pronto.',
+    'entregado': 'tu pedido {numero} fue entregado. ¡Gracias por tu compra!',
+    'cancelado': 'tu pedido {numero} fue cancelado. Si es un error, respóndenos por aquí.',
+    'reembolsado': 'registramos el reembolso de tu pedido {numero}.',
+}
+
+
+def mensaje_de_estado(pedido, enlace):
+    """Texto para avisarle al cliente, a mano desde el panel, en que esta su pedido."""
+    donde = f' en {pedido.tienda.direccion_tienda}' if pedido.tienda.direccion_tienda else ''
+    plantilla = MENSAJES_DE_ESTADO.get(pedido.estado, 'tu pedido {numero} ahora está: ' + pedido.get_estado_display())
+    saludo = f'Hola {pedido.nombre}, te escribimos de {pedido.tienda.nombre}: '
+    lineas = [saludo + plantilla.format(numero=pedido.numero, donde=donde)]
+    if pedido.numero_seguimiento and pedido.estado in ('enviado', 'en_reparto'):
+        lineas.append(f'Seguimiento: {pedido.numero_seguimiento}')
+    lineas.append(f'Míralo aquí: {enlace}')
+    return '\n'.join(lineas)
+
+
+def enlace_aviso_de_estado(pedido, enlace):
+    return construir_enlace(telefono_internacional(pedido.telefono), mensaje_de_estado(pedido, enlace))
+
+
 def enlace_al_cliente(pedido):
     """Para el panel: abre el chat con el cliente."""
     mensaje = f'Hola {pedido.nombre}, te escribimos por tu pedido {pedido.numero}.'
