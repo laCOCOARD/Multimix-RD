@@ -1,3 +1,5 @@
+import logging
+
 from django.core.paginator import Paginator
 from django.http import JsonResponse
 from django.contrib import messages
@@ -9,6 +11,7 @@ from django.urls import reverse
 from django.views.decorators.http import require_GET, require_POST
 
 from clientes.services import es_favorito
+from core.archivos import ERRORES_DE_ALMACENAMIENTO
 from core.red import quien_es
 from core.seo import producto_json_ld, ruta_json_ld
 from core.templatetags.moneda import formatear_monto
@@ -24,6 +27,7 @@ from . import avisos, services
 from .forms import ORDENES, FiltroCatalogoForm
 from .models import Categoria, Producto
 
+logger = logging.getLogger('multimix.catalogo')
 PRODUCTOS_POR_PAGINA = 12
 # Productos de los que el visitante pidio aviso en esta sesion (para no volver a ofrecerselo).
 CLAVE_AVISOS = 'avisos_pedidos'
@@ -121,6 +125,8 @@ def producto(request, slug):
             (item.nombre, url_absoluta),
         ]),
         'mi_resena': opiniones.resena_de(request.user, item),
+        'preguntas': opiniones.preguntas_publicadas(item),
+        'mis_preguntas': opiniones.preguntas_sin_responder(request.user, item),
         'esperando_aviso': item.agotado and (
             item.pk in request.session.get(CLAVE_AVISOS, [])
             or (request.user.is_authenticated and avisos.esperando(item, request.user.email))
@@ -142,12 +148,33 @@ def opinar(request, slug):
     """Reseña de un cliente con cuenta. Queda por revisar: no se publica sola."""
     item = get_object_or_404(Producto.objects.activos(), tienda=request.tienda, slug=slug)
     try:
-        opiniones.guardar_resena(request.user, item, request.POST.get('estrellas'), request.POST.get('comentario'))
+        fotos = opiniones.limpiar_fotos(request.FILES.getlist('fotos'))
+        opiniones.guardar_resena(
+            request.user, item, request.POST.get('estrellas'), request.POST.get('comentario'), fotos,
+        )
     except opiniones.ResenaError as error:
         messages.error(request, error.mensaje)
+    except ERRORES_DE_ALMACENAMIENTO:
+        logger.exception('No se pudieron guardar las fotos de una reseña')
+        messages.error(request, 'No pudimos guardar tus fotos. Inténtalo otra vez en un momento.')
     else:
         messages.success(request, 'Gracias por tu opinión. La publicamos en cuanto la revisemos.')
     return redirect(item.get_absolute_url() + '#opiniones')
+
+
+@require_POST
+@login_required
+@de_tienda
+def preguntar(request, slug):
+    """Pregunta de un cliente con cuenta. Se publica cuando la tienda la responde."""
+    item = get_object_or_404(Producto.objects.activos(), tienda=request.tienda, slug=slug)
+    try:
+        opiniones.preguntar(request.user, item, request.POST.get('pregunta'))
+    except opiniones.ResenaError as error:
+        messages.error(request, error.mensaje)
+    else:
+        messages.success(request, 'Enviamos tu pregunta a la tienda. Te avisamos por correo cuando la responda.')
+    return redirect(item.get_absolute_url() + '#preguntas')
 
 
 @require_POST

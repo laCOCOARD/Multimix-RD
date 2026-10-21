@@ -1,0 +1,9 @@
+{% autoescape off %}Hola, {{ tienda.nombre }}:
+
+Un cliente preguntó por "{{ producto.nombre }}" (SKU {{ producto.sku }}):
+
+"{{ pregunta.texto }}"
+
+Respóndele desde el panel. La pregunta y tu respuesta se publican en la ficha del producto y al cliente le llega un correo:
+{{ enlace_panel }}
+{% endautoescape %}

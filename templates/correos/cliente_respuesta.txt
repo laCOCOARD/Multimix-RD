@@ -1,0 +1,12 @@
+{% autoescape off %}Hola{% if pregunta.usuario.first_name %} {{ pregunta.usuario.first_name }}{% endif %}:
+
+{{ tienda.nombre }} respondió tu pregunta sobre "{{ producto.nombre }}".
+
+Tu pregunta: {{ pregunta.texto }}
+Respuesta: {{ pregunta.respuesta }}
+
+Míralo en la página del producto:
+{{ enlace }}
+
+{{ tienda.nombre }}
+{% endautoescape %}

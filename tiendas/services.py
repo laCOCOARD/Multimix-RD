@@ -27,8 +27,9 @@ PERMISOS_VENDEDOR = {
     'promociones': ['view_cupon', 'add_cupon', 'change_cupon', 'delete_cupon'],
     # Los pagos se revisan (aprobar o rechazar); no se crean ni se borran a mano.
     'pagos': ['view_pago', 'change_pago', 'view_liquidacion'],
-    # Las reseñas se ven; publicarlas o rechazarlas es del administrador principal.
-    'opiniones': ['view_resena'],
+    # Las reseñas se ven; publicarlas o rechazarlas es del administrador principal. Las preguntas las responde
+    # la tienda.
+    'opiniones': ['view_resena', 'view_pregunta', 'change_pregunta'],
     # Sin 'core': las cuentas bancarias que ve el cliente las registra solo el administrador principal, para que
     # nadie cambie a donde transfieren los clientes.
 }

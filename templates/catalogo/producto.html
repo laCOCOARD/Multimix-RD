@@ -231,6 +231,15 @@
               {% if resena.compra_verificada %}<span class="badge text-bg-success ms-1"><i class="bi bi-patch-check me-1"></i>Compra verificada</span>{% endif %}
             </p>
             <p class="mb-1">{{ resena.comentario }}</p>
+            {% if resena.fotos.all %}
+              <div class="mm-resena-fotos">
+                {% for foto in resena.fotos.all %}
+                  <a href="{{ foto.imagen.url }}" target="_blank" rel="noopener">
+                    <img src="{{ foto.imagen.url }}" alt="Foto {{ forloop.counter }} de la opinión de {{ resena.autor }}" loading="lazy" decoding="async" width="88" height="88">
+                  </a>
+                {% endfor %}
+              </div>
+            {% endif %}
             <p class="small text-muted mb-0">{{ resena.creado|date:"j \d\e F \d\e Y" }}</p>
           </article>
         {% empty %}
@@ -242,7 +251,7 @@
           {% if user.is_authenticated %}
             <h3 class="h6">{% if mi_resena %}Tu opinión{% else %}Deja tu opinión{% endif %}</h3>
             {% if mi_resena %}<p class="small text-muted">Estado: {{ mi_resena.get_estado_display }}. Si la cambias, vuelve a revisión.</p>{% endif %}
-            <form method="post" action="{% url 'catalogo:opinar' tienda.slug producto.slug %}">
+            <form method="post" action="{% url 'catalogo:opinar' tienda.slug producto.slug %}" enctype="multipart/form-data">
               {% csrf_token %}
               <label class="form-label" for="estrellas">Calificación</label>
               <select class="form-select mb-3" id="estrellas" name="estrellas" required>
@@ -253,12 +262,54 @@
               </select>
               <label class="form-label" for="comentario">Comentario</label>
               <textarea class="form-control" id="comentario" name="comentario" rows="3" minlength="10" maxlength="1000" required>{{ mi_resena.comentario }}</textarea>
+              <label class="form-label mt-3" for="fotos-resena">Fotos (opcional, hasta 3)</label>
+              <input class="form-control" type="file" id="fotos-resena" name="fotos" accept="image/jpeg,image/png,image/webp" multiple>
+              <div class="form-text">{% if mi_resena.fotos.exists %}Si subes fotos nuevas, reemplazan a las anteriores.{% else %}Muestra cómo te llegó o cómo lo usas.{% endif %}</div>
               <button class="btn btn-primary mt-3" type="submit">Enviar opinión</button>
               <p class="small text-muted mt-2 mb-0">Se publica después de revisarla.</p>
             </form>
           {% else %}
             <p class="mb-2">¿Lo compraste? Cuéntales a otros clientes qué te pareció.</p>
             <a class="btn btn-outline-primary" href="{% url 'clientes:entrar' %}?next={{ request.get_full_path|urlencode }}">Inicia sesión para opinar</a>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="mm-seccion px-0" id="preguntas">
+    <div class="mm-seccion-cabecera">
+      <h2>Preguntas y respuestas</h2>
+    </div>
+    <div class="row g-4">
+      <div class="col-lg-7">
+        {% for pregunta in preguntas %}
+          <article class="mm-pregunta">
+            <p class="mb-1"><strong>P:</strong> {{ pregunta.texto }}</p>
+            <p class="mb-1"><strong>R:</strong> {{ pregunta.respuesta|linebreaksbr }}</p>
+            <p class="small text-muted mb-0">Preguntó {{ pregunta.autor }} · respondió {{ tienda.nombre }} el {{ pregunta.respondida_en|date:"j \d\e F \d\e Y" }}</p>
+          </article>
+        {% empty %}
+          <p class="text-muted">Nadie ha preguntado todavía. ¿Tienes una duda? La tienda te responde aquí.</p>
+        {% endfor %}
+        {% for pregunta in mis_preguntas %}
+          <p class="small mm-pregunta-propia"><i class="bi bi-hourglass-split me-1"></i>Tu pregunta "{{ pregunta.texto|truncatechars:80 }}" espera la respuesta de la tienda.</p>
+        {% endfor %}
+      </div>
+      <div class="col-lg-5">
+        <div class="mm-panel">
+          {% if user.is_authenticated %}
+            <form method="post" action="{% url 'catalogo:preguntar' tienda.slug producto.slug %}">
+              {% csrf_token %}
+              <label class="form-label fw-semibold" for="pregunta">Haz una pregunta</label>
+              <textarea class="form-control" id="pregunta" name="pregunta" rows="3" minlength="10" maxlength="500" required
+                        placeholder="Ej.: ¿Sirve para piel sensible?"></textarea>
+              <button class="btn btn-primary mt-3" type="submit">Enviar pregunta</button>
+              <p class="small text-muted mt-2 mb-0">Se publica con la respuesta de la tienda. Te avisamos por correo.</p>
+            </form>
+          {% else %}
+            <p class="mb-2">¿Tienes una duda sobre este producto?</p>
+            <a class="btn btn-outline-primary" href="{% url 'clientes:entrar' %}?next={{ request.get_full_path|urlencode }}">Inicia sesión para preguntar</a>
           {% endif %}
         </div>
       </div>

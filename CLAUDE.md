@@ -41,7 +41,10 @@ Al cerrar cada modulo: check, makemigrations, migrate, test y commit.
 - `clientes/` — cuentas de clientes del sitio (registro, entrada, recuperar contraseña, perfil, historial de
   pedidos) y limite de intentos.
 - `opiniones/` — Resena: una por cliente y producto, moderada (solo el superusuario publica o rechaza; el
-  vendedor las ve) y con "compra verificada" si lo recibio en un pedido hecho con su cuenta.
+  vendedor las ve) y con "compra verificada" si lo recibio en un pedido hecho con su cuenta. Hasta 3 fotos
+  (`FotoResena`, WebP; fotos nuevas reemplazan a las anteriores). Pregunta: el cliente con cuenta pregunta (5 por
+  hora), la tienda recibe un correo y responde en el panel (`PreguntaAdmin`, `services.responder`): se publica y
+  al cliente le llega un correo. La tienda puede ocultarlas.
 - `pagos/` — Pago (un intento de pago por pedido), comprobantes de transferencia (privados), conciliacion en el panel y
   el contrato de las pasarelas de tarjeta (`proveedores.py`, ninguna conectada). Ver `docs/PAGOS.md`.
 - `templates/`, `static/` — plantillas y recursos de la tienda y del panel.

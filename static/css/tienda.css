@@ -643,3 +643,10 @@ html:not(.js) .solo-con-js { display: none !important; }
 .mm-variante.activa { border-color: var(--mm-primario); box-shadow: 0 0 0 1px var(--mm-primario); background: var(--mm-primario-suave); }
 .mm-variante.agotada { color: var(--mm-texto-suave); text-decoration: line-through; border-style: dashed; }
 .mm-tarjeta-opciones { margin: -.15rem 0 .35rem; font-size: .8rem; color: var(--mm-texto-suave); }
+
+/* --- Fotos de las resenas y preguntas y respuestas -------------------------------- */
+.mm-resena-fotos { display: flex; gap: .5rem; flex-wrap: wrap; margin: .4rem 0 .5rem; }
+.mm-resena-fotos img { width: 4.5rem; height: 4.5rem; object-fit: cover; border-radius: .5rem; border: 1px solid var(--mm-borde); }
+.mm-pregunta { padding: .9rem 0; border-bottom: 1px solid var(--mm-borde); }
+.mm-pregunta:first-child { padding-top: 0; }
+.mm-pregunta-propia { margin-top: .75rem; color: var(--mm-texto-suave); }
