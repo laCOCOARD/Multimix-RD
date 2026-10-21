@@ -83,6 +83,16 @@
       {% endfor %}
     </nav>
 
+    {# Instalar la app: el boton aparece solo si el navegador lo permite (tienda.js); en iPhone se explica como. #}
+    <section class="mm-menu-grupo mm-instalar" hidden>
+      <h2>App</h2>
+      <button class="js-instalar" type="button" hidden><i class="bi bi-phone"></i>Instalar la app en este teléfono</button>
+      <p class="js-instalar-ios small mb-0" hidden>
+        <i class="bi bi-phone me-1"></i>Para instalarla en tu iPhone toca <i class="bi bi-box-arrow-up" aria-label="Compartir"></i>
+        y luego "Agregar a inicio".
+      </p>
+    </section>
+
     {% if enlace_whatsapp_tienda or marca.correo or marca.telefono %}
       <nav class="mm-menu-grupo" aria-label="Contacto">
         <h2>Contacto</h2>

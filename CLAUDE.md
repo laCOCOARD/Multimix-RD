@@ -119,6 +119,11 @@ Al cerrar cada modulo: check, makemigrations, migrate, test y commit.
   JSON-LD (`application/ld+json`) no se ejecuta y no lo afecta. `form-action 'self'`: al conectar una pasarela
   que reciba un formulario hay que agregar su dominio.
 - `/salud/` responde "ok" si la aplicacion y la base funcionan (para el Health Check Path de Render).
+- App instalable (PWA): `/manifest.webmanifest`, `/sw.js` (plantilla `pwa/sw.js`, en la raiz para que controle todo
+  el sitio; `no-cache`) y `/sin-conexion/`, todas con `@login_not_required`. El service worker no guarda paginas
+  (traen datos de la cuenta): las pide a la red y sin internet muestra "Sin conexion"; los estaticos si, con la
+  cache nombrada por la version de los estaticos. Iconos `static/img/icono-*.png` (salen del simbolo del logo).
+  El menu ofrece "Instalar la app" cuando el navegador lo permite y explica el camino en iPhone.
 - JSON-LD del producto (`core.seo.producto_json_ld`): precio, disponibilidad y marca reales; la valoracion solo
   aparece si hay reseñas publicadas. Es la unica excepcion a "nada de |safe": el JSON se escapa como `json_script`.
 - Reporte de ventas (`pedidos.reportes`, Panel > Pedidos > Reporte de ventas) con descarga CSV, limitado a las

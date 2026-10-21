@@ -1,0 +1,20 @@
+{% load static %}<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <meta name="theme-color" content="#0a5fb4">
+  <title>Sin conexión · {{ plataforma.nombre }}</title>
+  {# Sin Bootstrap: esta pagina la guarda la app y se muestra sin internet, cuando el CDN no esta. #}
+  <link rel="stylesheet" href="{% static 'css/tienda.css' %}">
+</head>
+<body class="mm-sin-conexion">
+  <main>
+    <img src="{% static 'img/logo-simbolo.webp' %}" alt="" width="131" height="100">
+    <h1>Estás sin conexión</h1>
+    <p>Revisa tu internet y vuelve a intentarlo. Tu carrito sigue guardado.</p>
+    <a href="{% url 'tiendas:portada' %}">Volver a intentar</a>
+  </main>
+</body>
+</html>

@@ -389,6 +389,41 @@
     if (boton && !window.confirm(boton.dataset.confirmar)) evento.preventDefault();
   });
 
+  // App instalable: el service worker guarda los estaticos y da la pagina "Sin conexion" sin internet.
+  if ('serviceWorker' in navigator && window.isSecureContext) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/sw.js').catch(() => {});
+    });
+  }
+
+  // Boton "Instalar la app" del menu: aparece cuando el navegador ofrece instalarla (Android, Chrome, Edge).
+  const seccionInstalar = document.querySelector('.mm-instalar');
+  const yaInstalada = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+  if (seccionInstalar && !yaInstalada) {
+    const botonInstalar = seccionInstalar.querySelector('.js-instalar');
+    let ofrecimiento = null;
+    window.addEventListener('beforeinstallprompt', (evento) => {
+      evento.preventDefault();
+      ofrecimiento = evento;
+      seccionInstalar.hidden = false;
+      botonInstalar.hidden = false;
+    });
+    botonInstalar.addEventListener('click', async () => {
+      if (!ofrecimiento) return;
+      ofrecimiento.prompt();
+      await ofrecimiento.userChoice;
+      ofrecimiento = null;
+      seccionInstalar.hidden = true;
+    });
+    window.addEventListener('appinstalled', () => { seccionInstalar.hidden = true; });
+    // Safari del iPhone no ofrece instalar: se explica el camino de Compartir > Agregar a inicio.
+    const esIphone = /iphone|ipad|ipod/i.test(navigator.userAgent);
+    if (esIphone) {
+      seccionInstalar.hidden = false;
+      seccionInstalar.querySelector('.js-instalar-ios').hidden = false;
+    }
+  }
+
   // Lupa en la foto del producto: con el raton, la foto que se ve se amplia donde apunta.
   const marco = document.querySelector('.mm-galeria-principal');
   if (marco && window.matchMedia('(hover: hover) and (pointer: fine)').matches) {

@@ -39,6 +39,7 @@ Cómo está desplegado el sitio hoy y cómo mantenerlo. Para un servidor propio 
 | `DEFAULT_FROM_EMAIL`                                    | Remitente verificado en Brevo: `Multimix RD <correo@dominio>`.        |
 | `SITIO_URL`                                             | Solo con dominio propio, para los enlaces de los correos.             |
 | `PAGOS_PROVEEDOR_TARJETA`                               | Vacía hasta tener la pasarela (ver `PAGOS.md`).                       |
+| `WHATSAPP_TOKEN`, `WHATSAPP_NUMERO_ID`                  | Opcionales: avisos automáticos por WhatsApp (ver `WHATSAPP.md`).      |
 
 El plan gratis de Render bloquea SMTP: por eso el correo va por la API de Brevo. Se prueba en
 **Panel → Configuración general → Enviar correo de prueba**.

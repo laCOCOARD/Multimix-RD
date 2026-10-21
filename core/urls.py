@@ -17,4 +17,7 @@ urlpatterns = [
     path('preguntas-frecuentes/', views.preguntas, name='preguntas'),
     path('robots.txt', views.robots_txt, name='robots'),
     path('salud/', views.salud, name='salud'),
+    path('manifest.webmanifest', views.manifiesto, name='manifiesto'),
+    path('sw.js', views.service_worker, name='service_worker'),
+    path('sin-conexion/', views.sin_conexion, name='sin_conexion'),
 ]
