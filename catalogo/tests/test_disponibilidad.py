@@ -206,8 +206,8 @@ class ImportarDisponibilidadTests(TestCase):
         tienda = tienda_de_prueba()
         crear_producto(sku='BASE')
         datos = tablib.Dataset(headers=COLUMNAS)
-        datos.append(['P-1', 'Proteína', 'General', '', '900', '', '', '', 'bajo_pedido', 0, 0, 0, 0, 1, 'Nutrilite'])
-        datos.append(['P-2', 'Creatina', 'General', '', '700', '', '', '', 'disponible', 1, 12, 0, 0, 1, ''])
+        datos.append(['P-1', 'Proteína', 'General', '', '900', '', '', '', 'bajo_pedido', 0, 0, 0, 0, 1, 'Nutrilite', '', '', ''])
+        datos.append(['P-2', 'Creatina', 'General', '', '700', '', '', '', 'disponible', 1, 12, 0, 0, 1, '', '', '', ''])
         resultado = ProductoResource(tienda=tienda).import_data(datos, dry_run=False)
         self.assertFalse(resultado.has_errors() or resultado.has_validation_errors())
         proteina, creatina = Producto.objects.get(sku='P-1'), Producto.objects.get(sku='P-2')
@@ -218,6 +218,6 @@ class ImportarDisponibilidadTests(TestCase):
     def test_rechaza_una_disponibilidad_que_no_existe(self):
         crear_producto(sku='BASE')
         datos = tablib.Dataset(headers=COLUMNAS)
-        datos.append(['P-1', 'Proteína', 'General', '', '900', '', '', '', 'quizas', 0, 0, 0, 0, 1, ''])
+        datos.append(['P-1', 'Proteína', 'General', '', '900', '', '', '', 'quizas', 0, 0, 0, 0, 1, '', '', '', ''])
         resultado = ProductoResource(tienda=tienda_de_prueba()).import_data(datos, dry_run=True)
         self.assertTrue(resultado.has_validation_errors())

@@ -117,7 +117,20 @@ class ProductoQuerySet(models.QuerySet):
         )
 
     def para_listado(self):
-        return self.select_related('categoria', 'tienda').prefetch_related('fotos').con_valoracion()
+        return self.select_related('categoria', 'tienda').prefetch_related('fotos').con_valoracion().con_variantes()
+
+    def sin_variantes_repetidas(self):
+        """Para los listados: de cada grupo de variantes, solo el principal (si el principal no se vende, sus
+        variantes salen sueltas)."""
+        return self.filter(Q(variante_de__isnull=True) | Q(variante_de__activo=False))
+
+    def con_variantes(self):
+        """`total_variantes`: cuantas variantes a la venta tiene cada producto, para el "N opciones" de la tarjeta."""
+        variantes = (
+            Producto.objects.filter(variante_de=OuterRef('pk'), activo=True).order_by()
+            .values('variante_de').annotate(total=Count('id')).values('total')[:1]
+        )
+        return self.annotate(total_variantes=Coalesce(Subquery(variantes), 0, output_field=models.IntegerField()))
 
     def con_valoracion(self):
         """Promedio y cantidad de reseñas publicadas, para las estrellas de las tarjetas. Con subconsultas: un
@@ -171,6 +184,21 @@ class Producto(models.Model):
     stock_reservado = models.PositiveIntegerField(
         'stock reservado', default=0, editable=False,
         help_text='Unidades apartadas por pedidos sin entregar. Lo maneja el sistema.',
+    )
+    # Variantes (talla, color, tamaño): cada una es un producto con su SKU, precio y disponibilidad, agrupado bajo
+    # el principal. Los listados muestran solo el principal y la ficha ofrece las opciones.
+    variante_de = models.ForeignKey(
+        'self', on_delete=models.SET_NULL, null=True, blank=True, related_name='variantes',
+        verbose_name='variante de',
+        help_text='Si este producto es otra talla, color o tamaño de otro, elige aquí el producto principal.',
+    )
+    nombre_variante = models.CharField(
+        'opción', max_length=40, blank=True,
+        help_text='Lo que distingue esta variante: "Rojo", "Talla M", "500 ml". En el principal, su propia opción.',
+    )
+    tipo_variante = models.CharField(
+        'tipo de opción', max_length=30, blank=True,
+        help_text='Solo en el producto principal: "Color", "Talla", "Tamaño"... Vacío = "Opción".',
     )
     destacado = models.BooleanField(default=False)
     nuevo = models.BooleanField(default=False, help_text='Márcalo para mostrarlo siempre como nuevo.')
@@ -230,8 +258,30 @@ class Producto(models.Model):
                 f'Hay {self.stock_reservado} unidades reservadas por pedidos; '
                 'el almacén no puede quedar por debajo de esa cantidad.'
             )
+        errores.update(self._errores_de_variante())
         if errores:
             raise ValidationError(errores)
+
+    def _errores_de_variante(self):
+        """Un solo nivel: el principal no es variante de otro, y todo queda dentro de la misma tienda."""
+        principal = self.variante_de
+        if principal is None:
+            return {}
+        if self.pk and principal.pk == self.pk:
+            return {'variante_de': 'Un producto no puede ser variante de sí mismo.'}
+        if principal.tienda_id != self.tienda_id:
+            return {'variante_de': 'Elige un producto de la misma tienda.'}
+        if principal.variante_de_id is not None:
+            return {'variante_de': 'Elige el producto principal, no otra variante.'}
+        if self.pk and Producto.objects.filter(variante_de=self).exists():
+            return {'variante_de': 'Este producto ya tiene variantes: no puede ser variante de otro.'}
+        if not self.nombre_variante.strip():
+            return {'nombre_variante': 'Escribe la opción de esta variante (por ejemplo "Rojo" o "Talla M").'}
+        return {}
+
+    @property
+    def principal(self):
+        return self.variante_de or self
 
     def save(self, *args, **kwargs):
         if not self.slug:

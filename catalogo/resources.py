@@ -7,11 +7,11 @@ from .models import Categoria, Producto
 COLUMNAS = [
     'sku', 'nombre', 'categoria', 'descripcion', 'precio', 'precio_oferta',
     'oferta_inicio', 'oferta_fin', 'disponibilidad', 'controla_stock', 'stock_almacen', 'destacado', 'nuevo',
-    'activo', 'marca',
+    'activo', 'marca', 'variante_de', 'nombre_variante', 'tipo_variante',
 ]
 FILA_DE_EJEMPLO = [
     'HOG-001', 'Lámpara de mesa LED', 'Hogar', 'Luz cálida regulable.', '1250.00', '990.00',
-    '2026-01-15 08:00:00', '2026-01-31 23:59:00', 'disponible', 0, 0, 1, 0, 1, 'Lumina',
+    '2026-01-15 08:00:00', '2026-01-31 23:59:00', 'disponible', 0, 0, 1, 0, 1, 'Lumina', '', 'Blanca', 'Color',
 ]
 
 
@@ -30,6 +30,24 @@ class CategoriaPorNombreWidget(ForeignKeyWidget):
         return categoria or Categoria.objects.create(nombre=nombre)
 
 
+class PrincipalPorSkuWidget(ForeignKeyWidget):
+    """La columna `variante_de` trae el SKU del producto principal, que se busca solo en la tienda que se importa."""
+
+    tienda = None
+
+    def clean(self, value, row=None, **kwargs):
+        sku = str(value or '').strip().upper()
+        if not sku:
+            return None
+        principal = Producto.objects.filter(tienda=self.tienda, sku=sku).first() if self.tienda else None
+        if principal is None:
+            raise ValueError(f'No hay un producto con el SKU {sku} en esta tienda (columna variante_de).')
+        return principal
+
+    def render(self, value, obj=None, **kwargs):
+        return value.sku if value else ''
+
+
 class ProductoResource(resources.ModelResource):
     """Importa en una sola tienda: el `sku` identifica el producto dentro de ella.
 
@@ -38,6 +56,9 @@ class ProductoResource(resources.ModelResource):
 
     categoria = fields.Field(
         column_name='categoria', attribute='categoria', widget=CategoriaPorNombreWidget(Categoria, 'nombre'),
+    )
+    variante_de = fields.Field(
+        column_name='variante_de', attribute='variante_de', widget=PrincipalPorSkuWidget(Producto, 'sku'),
     )
 
     class Meta:
@@ -54,6 +75,7 @@ class ProductoResource(resources.ModelResource):
         super().__init__(**kwargs)
         self.tienda = tienda
         self.fields['categoria'].widget.crear = crear_categorias
+        self.fields['variante_de'].widget.tienda = tienda
 
     def get_queryset(self):
         consulta = super().get_queryset()

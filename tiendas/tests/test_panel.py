@@ -29,7 +29,8 @@ CSV = '1'  # posicion de CSV en IMPORT_EXPORT_FORMATS
 
 # Un Excel de antes de la disponibilidad y la marca (sin esas columnas) se sigue importando igual.
 COLUMNAS_ANTERIORES = [
-    columna for columna in COLUMNAS if columna not in ('disponibilidad', 'controla_stock', 'marca')
+    columna for columna in COLUMNAS
+    if columna not in ('disponibilidad', 'controla_stock', 'marca', 'variante_de', 'nombre_variante', 'tipo_variante')
 ]
 
 

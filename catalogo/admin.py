@@ -159,10 +159,11 @@ class ProductoAdmin(AvisaImagenesSinGuardar, AdminDeTienda, ImportExportModelAdm
     import_export_change_list_template = 'admin/catalogo/producto/change_list.html'
 
     list_display = [
-        'miniatura', 'nombre', 'sku', 'categoria', 'precio_formateado', 'oferta', 'disponibilidad',
+        'miniatura', 'nombre_con_variante', 'sku', 'categoria', 'precio_formateado', 'oferta', 'disponibilidad',
         'disponible', 'destacado', 'nuevo', 'activo',
     ]
-    list_display_links = ['miniatura', 'nombre']
+    list_display_links = ['miniatura', 'nombre_con_variante']
+    list_select_related = ['categoria', 'variante_de']
     list_editable = ['disponibilidad', 'destacado', 'nuevo', 'activo']
     list_filter = [
         'categoria', 'marca', 'activo', 'disponibilidad', EnOfertaFilter, 'controla_stock', StockFilter, 'destacado', 'nuevo',
@@ -181,6 +182,13 @@ class ProductoAdmin(AvisaImagenesSinGuardar, AdminDeTienda, ImportExportModelAdm
         (None, {'fields': ['tienda', 'nombre', 'slug', 'sku', 'categoria', 'marca', 'descripcion']}),
         ('Precio', {'fields': ['precio', 'exento_itbis', 'precio_oferta', 'oferta_inicio', 'oferta_fin']}),
         ('Disponibilidad', {'fields': ['disponibilidad']}),
+        ('Variantes (talla, color, tamaño)', {
+            'classes': ['collapse'],
+            'description': 'Cada variante es un producto con su propio SKU, precio y disponibilidad. En la variante '
+                           'elige el producto principal y escribe su opción; en el principal escribe el tipo '
+                           '("Talla", "Color") y su propia opción. En el catálogo sale solo el principal.',
+            'fields': ['variante_de', 'nombre_variante', 'tipo_variante'],
+        }),
         ('Inventario (opcional)', {
             'description': 'Déjalo sin marcar si no cuentas las unidades: el producto se vende según su disponibilidad.',
             'fields': ['controla_stock', 'stock_almacen', 'stock_reservado', 'stock_disponible_actual'],
@@ -189,7 +197,25 @@ class ProductoAdmin(AvisaImagenesSinGuardar, AdminDeTienda, ImportExportModelAdm
     ]
 
     def get_queryset(self, request):
-        return super().get_queryset(request).select_related('categoria').prefetch_related('fotos')
+        return super().get_queryset(request).select_related('categoria', 'variante_de').prefetch_related('fotos')
+
+    def formfield_for_foreignkey(self, db_field, request, **kwargs):
+        if db_field.name == 'variante_de':
+            # Solo productos principales de las tiendas del usuario; `clean` exige ademas que sea la misma tienda.
+            kwargs['queryset'] = Producto.objects.filter(
+                tienda__in=tiendas_del_panel(request), variante_de__isnull=True,
+            ).order_by('nombre')
+        return super().formfield_for_foreignkey(db_field, request, **kwargs)
+
+    def get_form(self, request, obj=None, **kwargs):
+        formulario = super().get_form(request, obj, **kwargs)
+        campo = formulario.base_fields.get('variante_de')
+        if campo is not None and obj is not None:
+            campo.queryset = campo.queryset.exclude(pk=obj.pk)
+        if campo is not None:
+            for permiso in ('can_add_related', 'can_change_related', 'can_delete_related', 'can_view_related'):
+                setattr(campo.widget, permiso, False)
+        return formulario
 
     def get_urls(self):
         propias = [
@@ -284,6 +310,13 @@ class ProductoAdmin(AvisaImagenesSinGuardar, AdminDeTienda, ImportExportModelAdm
         if foto:
             return format_html('<img src="{}" alt="" class="panel-miniatura" loading="lazy">', foto.imagen.url)
         return format_html('<span class="panel-miniatura panel-sin-foto">{}</span>', '—')
+
+    @admin.display(description='Producto', ordering='nombre')
+    def nombre_con_variante(self, producto):
+        if producto.variante_de_id:
+            return format_html('{}<br><small class="panel-variante">Variante de {}: {}</small>', producto.nombre,
+                               producto.variante_de.nombre, producto.nombre_variante)
+        return producto.nombre
 
     @admin.display(description='Precio', ordering='precio')
     def precio_formateado(self, producto):

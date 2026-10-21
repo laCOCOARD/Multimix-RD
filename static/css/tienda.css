@@ -620,3 +620,26 @@ html:not(.js) .solo-con-js { display: none !important; }
 .mm-envio-gratis.logrado .progress-bar { background: var(--mm-acento); }
 .mm-plazo { color: var(--mm-acento-oscuro); }
 .mm-plazo i { color: var(--mm-acento); }
+
+/* --- Galeria deslizable: en el celular las fotos se pasan con el dedo ---------------- */
+.mm-galeria-pista { display: flex; height: 100%; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; overscroll-behavior-x: contain; }
+.mm-galeria-pista::-webkit-scrollbar { display: none; }
+.mm-galeria-pista:focus-visible { outline: 3px solid var(--mm-primario); outline-offset: -3px; }
+.mm-galeria-foto { flex: 0 0 100%; height: 100%; scroll-snap-align: start; overflow: hidden; }
+.mm-galeria-puntos { display: none; justify-content: center; gap: .4rem; margin-top: .6rem; }
+.mm-galeria-puntos span { width: .5rem; height: .5rem; border-radius: 50%; background: var(--mm-borde); transition: background var(--mm-transicion), transform var(--mm-transicion); }
+.mm-galeria-puntos span.activo { background: var(--mm-primario); transform: scale(1.25); }
+@media (max-width: 767.98px) {
+  .mm-galeria-puntos { display: flex; }
+  .mm-galeria-miniaturas { display: none; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .mm-galeria-pista { scroll-behavior: smooth; }
+}
+
+/* --- Variantes del producto (talla, color, tamano) ----------------------------------- */
+.mm-variante { display: inline-flex; align-items: center; min-height: 2.5rem; padding: .35rem .9rem; border: 1.5px solid var(--mm-borde); border-radius: .6rem; background: var(--mm-superficie); color: var(--mm-texto); font-weight: 500; text-decoration: none; transition: border-color var(--mm-transicion), box-shadow var(--mm-transicion); }
+.mm-variante:hover { border-color: var(--mm-primario); color: var(--mm-texto); }
+.mm-variante.activa { border-color: var(--mm-primario); box-shadow: 0 0 0 1px var(--mm-primario); background: var(--mm-primario-suave); }
+.mm-variante.agotada { color: var(--mm-texto-suave); text-decoration: line-through; border-style: dashed; }
+.mm-tarjeta-opciones { margin: -.15rem 0 .35rem; font-size: .8rem; color: var(--mm-texto-suave); }

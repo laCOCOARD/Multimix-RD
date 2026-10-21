@@ -24,6 +24,7 @@
         <i class="bi bi-star-fill"></i>{{ producto.valoracion_promedio|floatformat:"1u" }} <span>({{ producto.valoracion_total }})</span>
       </p>
     {% endif %}
+    {% if producto.total_variantes %}<p class="mm-tarjeta-opciones">{{ producto.total_variantes|add:1 }} opciones</p>{% endif %}
     <p class="mm-precio mb-3">
       <span class="mm-precio-final">{{ producto.precio_final|moneda }}</span>
       {% if producto.en_oferta %}<s class="mm-precio-anterior">{{ producto.precio|moneda }}</s>{% endif %}

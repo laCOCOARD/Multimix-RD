@@ -126,3 +126,6 @@ a.panel-tarjeta:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba
 
 /* --- Saldos por tienda: apartados de lo cobrado por el sitio y por la tienda ---- */
 .module th.panel-subtitulo { background: var(--darkened-bg); color: var(--body-fg); font-weight: 700; padding-top: 10px; }
+
+/* Variante de otro producto, en la lista de productos. */
+.panel-variante { color: var(--body-quiet-color, #666); }

@@ -97,8 +97,15 @@ Al cerrar cada modulo: check, makemigrations, migrate, test y commit.
   Paso en produccion y las pruebas no lo ven, porque el cliente de pruebas no manda `Origin`.
 - Subcategorias: `Categoria.padre`, solo dos niveles (lo valida `clean` y el panel solo ofrece principales). La
   pagina de una categoria principal lista tambien los productos de sus subcategorias, y `categorias_de` devuelve
-  cada subcategoria debajo de su principal. Variantes de producto (talla, color) NO estan hechas: hoy cada variante
-  se publica como un producto con su SKU.
+  cada subcategoria debajo de su principal.
+- Variantes (talla, color, tamaño): cada variante sigue siendo un `Producto` con su SKU, precio, disponibilidad y
+  fotos, agrupado con `variante_de` (un solo nivel, misma tienda: lo valida `clean`), `nombre_variante` y, en el
+  principal, `tipo_variante`. Carrito, pedidos y stock no cambian. Los listados (`catalogo.services._base`) muestran
+  solo el principal (`sin_variantes_repetidas`; si el principal no se vende, salen sueltas) con "N opciones"
+  (`con_variantes`, dentro de `para_listado`), y la ficha ofrece las opciones (`opciones_de`). La importacion lee
+  `variante_de` con el SKU del principal dentro de la tienda.
+- Galeria de la ficha: todas las fotos en una pista con scroll-snap (se desliza con el dedo, puntos en el celular)
+  y las miniaturas la mueven (`tienda.js`).
 - Sin cron en Render free: `config.middleware.TareasPeriodicasMiddleware` llama a `core.tareas.ejecutar_si_toca`,
   que como mucho una vez por hora (candado en la cache) cancela los pedidos vencidos y borra sesiones caducadas.
   En las pruebas esta apagado (`TAREAS_AUTOMATICAS`).

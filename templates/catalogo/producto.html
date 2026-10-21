@@ -39,7 +39,15 @@
       <div class="mm-galeria">
         <div class="mm-galeria-principal">
           {% if fotos %}
-            <img id="foto-principal" src="{{ fotos.0.imagen.url }}" alt="{{ producto.nombre }}" width="800" height="800">
+            {# Todas las fotos en una pista que se desliza con el dedo; en la computadora se cambian con las miniaturas. #}
+            <div class="mm-galeria-pista js-galeria-pista" aria-label="Fotos de {{ producto.nombre }}"{% if fotos|length > 1 %} tabindex="0"{% endif %}>
+              {% for foto in fotos %}
+                <div class="mm-galeria-foto">
+                  <img src="{{ foto.imagen.url }}" alt="{{ producto.nombre }}{% if not forloop.first %} (foto {{ forloop.counter }}){% endif %}"
+                       width="800" height="800"{% if not forloop.first %} loading="lazy" decoding="async"{% endif %}>
+                </div>
+              {% endfor %}
+            </div>
           {% else %}
             <span class="mm-sin-foto"><i class="bi bi-image"></i></span>
           {% endif %}
@@ -51,6 +59,9 @@
           </span>
         </div>
         {% if fotos|length > 1 %}
+          <div class="mm-galeria-puntos js-galeria-puntos" aria-hidden="true">
+            {% for foto in fotos %}<span{% if forloop.first %} class="activo"{% endif %}></span>{% endfor %}
+          </div>
           <div class="mm-galeria-miniaturas">
             {% for foto in fotos %}
               <a class="mm-miniatura{% if forloop.first %} activa{% endif %} js-miniatura" href="{{ foto.imagen.url }}" target="_blank" rel="noopener">
@@ -84,6 +95,20 @@
         <p class="mm-cuenta-atras" data-fin="{{ oferta_termina|date:'c' }}">
           <i class="bi bi-alarm"></i>La oferta termina <span class="js-tiempo">el {{ oferta_termina|date:"j \d\e F, g:i A" }}</span>
         </p>
+      {% endif %}
+
+      {% if opciones %}
+        <div class="mm-variantes mb-3" role="group" aria-label="{{ producto.principal.tipo_variante|default:'Opción' }}">
+          <p class="small mb-2"><span class="text-muted">{{ producto.principal.tipo_variante|default:'Opción' }}:</span>
+            <strong>{{ producto.nombre_variante|default:producto.nombre }}</strong></p>
+          <div class="d-flex flex-wrap gap-2">
+            {% for opcion in opciones %}
+              <a class="mm-variante{% if opcion.pk == producto.pk %} activa{% endif %}{% if opcion.agotado %} agotada{% endif %}"
+                 href="{{ opcion.get_absolute_url }}"{% if opcion.pk == producto.pk %} aria-current="true"{% endif %}
+                 title="{% if opcion.agotado %}{{ opcion.estado_venta.label }}{% else %}{{ opcion.precio_final|moneda }}{% endif %}">{{ opcion.nombre_variante|default:opcion.nombre }}</a>
+            {% endfor %}
+          </div>
+        </div>
       {% endif %}
 
       {% if tienda.itbis_porcentaje and not producto.exento_itbis %}

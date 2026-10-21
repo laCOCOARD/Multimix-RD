@@ -107,6 +107,7 @@ def producto(request, slug):
         'producto': item,
         'fotos': item.fotos_ordenadas,
         'relacionados': services.relacionados(item),
+        'opciones': services.opciones_de(item),
         'vistos': vistos_antes,
         'oferta_termina': services.oferta_por_terminar(item),
         'es_favorito': es_favorito(request.user, item),

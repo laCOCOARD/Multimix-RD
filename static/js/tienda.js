@@ -2,6 +2,8 @@
 (() => {
   'use strict';
 
+  const sinMovimiento = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
   const escapar = (texto) => {
     const nodo = document.createElement('div');
     nodo.textContent = texto;
@@ -265,21 +267,38 @@
     });
   });
 
-  // Galeria del producto: cambiar la foto grande al tocar una miniatura.
-  const fotoPrincipal = document.getElementById('foto-principal');
-  if (fotoPrincipal) {
-    document.querySelectorAll('.js-miniatura').forEach((miniatura) => {
+  // Galeria del producto: las fotos se deslizan con el dedo (scroll-snap) y las miniaturas llevan a cada una.
+  const pistaGaleria = document.querySelector('.js-galeria-pista');
+  if (pistaGaleria) {
+    const miniaturas = Array.from(document.querySelectorAll('.js-miniatura'));
+    const puntos = Array.from(document.querySelectorAll('.js-galeria-puntos span'));
+    const marcar = (indice) => {
+      miniaturas.forEach((miniatura, i) => miniatura.classList.toggle('activa', i === indice));
+      puntos.forEach((punto, i) => punto.classList.toggle('activo', i === indice));
+    };
+    const irA = (indice) => pistaGaleria.scrollTo({
+      left: indice * pistaGaleria.clientWidth, behavior: sinMovimiento ? 'auto' : 'smooth',
+    });
+    miniaturas.forEach((miniatura, indice) => {
       miniatura.addEventListener('click', (evento) => {
         evento.preventDefault();
-        fotoPrincipal.src = miniatura.href;
-        document.querySelectorAll('.js-miniatura').forEach((otra) => otra.classList.remove('activa'));
-        miniatura.classList.add('activa');
+        irA(indice);
+        marcar(indice);
       });
+    });
+    let espera;
+    pistaGaleria.addEventListener('scroll', () => {
+      clearTimeout(espera);
+      espera = setTimeout(() => marcar(Math.round(pistaGaleria.scrollLeft / pistaGaleria.clientWidth)), 60);
+    }, { passive: true });
+    pistaGaleria.addEventListener('keydown', (evento) => {
+      const actual = Math.round(pistaGaleria.scrollLeft / pistaGaleria.clientWidth);
+      if (evento.key === 'ArrowRight') { evento.preventDefault(); irA(Math.min(actual + 1, miniaturas.length - 1)); }
+      if (evento.key === 'ArrowLeft') { evento.preventDefault(); irA(Math.max(actual - 1, 0)); }
     });
   }
 
   // Filas que se deslizan: flechas en pantallas con raton y, con data-auto, avance solo cada pocos segundos.
-  const sinMovimiento = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   document.querySelectorAll('[data-fila]').forEach((fila) => {
     const pista = fila.querySelector('.mm-fila-pista');
     const anterior = fila.querySelector('[data-mover="-1"]');
@@ -370,11 +389,13 @@
     if (boton && !window.confirm(boton.dataset.confirmar)) evento.preventDefault();
   });
 
-  // Lupa en la foto del producto: con el raton, la foto se amplia donde apunta.
+  // Lupa en la foto del producto: con el raton, la foto que se ve se amplia donde apunta.
   const marco = document.querySelector('.mm-galeria-principal');
   if (marco && window.matchMedia('(hover: hover) and (pointer: fine)').matches) {
     marco.addEventListener('mousemove', (evento) => {
-      const foto = marco.querySelector('img');
+      const pista = marco.querySelector('.js-galeria-pista');
+      const indice = pista ? Math.round(pista.scrollLeft / pista.clientWidth) : 0;
+      const foto = marco.querySelectorAll('img')[indice];
       if (!foto) return;
       const caja = marco.getBoundingClientRect();
       foto.style.transformOrigin = `${((evento.clientX - caja.left) / caja.width) * 100}% ${((evento.clientY - caja.top) / caja.height) * 100}%`;

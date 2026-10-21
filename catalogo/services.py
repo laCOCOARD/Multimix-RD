@@ -24,10 +24,26 @@ def clave_mas_vendidos(tienda):
     return f'catalogo_ids_mas_vendidos_{tienda.pk}'
 
 
-def _base(tienda=None):
-    """Productos a la venta de una tienda; sin tienda, los de todas las tiendas activas."""
+def _base(tienda=None, agrupar=True):
+    """Productos a la venta de una tienda; sin tienda, los de todas las tiendas activas.
+
+    Con `agrupar`, de cada grupo de variantes sale solo el principal: la ficha ofrece las demas.
+    """
     productos = Producto.objects.activos().para_listado()
+    if agrupar:
+        productos = productos.sin_variantes_repetidas()
     return productos if tienda is None else productos.filter(tienda=tienda)
+
+
+def opciones_de(producto):
+    """Las variantes del grupo del producto (el principal primero) que siguen publicadas. Vacio si no tiene."""
+    principal = producto.principal
+    variantes = list(
+        Producto.objects.activos().filter(variante_de=principal).order_by('nombre_variante', 'id')
+    )
+    if not variantes:
+        return []
+    return [principal, *variantes] if principal.activo else variantes
 
 
 def ids_mas_vendidos(tienda, limite=40):
@@ -143,7 +159,7 @@ def recordar_visto(sesion, producto):
 def vistos(sesion, tienda=None, excluir=None, limite=10):
     """Los productos que el visitante miro hace poco y siguen a la venta; dentro de una tienda, solo los suyos."""
     ids = [pk for pk in sesion.get(CLAVE_VISTOS, []) if pk != excluir]
-    productos = _base(tienda).in_bulk(ids)
+    productos = _base(tienda, agrupar=False).in_bulk(ids)
     return [productos[pk] for pk in ids if pk in productos][:limite]
 
 
