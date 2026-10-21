@@ -35,6 +35,10 @@ def ejecutar_si_toca():
         from pagos.services import mover_comprobantes_al_privado
 
         mover_comprobantes_al_privado()
+        from catalogo.avisos import avisar_disponibles
+
+        # Los cambios hechos en masa (acciones del panel, importacion) no pasan por el aviso inmediato.
+        avisar_disponibles()
     except Exception:
         # El mantenimiento nunca debe tumbar la pagina que alguien esta viendo.
         logger.exception('Fallaron las tareas periodicas')

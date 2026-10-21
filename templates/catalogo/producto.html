@@ -106,6 +106,31 @@
 
       {% if producto.agotado %}
         <button class="btn btn-secondary btn-lg w-100 mb-2" type="button" disabled>{% if producto.estado_venta == 'agotado' %}Agotado{% else %}No disponible por ahora{% endif %}</button>
+        <div class="mm-panel mm-avisame mb-2" id="avisame">
+          {% if esperando_aviso %}
+            <p class="mb-0"><i class="bi bi-bell-fill me-1"></i>Te avisaremos por correo cuando vuelva a estar disponible.</p>
+          {% else %}
+            <form method="post" action="{% url 'catalogo:avisame' tienda.slug producto.slug %}">
+              {% csrf_token %}
+              <p class="fw-semibold mb-2"><i class="bi bi-bell me-1"></i>Avísame cuando esté disponible</p>
+              {% if user.is_authenticated %}
+                <p class="small text-muted mb-2">Te escribimos a {{ user.email }}, una sola vez.</p>
+                <button class="btn btn-primary w-100" type="submit">Avísame</button>
+              {% else %}
+                <div class="input-group">
+                  <input class="form-control" type="email" name="correo" maxlength="150" required autocomplete="email"
+                         placeholder="Tu correo" aria-label="Tu correo para el aviso">
+                  <button class="btn btn-primary" type="submit">Avísame</button>
+                </div>
+                <p class="small text-muted mt-2 mb-0">Te escribimos una sola vez, cuando vuelva.</p>
+              {% endif %}
+              <div class="mm-campo-extra" aria-hidden="true">
+                <label for="aviso-sitio-web">Sitio web (no llenar)</label>
+                <input type="text" id="aviso-sitio-web" name="sitio_web" tabindex="-1" autocomplete="off">
+              </div>
+            </form>
+          {% endif %}
+        </div>
       {% else %}
         <form class="js-agregar mb-2" id="form-compra" method="post" action="{% url 'carrito:agregar' tienda.slug %}">
           {% csrf_token %}

@@ -2,11 +2,14 @@ from django.core.paginator import Paginator
 from django.http import JsonResponse
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.core.exceptions import ValidationError
+from django.core.validators import validate_email
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.views.decorators.http import require_GET, require_POST
 
 from clientes.services import es_favorito
+from core.red import quien_es
 from core.seo import producto_json_ld, ruta_json_ld
 from core.templatetags.moneda import formatear_monto
 from opiniones import services as opiniones
@@ -17,11 +20,13 @@ from pedidos.whatsapp import construir_enlace
 from tiendas.decoradores import de_tienda
 from tiendas.services import banners_de
 
-from . import services
+from . import avisos, services
 from .forms import ORDENES, FiltroCatalogoForm
 from .models import Categoria, Producto
 
 PRODUCTOS_POR_PAGINA = 12
+# Productos de los que el visitante pidio aviso en esta sesion (para no volver a ofrecerselo).
+CLAVE_AVISOS = 'avisos_pedidos'
 OPCIONES_ESTRELLAS = [
     (5, '5 estrellas · Excelente'), (4, '4 estrellas · Muy bueno'), (3, '3 estrellas · Bueno'),
     (2, '2 estrellas · Regular'), (1, '1 estrella · Malo'),
@@ -115,6 +120,10 @@ def producto(request, slug):
             (item.nombre, url_absoluta),
         ]),
         'mi_resena': opiniones.resena_de(request.user, item),
+        'esperando_aviso': item.agotado and (
+            item.pk in request.session.get(CLAVE_AVISOS, [])
+            or (request.user.is_authenticated and avisos.esperando(item, request.user.email))
+        ),
         'opciones_estrellas': OPCIONES_ESTRELLAS,
         'cantidad_maxima': item.limite_compra,
         'plazo_recoger': entregas.estimar(tienda, True, bajo_pedido=item.bajo_pedido),
@@ -138,3 +147,27 @@ def opinar(request, slug):
     else:
         messages.success(request, 'Gracias por tu opinión. La publicamos en cuanto la revisemos.')
     return redirect(item.get_absolute_url() + '#opiniones')
+
+
+@require_POST
+@de_tienda
+def avisame(request, slug):
+    """"Avisame cuando este disponible". Con sesion iniciada va al correo de la cuenta."""
+    item = get_object_or_404(Producto.objects.activos(), tienda=request.tienda, slug=slug)
+    if request.POST.get('sitio_web'):
+        return redirect(item.get_absolute_url())
+    correo = request.user.email if request.user.is_authenticated else request.POST.get('correo', '')
+    try:
+        validate_email(correo)
+    except ValidationError:
+        messages.error(request, 'Escribe un correo válido para avisarte.')
+        return redirect(item.get_absolute_url())
+    usuario = request.user if request.user.is_authenticated else None
+    try:
+        avisos.pedir_aviso(item, correo, quien_es(request), usuario)
+    except avisos.AvisoError as error:
+        messages.error(request, error.mensaje)
+    else:
+        request.session[CLAVE_AVISOS] = [item.pk, *request.session.get(CLAVE_AVISOS, [])][:30]
+        messages.success(request, f'Listo: te escribimos a {correo} cuando "{item.nombre}" vuelva a estar disponible.')
+    return redirect(item.get_absolute_url())

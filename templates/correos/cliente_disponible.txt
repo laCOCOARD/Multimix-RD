@@ -1,0 +1,12 @@
+{% load moneda %}{% autoescape off %}Hola:
+
+Nos pediste que te avisáramos: "{{ producto.nombre }}" ya está disponible en {{ tienda.nombre }}.
+
+Precio: {{ producto.precio_final|moneda }}{% if producto.en_oferta %} (antes {{ producto.precio|moneda }}){% endif %}
+
+Míralo aquí:
+{{ enlace }}
+
+Este es el único aviso que te enviamos por este producto.
+{{ tienda.nombre }}
+{% endautoescape %}

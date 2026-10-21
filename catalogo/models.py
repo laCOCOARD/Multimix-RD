@@ -363,3 +363,29 @@ class FotoProducto(models.Model):
 def borrar_archivo_de_foto(sender, instance, **kwargs):
     if instance.imagen:
         instance.imagen.delete(save=False)
+
+
+class AvisoDisponible(models.Model):
+    """"Avisame cuando este disponible": el correo al que se avisa cuando el producto vuelve a venderse."""
+
+    tienda = models.ForeignKey('tiendas.Tienda', on_delete=models.CASCADE, related_name='avisos_disponible', editable=False)
+    producto = models.ForeignKey(Producto, on_delete=models.CASCADE, related_name='avisos_disponible', editable=False)
+    correo = models.EmailField(editable=False)
+    usuario = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='+', editable=False,
+        verbose_name='cuenta',
+    )
+    creado = models.DateTimeField('pedido el', auto_now_add=True)
+    avisado = models.DateTimeField('avisado el', null=True, blank=True, editable=False)
+
+    class Meta:
+        verbose_name = 'aviso de disponibilidad'
+        verbose_name_plural = 'clientes esperando un producto'
+        ordering = ['-creado', '-id']
+        constraints = [
+            models.UniqueConstraint(fields=['producto', 'correo'], name='aviso_disponible_unico_por_correo'),
+        ]
+        indexes = [models.Index(fields=['producto', 'avisado'], name='aviso_producto_pendiente_idx')]
+
+    def __str__(self):
+        return f'{self.correo} espera {self.producto}'

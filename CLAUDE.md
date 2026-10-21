@@ -327,6 +327,10 @@ Al cerrar cada modulo: check, makemigrations, migrate, test y commit.
   (`dias_para_recoger`, `dias_bajo_pedido`, que se suma si el pedido lleva algo bajo pedido) y de cada zona
   (`dias_entrega_min`/`max`). Se ve en la ficha, el checkout y la pagina de envios; el pedido guarda lo prometido
   (`entrega_desde`/`entrega_hasta`).
+- "Avisame cuando este disponible" (`catalogo.AvisoDisponible`, `catalogo/avisos.py`): un correo por producto, con
+  o sin cuenta (con cuenta va al de la cuenta), limite de 10 por persona y hora (`core.red.quien_es`). Se avisa una
+  sola vez al guardar el producto ya comprable (senal `post_save`), con las acciones de disponibilidad del panel y,
+  para lo demas hecho en masa (`update`), en las tareas periodicas. El vendedor ve quien espera (solo lectura).
 - Factura PNG: usa una fuente del sistema (`core.fuentes.cargar_fuente`); con la de Pillow, que no trae
   tildes, escribe sin ellas para que no salgan recuadros.
 

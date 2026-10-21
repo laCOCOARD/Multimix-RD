@@ -5,6 +5,7 @@ import tablib
 from django import forms
 from django.contrib import admin, messages
 from django.core.exceptions import PermissionDenied
+from django.db import transaction
 from django.db.models import Count, F
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import render
@@ -21,8 +22,10 @@ from tiendas.panel import AdminDeTienda, preparar_campo_tienda, tiendas_del_pane
 from tiendas.services import ve_todas
 
 from . import services
+from .avisos import avisar_disponibles
 from .models import (
-    Categoria, Disponibilidad, FotoProducto, Producto, q_agotado, q_comprable, q_oferta_vigente,
+    EN_VENTA, AvisoDisponible, Categoria, Disponibilidad, FotoProducto, Producto, q_agotado, q_comprable,
+    q_oferta_vigente,
 )
 from .resources import COLUMNAS, FILA_DE_EJEMPLO, ProductoResource
 
@@ -105,8 +108,12 @@ class StockFilter(admin.SimpleListFilter):
 def _accion_de_disponibilidad(valor):
     @admin.action(description=f'Marcar como: {valor.label}')
     def accion(modeladmin, request, queryset):
+        ids = list(queryset.values_list('pk', flat=True))
         total = queryset.update(disponibilidad=valor)
         modeladmin.message_user(request, f'{total} productos quedaron como "{valor.label}".')
+        if valor in EN_VENTA:
+            # `update` no pasa por save(): a quien esperaba estos productos se le avisa aqui.
+            transaction.on_commit(lambda: avisar_disponibles(ids))
     accion.__name__ = f'marcar_{valor.value}'
     return accion
 
@@ -379,3 +386,27 @@ class ProductoAdmin(AvisaImagenesSinGuardar, AdminDeTienda, ImportExportModelAdm
             'opts': self.model._meta,
             'media': self.media,
         })
+
+
+@admin.register(AvisoDisponible)
+class AvisoDisponibleAdmin(AdminDeTienda, admin.ModelAdmin):
+    """Quien espera un producto agotado: la demanda que la tienda no ve en los pedidos. Solo lectura."""
+
+    list_display = ['producto', 'correo', 'creado', 'estado']
+    list_filter = [('avisado', admin.EmptyFieldListFilter), 'creado']
+    search_fields = ['producto__nombre', 'producto__sku', 'correo']
+    list_select_related = ['producto']
+    fields = ['producto', 'tienda', 'correo', 'creado', 'avisado']
+    readonly_fields = fields
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    @admin.display(description='Estado', ordering='avisado')
+    def estado(self, aviso):
+        if aviso.avisado:
+            return f'Avisado el {aviso.avisado:%d/%m/%Y}'
+        return 'Esperando'

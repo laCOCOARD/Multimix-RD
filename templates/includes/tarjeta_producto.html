@@ -29,7 +29,8 @@
       {% if producto.en_oferta %}<s class="mm-precio-anterior">{{ producto.precio|moneda }}</s>{% endif %}
     </p>
     {% if producto.agotado %}
-      <button class="btn btn-outline-secondary w-100 mt-auto" type="button" disabled>{% if producto.estado_venta == 'agotado' %}Agotado{% else %}No disponible{% endif %}</button>
+      <a class="btn btn-outline-secondary w-100 mt-auto" href="{{ producto.get_absolute_url }}#avisame"
+         aria-label="{{ producto.nombre }}: avísame cuando esté disponible"><i class="bi bi-bell me-1"></i>Avísame</a>
     {% else %}
       {# "Comprar" es el mismo envio con comprar=1: el producto queda en el carrito y se va directo a pagar. #}
       <form class="mt-auto js-agregar mm-tarjeta-acciones" method="post" action="{% url 'carrito:agregar' producto.tienda.slug %}">

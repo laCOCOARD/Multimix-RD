@@ -31,3 +31,16 @@ def ip_del_cliente(request):
             _aviso_dado = True
             logger.warning('La visita no trae la IP en %s: los limites por IP no se aplican', settings.CABECERA_IP)
     return ip
+
+
+def quien_es(request):
+    """Las formas de reconocer a quien hace algo, para los limites: su sesion, su cuenta y su conexion."""
+    if not request.session.session_key:
+        request.session.save()
+    quien = [('sesion', request.session.session_key)]
+    if request.user.is_authenticated:
+        quien.append(('cuenta', request.user.pk))
+    ip = ip_del_cliente(request)
+    if ip:
+        quien.append(('ip', ip))
+    return quien

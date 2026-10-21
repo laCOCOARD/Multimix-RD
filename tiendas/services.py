@@ -17,6 +17,7 @@ PERMISOS_VENDEDOR = {
     'catalogo': [
         'view_producto', 'add_producto', 'change_producto', 'delete_producto',
         'view_fotoproducto', 'add_fotoproducto', 'change_fotoproducto', 'delete_fotoproducto',
+        'view_avisodisponible',
     ],
     'pedidos': [
         'view_pedido', 'change_pedido', 'delete_pedido', 'view_detallepedido', 'view_eventopedido',
