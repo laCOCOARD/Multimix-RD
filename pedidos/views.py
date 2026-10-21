@@ -8,7 +8,7 @@ from django.urls import reverse
 from django.utils.http import urlencode
 from django.views.decorators.http import require_POST
 
-from carrito.carrito import Carrito
+from carrito.carrito import Carrito, agregar_pedido
 from clientes import services as clientes
 from core.archivos import ERRORES_DE_ALMACENAMIENTO
 from core.models import cuentas_para_transferir
@@ -64,6 +64,7 @@ def _contexto_checkout(request, carrito, formulario):
         'texto_plazo': _texto_plazo(carrito, entrega, zona),
         'envio_gratis': services.progreso_envio_gratis(tienda, totales.subtotal - totales.descuento),
         'zonas': services.zonas_activas(tienda),
+        'direcciones': clientes.direcciones_de(request.user),
         'cuentas': cuentas_para_transferir(),
         'pagos_recoger': services.metodos_pago_disponibles(Pedido.Entrega.RECOGER, tienda),
         'pagos_envio': services.metodos_pago_disponibles(Pedido.Entrega.ENVIO, tienda),
@@ -236,6 +237,24 @@ def cancelar(request, token):
     else:
         messages.success(request, 'Cancelamos tu pedido.')
     return redirect(pedido)
+
+
+@login_not_required
+@require_POST
+def volver_a_pedir(request, token):
+    """Pone en el carrito de la tienda los productos del pedido que sigan a la venta, con las mismas cantidades."""
+    pedido = pedido_del_enlace(request, token, Pedido.objects.prefetch_related('detalles'))
+    if not pedido.tienda.activa:
+        messages.error(request, f'{pedido.tienda.nombre} ya no está vendiendo en el sitio.')
+        return redirect(pedido)
+    _, agregados, avisos = agregar_pedido(request, pedido)
+    for aviso in avisos:
+        messages.warning(request, aviso)
+    if agregados:
+        messages.success(request, f'Pusimos en tu carrito los productos del pedido {pedido.numero}.')
+    else:
+        messages.error(request, 'Ninguno de los productos de ese pedido está a la venta ahora.')
+    return redirect('carrito:detalle', pedido.tienda.slug)
 
 
 @login_not_required

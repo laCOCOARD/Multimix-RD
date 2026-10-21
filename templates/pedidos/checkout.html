@@ -74,6 +74,19 @@
           </div>
 
           <div class="js-bloque-envio row g-3 mt-1">
+            {% if direcciones %}
+              <div class="col-12">
+                <label class="form-label" for="direccion-guardada">Mis direcciones</label>
+                <select class="form-select js-direccion-guardada" id="direccion-guardada">
+                  <option value="">Escribir otra dirección</option>
+                  {% for guardada in direcciones %}
+                    <option value="{{ guardada.pk }}" data-sector="{{ guardada.sector }}" data-direccion="{{ guardada.direccion }}"
+                            data-referencia="{{ guardada.referencia }}"{% if guardada.direccion == formulario.direccion.value and guardada.sector == formulario.sector.value %} selected{% endif %}>{{ guardada.nombre }}: {{ guardada.direccion }}, {{ guardada.sector }}</option>
+                  {% endfor %}
+                </select>
+                <div class="form-text">Las direcciones nuevas se guardan solas al hacer el pedido. <a href="{% url 'clientes:direcciones' %}">Administrar</a></div>
+              </div>
+            {% endif %}
             <div class="col-sm-6">
               <label class="form-label" for="id_zona">{{ formulario.zona.label }}</label>
               <select class="form-select{% if formulario.zona.errors %} is-invalid{% endif %}" id="id_zona" name="zona">

@@ -123,6 +123,22 @@
     pedirTotales(false);
   }));
   formulario.querySelectorAll('.js-pago').forEach((radio) => radio.addEventListener('change', ajustarCampos));
+
+  // Mis direcciones: al elegir una se llenan sector, calle y referencia (el cliente puede corregirlos).
+  const guardadas = formulario.querySelector('.js-direccion-guardada');
+  if (guardadas) {
+    guardadas.addEventListener('change', () => {
+      const opcion = guardadas.selectedOptions[0];
+      if (!opcion || !opcion.value) {
+        ['sector', 'direccion', 'referencia'].forEach((nombre) => { campo(nombre).value = ''; });
+        campo('sector').focus();
+        return;
+      }
+      campo('sector').value = opcion.dataset.sector;
+      campo('direccion').value = opcion.dataset.direccion;
+      campo('referencia').value = opcion.dataset.referencia;
+    });
+  }
   campo('zona').addEventListener('change', () => pedirTotales(false));
   campo('telefono').addEventListener('input', validarTelefono);
   document.getElementById('aplicar-cupon').addEventListener('click', () => pedirTotales(true));

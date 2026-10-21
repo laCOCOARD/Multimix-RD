@@ -157,8 +157,10 @@ class MiCuentaTests(TestCase):
         self.comprar(metodo_entrega='envio', zona=zona.pk, sector='Naco', direccion='Calle 1 #5', referencia='Portón azul',
                      telefono='8495557777')
         perfil = Perfil.objects.get(usuario=self.ana)
-        self.assertEqual((perfil.telefono, perfil.sector, perfil.direccion, perfil.referencia),
-                         ('8495557777', 'Naco', 'Calle 1 #5', 'Portón azul'))
+        self.assertEqual(perfil.telefono, '8495557777')
+        direccion = services.direcciones_de(self.ana).get()
+        self.assertEqual((direccion.sector, direccion.direccion, direccion.referencia, direccion.principal),
+                         ('Naco', 'Calle 1 #5', 'Portón azul', True))
 
         self.client.post(ruta('carrito:agregar'), {'producto_id': self.producto.pk, 'cantidad': 1})
         pagina = self.client.get(ruta('pedidos:checkout'))
@@ -188,11 +190,11 @@ class MiCuentaTests(TestCase):
 
     def test_edita_sus_datos(self):
         self.client.post(reverse('clientes:perfil'), {
-            'nombre': 'Ana  María Pérez', 'telefono': '829-555-9999', 'sector': 'Piantini', 'direccion': 'Av. 27', 'referencia': '',
+            'nombre': 'Ana  María Pérez', 'telefono': '829-555-9999',
         })
         self.ana.refresh_from_db()
-        self.assertEqual((self.ana.first_name, self.ana.perfil.telefono, self.ana.perfil.sector),
-                         ('Ana María Pérez', '8295559999', 'Piantini'))
+        self.assertEqual((self.ana.first_name, self.ana.perfil.telefono, self.ana.perfil.recordatorios),
+                         ('Ana María Pérez', '8295559999', False))
         self.luis.refresh_from_db()
         self.assertEqual(self.luis.first_name, 'Luis Gil')
         respuesta = self.client.post(reverse('clientes:perfil'), {'nombre': 'Ana', 'telefono': '123'})

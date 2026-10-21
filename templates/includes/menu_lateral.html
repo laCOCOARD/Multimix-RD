@@ -45,6 +45,7 @@
         <h2>Mi cuenta</h2>
         <a href="{% url 'clientes:cuenta' %}"><i class="bi bi-receipt"></i>Mis pedidos</a>
         <a href="{% url 'clientes:favoritos' %}"><i class="bi bi-heart"></i>Mis favoritos</a>
+        <a href="{% url 'clientes:direcciones' %}"><i class="bi bi-geo-alt"></i>Mis direcciones</a>
         <a href="{% url 'clientes:perfil' %}"><i class="bi bi-person"></i>Mis datos</a>
         <form method="post" action="{% url 'clientes:salir' %}">
           {% csrf_token %}

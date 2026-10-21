@@ -16,7 +16,10 @@ from core.red import ip_del_cliente
 from pedidos.models import Pedido
 
 from . import services
-from .forms import CambiarClaveForm, EntrarForm, NuevaClaveForm, PerfilForm, RecuperarClaveForm, RegistroForm
+from .forms import (
+    CambiarClaveForm, DireccionForm, EntrarForm, NuevaClaveForm, PerfilForm, RecuperarClaveForm, RegistroForm,
+)
+from .models import Direccion
 
 PLANTILLA = 'clientes/formulario.html'
 PEDIDOS_POR_PAGINA = 10
@@ -137,6 +140,7 @@ def cuenta(request):
     return render(request, 'clientes/cuenta.html', {
         'pagina': Paginator(pedidos, PEDIDOS_POR_PAGINA).get_page(request.GET.get('pagina')),
         'perfil': services.perfil_de(request.user),
+        'direccion': services.direcciones_de(request.user).first(),
         'correo_confirmado': services.correo_confirmado(request.user),
     })
 
@@ -144,8 +148,12 @@ def cuenta(request):
 @login_required
 def perfil(request):
     usuario = request.user
-    datos = services.datos_para_el_checkout(usuario)
-    formulario = PerfilForm(request.POST or None, initial=datos)
+    perfil_actual = services.perfil_de(usuario)
+    inicial = {
+        'nombre': usuario.get_full_name() or usuario.first_name, 'telefono': perfil_actual.telefono,
+        'recordatorios': perfil_actual.recordatorios,
+    }
+    formulario = PerfilForm(request.POST or None, initial=inicial)
     if request.method == 'POST' and formulario.is_valid():
         formulario.guardar(usuario)
         messages.success(request, 'Guardamos tus datos.')
@@ -153,10 +161,83 @@ def perfil(request):
     return render(request, PLANTILLA, {
         'formulario': formulario,
         'titulo': 'Mis datos',
-        'intro': f'Tu correo es {usuario.email}. Esta dirección se usa para llenar tus próximos pedidos.',
+        'intro': f'Tu correo es {usuario.email}. Tus direcciones de entrega están en "Mis direcciones".',
         'boton': 'Guardar',
-        'enlaces': [('clientes:cuenta', 'Volver a mi cuenta')],
+        'enlaces': [('clientes:direcciones', 'Mis direcciones'), ('clientes:cuenta', 'Volver a mi cuenta')],
     })
+
+
+@login_required
+def direcciones(request):
+    """Las direcciones guardadas del cliente, y el formulario para agregar otra."""
+    formulario = DireccionForm(request.POST or None)
+    if request.method == 'POST' and formulario.is_valid():
+        try:
+            services.guardar_direccion(request.user, formulario.cleaned_data)
+        except services.DireccionError as error:
+            formulario.add_error(None, error.mensaje)
+        else:
+            messages.success(request, 'Guardamos tu dirección.')
+            return redirect('clientes:direcciones')
+    return render(request, 'clientes/direcciones.html', {
+        'direcciones': services.direcciones_de(request.user),
+        'formulario': formulario,
+        'maximo': Direccion.MAXIMO,
+    })
+
+
+def _direccion_propia(request, pk):
+    """Solo las direcciones del cliente con la sesion iniciada: la de otro da 404."""
+    return get_object_or_404(services.direcciones_de(request.user), pk=pk)
+
+
+@login_required
+def editar_direccion(request, pk):
+    direccion = _direccion_propia(request, pk)
+    inicial = {campo: getattr(direccion, campo) for campo in ('nombre', 'sector', 'direccion', 'referencia', 'principal')}
+    formulario = DireccionForm(request.POST or None, initial=inicial)
+    if request.method == 'POST' and formulario.is_valid():
+        services.guardar_direccion(request.user, formulario.cleaned_data, direccion)
+        messages.success(request, 'Guardamos los cambios.')
+        return redirect('clientes:direcciones')
+    return render(request, PLANTILLA, {
+        'formulario': formulario,
+        'titulo': 'Editar dirección',
+        'boton': 'Guardar',
+        'enlaces': [('clientes:direcciones', 'Volver a mis direcciones')],
+    })
+
+
+@require_POST
+@login_required
+def principal_direccion(request, pk):
+    services.marcar_principal(_direccion_propia(request, pk))
+    messages.success(request, 'Esa dirección llegará puesta en tus próximos pedidos.')
+    return redirect('clientes:direcciones')
+
+
+@require_POST
+@login_required
+def borrar_direccion(request, pk):
+    services.borrar_direccion(_direccion_propia(request, pk))
+    messages.info(request, 'Borramos la dirección.')
+    return redirect('clientes:direcciones')
+
+
+@login_not_required
+@never_cache
+def apagar_recordatorios(request, token):
+    """El enlace "no quiero estos correos" del recordatorio del carrito. Pide confirmar con un boton."""
+    if request.method == 'POST':
+        if services.apagar_recordatorios(token) is None:
+            return render(request, 'clientes/mensaje.html', {
+                'titulo': 'Enlace no válido', 'texto': 'Puedes apagar los recordatorios desde "Mis datos" en tu cuenta.',
+                'icono': 'bi-envelope-exclamation text-warning',
+            })
+        return render(request, 'clientes/mensaje.html', {
+            'titulo': 'Listo', 'texto': 'Ya no te enviaremos recordatorios del carrito.',
+        })
+    return render(request, 'clientes/apagar_recordatorios.html')
 
 
 @login_required

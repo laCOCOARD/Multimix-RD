@@ -28,7 +28,7 @@
         {% if pagina.object_list %}
           <div class="table-responsive">
             <table class="table align-middle mb-0">
-              <thead><tr><th scope="col">Pedido</th><th scope="col">Fecha</th><th scope="col">Tienda</th><th scope="col">Estado</th><th scope="col" class="text-end">Total</th></tr></thead>
+              <thead><tr><th scope="col">Pedido</th><th scope="col">Fecha</th><th scope="col">Tienda</th><th scope="col">Estado</th><th scope="col" class="text-end">Total</th><th scope="col"><span class="visually-hidden">Acciones</span></th></tr></thead>
               <tbody>
                 {% for pedido in pagina %}
                   <tr>
@@ -37,6 +37,12 @@
                     <td>{{ pedido.tienda.nombre }}</td>
                     <td><span class="badge mm-estado mm-estado-{{ pedido.estado }}">{{ pedido.get_estado_display }}</span></td>
                     <td class="text-end">{{ pedido.total|moneda }}</td>
+                    <td class="text-end">
+                      <form method="post" action="{% url 'pedidos:volver_a_pedir' pedido.token %}">
+                        {% csrf_token %}
+                        <button class="btn btn-sm btn-outline-primary text-nowrap" type="submit" title="Poner otra vez estos productos en el carrito"><i class="bi bi-arrow-repeat me-1"></i>Volver a pedir</button>
+                      </form>
+                    </td>
                   </tr>
                 {% endfor %}
               </tbody>
@@ -57,10 +63,11 @@
           <dt>Correo</dt><dd>{{ user.email }}</dd>
           <dt>Teléfono</dt><dd>{{ perfil.telefono|telefono|default:'Sin teléfono' }}</dd>
           <dt>Dirección de entrega</dt>
-          <dd>{% if perfil.direccion %}{{ perfil.direccion }}{% if perfil.sector %}, {{ perfil.sector }}{% endif %}{% else %}Se guarda sola con tu primer pedido a domicilio.{% endif %}</dd>
+          <dd>{% if direccion %}{{ direccion.direccion }}, {{ direccion.sector }}{% else %}Se guarda sola con tu primer pedido a domicilio.{% endif %}</dd>
         </dl>
         <div class="d-grid gap-2">
           <a class="btn btn-outline-primary" href="{% url 'clientes:favoritos' %}"><i class="bi bi-heart me-1"></i>Mis favoritos</a>
+          <a class="btn btn-outline-primary" href="{% url 'clientes:direcciones' %}"><i class="bi bi-geo-alt me-1"></i>Mis direcciones</a>
           <a class="btn btn-outline-primary" href="{% url 'clientes:perfil' %}">Editar mis datos</a>
           <a class="btn btn-outline-secondary" href="{% url 'clientes:clave' %}">Cambiar contraseña</a>
         </div>

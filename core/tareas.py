@@ -39,6 +39,9 @@ def ejecutar_si_toca():
 
         # Los cambios hechos en masa (acciones del panel, importacion) no pasan por el aviso inmediato.
         avisar_disponibles()
+        from clientes.services import recordar_carritos_abandonados
+
+        recordar_carritos_abandonados()
     except Exception:
         # El mantenimiento nunca debe tumbar la pagina que alguien esta viendo.
         logger.exception('Fallaron las tareas periodicas')

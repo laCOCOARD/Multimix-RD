@@ -1,0 +1,12 @@
+{% load moneda %}{% autoescape off %}Hola{% if usuario.first_name %} {{ usuario.first_name }}{% endif %}:
+
+Dejaste productos en tu carrito. Siguen esperándote:
+{% for carrito in carritos %}
+{{ carrito.tienda.nombre }}
+{% for producto in carrito.productos %}- {{ producto.nombre }}: {{ producto.precio_final|moneda }}{% if producto.en_oferta %} (en oferta){% endif %}
+{% endfor %}Terminar la compra: {{ carrito.enlace }}
+{% endfor %}
+Los precios y la disponibilidad pueden cambiar hasta que confirmes el pedido.
+
+¿No quieres estos recordatorios? {{ enlace_apagar }}
+{% endautoescape %}

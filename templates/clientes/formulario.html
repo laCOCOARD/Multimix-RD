@@ -19,7 +19,7 @@
         <ul>
           <li><i class="bi bi-check-circle-fill"></i>Tus pedidos y su estado, siempre a mano.</li>
           <li><i class="bi bi-check-circle-fill"></i>Los avisos de cada pedido llegan a tu correo.</li>
-          <li><i class="bi bi-check-circle-fill"></i>Tu dirección queda guardada para la próxima compra.</li>
+          <li><i class="bi bi-check-circle-fill"></i>Tus direcciones y tu carrito quedan guardados.</li>
           <li><i class="bi bi-check-circle-fill"></i>Nunca te pedimos datos de tu tarjeta.</li>
         </ul>
       </aside>
@@ -44,6 +44,11 @@
                 <div class="mm-campo-extra" aria-hidden="true">
                   <label for="{{ campo.id_for_label }}">Sitio web (no llenar)</label>
                   <input type="text" id="{{ campo.id_for_label }}" name="sitio_web" tabindex="-1" autocomplete="off">
+                </div>
+              {% elif campo.widget_type == 'checkbox' %}
+                <div class="form-check mb-3">
+                  {{ campo }}
+                  <label class="form-check-label" for="{{ campo.id_for_label }}">{{ campo.label }}</label>
                 </div>
               {% else %}
                 <div class="mb-3">

@@ -1,0 +1,22 @@
+{% extends 'base.html' %}
+
+{% block titulo %}Recordatorios del carrito · {{ plataforma.nombre }}{% endblock %}
+{% block meta %}<meta name="robots" content="noindex">{% endblock %}
+
+{% block contenido %}
+<div class="container py-4">
+  <div class="row justify-content-center">
+    <div class="col-md-8 col-lg-5">
+      <div class="mm-panel text-center">
+        <i class="bi bi-bell-slash mm-icono-estado text-primary"></i>
+        <h1 class="h3 mt-2">¿Dejar de recibir recordatorios?</h1>
+        <p class="text-muted">Son los correos que te enviamos cuando dejas productos en el carrito. Los avisos de tus pedidos te siguen llegando.</p>
+        <form method="post">
+          {% csrf_token %}
+          <button class="btn btn-primary" type="submit">Sí, no quiero recordatorios</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

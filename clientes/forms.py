@@ -120,9 +120,10 @@ class EntrarAlPanelForm(LimiteDeEntrada, AdminAuthenticationForm):
 class PerfilForm(ConEstilo, forms.Form):
     nombre = forms.CharField(label='Nombre completo', min_length=3, max_length=120)
     telefono = forms.CharField(label='Teléfono / WhatsApp', max_length=20, required=False)
-    sector = forms.CharField(label='Sector', max_length=80, required=False)
-    direccion = forms.CharField(label='Calle y número', max_length=255, required=False)
-    referencia = forms.CharField(label='Referencia de la dirección', max_length=255, required=False)
+    recordatorios = forms.BooleanField(
+        label='Recordarme por correo si dejo productos en el carrito', required=False,
+        widget=forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+    )
 
     def clean_nombre(self):
         return ' '.join(self.cleaned_data['nombre'].split())
@@ -136,9 +137,28 @@ class PerfilForm(ConEstilo, forms.Form):
         usuario.last_name = ''
         usuario.save(update_fields=['first_name', 'last_name'])
         perfil = services.perfil_de(usuario)
-        perfil.telefono, perfil.sector = datos['telefono'], datos['sector']
-        perfil.direccion, perfil.referencia = datos['direccion'], datos['referencia']
-        perfil.save()
+        perfil.telefono, perfil.recordatorios = datos['telefono'], datos['recordatorios']
+        perfil.save(update_fields=['telefono', 'recordatorios'])
+
+
+class DireccionForm(ConEstilo, forms.Form):
+    nombre = forms.CharField(label='Nombre', max_length=40,
+                             widget=forms.TextInput(attrs={'placeholder': 'Ej.: Casa, Trabajo, Casa de mamá'}))
+    sector = forms.CharField(label='Sector', max_length=80)
+    direccion = forms.CharField(label='Calle y número', max_length=255,
+                                widget=forms.TextInput(attrs={'autocomplete': 'address-line1'}))
+    referencia = forms.CharField(label='Referencia (opcional)', max_length=255, required=False)
+    principal = forms.BooleanField(
+        label='Usarla por defecto en mis pedidos', required=False,
+        widget=forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+    )
+
+    def clean(self):
+        datos = super().clean()
+        for campo in ('nombre', 'sector', 'direccion', 'referencia'):
+            if campo in datos:
+                datos[campo] = ' '.join(datos[campo].split())
+        return datos
 
 
 class CambiarClaveForm(ConEstilo, PasswordChangeForm):

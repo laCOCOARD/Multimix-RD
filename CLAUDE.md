@@ -126,8 +126,14 @@ Al cerrar cada modulo: check, makemigrations, migrate, test y commit.
   Render vuelve a poner la contraseña del superusuario desde `DJANGO_SUPERUSER_PASSWORD` en cada despliegue, asi
   que recuperarla por correo dura hasta el siguiente. `BrevoBackend` registra cada envio aceptado con su messageId.
 - Cuentas de clientes: son usuarios de Django sin acceso al panel, con el correo como nombre de usuario, y son
-  del sitio, no de una tienda (`/cuenta/`). `clientes.Perfil` guarda el telefono y la ultima direccion de entrega;
-  la zona no, porque es de cada tienda. `Pedido.cliente` solo se llena si compro con la sesion iniciada: un pedido
+  del sitio, no de una tienda (`/cuenta/`). `clientes.Perfil` guarda el telefono y si quiere recordatorios; las
+  direcciones son `clientes.Direccion` (hasta 10, una principal que llega puesta en el checkout; cada pedido a
+  domicilio guarda la suya si es nueva; `clientes/0006` paso la del perfil). La zona no, porque es de cada tienda.
+  Con la sesion iniciada el carrito tambien se copia a `clientes.CarritoGuardado` (en `Carrito._guardar`; el
+  personal del panel no) y vuelve a la sesion al entrar (`carrito.carrito.recuperar_al_entrar`, senal
+  `user_logged_in`; lo de la sesion manda). Las tareas periodicas envian un recordatorio a quien lo dejo entre 1 y 7
+  dias (uno por cada vez que lo deja; enlace firmado para apagarlos). "Volver a pedir" (`pedidos:volver_a_pedir`,
+  por token) pone en el carrito lo del pedido que siga a la venta. `Pedido.cliente` solo se llena si compro con la sesion iniciada: un pedido
   de invitado (de antes de la cuenta obligatoria) nunca se asocia despues a una cuenta por coincidir el correo. Las plantillas de acceso estan en `templates/clientes/` y no en
   `templates/registration/`, que pisaria las pantallas de contraseña del panel.
 - Limite de intentos (`core.limites`, filas `core.Intento` con la clave en sha256; las viejas las borran las

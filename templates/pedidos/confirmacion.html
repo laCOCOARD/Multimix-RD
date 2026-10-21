@@ -180,6 +180,12 @@
       <p class="small text-muted text-center">Guarda este enlace: aquí verás el estado de tu pedido cuando la tienda lo actualice.{% if pedido.estado == 'pendiente' and not pedido.transferencia_realizada %} Un pedido sin pagar se cancela a las {{ plataforma.horas_vencimiento_pedido }} horas.{% endif %}</p>
       <p class="text-center d-flex flex-wrap justify-content-center gap-2">
         <a class="btn btn-outline-primary" href="{% url 'catalogo:lista' tienda.slug %}">Seguir comprando</a>
+        {% if pedido.estado != 'pendiente' %}
+          <form method="post" action="{% url 'pedidos:volver_a_pedir' pedido.token %}">
+            {% csrf_token %}
+            <button class="btn btn-outline-primary" type="submit"><i class="bi bi-arrow-repeat me-1"></i>Volver a pedir</button>
+          </form>
+        {% endif %}
         {% if user.is_authenticated and pedido.cliente_id == user.pk %}<a class="btn btn-outline-primary" href="{% url 'clientes:cuenta' %}">Mis pedidos</a>{% endif %}
         {% if enlace_whatsapp %}
           <a class="btn btn-outline-success" href="{{ enlace_whatsapp }}" target="_blank" rel="noopener"><i class="bi bi-whatsapp me-1"></i>Escribir a la tienda por WhatsApp</a>

@@ -1,0 +1,72 @@
+{% extends 'base.html' %}
+
+{% block titulo %}Mis direcciones · {{ plataforma.nombre }}{% endblock %}
+{% block meta %}<meta name="robots" content="noindex">{% endblock %}
+
+{% block contenido %}
+<div class="container py-4">
+  <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4">
+    <h1 class="h3 mb-0">Mis direcciones</h1>
+    <a class="btn btn-link px-0" href="{% url 'clientes:cuenta' %}"><i class="bi bi-arrow-left me-1"></i>Volver a mi cuenta</a>
+  </div>
+
+  <div class="row g-4">
+    <div class="col-lg-7">
+      {% for direccion in direcciones %}
+        <div class="mm-panel mb-3">
+          <div class="d-flex flex-wrap justify-content-between align-items-start gap-2">
+            <div>
+              <p class="fw-semibold mb-1">{{ direccion.nombre }}{% if direccion.principal %} <span class="badge text-bg-primary ms-1">Por defecto</span>{% endif %}</p>
+              <p class="mb-0">{{ direccion.direccion }}, {{ direccion.sector }}</p>
+              {% if direccion.referencia %}<p class="small text-muted mb-0">{{ direccion.referencia }}</p>{% endif %}
+            </div>
+            <div class="d-flex flex-wrap gap-2">
+              <a class="btn btn-sm btn-outline-primary" href="{% url 'clientes:editar_direccion' direccion.pk %}">Editar</a>
+              {% if not direccion.principal %}
+                <form method="post" action="{% url 'clientes:principal_direccion' direccion.pk %}">
+                  {% csrf_token %}
+                  <button class="btn btn-sm btn-outline-secondary" type="submit">Usar por defecto</button>
+                </form>
+              {% endif %}
+              <form method="post" action="{% url 'clientes:borrar_direccion' direccion.pk %}">
+                {% csrf_token %}
+                <button class="btn btn-sm btn-link text-danger" type="submit" data-confirmar="¿Borrar la dirección {{ direccion.nombre }}?">Borrar</button>
+              </form>
+            </div>
+          </div>
+        </div>
+      {% empty %}
+        <div class="mm-panel"><p class="text-muted mb-0">Todavía no tienes direcciones. Se guardan solas con tus pedidos a domicilio, o agrégalas aquí.</p></div>
+      {% endfor %}
+    </div>
+
+    <div class="col-lg-5">
+      <div class="mm-panel">
+        <h2 class="h5 mb-3">Agregar una dirección</h2>
+        {% if direcciones|length >= maximo %}
+          <p class="text-muted mb-0">Ya tienes {{ maximo }} direcciones, el máximo. Borra una que no uses para agregar otra.</p>
+        {% else %}
+          <form method="post" novalidate>
+            {% csrf_token %}
+            {% if formulario.non_field_errors %}
+              <div class="alert alert-danger" role="alert">{% for error in formulario.non_field_errors %}<p class="mb-0">{{ error }}</p>{% endfor %}</div>
+            {% endif %}
+            {% for campo in formulario %}
+              {% if campo.widget_type == 'checkbox' %}
+                <div class="form-check mb-3">{{ campo }}<label class="form-check-label" for="{{ campo.id_for_label }}">{{ campo.label }}</label></div>
+              {% else %}
+                <div class="mb-3">
+                  <label class="form-label" for="{{ campo.id_for_label }}">{{ campo.label }}</label>
+                  {{ campo }}
+                  {% for error in campo.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+                </div>
+              {% endif %}
+            {% endfor %}
+            <button class="btn btn-primary w-100" type="submit">Guardar dirección</button>
+          </form>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

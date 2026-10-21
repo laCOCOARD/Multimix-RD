@@ -86,6 +86,79 @@ def cantidad_en_sesion(session, tienda):
     return sum(datos['items'].values()) if datos else 0
 
 
+def _cuenta_de(request):
+    usuario = getattr(request, 'user', None)
+    return usuario if usuario is not None and usuario.is_authenticated and not usuario.is_staff else None
+
+
+def _items_validos(items):
+    """Solo {id: cantidad} con numeros: lo guardado en la cuenta pudo escribirse con otra version del sitio."""
+    if not isinstance(items, dict):
+        return {}
+    return {
+        str(pk): cantidad for pk, cantidad in items.items()
+        if str(pk).isdigit() and isinstance(cantidad, int) and cantidad > 0
+    }
+
+
+def recuperar_al_entrar(request, usuario):
+    """Al iniciar sesion: el carrito guardado en la cuenta se junta con el que armo sin sesion.
+
+    Lo de la sesion manda (es lo ultimo que eligio); de lo guardado se agrega lo que no esta. El resultado queda
+    en la sesion y en la cuenta. `sincronizar` ajusta despues lo que ya no se venda.
+    """
+    from clientes.services import carrito_guardado, guardar_carrito
+
+    if usuario.is_staff:
+        return
+    todos = dict(_carritos(request.session))
+    guardados = carrito_guardado(usuario)
+    if not guardados:
+        if todos:
+            guardar_carrito(usuario, todos)
+        return
+    for clave, guardado in guardados.items():
+        items = _items_validos(guardado.get('items') if isinstance(guardado, dict) else None)
+        if not items or not str(clave).isdigit():
+            continue
+        actual = todos.get(str(clave))
+        if not isinstance(actual, dict) or not isinstance(actual.get('items'), dict):
+            actual = {'items': {}, 'cupon': ''}
+        todos[str(clave)] = {
+            'items': {**items, **actual['items']},
+            'cupon': actual.get('cupon') or '',
+        }
+    request.session[settings.CARRITO_SESSION_ID] = todos
+    request.session.modified = True
+    guardar_carrito(usuario, todos)
+
+
+def agregar_pedido(request, pedido):
+    """"Volver a pedir": pone en el carrito de la tienda los productos de un pedido que sigan a la venta.
+
+    Devuelve (carrito, cuantos se agregaron, avisos de lo que no se pudo).
+    """
+    carrito = Carrito(request, pedido.tienda)
+    productos = Producto.objects.select_related('categoria').filter(tienda=pedido.tienda).in_bulk(
+        [detalle.producto_id for detalle in pedido.detalles.all()]
+    )
+    agregados, avisos = 0, []
+    for detalle in pedido.detalles.all():
+        producto = productos.get(detalle.producto_id)
+        if producto is None or not producto.activo or not producto.categoria.activa:
+            avisos.append(f'"{detalle.nombre_producto}" ya no se vende.')
+            continue
+        try:
+            final, ajustada = carrito.agregar(producto, detalle.cantidad)
+        except CarritoError as error:
+            avisos.append(error.mensaje)
+            continue
+        agregados += 1
+        if ajustada:
+            avisos.append(aviso_de_limite(producto, final))
+    return carrito, agregados, avisos
+
+
 class Carrito:
     def __init__(self, request, tienda):
         self.request = request
@@ -100,6 +173,12 @@ class Carrito:
         self.session[settings.CARRITO_SESSION_ID] = todos
         self.session.modified = True
         self._lineas = None
+        cuenta = _cuenta_de(self.request)
+        if cuenta is not None:
+            # Con la sesion iniciada el carrito tambien queda en la cuenta (clientes.CarritoGuardado).
+            from clientes.services import guardar_carrito
+
+            guardar_carrito(cuenta, todos)
 
     def _a_la_venta(self):
         return Producto.objects.activos().filter(tienda=self.tienda)
