@@ -96,6 +96,18 @@ class DirectorioTests(DosTiendas):
         self.assertEqual({p.tienda for p in vitrina_del_sitio(2)}, {self.multimix, self.fitnes})
         self.assertEqual(len(vitrina_del_sitio(12)), 7)
 
+    def test_dentro_de_una_tienda_se_alternan_las_categorias(self):
+        from catalogo.models import Categoria
+        from catalogo.services import vitrina_del_sitio
+
+        # Lo ultimo que cargo Multimix es todo de Bebidas, pero la seleccion no sale solo de esa categoria.
+        bebidas = Categoria.objects.create(nombre='Bebidas')
+        for numero in range(4):
+            crear_producto(nombre=f'Bebida {numero}', sku=f'B-{numero}', categoria=bebidas)
+        de_multimix = [p for p in vitrina_del_sitio(12) if p.tienda == self.multimix]
+        self.assertEqual({p.categoria.nombre for p in de_multimix[:2]}, {'Bebidas', 'General'})
+        self.assertEqual(len(de_multimix), 5)
+
     def test_la_portada_no_se_parece_al_inicio_de_una_tienda(self):
         portada = self.client.get('/')
         # Sin el banner de las tiendas, sin su boton de catalogo y sin el lema de ninguna en su encabezado.

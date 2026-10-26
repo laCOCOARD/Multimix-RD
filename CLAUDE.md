@@ -230,8 +230,9 @@ Al cerrar cada modulo: check, makemigrations, migrate, test y commit.
   corta (`mm-hero`, clara, distinta del `mm-banner` oscuro de las tiendas; en pantallas anchas 4 fotos reales de la
   seleccion), categorias del sitio (`catalogo.services.categorias_del_sitio`: principales con algo a la venta, con
   cuantos productos y foto; llevan a `/buscar/?categoria=<slug>`), "Descubre productos" (`vitrina_del_sitio`: solo
-  lo comprable, con foto y destacados primero, repartido entre tiendas con un `RowNumber` por tienda; 12, ocho en el
-  celular), tiendas (8; "Ver todas" lleva a `/tiendas/`), ofertas (`ofertas_del_sitio`, solo si hay, y no se repiten
+  lo comprable, con foto primero, repartido entre tiendas y, dentro de cada tienda, alternando sus categorias: la
+  base numera con `RowNumber` por tienda y categoria y el reparto se hace en Python; 12, ocho en el celular), tiendas
+  (8; "Ver todas" lleva a `/tiendas/`), ofertas (`ofertas_del_sitio`, igual de repartidas, solo si hay, y no se repiten
   en la seleccion), "Para emprendedores" (`#vender`) y preguntas frecuentes. Todo sale de la base: una seccion sin
   datos no se muestra. Fuera de una tienda la tarjeta de producto dice "Vendido por <tienda>" con enlace a ella.
   "Tu compra, protegida", la ayuda y lo legal siguen en el menu de 3 barras y en el pie. Con una sola tienda su

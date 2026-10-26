@@ -190,17 +190,34 @@ def categorias_del_sitio():
 
 
 def _repartidos_entre_tiendas(productos, limite):
-    """Lo mejor de cada tienda primero, luego lo segundo de cada una...: ninguna tienda llena la seleccion.
+    """Lo mejor de cada tienda primero, luego lo segundo de cada una...: ninguna tienda llena la seleccion. Dentro de
+    cada tienda se alternan sus categorias, para que no salga todo de una sola (lo ultimo que se cargo, por ejemplo).
 
-    Con foto y destacados primero; despues lo mas nuevo. Lo hace la base con un numero de puesto por tienda.
+    Con foto primero; despues destacados y lo mas nuevo. La base numera cada producto dentro de su tienda y su
+    categoria; aqui se reparte con esos numeros y al final se traen solo los elegidos.
     """
-    orden = [F('tiene_foto').desc(), F('destacado').desc(), F('creado').desc(), F('id').desc()]
-    return list(
+    orden = [F('destacado').desc(), F('creado').desc(), F('id').desc()]
+    candidatos = (
         productos.annotate(tiene_foto=Exists(FotoProducto.objects.filter(producto=OuterRef('pk'))))
-        .annotate(puesto=Window(RowNumber(), partition_by=[F('tienda_id')], order_by=orden))
+        .annotate(puesto=Window(
+            RowNumber(), partition_by=[F('tienda_id'), F('categoria_id')], order_by=[F('tiene_foto').desc(), *orden],
+        ))
         .filter(puesto__lte=limite)
-        .order_by('puesto', *orden)[:limite]
+        .order_by(F('tiene_foto').desc(), 'puesto', *orden)
+        .values_list('pk', 'tienda_id')
     )
+    # Cada tienda con sus candidatos en orden (una categoria tras otra) y las tiendas por su mejor candidato.
+    por_tienda = {}
+    for pk, tienda_id in candidatos:
+        por_tienda.setdefault(tienda_id, []).append(pk)
+    filas = list(por_tienda.values())
+    elegidos = []
+    while len(elegidos) < limite and any(filas):
+        for fila in filas:
+            if fila and len(elegidos) < limite:
+                elegidos.append(fila.pop(0))
+    encontrados = productos.in_bulk(elegidos)
+    return [encontrados[pk] for pk in elegidos if pk in encontrados]
 
 
 def vitrina_del_sitio(limite=12, excluir=()):
