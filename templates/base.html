@@ -17,7 +17,7 @@
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
   {% endblock %}
-  <meta name="theme-color" content="#0a5fb4">
+  <meta name="theme-color" content="#ffffff">
   <link rel="icon" type="image/png" href="{% static 'img/favicon.png' %}">
   <link rel="apple-touch-icon" href="{% static 'img/apple-touch-icon.png' %}">
   <link rel="manifest" href="{% url 'core:manifiesto' %}">
@@ -30,7 +30,7 @@
   <link rel="stylesheet" href="{% static 'css/tienda.css' %}">
   <script src="{% static 'js/js-activo.js' %}"></script>
 </head>
-<body class="d-flex flex-column min-vh-100">
+<body class="d-flex flex-column min-vh-100{% if puede_navegar %} con-barra-movil{% endif %}">
   <a class="visually-hidden-focusable" href="#contenido">Saltar al contenido</a>
   <div class="mm-progreso" aria-hidden="true"></div>
 
@@ -46,71 +46,96 @@
     </div>
   {% endif %}
 
-  <header class="mm-cabecera sticky-top">
-    <nav class="navbar navbar-expand-lg">
-      <div class="container flex-nowrap gap-2">
-        <button class="mm-btn-menu" type="button" data-bs-toggle="offcanvas" data-bs-target="#menu-lateral"
-                aria-controls="menu-lateral" aria-label="Abrir menú">
-          <i class="bi bi-list"></i>
-        </button>
-        <a class="navbar-brand mm-logo me-0 me-lg-3" href="{% if tienda %}{{ tienda.get_absolute_url }}{% else %}{% url 'tiendas:portada' %}{% endif %}">
-          {% if marca.logo %}
-            <img src="{{ marca.logo.url }}" alt="{{ marca.nombre }}" height="40">
-          {% else %}
-            {% if not tienda %}<img class="mm-logo-simbolo" src="{% static 'img/logo-simbolo.webp' %}" alt="" width="393" height="300">{% endif %}
-            <span class="mm-logo-texto">{{ marca.nombre }}</span>
-          {% endif %}
-        </a>
-
-        {% if puede_navegar %}
-          <ul class="navbar-nav flex-row gap-3 me-auto d-none d-lg-flex">
-            {% if tienda %}
-              <li class="nav-item"><a class="nav-link" href="{% url 'catalogo:lista' tienda.slug %}">Catálogo</a></li>
-              <li class="nav-item dropdown">
-                <a class="nav-link dropdown-toggle" href="{% url 'catalogo:lista' tienda.slug %}" role="button" data-bs-toggle="dropdown" aria-expanded="false">Categorías</a>
-                <ul class="dropdown-menu">
-                  {% for categoria in categorias_menu %}
-                    <li><a class="dropdown-item" href="{% url 'catalogo:categoria' tienda.slug categoria.slug %}">{{ categoria.nombre }}</a></li>
-                  {% empty %}
-                    <li><span class="dropdown-item-text text-muted">Aún no hay categorías</span></li>
-                  {% endfor %}
-                </ul>
-              </li>
-              <li class="nav-item"><a class="nav-link" href="{% url 'catalogo:lista' tienda.slug %}?oferta=on">Ofertas</a></li>
-              <li class="nav-item"><a class="nav-link" href="{% url 'core:envios' tienda.slug %}">Envíos y retiros</a></li>
-            {% else %}
-              <li class="nav-item"><a class="nav-link" href="{% url 'tiendas:portada' %}#tiendas">Tiendas</a></li>
-              <li class="nav-item"><a class="nav-link" href="{% url 'tiendas:buscar' %}">Todos los productos</a></li>
-              <li class="nav-item"><a class="nav-link" href="{% url 'tiendas:buscar' %}?oferta=on">Ofertas</a></li>
-            {% endif %}
-          </ul>
-          {% block buscador_cabecera %}
-          <form class="d-none d-lg-flex mm-buscador js-buscador" role="search" method="get"
-                action="{% if tienda %}{% url 'catalogo:lista' tienda.slug %}{% else %}{% url 'tiendas:buscar' %}{% endif %}"
-                data-sugerencias="{% if tienda %}{% url 'catalogo:sugerencias' tienda.slug %}{% else %}{% url 'tiendas:sugerencias' %}{% endif %}">
-            <input class="form-control" type="search" name="q" maxlength="80" value="{{ filtros.q|default:'' }}" autocomplete="off"
-                   placeholder="{% if tienda %}Buscar en esta tienda{% else %}Buscar productos{% endif %}"
-                   aria-label="{% if tienda %}Buscar en {{ tienda.nombre }}{% else %}Buscar en todas las tiendas{% endif %}">
-            <button class="btn btn-primary" type="submit" aria-label="Buscar"><i class="bi bi-search"></i></button>
-          </form>
-          {% endblock %}
+  {# Cabecera: en el celular son dos filas y al bajar solo queda fija la del buscador (con el menu y el carrito); #}
+  {# en pantallas anchas es una sola fila fija. El carrito es de cada tienda: en las paginas del sitio no hay. #}
+  <header class="mm-cabecera sticky-top{% if not puede_navegar %} sin-buscador{% elif tienda %} con-carrito{% endif %}">
+    <div class="container mm-cabecera-fila">
+      <button class="mm-btn-menu" type="button" data-bs-toggle="offcanvas" data-bs-target="#menu-lateral"
+              aria-controls="menu-lateral" aria-label="Abrir menú">
+        <i class="bi bi-list" aria-hidden="true"></i>
+      </button>
+      <a class="mm-logo" href="{% if tienda %}{{ tienda.get_absolute_url }}{% else %}{% url 'tiendas:portada' %}{% endif %}">
+        {% if marca.logo %}
+          <img src="{{ marca.logo.url }}" alt="{{ marca.nombre }}" height="40">
+        {% else %}
+          {% if not tienda %}<img class="mm-logo-simbolo" src="{% static 'img/logo-simbolo.webp' %}" alt="" width="393" height="300">{% endif %}
+          <span class="mm-logo-texto">{{ marca.nombre }}</span>
         {% endif %}
+      </a>
 
-        <div class="d-flex align-items-center gap-1 ms-auto ms-lg-2">
-          <a class="btn mm-btn-carrito" href="{% if user.is_authenticated %}{% url 'clientes:cuenta' %}{% else %}{% url 'clientes:entrar' %}{% endif %}"
-             aria-label="{% if user.is_authenticated %}Mi cuenta{% else %}Iniciar sesión{% endif %}" title="{% if user.is_authenticated %}Mi cuenta{% else %}Iniciar sesión{% endif %}">
-            <i class="bi {% if user.is_authenticated %}bi-person-check{% else %}bi-person{% endif %}"></i>
+      {% if puede_navegar %}
+        {% block buscador_cabecera %}
+        <form class="mm-buscador js-buscador" role="search" method="get"
+              action="{% if tienda %}{% url 'catalogo:lista' tienda.slug %}{% else %}{% url 'tiendas:buscar' %}{% endif %}"
+              data-sugerencias="{% if tienda %}{% url 'catalogo:sugerencias' tienda.slug %}{% else %}{% url 'tiendas:sugerencias' %}{% endif %}">
+          <i class="bi bi-search mm-buscador-icono" aria-hidden="true"></i>
+          <input class="mm-buscador-campo" type="search" name="q" maxlength="80" value="{{ filtros.q|default:'' }}" autocomplete="off"
+                 enterkeyhint="search"
+                 placeholder="{% if tienda %}Buscar en {{ tienda.nombre }}{% else %}¿Qué producto estás buscando?{% endif %}"
+                 aria-label="{% if tienda %}Buscar en {{ tienda.nombre }}{% else %}Buscar productos en todas las tiendas{% endif %}">
+          <button class="btn btn-primary mm-buscador-boton" type="submit" aria-label="Buscar">
+            <i class="bi bi-search" aria-hidden="true"></i><span class="mm-buscador-boton-texto">Buscar</span>
+          </button>
+        </form>
+        {% endblock %}
+      {% endif %}
+
+      <div class="mm-cabecera-acciones">
+        {% if puede_navegar %}
+          <a class="mm-accion" href="{% url 'clientes:favoritos' %}" aria-label="Mis favoritos" title="Mis favoritos">
+            <i class="bi bi-heart" aria-hidden="true"></i><span class="mm-accion-texto">Favoritos</span>
           </a>
-          {% if tienda and puede_navegar %}
-            <a class="btn mm-btn-carrito position-relative" href="{% url 'carrito:detalle' tienda.slug %}" aria-label="Ver carrito de {{ tienda.nombre }}">
-              <i class="bi bi-bag"></i>
-              <span class="badge rounded-pill mm-contador js-contador-carrito{% if not carrito_cantidad %} d-none{% endif %}">{{ carrito_cantidad }}</span>
-            </a>
+        {% endif %}
+        <a class="mm-accion mm-accion-cuenta" href="{% if user.is_authenticated %}{% url 'clientes:cuenta' %}{% else %}{% url 'clientes:entrar' %}{% endif %}"
+           aria-label="{% if user.is_authenticated %}Mi cuenta{% else %}Iniciar sesión{% endif %}" title="{% if user.is_authenticated %}Mi cuenta{% else %}Iniciar sesión{% endif %}">
+          <i class="bi {% if user.is_authenticated %}bi-person-check{% else %}bi-person{% endif %}" aria-hidden="true"></i>
+          <span class="mm-accion-texto">{% if user.is_authenticated %}Mi cuenta{% else %}Iniciar sesión{% endif %}</span>
+        </a>
+      </div>
+      {% if tienda and puede_navegar %}
+        <a class="mm-accion mm-cabecera-carrito" href="{% url 'carrito:detalle' tienda.slug %}" aria-label="Ver carrito de {{ tienda.nombre }}" title="Carrito">
+          <i class="bi bi-bag" aria-hidden="true"></i><span class="mm-accion-texto">Carrito</span>
+          <span class="badge rounded-pill mm-contador js-contador-carrito{% if not carrito_cantidad %} d-none{% endif %}">{{ carrito_cantidad }}</span>
+        </a>
+      {% endif %}
+    </div>
+  </header>
+
+  {# Secciones, solo en pantallas anchas (en el celular estan en el menu de 3 barras). #}
+  {% if puede_navegar %}
+    <nav class="mm-nav" aria-label="{% if tienda %}Secciones de {{ tienda.nombre }}{% else %}Secciones del sitio{% endif %}">
+      <div class="container">
+        <ul class="mm-nav-lista">
+          <li class="dropdown">
+            <button class="mm-nav-enlace dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+              <i class="bi bi-grid-3x3-gap" aria-hidden="true"></i>Categorías
+            </button>
+            <ul class="dropdown-menu">
+              {% for categoria in categorias_menu %}
+                <li><a class="dropdown-item" href="{% if tienda %}{% url 'catalogo:categoria' tienda.slug categoria.slug %}{% else %}{% url 'tiendas:buscar' %}?categoria={{ categoria.slug }}{% endif %}">{{ categoria.nombre }}</a></li>
+              {% empty %}
+                <li><span class="dropdown-item-text text-muted">Aún no hay categorías</span></li>
+              {% endfor %}
+            </ul>
+          </li>
+          {% if tienda %}
+            <li><a class="mm-nav-enlace" href="{% url 'catalogo:lista' tienda.slug %}">Catálogo</a></li>
+            <li><a class="mm-nav-enlace" href="{% url 'catalogo:lista' tienda.slug %}?oferta=on">Ofertas</a></li>
+            <li><a class="mm-nav-enlace" href="{% url 'core:envios' tienda.slug %}">Envíos y retiros</a></li>
+          {% else %}
+            <li><a class="mm-nav-enlace" href="{% url 'tiendas:directorio' %}"{% if request.resolver_match.view_name == 'tiendas:directorio' %} aria-current="page"{% endif %}>Tiendas</a></li>
+            <li><a class="mm-nav-enlace" href="{% url 'tiendas:buscar' %}"{% if request.resolver_match.view_name == 'tiendas:buscar' and not request.GET.oferta %} aria-current="page"{% endif %}>Todos los productos</a></li>
+            <li><a class="mm-nav-enlace" href="{% url 'tiendas:buscar' %}?oferta=on"{% if request.resolver_match.view_name == 'tiendas:buscar' and request.GET.oferta %} aria-current="page"{% endif %}>Ofertas</a></li>
           {% endif %}
-        </div>
+          {% if user.is_staff %}
+            <li class="mm-nav-final"><a class="mm-nav-enlace" href="{% url 'admin:index' %}"><i class="bi bi-speedometer2" aria-hidden="true"></i>Mi panel</a></li>
+          {% elif vender %}
+            <li class="mm-nav-final"><a class="mm-nav-enlace mm-nav-vender" href="{% url 'tiendas:portada' %}#vender"><i class="bi bi-shop-window" aria-hidden="true"></i>Vende en {{ plataforma.nombre }}</a></li>
+          {% endif %}
+        </ul>
       </div>
     </nav>
-  </header>
+  {% endif %}
 
   {% include 'includes/menu_lateral.html' %}
 
@@ -160,17 +185,19 @@
             {% else %}
               <h2>Comprar</h2>
               <ul class="list-unstyled small mb-0">
-                <li><a href="{% url 'tiendas:portada' %}#tiendas">Tiendas</a></li>
+                <li><a href="{% url 'tiendas:directorio' %}">Tiendas</a></li>
                 <li><a href="{% url 'tiendas:buscar' %}">Todos los productos</a></li>
                 <li><a href="{% url 'tiendas:buscar' %}?oferta=on">Ofertas</a></li>
-                <li><a href="{% url 'clientes:cuenta' %}">Mi cuenta</a></li>
+                <li><a href="{% url 'clientes:favoritos' %}">Mis favoritos</a></li>
+                {% if vender and not user.is_staff %}<li><a href="{% url 'tiendas:portada' %}#vender">Vende en {{ plataforma.nombre }}</a></li>{% endif %}
               </ul>
             {% endif %}
           </div>
         {% endif %}
         <div class="col-6 col-md-4 col-lg-3">
-          <h2>Ayuda</h2>
+          <h2>Ayuda con tu compra</h2>
           <ul class="list-unstyled small mb-0">
+            {% if puede_navegar %}<li><a href="{% url 'clientes:cuenta' %}">Mis pedidos y su seguimiento</a></li>{% endif %}
             {% if tienda %}<li><a href="{% url 'core:envios' tienda.slug %}">Envíos y retiros</a></li>{% endif %}
             {% if contenido_pie.hay_preguntas %}<li><a href="{% url 'core:preguntas' %}">Preguntas frecuentes</a></li>{% endif %}
             {% for pagina in paginas_ayuda %}
@@ -204,6 +231,45 @@
       {% endif %}
     </div>
   </footer>
+
+  {# Barra del telefono (pedido del dueño el 2026-10-26): solo en pantallas angostas; en la PC no se muestra. #}
+  {# Con ella la cabecera del telefono ya no queda fija y la cuenta y el carrito pasan a la barra. #}
+  {% if puede_navegar %}
+    {% with vista=request.resolver_match.view_name %}
+    <nav class="mm-barra-movil" aria-label="Navegación principal">
+      {% if tienda %}
+        <a href="{{ tienda.get_absolute_url }}"{% if vista == 'catalogo:inicio' %} aria-current="page"{% endif %}>
+          <span class="mm-barra-icono"><i class="bi bi-house" aria-hidden="true"></i></span>Tienda
+        </a>
+        <a href="{% url 'catalogo:lista' tienda.slug %}"{% if vista == 'catalogo:lista' or vista == 'catalogo:categoria' %} aria-current="page"{% endif %}>
+          <span class="mm-barra-icono"><i class="bi bi-grid" aria-hidden="true"></i></span>Catálogo
+        </a>
+        <a class="js-ir-al-buscador" href="{% url 'catalogo:lista' tienda.slug %}">
+          <span class="mm-barra-icono"><i class="bi bi-search" aria-hidden="true"></i></span>Buscar
+        </a>
+        <a href="{% url 'carrito:detalle' tienda.slug %}"{% if vista == 'carrito:detalle' %} aria-current="page"{% endif %} aria-label="Carrito de {{ tienda.nombre }}">
+          <span class="mm-barra-icono"><i class="bi bi-bag" aria-hidden="true"></i><span class="badge rounded-pill mm-contador js-contador-carrito{% if not carrito_cantidad %} d-none{% endif %}">{{ carrito_cantidad }}</span></span>Carrito
+        </a>
+      {% else %}
+        <a href="{% url 'tiendas:portada' %}"{% if vista == 'tiendas:portada' %} aria-current="page"{% endif %}>
+          <span class="mm-barra-icono"><i class="bi bi-house" aria-hidden="true"></i></span>Inicio
+        </a>
+        <a href="{% url 'tiendas:directorio' %}"{% if vista == 'tiendas:directorio' %} aria-current="page"{% endif %}>
+          <span class="mm-barra-icono"><i class="bi bi-shop" aria-hidden="true"></i></span>Tiendas
+        </a>
+        <a class="js-ir-al-buscador" href="{% url 'tiendas:buscar' %}"{% if vista == 'tiendas:buscar' and not request.GET.oferta %} aria-current="page"{% endif %}>
+          <span class="mm-barra-icono"><i class="bi bi-search" aria-hidden="true"></i></span>Buscar
+        </a>
+        <a href="{% url 'tiendas:buscar' %}?oferta=on"{% if vista == 'tiendas:buscar' and request.GET.oferta %} aria-current="page"{% endif %}>
+          <span class="mm-barra-icono"><i class="bi bi-tag" aria-hidden="true"></i></span>Ofertas
+        </a>
+      {% endif %}
+      <a href="{% if user.is_authenticated %}{% url 'clientes:cuenta' %}{% else %}{% url 'clientes:entrar' %}{% endif %}"{% if request.resolver_match.namespace == 'clientes' %} aria-current="page"{% endif %}>
+        <span class="mm-barra-icono"><i class="bi {% if user.is_authenticated %}bi-person-check{% else %}bi-person{% endif %}" aria-hidden="true"></i></span>Mi cuenta
+      </a>
+    </nav>
+    {% endwith %}
+  {% endif %}
 
   {% if enlace_whatsapp_tienda %}
     <a class="mm-whatsapp-flotante" href="{{ enlace_whatsapp_tienda }}" target="_blank" rel="noopener" aria-label="Escríbenos por WhatsApp">

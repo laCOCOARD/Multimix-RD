@@ -1,0 +1,36 @@
+{% extends 'base.html' %}
+
+{% block titulo %}Tiendas · {{ plataforma.nombre }}{% endblock %}
+{% block descripcion %}Conoce las tiendas de emprendedores de {{ plataforma.nombre }} y entra a su catálogo.{% endblock %}
+
+{% block contenido %}
+<div class="container py-4">
+  <nav aria-label="Ruta de navegación">
+    <ol class="breadcrumb small">
+      <li class="breadcrumb-item"><a href="{% url 'tiendas:portada' %}">Inicio</a></li>
+      <li class="breadcrumb-item active" aria-current="page">Tiendas</li>
+    </ol>
+  </nav>
+
+  <h1 class="h3 mb-1">Tiendas</h1>
+  <p class="text-muted mb-4">
+    {{ pagina.paginator.count }} tienda{{ pagina.paginator.count|pluralize }} en {{ plataforma.nombre }}.
+    Cada una publica sus productos y precios y atiende sus pedidos.
+  </p>
+
+  {% if tiendas %}
+    <div class="mm-tiendas mm-tiendas-todas">
+      {% for item in tiendas %}
+        {% include 'includes/tarjeta_tienda.html' %}
+      {% endfor %}
+    </div>
+    {% include 'includes/paginacion.html' %}
+  {% else %}
+    <div class="mm-vacio">
+      <i class="bi bi-shop" aria-hidden="true"></i>
+      <p class="lead mb-1">Pronto verás aquí nuestras tiendas.</p>
+      <p class="text-muted mb-0">Mientras tanto, mira <a href="{% url 'tiendas:buscar' %}">todos los productos</a>.</p>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

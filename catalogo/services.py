@@ -7,8 +7,8 @@ from django.conf import settings
 from django.core.cache import cache
 from django.core.exceptions import ValidationError
 from django.core.files.storage import default_storage
-from django.db.models import F, OuterRef, Q, Subquery, Sum
-from django.db.models.functions import Coalesce
+from django.db.models import Count, Exists, F, OuterRef, Q, Subquery, Sum, Window
+from django.db.models.functions import Coalesce, RowNumber
 from django.utils import timezone
 from PIL import Image
 
@@ -125,16 +125,19 @@ def sugerencias(texto, tienda=None, limite=6):
     return list(productos.order_by('-destacado', '-creado', '-id')[:limite])
 
 
-def categorias_de_portada(tienda):
-    """Categorias de la tienda para su portada. La que no tiene imagen muestra la foto de uno de sus productos."""
-    foto = (
+def _foto_de_la_categoria(**filtros):
+    """Subconsulta: la foto principal de un producto de la categoria (o de sus subcategorias), destacados primero."""
+    return (
         FotoProducto.objects.filter(
             Q(producto__categoria=OuterRef('pk')) | Q(producto__categoria__padre=OuterRef('pk')),
-            producto__tienda=tienda, producto__activo=True, principal=True,
+            producto__activo=True, principal=True, **filtros,
         )
         .order_by('-producto__destacado', '-producto__creado', '-producto__id').values('imagen')[:1]
     )
-    categorias = list(categorias_de(tienda).annotate(foto_de_producto=Subquery(foto)))
+
+
+def _con_imagen_de_portada(categorias):
+    """Pone `url_portada` en cada categoria: su imagen o, si no tiene, la foto de uno de sus productos."""
     for categoria in categorias:
         categoria.usa_foto_de_producto = not categoria.imagen and bool(categoria.foto_de_producto)
         if categoria.imagen:
@@ -144,6 +147,70 @@ def categorias_de_portada(tienda):
         else:
             categoria.url_portada = ''
     return categorias
+
+
+def categorias_de_portada(tienda):
+    """Categorias de la tienda para su portada. La que no tiene imagen muestra la foto de uno de sus productos."""
+    foto = _foto_de_la_categoria(producto__tienda=tienda)
+    return _con_imagen_de_portada(list(categorias_de(tienda).annotate(foto_de_producto=Subquery(foto))))
+
+
+# --- Portada y menu del sitio (todas las tiendas) ----------------------------------------
+
+def categorias_del_menu():
+    """Categorias principales con algo a la venta en alguna tienda activa, propio o de sus subcategorias.
+
+    Es la lista del menu del sitio y de la portada; cada una lleva al buscador del sitio filtrado por ella.
+    Es perezosa: solo consulta si la plantilla la recorre.
+    """
+    a_la_venta = Producto.objects.activos().sin_variantes_repetidas()
+    return (
+        Categoria.objects.filter(activa=True, padre__isnull=True)
+        .filter(Q(pk__in=a_la_venta.values('categoria_id')) | Q(pk__in=a_la_venta.values('categoria__padre_id')))
+        .order_by('orden', 'nombre')
+    )
+
+
+def categorias_del_sitio():
+    """Las categorias del menu para la portada del sitio, con cuantos productos tienen y una imagen.
+
+    `total_productos` cuenta lo que muestra el buscador del sitio al filtrar por ella: sus productos y los de sus
+    subcategorias, de todas las tiendas activas y una vez por grupo de variantes.
+    """
+    totales = dict(
+        Producto.objects.activos().sin_variantes_repetidas()
+        .annotate(principal=Coalesce('categoria__padre_id', 'categoria_id'))
+        .order_by().values('principal').annotate(total=Count('id')).values_list('principal', 'total')
+    )
+    foto = _foto_de_la_categoria(producto__tienda__activa=True, producto__categoria__activa=True)
+    categorias = list(categorias_del_menu().annotate(foto_de_producto=Subquery(foto)))
+    for categoria in categorias:
+        categoria.total_productos = totales.get(categoria.pk, 0)
+    return _con_imagen_de_portada(categorias)
+
+
+def _repartidos_entre_tiendas(productos, limite):
+    """Lo mejor de cada tienda primero, luego lo segundo de cada una...: ninguna tienda llena la seleccion.
+
+    Con foto y destacados primero; despues lo mas nuevo. Lo hace la base con un numero de puesto por tienda.
+    """
+    orden = [F('tiene_foto').desc(), F('destacado').desc(), F('creado').desc(), F('id').desc()]
+    return list(
+        productos.annotate(tiene_foto=Exists(FotoProducto.objects.filter(producto=OuterRef('pk'))))
+        .annotate(puesto=Window(RowNumber(), partition_by=[F('tienda_id')], order_by=orden))
+        .filter(puesto__lte=limite)
+        .order_by('puesto', *orden)[:limite]
+    )
+
+
+def vitrina_del_sitio(limite=12, excluir=()):
+    """Productos de todas las tiendas para la portada del sitio: solo lo que se puede comprar."""
+    return _repartidos_entre_tiendas(_base().filter(q_comprable()).exclude(pk__in=excluir), limite)
+
+
+def ofertas_del_sitio(limite=10):
+    """Ofertas vigentes de todas las tiendas que se pueden comprar, repartidas entre las tiendas."""
+    return _repartidos_entre_tiendas(_base().filter(q_oferta_vigente()).filter(q_comprable()), limite)
 
 
 # Vistos recientemente (como en las grandes tiendas): ids en la sesion, el mas reciente primero.

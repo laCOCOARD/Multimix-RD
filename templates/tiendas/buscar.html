@@ -1,24 +1,39 @@
 {% extends 'base.html' %}
 
-{% block titulo %}{% if filtros.q %}{{ filtros.q }} · {% endif %}Todos los productos · {{ plataforma.nombre }}{% endblock %}
-{% block descripcion %}Productos de todas las tiendas de {{ plataforma.nombre }}.{% endblock %}
+{% block titulo %}{% if filtros.q %}{{ filtros.q }} · {% endif %}{% if categoria %}{{ categoria.nombre }}{% else %}Todos los productos{% endif %} · {{ plataforma.nombre }}{% endblock %}
+{% block descripcion %}{% if categoria %}{{ categoria.nombre }}: productos{% else %}Productos{% endif %} de todas las tiendas de {{ plataforma.nombre }}.{% endblock %}
 
 {% block contenido %}
 <div class="container py-4">
   <nav aria-label="Ruta de navegación">
     <ol class="breadcrumb small">
       <li class="breadcrumb-item"><a href="{% url 'tiendas:portada' %}">Inicio</a></li>
-      <li class="breadcrumb-item active" aria-current="page">Todos los productos</li>
+      {% if categoria %}
+        <li class="breadcrumb-item"><a href="{% url 'tiendas:buscar' %}">Todos los productos</a></li>
+        <li class="breadcrumb-item active" aria-current="page">{{ categoria.nombre }}</li>
+      {% else %}
+        <li class="breadcrumb-item active" aria-current="page">Todos los productos</li>
+      {% endif %}
     </ol>
   </nav>
 
-  <h1 class="h3 mb-1">Todos los productos</h1>
+  <h1 class="h3 mb-1">{% if categoria %}{{ categoria.nombre }}{% else %}Todos los productos{% endif %}</h1>
   <p class="text-muted">
     {{ pagina.paginator.count }} producto{{ pagina.paginator.count|pluralize }}{% if filtros.q %} para «{{ filtros.q }}»{% endif %} entre todas las tiendas.
     Cada producto se compra dentro de su tienda.
   </p>
 
+  {% if categorias_menu %}
+    <nav class="mm-chips mb-3" aria-label="Categorías">
+      <a class="mm-chip{% if not categoria %} activa{% endif %}" href="{% querystring categoria=None pagina=None %}"{% if not categoria %} aria-current="page"{% endif %}>Todas</a>
+      {% for item in categorias_menu %}
+        <a class="mm-chip{% if item == categoria %} activa{% endif %}" href="{% querystring categoria=item.slug pagina=None %}"{% if item == categoria %} aria-current="page"{% endif %}>{{ item.nombre }}</a>
+      {% endfor %}
+    </nav>
+  {% endif %}
+
   <form class="mm-filtros mb-4" method="get" action="{% url 'tiendas:buscar' %}">
+    {% if categoria %}<input type="hidden" name="categoria" value="{{ categoria.slug }}">{% endif %}
     <div class="row g-3 align-items-end">
       <div class="col-md-5">
         <label class="form-label" for="buscar-q">Buscar</label>
@@ -58,9 +73,17 @@
   {% else %}
     <div class="mm-vacio">
       <i class="bi bi-search"></i>
-      <p class="lead mb-1">No encontramos productos con esa búsqueda.</p>
-      <p class="text-muted mb-3">Revisa cómo está escrita o prueba con una palabra más general.</p>
-      <a class="btn btn-primary" href="{% url 'tiendas:portada' %}#tiendas">Ver las tiendas</a>
+      {% if filtros.oferta and not filtros.q %}
+        <p class="lead mb-1">Por ahora no hay ofertas{% if categoria %} en {{ categoria.nombre }}{% endif %}.</p>
+        <p class="text-muted mb-3">Vuelve pronto o mira todos los productos de nuestras tiendas.</p>
+      {% elif categoria and not filtros.q %}
+        <p class="lead mb-1">Aún no hay productos en {{ categoria.nombre }} con esos filtros.</p>
+        <p class="text-muted mb-3">Prueba con otra categoría o quita algún filtro.</p>
+      {% else %}
+        <p class="lead mb-1">No encontramos productos con esa búsqueda.</p>
+        <p class="text-muted mb-3">Revisa cómo está escrita o prueba con una palabra más general.</p>
+      {% endif %}
+      <a class="btn btn-primary" href="{% url 'tiendas:directorio' %}">Ver las tiendas</a>
     </div>
     {% if sugeridos %}
       <section class="mm-seccion">

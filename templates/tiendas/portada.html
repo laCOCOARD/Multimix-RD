@@ -1,79 +1,165 @@
 {% extends 'base.html' %}
 
-{# La portada del sitio es el directorio de tiendas: no lleva banner y trae su propio buscador. Tampoco lleva filas de
-   productos (pedido del dueño el 2026-10-19): donde salen las tiendas, salen solo las tiendas. #}
+{# Portada del sitio (pedido del dueño el 2026-10-25): un sitio de muchas tiendas. Se puede comprar sin conocer al #}
+{# vendedor (categorias y productos de todas las tiendas, cada uno con su tienda a la vista) o entrar a una tienda. #}
+{# Todo sale de la base; las secciones sin datos (ofertas, preguntas...) no se muestran. No lleva el banner de las #}
+{# tiendas (`mm-banner`): la bienvenida es clara y corta para que los productos queden cerca. #}
+{% block titulo %}{{ plataforma.nombre }} · Tiendas de emprendedores dominicanos en un solo lugar{% endblock %}
+
 {% block meta %}
 {{ block.super }}
 <script type="application/ld+json">{{ sitio_json_ld }}</script>
 {% endblock %}
 
-{% block buscador_cabecera %}
-{% endblock %}
-
 {% block contenido %}
-<section class="mm-portada">
-  <span class="mm-portada-fondo" aria-hidden="true">
-    <span class="mm-portada-luz mm-portada-luz-1"></span>
-    <span class="mm-portada-luz mm-portada-luz-2"></span>
-  </span>
-  <div class="container">
-    <p class="mm-portada-etiqueta"><i class="bi bi-geo-alt-fill"></i>Tiendas de República Dominicana</p>
-    <h1 class="mm-portada-titulo">Compra en tiendas de confianza, todo en un solo lugar</h1>
-    <p class="mm-portada-texto">Elige la tienda, haz tu pedido en línea y síguelo hasta que llegue.</p>
-    <form class="mm-directorio-buscador js-buscador" role="search" action="{% url 'tiendas:buscar' %}" method="get"
-          data-sugerencias="{% url 'tiendas:sugerencias' %}">
-      <i class="bi bi-search" aria-hidden="true"></i>
-      <input type="search" name="q" maxlength="80" placeholder="Busca un producto en todas las tiendas" autocomplete="off"
-             aria-label="Buscar un producto en todas las tiendas">
-      <button class="btn btn-primary" type="submit">Buscar</button>
-    </form>
+<section class="mm-hero" aria-labelledby="titulo-portada">
+  <div class="container mm-hero-contenido{% if vitrina|length == 4 %} con-vitrina{% endif %}">
+    <div class="mm-hero-texto">
+      <p class="mm-eyebrow"><i class="bi bi-geo-alt-fill" aria-hidden="true"></i>Tiendas de emprendedores dominicanos</p>
+      <h1 class="mm-hero-titulo" id="titulo-portada">Muchos emprendedores. <span>Un solo lugar.</span></h1>
+      <p class="mm-hero-subtitulo">Descubre productos, conoce tiendas locales y compra en línea de forma sencilla.</p>
+      <div class="mm-hero-acciones">
+        <a class="btn btn-primary btn-lg" href="{% url 'tiendas:buscar' %}"><i class="bi bi-grid" aria-hidden="true"></i>Explorar productos</a>
+        <a class="btn btn-outline-primary btn-lg" href="{% url 'tiendas:directorio' %}"><i class="bi bi-shop" aria-hidden="true"></i>Explorar tiendas</a>
+      </div>
+      {% if vender and not user.is_staff %}
+        <a class="mm-hero-vender" href="#vender">¿Tienes un negocio? <strong>Vende en {{ plataforma.nombre }}</strong> <i class="bi bi-arrow-right" aria-hidden="true"></i></a>
+      {% endif %}
+    </div>
+    {% if vitrina|length == 4 %}
+      <div class="mm-hero-vitrina">
+        {% for producto in vitrina %}
+          <a class="mm-vitrina-item" href="{{ producto.get_absolute_url }}">
+            <img src="{{ producto.foto_principal.imagen.url }}" alt="{{ producto.nombre }}" loading="lazy" decoding="async" width="240" height="240">
+          </a>
+        {% endfor %}
+      </div>
+    {% endif %}
   </div>
 </section>
 
-<section class="container mm-seccion" id="tiendas">
+{% if categorias %}
+<section class="container mm-seccion" aria-labelledby="titulo-categorias">
   <div class="mm-seccion-cabecera">
-    <h2>Nuestras tiendas</h2>
-    <a href="{% url 'tiendas:buscar' %}">Ver todos los productos <i class="bi bi-arrow-right"></i></a>
+    <h2 id="titulo-categorias">Explora por categoría</h2>
+    <a href="{% url 'tiendas:buscar' %}">Ver todo <i class="bi bi-arrow-right" aria-hidden="true"></i></a>
   </div>
-  {% if tiendas %}
-    <div class="mm-fila" data-fila>
-      <button class="mm-fila-flecha mm-fila-anterior" type="button" data-mover="-1" aria-label="Ver anteriores" hidden><i class="bi bi-chevron-left"></i></button>
-      <div class="mm-fila-pista mm-fila-tiendas" tabindex="0">
-        {% for item in tiendas %}
-          <div class="mm-fila-item">
-            <a class="mm-tienda-tarjeta" href="{{ item.get_absolute_url }}">
-              <span class="mm-tienda-tarjeta-portada"
-                    {% if item.banner_imagen %}style="background-image: url('{{ item.banner_imagen.url }}');"{% endif %}></span>
-              <span class="mm-tienda-tarjeta-cabeza">
-                <span class="mm-tienda-avatar{% if item.logo %} con-logo{% endif %}">
-                  {% if item.logo %}<img src="{{ item.logo.url }}" alt="" loading="lazy" decoding="async">{% else %}{{ item.nombre|slice:':1'|upper }}{% endif %}
-                </span>
-                <span>
-                  <span class="mm-tienda-tarjeta-nombre">{{ item.nombre }}</span>
-                  <span class="mm-tienda-tarjeta-meta">{{ item.total_productos }} producto{{ item.total_productos|pluralize }}</span>
-                </span>
-              </span>
-              {% if item.banner_subtitulo %}<p class="mm-tienda-tarjeta-texto">{{ item.banner_subtitulo }}</p>{% endif %}
-              <span class="mm-tienda-tarjeta-pie">Visitar la tienda <i class="bi bi-arrow-right"></i></span>
-            </a>
-          </div>
-        {% endfor %}
-      </div>
-      <button class="mm-fila-flecha mm-fila-siguiente" type="button" data-mover="1" aria-label="Ver más" hidden><i class="bi bi-chevron-right"></i></button>
+  {# Una fila que se desliza (con el dedo, o con flechas si no caben): sirve igual para 5 que para 50 categorias. #}
+  <div class="mm-fila" data-fila>
+    <button class="mm-fila-flecha mm-fila-anterior" type="button" data-mover="-1" aria-label="Ver categorías anteriores" hidden><i class="bi bi-chevron-left"></i></button>
+    <div class="mm-fila-pista mm-fila-categorias" tabindex="0">
+      {% for categoria in categorias %}
+        <div class="mm-fila-item">
+          <a class="mm-categoria" href="{% url 'tiendas:buscar' %}?categoria={{ categoria.slug }}">
+            <span class="mm-categoria-foto{% if categoria.usa_foto_de_producto %} con-producto{% endif %}">
+              {% if categoria.url_portada %}
+                <img src="{{ categoria.url_portada }}" alt="" loading="lazy" decoding="async" width="160" height="160">
+              {% else %}
+                <i class="bi bi-tags" aria-hidden="true"></i>
+              {% endif %}
+            </span>
+            <span class="mm-categoria-nombre">{{ categoria.nombre }}</span>
+            <span class="mm-categoria-total">{{ categoria.total_productos }} producto{{ categoria.total_productos|pluralize }}</span>
+          </a>
+        </div>
+      {% endfor %}
+    </div>
+    <button class="mm-fila-flecha mm-fila-siguiente" type="button" data-mover="1" aria-label="Ver más categorías" hidden><i class="bi bi-chevron-right"></i></button>
+  </div>
+</section>
+{% endif %}
+
+<section class="container mm-seccion" id="productos" aria-labelledby="titulo-productos">
+  <div class="mm-seccion-cabecera">
+    <div>
+      <h2 id="titulo-productos">Descubre productos</h2>
+      <p class="mm-seccion-texto">De todas nuestras tiendas. Cada producto se compra en el carrito de su tienda.</p>
+    </div>
+    {% if productos %}<a href="{% url 'tiendas:buscar' %}">Ver todos <i class="bi bi-arrow-right" aria-hidden="true"></i></a>{% endif %}
+  </div>
+  {% if productos %}
+    <div class="mm-rejilla mm-rejilla-recortada">
+      {% for producto in productos %}
+        {% include 'includes/tarjeta_producto.html' %}
+      {% endfor %}
+    </div>
+    <div class="mm-seccion-pie">
+      <a class="btn btn-outline-primary btn-lg" href="{% url 'tiendas:buscar' %}">Ver todos los productos</a>
     </div>
   {% else %}
     <div class="mm-vacio">
-      <i class="bi bi-shop"></i>
+      <i class="bi bi-bag" aria-hidden="true"></i>
+      <p class="lead mb-0">Pronto verás aquí los productos de nuestras tiendas.</p>
+    </div>
+  {% endif %}
+</section>
+
+<section class="container mm-seccion" id="tiendas" aria-labelledby="titulo-tiendas">
+  <div class="mm-seccion-cabecera">
+    <div>
+      <h2 id="titulo-tiendas">Explora nuestras tiendas</h2>
+      <p class="mm-seccion-texto">Conoce a los emprendedores y entra a su catálogo.</p>
+    </div>
+    {% if hay_mas_tiendas %}<a href="{% url 'tiendas:directorio' %}">Ver todas las tiendas <i class="bi bi-arrow-right" aria-hidden="true"></i></a>{% endif %}
+  </div>
+  {% if tiendas %}
+    <div class="mm-tiendas{% if tiendas|length == 1 %} una-sola{% endif %}">
+      {% for item in tiendas %}
+        {% include 'includes/tarjeta_tienda.html' %}
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="mm-vacio">
+      <i class="bi bi-shop" aria-hidden="true"></i>
       <p class="lead mb-0">Pronto verás aquí nuestras tiendas.</p>
     </div>
   {% endif %}
 </section>
 
-{% if preguntas %}
-<section class="container mm-seccion">
+{% if ofertas %}
+<section class="container mm-seccion" aria-labelledby="titulo-ofertas">
   <div class="mm-seccion-cabecera">
-    <h2><i class="bi bi-question-circle me-2"></i>Preguntas frecuentes</h2>
-    <a href="{% url 'core:preguntas' %}">Ver todas <i class="bi bi-arrow-right"></i></a>
+    <h2 id="titulo-ofertas"><i class="bi bi-tag-fill me-2" aria-hidden="true"></i>Ofertas</h2>
+    <a href="{% url 'tiendas:buscar' %}?oferta=on">Ver todas las ofertas <i class="bi bi-arrow-right" aria-hidden="true"></i></a>
+  </div>
+  {% include 'includes/fila_productos.html' with productos=ofertas %}
+</section>
+{% endif %}
+
+{% if vender %}
+<section class="container mm-seccion" id="vender" aria-labelledby="titulo-vender">
+  <div class="mm-vender">
+    <div class="mm-vender-texto">
+      <p class="mm-eyebrow"><i class="bi bi-rocket-takeoff" aria-hidden="true"></i>Para emprendedores</p>
+      <h2 id="titulo-vender">Tu negocio merece llegar más lejos</h2>
+      <p>Abre tu espacio en {{ plataforma.nombre }}, muestra tus productos y conecta con nuevos clientes. Escríbenos y te ayudamos a abrir tu tienda.</p>
+      <div class="mm-vender-acciones">
+        <a class="btn btn-acento btn-lg" href="{{ vender.url }}"{% if vender.medio == 'whatsapp' %} target="_blank" rel="noopener"{% endif %}>
+          {% if vender.medio == 'whatsapp' %}<i class="bi bi-whatsapp" aria-hidden="true"></i>{% elif vender.medio == 'correo' %}<i class="bi bi-envelope" aria-hidden="true"></i>{% else %}<i class="bi bi-chat-dots" aria-hidden="true"></i>{% endif %}
+          <span>Quiero vender<span class="d-none d-sm-inline"> en {{ plataforma.nombre }}</span></span>
+        </a>
+        {% if user.is_staff %}
+          <a class="btn btn-outline-light btn-lg" href="{% url 'admin:index' %}"><i class="bi bi-speedometer2" aria-hidden="true"></i>Ir a mi panel</a>
+        {% endif %}
+      </div>
+      <p class="mm-vender-nota">
+        {% if vender.medio == 'whatsapp' %}Te respondemos por WhatsApp.{% elif vender.medio == 'correo' %}Te respondemos por correo.{% else %}Ahí encontrarás cómo contactarnos.{% endif %}
+      </p>
+    </div>
+    <ul class="mm-vender-lista">
+      <li><i class="bi bi-shop-window" aria-hidden="true"></i><span><strong>Tu propia tienda</strong> con tu logo, tu portada y su dirección dentro del sitio.</span></li>
+      <li><i class="bi bi-images" aria-hidden="true"></i><span><strong>Tu catálogo</strong> con fotos, precios y ofertas que tú mismo actualizas.</span></li>
+      <li><i class="bi bi-receipt" aria-hidden="true"></i><span><strong>Tus pedidos</strong> llegan a tu panel y desde ahí les das seguimiento.</span></li>
+    </ul>
+  </div>
+</section>
+{% endif %}
+
+{% if preguntas %}
+<section class="container mm-seccion" aria-labelledby="titulo-preguntas">
+  <div class="mm-seccion-cabecera">
+    <h2 id="titulo-preguntas"><i class="bi bi-question-circle me-2" aria-hidden="true"></i>Preguntas frecuentes</h2>
+    <a href="{% url 'core:preguntas' %}">Ver todas <i class="bi bi-arrow-right" aria-hidden="true"></i></a>
   </div>
   {% include 'includes/preguntas.html' %}
 </section>

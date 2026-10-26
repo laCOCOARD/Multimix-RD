@@ -15,7 +15,7 @@
     {% for banner in banners %}
       <div class="carousel-item{% if forloop.first %} active{% endif %}">
         <div class="mm-banner{% if banner.imagen %} mm-banner-con-imagen{% endif %}"
-             {% if banner.imagen %}style="background-image: linear-gradient(90deg, rgba(8,42,92,.9), rgba(8,42,92,.5)), url('{{ banner.imagen.url }}');"{% endif %}>
+             {% if banner.imagen %}style="background-image: linear-gradient(90deg, rgba(23,32,51,.9), rgba(23,32,51,.45)), url('{{ banner.imagen.url }}');"{% endif %}>
           <div class="container">
             <div class="col-lg-7">
               <p class="mm-banner-titulo">{{ banner.titulo }}</p>
@@ -35,7 +35,7 @@
 </section>
 {% else %}
 <section class="mm-banner{% if tienda.banner_imagen %} mm-banner-con-imagen{% endif %}"
-         {% if tienda.banner_imagen %}style="background-image: linear-gradient(90deg, rgba(8,42,92,.9), rgba(8,42,92,.5)), url('{{ tienda.banner_imagen.url }}');"{% endif %}>
+         {% if tienda.banner_imagen %}style="background-image: linear-gradient(90deg, rgba(23,32,51,.9), rgba(23,32,51,.45)), url('{{ tienda.banner_imagen.url }}');"{% endif %}>
   <div class="container">
     <div class="row">
       <div class="col-lg-7">

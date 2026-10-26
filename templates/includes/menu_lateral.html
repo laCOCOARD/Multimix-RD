@@ -6,13 +6,7 @@
   </div>
   <div class="offcanvas-body">
     {% if puede_navegar %}
-      <form class="mm-buscador d-flex d-lg-none mb-3" role="search" method="get"
-            action="{% if tienda %}{% url 'catalogo:lista' tienda.slug %}{% else %}{% url 'tiendas:buscar' %}{% endif %}">
-        <input class="form-control" type="search" name="q" maxlength="80" autocomplete="off"
-               placeholder="{% if tienda %}Buscar en esta tienda{% else %}Buscar productos{% endif %}" aria-label="Buscar">
-        <button class="btn btn-primary" type="submit" aria-label="Buscar"><i class="bi bi-search"></i></button>
-      </form>
-
+      {# El buscador ya esta a la vista en la cabecera, tambien en el celular. #}
       <nav class="mm-menu-grupo" aria-label="{% if tienda %}{{ tienda.nombre }}{% else %}Comprar{% endif %}">
         {% if tienda %}
           <h2>{{ tienda.nombre }}</h2>
@@ -35,22 +29,45 @@
           <a href="{% url 'tiendas:portada' %}"><i class="bi bi-arrow-left-circle"></i>Todas las tiendas</a>
         {% else %}
           <h2>Comprar</h2>
-          <a href="{% url 'tiendas:portada' %}#tiendas"><i class="bi bi-shop"></i>Tiendas</a>
+          <a href="{% url 'tiendas:directorio' %}"><i class="bi bi-shop"></i>Tiendas</a>
           <a href="{% url 'tiendas:buscar' %}"><i class="bi bi-grid"></i>Todos los productos</a>
+          {% if categorias_menu %}
+            <button class="mm-menu-desplegar collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#menu-categorias"
+                    aria-expanded="false" aria-controls="menu-categorias">
+              <i class="bi bi-tags"></i>Categorías<i class="bi bi-chevron-down ms-auto"></i>
+            </button>
+            <div class="collapse mm-menu-sub" id="menu-categorias">
+              {% for categoria in categorias_menu %}
+                <a href="{% url 'tiendas:buscar' %}?categoria={{ categoria.slug }}">{{ categoria.nombre }}</a>
+              {% endfor %}
+            </div>
+          {% endif %}
           <a href="{% url 'tiendas:buscar' %}?oferta=on"><i class="bi bi-percent"></i>Ofertas</a>
+        {% endif %}
+        {% if user.is_staff %}
+          <a href="{% url 'admin:index' %}"><i class="bi bi-speedometer2"></i>Mi panel</a>
+        {% elif vender %}
+          <a href="{% url 'tiendas:portada' %}#vender"><i class="bi bi-shop-window"></i>Vende en {{ plataforma.nombre }}</a>
         {% endif %}
       </nav>
 
       <nav class="mm-menu-grupo" aria-label="Mi cuenta">
         <h2>Mi cuenta</h2>
-        <a href="{% url 'clientes:cuenta' %}"><i class="bi bi-receipt"></i>Mis pedidos</a>
-        <a href="{% url 'clientes:favoritos' %}"><i class="bi bi-heart"></i>Mis favoritos</a>
-        <a href="{% url 'clientes:direcciones' %}"><i class="bi bi-geo-alt"></i>Mis direcciones</a>
-        <a href="{% url 'clientes:perfil' %}"><i class="bi bi-person"></i>Mis datos</a>
-        <form method="post" action="{% url 'clientes:salir' %}">
-          {% csrf_token %}
-          <button type="submit"><i class="bi bi-box-arrow-right"></i>Cerrar sesión</button>
-        </form>
+        {% if user.is_authenticated %}
+          <a href="{% url 'clientes:cuenta' %}"><i class="bi bi-receipt"></i>Mis pedidos</a>
+          <a href="{% url 'clientes:favoritos' %}"><i class="bi bi-heart"></i>Mis favoritos</a>
+          <a href="{% url 'clientes:direcciones' %}"><i class="bi bi-geo-alt"></i>Mis direcciones</a>
+          <a href="{% url 'clientes:perfil' %}"><i class="bi bi-person"></i>Mis datos</a>
+          <form method="post" action="{% url 'clientes:salir' %}">
+            {% csrf_token %}
+            <button type="submit"><i class="bi bi-box-arrow-right"></i>Cerrar sesión</button>
+          </form>
+        {% else %}
+          <a href="{% url 'clientes:entrar' %}"><i class="bi bi-box-arrow-in-right"></i>Iniciar sesión</a>
+          <a href="{% url 'clientes:registro' %}"><i class="bi bi-person-plus"></i>Crear cuenta</a>
+          <a href="{% url 'clientes:cuenta' %}"><i class="bi bi-receipt"></i>Mis pedidos</a>
+          <a href="{% url 'clientes:favoritos' %}"><i class="bi bi-heart"></i>Mis favoritos</a>
+        {% endif %}
       </nav>
     {% else %}
       <nav class="mm-menu-grupo" aria-label="Mi cuenta">

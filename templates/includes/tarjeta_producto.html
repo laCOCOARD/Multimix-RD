@@ -1,12 +1,13 @@
 {% load moneda %}
 {# Agregar y Comprar van siempre al carrito de la tienda del producto, aunque la tarjeta salga en el buscador del sitio o en favoritos. #}
+{# Fuera de una tienda (portada, buscador del sitio, favoritos) la tarjeta dice quien lo vende y enlaza a su tienda. #}
 <article class="mm-tarjeta h-100 revelar">
   <a class="mm-tarjeta-foto" href="{{ producto.get_absolute_url }}" tabindex="-1" aria-hidden="true">
     {% with foto=producto.foto_principal %}
       {% if foto %}
         <img src="{{ foto.imagen.url }}" alt="" loading="lazy" decoding="async" width="400" height="400">
       {% else %}
-        <span class="mm-sin-foto"><i class="bi bi-image"></i></span>
+        <span class="mm-sin-foto"><i class="bi bi-image"></i><span>Sin foto</span></span>
       {% endif %}
     {% endwith %}
     <span class="mm-etiquetas">
@@ -17,8 +18,14 @@
     </span>
   </a>
   <div class="mm-tarjeta-cuerpo">
-    <p class="mm-tarjeta-categoria">{% if tienda %}{{ producto.categoria.nombre }}{% else %}<i class="bi bi-shop me-1"></i>{{ producto.tienda.nombre }}{% endif %}</p>
+    {% if tienda %}<p class="mm-tarjeta-categoria">{{ producto.categoria.nombre }}</p>{% endif %}
     <h3 class="mm-tarjeta-nombre"><a href="{{ producto.get_absolute_url }}">{{ producto.nombre }}</a></h3>
+    {% if not tienda %}
+      <p class="mm-tarjeta-vendedor">
+        <i class="bi bi-shop" aria-hidden="true"></i><span class="mm-tarjeta-vendedor-etiqueta">Vendido por</span>
+        <a href="{{ producto.tienda.get_absolute_url }}">{{ producto.tienda.nombre }}</a>
+      </p>
+    {% endif %}
     {% if producto.valoracion_total %}
       <p class="mm-tarjeta-valoracion" aria-label="{{ producto.valoracion_promedio|floatformat:"1u" }} de 5 estrellas, {{ producto.valoracion_total }} opiniones">
         <i class="bi bi-star-fill"></i>{{ producto.valoracion_promedio|floatformat:"1u" }} <span>({{ producto.valoracion_total }})</span>
@@ -34,14 +41,15 @@
          aria-label="{{ producto.nombre }}: avísame cuando esté disponible"><i class="bi bi-bell me-1"></i>Avísame</a>
     {% else %}
       {# "Comprar" es el mismo envio con comprar=1: el producto queda en el carrito y se va directo a pagar. #}
-      <form class="mt-auto js-agregar mm-tarjeta-acciones" method="post" action="{% url 'carrito:agregar' producto.tienda.slug %}">
+      <form class="mt-auto js-agregar mm-tarjeta-acciones" method="post" action="{% url 'carrito:agregar' producto.tienda.slug %}"
+            data-tienda="{{ producto.tienda.nombre }}">
         {% csrf_token %}
         <input type="hidden" name="producto_id" value="{{ producto.pk }}">
         <input type="hidden" name="cantidad" value="1">
         <input type="hidden" name="next" value="{{ request.get_full_path }}">
         <button class="btn btn-outline-primary mm-tarjeta-agregar" type="submit" data-solo-icono
                 aria-label="Agregar {{ producto.nombre }} al carrito" title="Agregar al carrito"><i class="bi bi-bag-plus"></i></button>
-        <button class="btn btn-acento flex-grow-1" type="submit" name="comprar" value="1"><i class="bi bi-lightning-charge-fill me-1"></i>Comprar</button>
+        <button class="btn btn-primary flex-grow-1 mm-tarjeta-comprar" type="submit" name="comprar" value="1"><i class="bi bi-lightning-charge-fill me-1"></i>Comprar</button>
       </form>
     {% endif %}
   </div>

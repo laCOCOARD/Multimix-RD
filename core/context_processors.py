@@ -1,8 +1,9 @@
 from django.conf import settings
 
 from carrito.carrito import cantidad_en_sesion
-from catalogo.services import categorias_de
+from catalogo.services import categorias_de, categorias_del_menu
 from pedidos.whatsapp import construir_enlace
+from tiendas.services import como_vender
 
 from .models import ConfiguracionTienda, contenido_del_pie
 
@@ -27,6 +28,7 @@ def tienda(request):
         'categorias_menu': (),
         'carrito_cantidad': 0,
         'enlace_whatsapp_tienda': '',
+        'vender': None,
         'contenido_pie': pie,
         # El pie separa la ayuda de los textos legales; la portada enlaza solo las politicas publicadas.
         'paginas_ayuda': [p for p in pie['paginas'] if p['slug'] not in PAGINAS_LEGALES],
@@ -43,4 +45,9 @@ def tienda(request):
         contexto['categorias_menu'] = categorias_de(actual)
         if hasattr(request, 'session'):
             contexto['carrito_cantidad'] = cantidad_en_sesion(request.session, actual)
+    else:
+        # En las paginas del sitio: las categorias de todas las tiendas (llevan al buscador del sitio) y a donde
+        # escribe quien quiere vender aqui.
+        contexto['categorias_menu'] = categorias_del_menu()
+        contexto['vender'] = como_vender(plataforma, contexto['paginas_publicadas'])
     return contexto

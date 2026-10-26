@@ -13,38 +13,51 @@
 }
 
 :root {
-  /* Azul y verde del logo. El acento es un verde mas oscuro que el de la hoja para que el texto blanco se lea. */
-  --mm-primario: #0a5fb4;
-  --mm-primario-oscuro: #083b8a;
-  --mm-primario-suave: #e8f2fb;
-  --mm-acento: #24832b;
-  --mm-acento-oscuro: #196a21;
-  --mm-hoja: #6db523;
-  --mm-oscuro: #082a5c;
-  --mm-texto: #1d2b3a;
-  --mm-texto-suave: #5b6b7c;
-  --mm-fondo: #f5f7fa;
+  /* Marca (pedido del dueño el 2026-10-25): azul para botones, enlaces e identidad; azul oscuro para los titulos;
+     naranja calido con moderacion (ofertas y la accion principal de cada pagina), siempre con texto oscuro. */
+  --mm-primario: #244bff;
+  --mm-primario-oscuro: #1736d6;
+  --mm-primario-suave: #ebefff;
+  --mm-oscuro: #172033;
+  --mm-oscuro-2: #222f52;
+  --mm-calido: #ffb15c;
+  --mm-calido-oscuro: #f59a35;
+  --mm-calido-suave: #fff3e5;
+  /* El acento (.btn-acento) es la accion principal de una pagina: comprar ahora, confirmar el pedido, el boton del
+     banner de cada tienda. Va en naranja con texto oscuro. */
+  --mm-acento: var(--mm-calido);
+  --mm-acento-oscuro: var(--mm-calido-oscuro);
+  /* Verde solo para lo que salio bien (agregado, envio gratis logrado, entregado...). */
+  --mm-verde: #1a7f45;
+  --mm-verde-oscuro: #12633a;
+  --mm-verde-suave: #e7f5ec;
+  --mm-texto: #263043;
+  --mm-texto-suave: #5d6678;
+  --mm-sobre-oscuro: #c5cde0;
+  --mm-sobre-oscuro-suave: #9aa3ba;
+  --mm-fondo: #f5f7fb;
   --mm-superficie: #ffffff;
-  --mm-borde: #e3e8ee;
-  --mm-exito: #1a8f5a;
+  --mm-borde: #e3e7ef;
+  --mm-exito: var(--mm-verde);
   --mm-peligro: #d23b3b;
   --mm-whatsapp: #25d366;
   --mm-whatsapp-oscuro: #1da851;
-  --mm-radio: .9rem;
-  --mm-sombra: 0 1px 2px rgba(8, 42, 92, .06), 0 6px 18px rgba(8, 42, 92, .06);
-  --mm-sombra-alta: 0 10px 30px rgba(8, 42, 92, .14);
+  --mm-foco: rgba(36, 75, 255, .45);
+  --mm-radio: .875rem;
+  --mm-sombra: 0 1px 2px rgba(23, 32, 51, .05), 0 4px 16px rgba(23, 32, 51, .05);
+  --mm-sombra-alta: 0 12px 32px rgba(23, 32, 51, .12);
   --mm-transicion: .25s ease;
 
   --bs-primary: var(--mm-primario);
-  --bs-primary-rgb: 10, 95, 180;
+  --bs-primary-rgb: 36, 75, 255;
   --bs-link-color: var(--mm-primario);
-  --bs-link-color-rgb: 10, 95, 180;
+  --bs-link-color-rgb: 36, 75, 255;
   --bs-link-hover-color: var(--mm-primario-oscuro);
-  --bs-link-hover-color-rgb: 8, 59, 138;
+  --bs-link-hover-color-rgb: 23, 54, 214;
   --bs-body-color: var(--mm-texto);
   --bs-body-bg: var(--mm-fondo);
   --bs-border-radius: .6rem;
-  --bs-font-sans-serif: "Inter", "Segoe UI", system-ui, -apple-system, Roboto, "Helvetica Neue", Arial, sans-serif;
+  --bs-font-sans-serif: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   --bs-body-font-size: .975rem;
 }
 
@@ -53,6 +66,13 @@ h1, h2, h3, .h1, .h2, .h3 { font-weight: 700; color: var(--mm-oscuro); letter-sp
 a { text-decoration: none; }
 a:hover { text-decoration: underline; }
 img { max-width: 100%; height: auto; }
+/* 16 px a los lados en el celular y 24 px en pantallas anchas. */
+.container { --bs-gutter-x: 2rem; }
+@media (min-width: 992px) { .container { --bs-gutter-x: 3rem; } }
+/* Foco visible al navegar con el teclado (los botones de Bootstrap traen el suyo). */
+:where(a, button, [tabindex]:not([tabindex="-1"])):focus-visible { outline: 3px solid var(--mm-foco); outline-offset: 2px; border-radius: .35rem; }
+/* Las anclas (#tiendas, #vender) no quedan tapadas por la cabecera fija. */
+[id] { scroll-margin-top: 5.5rem; }
 
 /* --- Botones ------------------------------------------------------------ */
 .btn { font-weight: 600; transition: transform var(--mm-transicion), box-shadow var(--mm-transicion), background-color var(--mm-transicion), border-color var(--mm-transicion); }
@@ -68,24 +88,33 @@ img { max-width: 100%; height: auto; }
   --bs-btn-active-border-color: var(--mm-primario-oscuro);
   --bs-btn-disabled-bg: var(--mm-primario);
   --bs-btn-disabled-border-color: var(--mm-primario);
+  --bs-btn-focus-shadow-rgb: 36, 75, 255;
 }
 .btn-outline-primary {
   --bs-btn-color: var(--mm-primario);
   --bs-btn-border-color: var(--mm-primario);
+  --bs-btn-hover-color: #fff;
   --bs-btn-hover-bg: var(--mm-primario);
   --bs-btn-hover-border-color: var(--mm-primario);
+  --bs-btn-active-color: #fff;
   --bs-btn-active-bg: var(--mm-primario);
   --bs-btn-active-border-color: var(--mm-primario);
+  --bs-btn-focus-shadow-rgb: 36, 75, 255;
 }
 .btn-acento {
-  --bs-btn-color: #fff;
+  --bs-btn-color: var(--mm-oscuro);
   --bs-btn-bg: var(--mm-acento);
   --bs-btn-border-color: var(--mm-acento);
-  --bs-btn-hover-color: #fff;
+  --bs-btn-hover-color: var(--mm-oscuro);
   --bs-btn-hover-bg: var(--mm-acento-oscuro);
   --bs-btn-hover-border-color: var(--mm-acento-oscuro);
-  --bs-btn-active-color: #fff;
+  --bs-btn-active-color: var(--mm-oscuro);
   --bs-btn-active-bg: var(--mm-acento-oscuro);
+  --bs-btn-active-border-color: var(--mm-acento-oscuro);
+  --bs-btn-disabled-color: var(--mm-oscuro);
+  --bs-btn-disabled-bg: var(--mm-acento);
+  --bs-btn-disabled-border-color: var(--mm-acento);
+  --bs-btn-focus-shadow-rgb: 255, 177, 92;
 }
 .btn-whatsapp {
   --bs-btn-color: #fff;
@@ -99,7 +128,7 @@ img { max-width: 100%; height: auto; }
 }
 .form-control:focus, .form-select:focus, .form-check-input:focus {
   border-color: var(--mm-primario);
-  box-shadow: 0 0 0 .2rem rgba(10, 95, 180, .18);
+  box-shadow: 0 0 0 .2rem rgba(36, 75, 255, .18);
 }
 .form-check-input:checked { background-color: var(--mm-primario); border-color: var(--mm-primario); }
 .page-link { color: var(--mm-primario); }
@@ -108,104 +137,200 @@ img { max-width: 100%; height: auto; }
 /* --- Cabecera ----------------------------------------------------------- */
 /* Franja sobre la cabecera de cada tienda: devuelve al directorio del sitio. */
 .mm-barra-sitio { background: var(--mm-oscuro); font-size: .82rem; }
-.mm-barra-sitio a { display: inline-flex; align-items: center; gap: .45rem; padding: .4rem 0; color: #c9d6e3; font-weight: 600; }
+.mm-barra-sitio a { display: inline-flex; align-items: center; gap: .45rem; padding: .4rem 0; color: var(--mm-sobre-oscuro); font-weight: 600; }
 .mm-barra-sitio a:hover { color: #fff; text-decoration: none; }
 .mm-barra-sitio img { height: 1.25rem; width: auto; padding: .1rem .2rem; border-radius: .3rem; background: #fff; }
-.mm-cabecera { background: var(--mm-superficie); border-bottom: 1px solid var(--mm-borde); box-shadow: 0 1px 8px rgba(8, 42, 92, .05); }
-.mm-logo { display: inline-flex; align-items: center; gap: .55rem; }
+
+/* En el celular la cabecera tiene dos filas: la marca con la cuenta, y el buscador con el menu y el carrito. Al
+   bajar se esconde la primera (el `top` negativo mide lo mismo que ella) y queda fija la del buscador. */
+.mm-cabecera { top: -3.5rem; background: var(--mm-superficie); border-bottom: 1px solid var(--mm-borde); transition: box-shadow var(--mm-transicion), background-color var(--mm-transicion); }
+/* Cuatro columnas: los iconos de arriba ocupan las dos ultimas, asi el carrito (abajo, solo en la ultima) no le */
+/* quita al buscador el ancho de esos iconos. */
+.mm-cabecera-fila {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
+  grid-template-rows: 2.5rem auto;
+  grid-template-areas: "marca marca acciones acciones" "menu buscar buscar buscar";
+  align-items: center;
+  gap: .5rem;
+  padding-top: .5rem;
+  padding-bottom: .6rem;
+}
+.mm-cabecera.con-carrito .mm-cabecera-fila { grid-template-areas: "marca marca acciones acciones" "menu buscar buscar carrito"; }
+/* Sin sesion con la cuenta obligatoria no hay buscador: una sola fila, toda fija. */
+.mm-cabecera.sin-buscador { top: 0; }
+.mm-cabecera.sin-buscador .mm-cabecera-fila { grid-template-rows: 2.5rem; grid-template-areas: "menu marca marca acciones"; }
+.mm-btn-menu { grid-area: menu; }
+.mm-logo { grid-area: marca; justify-self: start; }
+.mm-buscador { grid-area: buscar; }
+.mm-cabecera-acciones { grid-area: acciones; display: flex; align-items: center; gap: .15rem; justify-self: end; }
+.mm-cabecera-carrito { grid-area: carrito; }
+.mm-cabecera.con-sombra { box-shadow: 0 6px 24px rgba(23, 32, 51, .08); background-color: rgba(255, 255, 255, .94); backdrop-filter: saturate(1.4) blur(10px); }
+
+.mm-logo { display: inline-flex; align-items: center; gap: .5rem; min-width: 0; max-width: 100%; }
 .mm-logo:hover { text-decoration: none; }
-.mm-logo-simbolo { height: 2.75rem; width: auto; }
-.mm-logo-texto { font-size: 1.4rem; font-weight: 700; letter-spacing: -.025em; color: var(--mm-primario); }
-.mm-cabecera .nav-link { font-weight: 600; color: var(--mm-texto); }
-.mm-cabecera .nav-link:hover { color: var(--mm-primario); text-decoration: none; }
-.mm-buscador { position: relative; gap: .4rem; min-width: min(100%, 17rem); }
-.mm-sugerencias { position: absolute; top: calc(100% + .35rem); left: 0; right: 0; z-index: 1050; margin: 0; padding: .35rem; list-style: none; background: var(--mm-superficie); border: 1px solid var(--mm-borde); border-radius: var(--mm-radio); box-shadow: var(--mm-sombra-alta); min-width: min(22rem, 92vw); }
+.mm-logo img { max-height: 2.5rem; width: auto; object-fit: contain; }
+.mm-logo-simbolo { height: 2.25rem; }
+.mm-logo-texto { overflow: hidden; font-size: 1.2rem; font-weight: 800; letter-spacing: -.03em; color: var(--mm-oscuro); white-space: nowrap; text-overflow: ellipsis; }
+
+/* Buscador: una sola pieza redonda con la lupa, el campo y el boton. */
+.mm-buscador { position: relative; display: flex; align-items: center; min-width: 0; height: 2.85rem; padding: .25rem .25rem .25rem .95rem; background: var(--mm-fondo); border: 1.5px solid var(--mm-borde); border-radius: 999px; transition: border-color var(--mm-transicion), box-shadow var(--mm-transicion), background-color var(--mm-transicion); }
+.mm-buscador:focus-within { background: var(--mm-superficie); border-color: var(--mm-primario); box-shadow: 0 0 0 .2rem rgba(36, 75, 255, .15); }
+.mm-buscador-icono { flex: 0 0 auto; margin-right: .55rem; color: var(--mm-texto-suave); }
+/* 16 px: con menos, el iPhone agranda la pagina al escribir. */
+.mm-buscador-campo { flex: 1; min-width: 0; height: 100%; padding: 0; border: 0; outline: 0; background: transparent; font-size: 1rem; color: var(--mm-texto); }
+.mm-buscador-campo { text-overflow: ellipsis; }
+.mm-buscador-campo::placeholder { color: #737d90; opacity: 1; }
+.mm-buscador-campo:focus-visible { outline: 0; }
+/* En el celular la lupa ya esta en el boton: el texto del campo gana ese espacio. */
+@media (max-width: 575.98px) {
+  .mm-buscador { padding-left: 1rem; }
+  .mm-buscador-icono { display: none; }
+}
+@media (max-width: 400px) { .mm-buscador-campo::placeholder { font-size: .9rem; } }
+.mm-buscador-boton { display: inline-flex; align-items: center; justify-content: center; gap: .4rem; flex: 0 0 auto; height: 100%; min-width: 2.35rem; padding: 0 .75rem; border-radius: 999px; }
+.mm-buscador-boton-texto { display: none; }
+.mm-sugerencias { position: absolute; top: calc(100% + .35rem); left: 0; right: 0; z-index: 1050; margin: 0; padding: .35rem; list-style: none; text-align: left; background: var(--mm-superficie); border: 1px solid var(--mm-borde); border-radius: var(--mm-radio); box-shadow: var(--mm-sombra-alta); min-width: min(22rem, 92vw); }
 .mm-sugerencias a { display: flex; align-items: center; gap: .6rem; padding: .4rem .5rem; border-radius: .55rem; color: var(--mm-texto); }
 .mm-sugerencias a:hover, .mm-sugerencias a.activa { background: var(--mm-primario-suave); text-decoration: none; }
-.mm-sugerencias img { flex: 0 0 auto; width: 44px; height: 44px; object-fit: cover; border-radius: .45rem; background: var(--mm-fondo); }
+.mm-sugerencias img { flex: 0 0 auto; width: 44px; height: 44px; object-fit: contain; border-radius: .45rem; background: #fff; border: 1px solid var(--mm-borde); }
 .mm-sugerencia-cuerpo { display: flex; flex-direction: column; min-width: 0; }
 .mm-sugerencia-nombre { font-weight: 600; font-size: .92rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .mm-sugerencia-detalle { font-size: .8rem; color: var(--mm-texto-suave); }
 .mm-sugerencia-todos { justify-content: center; font-weight: 600; font-size: .88rem; color: var(--mm-primario) !important; border-top: 1px solid var(--mm-borde); border-radius: 0 0 .55rem .55rem !important; margin-top: .25rem; }
-.mm-btn-carrito { font-size: 1.3rem; color: var(--mm-oscuro); border: 0; padding: .3rem .6rem; }
-.mm-btn-carrito:hover { color: var(--mm-primario); }
-.mm-contador { position: absolute; top: 0; right: -.1rem; background: var(--mm-acento); font-size: .68rem; }
+/* En el celular el campo empieza despues del menu: las sugerencias toman el ancho de la cabecera (sin salirse). */
+@media (max-width: 991.98px) {
+  .mm-cabecera-fila { position: relative; }
+  .mm-cabecera .mm-buscador { position: static; }
+  .mm-cabecera .mm-sugerencias { left: 1rem; right: 1rem; min-width: 0; }
+}
+
+/* Favoritos, cuenta y carrito: iconos de 44 px; en pantallas grandes llevan su nombre. */
+.mm-accion { position: relative; display: inline-flex; align-items: center; justify-content: center; gap: .4rem; min-width: 2.75rem; height: 2.75rem; padding: 0 .45rem; border-radius: .75rem; color: var(--mm-oscuro); font-size: .9rem; font-weight: 600; white-space: nowrap; transition: background-color var(--mm-transicion), color var(--mm-transicion); }
+.mm-accion > .bi { font-size: 1.35rem; line-height: 1; }
+.mm-accion:hover { background: var(--mm-primario-suave); color: var(--mm-primario); text-decoration: none; }
+.mm-accion-texto { display: none; }
+.mm-contador { position: absolute; top: .2rem; right: .1rem; --bs-badge-color: var(--mm-oscuro); background: var(--mm-calido); font-size: .68rem; }
 .mm-contador.mm-salto { animation: mm-salto .45s ease; }
 @keyframes mm-salto { 40% { transform: scale(1.45); } }
 .dropdown-item:active { background: var(--mm-primario); }
 
-/* --- Banner ------------------------------------------------------------- */
+@media (min-width: 992px) {
+  .mm-cabecera { top: 0; }
+  .mm-cabecera-fila,
+  .mm-cabecera.con-carrito .mm-cabecera-fila,
+  .mm-cabecera.sin-buscador .mm-cabecera-fila {
+    grid-template-columns: auto auto minmax(0, 1fr) auto auto;
+    grid-template-rows: auto;
+    grid-template-areas: "menu marca buscar acciones carrito";
+    column-gap: 1rem;
+    padding-top: .7rem;
+    padding-bottom: .7rem;
+  }
+  .mm-cabecera:not(.con-carrito) .mm-cabecera-fila { grid-template-columns: auto auto minmax(0, 1fr) auto; grid-template-areas: "menu marca buscar acciones"; }
+  .mm-logo-simbolo { height: 2.6rem; }
+  .mm-logo-texto { font-size: 1.35rem; }
+  .mm-buscador { justify-self: center; width: 100%; max-width: 46rem; height: 3rem; }
+  .mm-buscador-boton { padding: 0 1.15rem; }
+  .mm-buscador-boton-texto { display: inline; }
+}
+@media (min-width: 1200px) { .mm-accion-texto { display: inline; } .mm-accion { padding: 0 .7rem; } }
+
+/* Franja de secciones (pantallas anchas): categorias, tiendas, productos, ofertas y vender. */
+.mm-nav { display: none; background: var(--mm-superficie); border-bottom: 1px solid var(--mm-borde); }
+.mm-nav-lista { display: flex; align-items: center; gap: .15rem; margin: 0; padding: .3rem 0; list-style: none; }
+.mm-nav-enlace { display: inline-flex; align-items: center; gap: .45rem; padding: .45rem .8rem; border: 0; border-radius: .6rem; background: none; color: var(--mm-texto); font-size: .92rem; font-weight: 600; white-space: nowrap; transition: background-color var(--mm-transicion), color var(--mm-transicion); }
+.mm-nav-enlace:hover, .mm-nav-enlace[aria-current="page"], .mm-nav-enlace.show { background: var(--mm-primario-suave); color: var(--mm-primario); text-decoration: none; }
+.mm-nav-enlace > .bi { color: var(--mm-primario); }
+.mm-nav-final { margin-left: auto; }
+.mm-nav-vender { color: var(--mm-primario); }
+.mm-nav .dropdown-menu { max-height: min(70vh, 30rem); overflow-y: auto; padding: .4rem; border-color: var(--mm-borde); border-radius: var(--mm-radio); box-shadow: var(--mm-sombra-alta); }
+.mm-nav .dropdown-item { border-radius: .5rem; padding: .45rem .8rem; font-size: .93rem; }
+@media (min-width: 992px) { .mm-nav { display: block; } }
+
+/* --- Banner de cada tienda ---------------------------------------------- */
 .mm-banner {
   padding: clamp(3rem, 9vw, 6.5rem) 0;
   color: #fff;
-  background: radial-gradient(circle at 88% 15%, rgba(109, 181, 35, .42), transparent 42%),
-              linear-gradient(120deg, var(--mm-oscuro), var(--mm-primario) 70%, #0b80cd);
+  background: radial-gradient(circle at 88% 15%, rgba(255, 177, 92, .3), transparent 42%),
+              linear-gradient(120deg, var(--mm-oscuro), var(--mm-oscuro-2) 45%, var(--mm-primario));
   background-size: cover;
   background-position: center;
 }
 .mm-banner-titulo { color: #fff; font-size: clamp(2rem, 5.5vw, 3.4rem); font-weight: 800; line-height: 1.1; animation: mm-aparecer .7s ease both; }
 .mm-banner-subtitulo { font-size: clamp(1rem, 2.2vw, 1.25rem); opacity: .92; margin: 1rem 0 1.75rem; max-width: 34rem; animation: mm-aparecer .7s .1s ease both; }
 @keyframes mm-aparecer { from { opacity: 0; transform: translateY(14px); } }
-/* El simbolo de la marca sobre un disco blanco, solo en pantallas anchas y sin imagen de banner. */
-.mm-banner-marca { display: grid; place-items: center; width: min(17rem, 100%); aspect-ratio: 1; border-radius: 50%; background: #fff; box-shadow: 0 18px 50px rgba(4, 22, 52, .35); animation: mm-aparecer .7s .15s ease both; }
+/* El logo de la tienda sobre un disco blanco, solo en pantallas anchas y sin imagen de banner. */
+.mm-banner-marca { display: grid; place-items: center; width: min(17rem, 100%); aspect-ratio: 1; border-radius: 50%; background: #fff; box-shadow: 0 18px 50px rgba(10, 16, 32, .35); animation: mm-aparecer .7s .15s ease both; }
 .mm-banner-marca img { width: 74%; height: auto; }
 
-
 /* --- Secciones ---------------------------------------------------------- */
-.mm-seccion { padding-top: 3rem; }
+.mm-seccion { padding-top: 2.5rem; }
 .mm-seccion-cabecera { display: flex; justify-content: space-between; align-items: baseline; gap: 1rem; margin-bottom: 1.1rem; }
-.mm-seccion-cabecera h2 { font-size: 1.45rem; margin: 0; }
-.mm-seccion-cabecera h2 i { color: var(--mm-hoja); }
+.mm-seccion-cabecera h2 { font-size: clamp(1.375rem, 1.15rem + .9vw, 1.75rem); margin: 0; }
+.mm-seccion-cabecera h2 i { color: var(--mm-primario); }
 .mm-seccion-cabecera a { font-weight: 600; white-space: nowrap; }
-
-/* Foto de producto (fondo blanco) usada como imagen de la categoria: se muestra entera. */
-
-/* --- Portada del sitio: directorio de tiendas --------------------------- */
-/* Clara y sin banner, para que no se confunda con el inicio de una tienda (que si lo lleva). */
-.mm-directorio-buscador { display: flex; align-items: center; gap: .5rem; max-width: 36rem; margin: 0 auto; padding: .4rem .4rem .4rem 1.1rem; background: var(--mm-superficie); border: 1px solid var(--mm-borde); border-radius: 999px; box-shadow: var(--mm-sombra); }
-.mm-directorio-buscador:focus-within { border-color: var(--mm-primario); box-shadow: 0 0 0 .2rem rgba(10, 95, 180, .18); }
-.mm-directorio-buscador > i { color: var(--mm-texto-suave); }
-.mm-directorio-buscador input { flex: 1; min-width: 0; border: 0; outline: 0; background: transparent; font-size: 1rem; color: var(--mm-texto); }
-.mm-directorio-buscador .btn { border-radius: 999px; padding-inline: 1.3rem; }
-
-/* La foto del banner de la tienda; si no tiene, una franja con los colores del sitio. */
-/* El logo va a caballo entre la foto y el cuerpo, como la foto de un perfil. */
+.mm-seccion-texto { margin: .3rem 0 0; font-size: .92rem; color: var(--mm-texto-suave); }
+.mm-seccion-pie { display: flex; justify-content: center; margin-top: 1.75rem; }
+@media (min-width: 992px) { .mm-seccion { padding-top: 3.5rem; } }
 
 /* --- Tarjeta de producto ------------------------------------------------ */
-.mm-tarjeta { display: flex; flex-direction: column; background: var(--mm-superficie); border: 1px solid var(--mm-borde); border-radius: var(--mm-radio); overflow: hidden; transition: transform var(--mm-transicion), box-shadow var(--mm-transicion); }
-.mm-tarjeta:hover { transform: translateY(-4px); box-shadow: var(--mm-sombra-alta); }
-.mm-tarjeta-foto { position: relative; display: block; aspect-ratio: 1; background: var(--mm-primario-suave); overflow: hidden; }
-.mm-tarjeta-foto img { width: 100%; height: 100%; object-fit: cover; transition: transform .5s ease; }
-.mm-tarjeta:hover .mm-tarjeta-foto img { transform: scale(1.06); }
-.mm-sin-foto { display: grid; place-items: center; width: 100%; height: 100%; font-size: 2.2rem; color: #9db3c8; background: var(--mm-primario-suave); }
+/* `position: relative` contiene lo que va posicionado dentro (el "Vendido por" oculto): dentro de una fila que se */
+/* desliza, si escapara de la tarjeta ensancharia toda la pagina en el celular. */
+.mm-tarjeta { position: relative; display: flex; flex-direction: column; background: var(--mm-superficie); border: 1px solid var(--mm-borde); border-radius: var(--mm-radio); overflow: hidden; transition: transform var(--mm-transicion), box-shadow var(--mm-transicion), border-color var(--mm-transicion); }
+.mm-tarjeta:hover { transform: translateY(-4px); box-shadow: var(--mm-sombra-alta); border-color: #d3daea; }
+/* La foto se ve entera (como en la ficha) sobre blanco: una foto alargada no se recorta. */
+.mm-tarjeta-foto { position: relative; display: block; aspect-ratio: 1; background: #fff; border-bottom: 1px solid var(--mm-borde); overflow: hidden; }
+.mm-tarjeta-foto img { width: 100%; height: 100%; object-fit: contain; transition: transform .5s ease; }
+.mm-tarjeta:hover .mm-tarjeta-foto img { transform: scale(1.04); }
+.mm-sin-foto { display: grid; place-items: center; align-content: center; gap: .3rem; width: 100%; height: 100%; background: linear-gradient(135deg, var(--mm-fondo), var(--mm-primario-suave)); color: #98a2b8; font-size: .8rem; font-weight: 600; }
+.mm-sin-foto > i { font-size: 2.2rem; line-height: 1; }
 .mm-etiquetas { position: absolute; top: .55rem; left: .55rem; display: flex; flex-direction: column; align-items: flex-start; gap: .3rem; }
 .mm-etiquetas .badge, .mm-precio .badge { font-size: .7rem; font-weight: 700; padding: .35em .6em; }
-.mm-etiqueta-oferta { background: var(--mm-peligro); }
-.mm-etiqueta-nuevo { background: var(--mm-exito); }
+.badge.mm-etiqueta-oferta { --bs-badge-color: var(--mm-oscuro); background: var(--mm-calido); }
+.mm-etiqueta-nuevo { background: var(--mm-verde); }
 .mm-etiqueta-destacado { background: var(--mm-primario); }
-.mm-etiqueta-agotado { background: #6b7785; }
-.mm-etiqueta-pedido { background: var(--mm-primario); }
+.mm-etiqueta-agotado { background: #6b7385; }
+.mm-etiqueta-pedido { background: var(--mm-oscuro); }
 .mm-tarjeta-cuerpo { display: flex; flex-direction: column; flex: 1; padding: .85rem; }
 /* Agregar (solo el icono) y Comprar, lado a lado aunque la tarjeta sea angosta (dos por fila en el celular). */
 .mm-tarjeta-acciones { display: flex; gap: .4rem; }
-.mm-tarjeta-acciones .btn { padding-left: .5rem; padding-right: .5rem; white-space: nowrap; }
+.mm-tarjeta-acciones .btn { min-height: 2.5rem; padding-left: .5rem; padding-right: .5rem; white-space: nowrap; }
 .mm-tarjeta-agregar { flex: 0 0 auto; width: 2.6rem; }
-.mm-tarjeta-acciones .btn-acento { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
-/* Celulares de 360-420 px: las tarjetas van de dos en dos y quedan muy angostas. */
-@media (max-width: 420px) {
-  .mm-tarjeta-acciones { gap: .3rem; }
-  .mm-tarjeta-acciones .btn { padding-left: .3rem; padding-right: .3rem; }
-  .mm-tarjeta-acciones .btn-acento i { display: none; }
-  .mm-tarjeta-agregar { width: 2.3rem; }
-}
+.mm-tarjeta-comprar { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 .mm-tarjeta-categoria { margin: 0 0 .15rem; font-size: .72rem; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; color: var(--mm-texto-suave); }
-.mm-tarjeta-nombre { font-size: .98rem; font-weight: 600; line-height: 1.3; margin: 0 0 .5rem; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; min-height: 2.55em; }
+.mm-tarjeta-nombre { font-size: .95rem; font-weight: 600; line-height: 1.3; margin: 0 0 .45rem; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; min-height: 2.6em; }
 .mm-tarjeta-nombre a { color: var(--mm-oscuro); }
-.mm-precio { display: flex; flex-wrap: wrap; align-items: baseline; gap: .15rem .5rem; }
-.mm-precio-final { font-size: 1.08rem; font-weight: 800; color: var(--mm-primario); }
+/* Quien lo vende: debajo del nombre, mas discreto que el nombre y el precio pero a la vista y con enlace a la tienda. */
+.mm-tarjeta-vendedor { position: relative; display: flex; align-items: center; gap: .3rem; min-width: 0; margin: -.15rem 0 .5rem; font-size: .8rem; color: var(--mm-texto-suave); white-space: nowrap; }
+.mm-tarjeta-vendedor > .bi { flex: 0 0 auto; color: var(--mm-primario); }
+.mm-tarjeta-vendedor a { min-width: 0; overflow: hidden; text-overflow: ellipsis; font-weight: 600; color: var(--mm-texto); }
+.mm-tarjeta-vendedor a:hover { color: var(--mm-primario); }
+.mm-precio { display: flex; flex-wrap: wrap; align-items: baseline; gap: .1rem .5rem; }
+.mm-precio-final { font-size: 1.125rem; font-weight: 800; letter-spacing: -.01em; color: var(--mm-oscuro); }
 .mm-precio-anterior { font-size: .85rem; color: var(--mm-texto-suave); }
 .mm-precio-grande .mm-precio-final { font-size: 1.9rem; }
 .mm-precio-grande .mm-precio-anterior { font-size: 1.1rem; }
+@media (min-width: 360px) { .mm-precio-final { white-space: nowrap; } }
+@media (min-width: 576px) { .mm-tarjeta .mm-precio-final { font-size: 1.25rem; } }
+/* Celulares: las tarjetas van de dos en dos y quedan angostas. */
+@media (max-width: 575.98px) {
+  .mm-tarjeta-cuerpo { padding: .7rem; }
+  .mm-tarjeta-nombre { font-size: .9rem; }
+  /* "Vendido por" lo sigue leyendo el lector de pantalla; a la vista queda el icono de tienda y su nombre. */
+  .mm-tarjeta-vendedor-etiqueta { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+}
+@media (max-width: 420px) {
+  .mm-tarjeta-acciones { gap: .3rem; }
+  .mm-tarjeta-acciones .btn { padding-left: .3rem; padding-right: .3rem; font-size: .875rem; }
+  .mm-tarjeta-comprar i { display: none; }
+  .mm-tarjeta-agregar { width: 2.3rem; }
+}
+@media (max-width: 359.98px) {
+  .mm-tarjeta .mm-precio-final { font-size: 1rem; }
+  /* En pantallas de 320 px las filas que se deslizan muestran tarjeta y media, para que quepan precio y botones. */
+  .mm-fila .mm-fila-pista { grid-auto-columns: calc((100% - 1rem) / 1.6); }
+}
 
 /* --- Catalogo ----------------------------------------------------------- */
 .mm-filtros { background: var(--mm-superficie); border: 1px solid var(--mm-borde); border-radius: var(--mm-radio); padding: 1.1rem; }
@@ -214,15 +339,15 @@ img { max-width: 100%; height: auto; }
 .mm-lista-categorias .list-group-item:hover { text-decoration: none; }
 .mm-lista-categorias .list-group-item.active { background: var(--mm-primario-suave); color: var(--mm-primario); font-weight: 700; }
 .mm-vacio { text-align: center; padding: 3.5rem 1rem; background: var(--mm-superficie); border: 1px dashed var(--mm-borde); border-radius: var(--mm-radio); }
-.mm-vacio > i { font-size: 3rem; color: #a9bacb; }
+.mm-vacio > i { font-size: 3rem; color: #a3adc2; }
 .mm-codigo-error { font-size: 5rem; font-weight: 800; line-height: 1; color: var(--mm-primario); margin: 0; }
 
 /* --- Detalle de producto ------------------------------------------------ */
 .mm-galeria-principal { position: relative; aspect-ratio: 1; border-radius: var(--mm-radio); overflow: hidden; background: var(--mm-superficie); border: 1px solid var(--mm-borde); }
 .mm-galeria-principal img { width: 100%; height: 100%; object-fit: contain; transition: opacity .2s ease; }
 .mm-galeria-miniaturas { display: flex; gap: .5rem; margin-top: .6rem; overflow-x: auto; padding-bottom: .25rem; }
-.mm-miniatura { flex: 0 0 4.5rem; aspect-ratio: 1; border-radius: .6rem; overflow: hidden; border: 2px solid transparent; opacity: .7; transition: opacity var(--mm-transicion), border-color var(--mm-transicion); }
-.mm-miniatura img { width: 100%; height: 100%; object-fit: cover; }
+.mm-miniatura { flex: 0 0 4.5rem; aspect-ratio: 1; border-radius: .6rem; overflow: hidden; border: 2px solid transparent; opacity: .7; background: #fff; transition: opacity var(--mm-transicion), border-color var(--mm-transicion); }
+.mm-miniatura img { width: 100%; height: 100%; object-fit: contain; }
 .mm-miniatura:hover, .mm-miniatura.activa { opacity: 1; border-color: var(--mm-primario); }
 .mm-disponibilidad { font-weight: 600; }
 .mm-descripcion { color: var(--mm-texto); }
@@ -239,10 +364,10 @@ img { max-width: 100%; height: auto; }
 .mm-linea { display: grid; grid-template-columns: 5rem 1fr; gap: .9rem; padding: 1rem; border-bottom: 1px solid var(--mm-borde); transition: opacity var(--mm-transicion); }
 .mm-linea:last-child { border-bottom: 0; }
 .mm-linea.mm-ocupada { opacity: .55; pointer-events: none; }
-.mm-linea-foto { display: block; width: 5rem; height: 5rem; border-radius: .6rem; overflow: hidden; background: var(--mm-primario-suave); }
-.mm-linea-foto img { width: 100%; height: 100%; object-fit: cover; }
+.mm-linea-foto { display: block; width: 5rem; height: 5rem; border-radius: .6rem; overflow: hidden; background: #fff; border: 1px solid var(--mm-borde); }
+.mm-linea-foto img { width: 100%; height: 100%; object-fit: contain; }
 .mm-linea-nombre { font-weight: 600; color: var(--mm-oscuro); }
-.mm-linea-subtotal { grid-column: 2; margin: 0; font-weight: 800; color: var(--mm-primario); }
+.mm-linea-subtotal { grid-column: 2; margin: 0; font-weight: 800; color: var(--mm-oscuro); }
 .mm-cantidad { width: 8.2rem; flex-wrap: nowrap; }
 .mm-cantidad input { -moz-appearance: textfield; appearance: textfield; }
 .mm-cantidad input::-webkit-outer-spin-button, .mm-cantidad input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
@@ -272,16 +397,16 @@ img { max-width: 100%; height: auto; }
 .mm-pago-en_revision { background: #7a4fd6; }
 .mm-pago-aprobado { background: var(--mm-exito); }
 .mm-pago-rechazado, .mm-pago-cancelado { background: var(--mm-peligro); }
-.mm-pago-reembolsado { background: #6b7785; }
+.mm-pago-reembolsado { background: #6b7385; }
 .mm-opcion { display: flex; align-items: center; gap: .75rem; height: 100%; padding: .85rem 1rem; border: 2px solid var(--mm-borde); border-radius: .7rem; cursor: pointer; font-weight: 600; transition: border-color var(--mm-transicion), background-color var(--mm-transicion); }
 .mm-opcion i { font-size: 1.4rem; color: var(--mm-primario); }
 .mm-opcion small { display: block; font-weight: 400; color: var(--mm-texto-suave); }
-.mm-opcion:hover { border-color: #b9c9d9; }
+.mm-opcion:hover { border-color: #b9c3db; }
 .mm-opcion-proxima { height: auto; cursor: default; border-style: dashed; color: var(--mm-texto-suave); background: var(--mm-fondo); }
 .mm-opcion-proxima:hover { border-color: var(--mm-borde); }
 .mm-opcion-proxima i { color: var(--mm-texto-suave); }
 .btn-check:checked + .mm-opcion { border-color: var(--mm-primario); background: var(--mm-primario-suave); }
-.btn-check:focus-visible + .mm-opcion { box-shadow: 0 0 0 .2rem rgba(10, 95, 180, .25); }
+.btn-check:focus-visible + .mm-opcion { box-shadow: 0 0 0 .2rem rgba(36, 75, 255, .25); }
 .mm-cuenta { padding: .9rem 1rem; border: 1px solid var(--mm-borde); border-radius: .7rem; background: var(--mm-fondo); }
 .mm-cuenta-numero { font-size: 1.15rem; font-weight: 800; letter-spacing: .03em; color: var(--mm-oscuro); user-select: all; }
 .mm-lista li { margin-bottom: .5rem; }
@@ -295,31 +420,36 @@ img { max-width: 100%; height: auto; }
 .mm-btn-enviar.mm-llamar { animation: mm-pulso 1.4s ease 3; }
 @keyframes mm-pulso { 50% { transform: scale(1.03); box-shadow: 0 10px 30px rgba(37, 211, 102, .55); } }
 .mm-estado { font-size: .85rem; padding: .45em .8em; }
-.mm-estado-pendiente { background: #f0a500; }
-.mm-estado-pagado { background: #1f7ae0; }
+.mm-estado-pendiente { background: #a35f00; }
+.mm-estado-pagado { background: var(--mm-primario); }
 .mm-estado-listo { background: #7a4fd6; }
-.mm-estado-enviado { background: #0e9aa7; }
+.mm-estado-enviado { background: #0e8a96; }
 .mm-estado-entregado { background: var(--mm-exito); }
 .mm-estado-cancelado { background: var(--mm-peligro); }
 .mm-estado-preparando { background: #5a6fd8; }
 .mm-estado-en_reparto { background: #0b7f8a; }
-.mm-estado-reembolsado { background: #6b7785; }
+.mm-estado-reembolsado { background: #6b7385; }
 .mm-seguimiento { list-style: none; margin: 0; padding: 0 0 0 1.1rem; border-left: 2px solid var(--mm-borde); }
 .mm-seguimiento li { position: relative; padding: 0 0 1rem .9rem; }
 .mm-seguimiento li:last-child { padding-bottom: 0; }
-.mm-seguimiento li::before { content: ""; position: absolute; left: -1.55rem; top: .3rem; width: .8rem; height: .8rem; border-radius: 50%; background: #c5d1de; border: 2px solid var(--mm-superficie); }
-.mm-seguimiento li.actual::before { background: var(--mm-acento); box-shadow: 0 0 0 .2rem rgba(36, 131, 43, .2); }
+.mm-seguimiento li::before { content: ""; position: absolute; left: -1.55rem; top: .3rem; width: .8rem; height: .8rem; border-radius: 50%; background: #c5cddc; border: 2px solid var(--mm-superficie); }
+.mm-seguimiento li.actual::before { background: var(--mm-primario); box-shadow: 0 0 0 .2rem rgba(36, 75, 255, .2); }
 .mm-seguimiento strong { margin-right: .5rem; }
 .mm-datos dt { font-weight: 600; color: var(--mm-texto-suave); }
 
 /* --- Pie y WhatsApp flotante -------------------------------------------- */
-.mm-pie { background: var(--mm-oscuro); color: #c9d6e3; }
-.mm-pie h2 { color: #fff; }
-.mm-pie a { color: #c9d6e3; }
+.mm-pie { background: var(--mm-oscuro); color: var(--mm-sobre-oscuro); }
+.mm-pie h2 { margin-bottom: 1rem; font-size: .75rem; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: #fff; }
+.mm-pie a { color: var(--mm-sobre-oscuro); }
 .mm-pie a:hover { color: #fff; }
-.mm-pie li { padding: .15rem 0; }
+.mm-pie li { padding: .2rem 0; }
 .mm-logo-pie { color: #fff; }
-.mm-pie-legal { border-top: 1px solid rgba(255, 255, 255, .1); color: #93a6b9; }
+.mm-pie-legal { border-top: 1px solid rgba(255, 255, 255, .1); color: var(--mm-sobre-oscuro-suave); }
+.mm-pie-contacto li { display: flex; gap: .55rem; }
+.mm-pie-redes a { display: grid; place-items: center; width: 2.25rem; height: 2.25rem; border-radius: .6rem; background: rgba(255, 255, 255, .08); font-size: 1rem; }
+.mm-pie-redes a:hover { background: rgba(255, 255, 255, .16); text-decoration: none; }
+.mm-pie-sellos { display: inline-flex; flex-wrap: wrap; gap: .4rem 1.1rem; }
+.mm-pie-sellos span { display: inline-flex; align-items: center; gap: .35rem; }
 .mm-whatsapp-flotante { position: fixed; right: 1rem; bottom: 1rem; z-index: 1030; display: grid; place-items: center; width: 3.5rem; height: 3.5rem; border-radius: 50%; background: var(--mm-whatsapp); color: #fff; font-size: 1.8rem; box-shadow: 0 6px 20px rgba(0, 0, 0, .25); transition: transform var(--mm-transicion), background-color var(--mm-transicion); }
 .mm-whatsapp-flotante:hover { transform: scale(1.08); background: var(--mm-whatsapp-oscuro); color: #fff; text-decoration: none; }
 
@@ -328,9 +458,10 @@ img { max-width: 100%; height: auto; }
 .js .revelar-izq { transform: translateX(-32px); }
 .js .revelar-der { transform: translateX(40px) scale(.97); }
 .js .revelar-zoom { transform: scale(.6); transition-timing-function: ease, cubic-bezier(.34, 1.56, .64, 1); }
+.js .revelar-suave { transform: none; }
 .js .revelar.visible { opacity: 1; transform: none; }
 .js .mm-tarjeta.revelar.visible:hover { transform: translateY(-4px); }
-.js .mm-tienda-tarjeta.revelar.visible:hover, .js .mm-llamado.revelar.visible:hover { transform: translateY(-2px); }
+.js .mm-tienda.revelar.visible:hover, .js .mm-llamado.revelar.visible:hover, .js .mm-categoria.revelar.visible:hover { transform: translateY(-3px); }
 html:not(.js) .solo-con-js { display: none !important; }
 .js .solo-sin-js { display: none !important; }
 .js .mm-oculto { display: none !important; }
@@ -338,21 +469,12 @@ html:not(.js) .solo-con-js { display: none !important; }
 /* --- Ajustes para pantallas pequeñas ------------------------------------ */
 @media (max-width: 991.98px) {
   .mm-resumen { position: static; }
-  .mm-cabecera .navbar-collapse { padding-bottom: .75rem; }
-  .mm-buscador { width: 100%; min-width: 0; }
 }
 
 @media (max-width: 575.98px) {
-  .mm-cabecera .container { column-gap: .35rem; }
-  .mm-cabecera .navbar-brand { min-width: 0; max-width: calc(100% - 6.5rem); margin-right: 0; }
-  .mm-logo-texto { font-size: clamp(1rem, 5vw, 1.3rem); overflow-wrap: anywhere; }
-  .mm-cabecera .navbar-brand img { max-width: 100%; object-fit: contain; }
-
   .mm-banner { padding: 3rem 0; }
   .mm-banner .btn { flex: 1 1 auto; }
-  .mm-seccion { padding-top: 2.25rem; }
   .mm-seccion-cabecera { align-items: flex-start; flex-wrap: wrap; }
-  .mm-seccion-cabecera h2 { font-size: 1.25rem; }
   .mm-seccion-cabecera a { margin-left: auto; }
 
   .breadcrumb { flex-wrap: wrap; }
@@ -387,37 +509,139 @@ html:not(.js) .solo-con-js { display: none !important; }
 }
 
 /* ==========================================================================
-   Paginas del sitio (fuera de las tiendas): portada, cuenta, paginas legales y pie
+   Portada del sitio: bienvenida, categorias, productos y tiendas
    ========================================================================== */
 
-/* --- Portada ------------------------------------------------------------ */
+/* --- Bienvenida --------------------------------------------------------- */
+/* Clara y corta, distinta del banner oscuro de cada tienda, para que categorias y productos queden cerca. */
+.mm-hero { position: relative; isolation: isolate; overflow: hidden; padding: 1.75rem 0 2rem; border-bottom: 1px solid var(--mm-borde); background: radial-gradient(34rem 20rem at 100% 0%, rgba(36, 75, 255, .13), transparent 70%), radial-gradient(26rem 16rem at 0% 100%, rgba(255, 177, 92, .2), transparent 70%), linear-gradient(180deg, #fff 0%, var(--mm-fondo) 100%); }
+.mm-hero-contenido { display: grid; gap: 2rem; align-items: center; }
+.mm-eyebrow { display: inline-flex; align-items: center; gap: .4rem; margin: 0 0 .9rem; padding: .3rem .75rem; border-radius: 999px; background: var(--mm-primario-suave); color: var(--mm-primario); font-size: .8rem; font-weight: 700; }
+.mm-hero-titulo { max-width: 18ch; margin: 0 0 .85rem; font-size: clamp(1.875rem, 1.2rem + 3vw, 3rem); font-weight: 800; line-height: 1.08; letter-spacing: -.035em; color: var(--mm-oscuro); animation: mm-aparecer .6s ease both; }
+.mm-hero-titulo span { color: var(--mm-primario); background: linear-gradient(transparent 72%, rgba(255, 177, 92, .55) 72%, rgba(255, 177, 92, .55) 92%, transparent 92%); }
+.mm-hero-subtitulo { max-width: 34rem; margin: 0 0 1.4rem; font-size: clamp(1rem, .95rem + .3vw, 1.15rem); line-height: 1.55; color: var(--mm-texto-suave); animation: mm-aparecer .6s .08s ease both; }
+.mm-hero-acciones { display: flex; flex-wrap: wrap; gap: .65rem; animation: mm-aparecer .6s .14s ease both; }
+.mm-hero-acciones .btn { display: inline-flex; align-items: center; justify-content: center; gap: .55rem; min-height: 3rem; padding-inline: 1.35rem; border-radius: .8rem; font-size: 1rem; }
+.mm-hero-acciones .btn-outline-primary { background: var(--mm-superficie); }
+.mm-hero-acciones .btn-outline-primary:hover { background: var(--mm-primario); }
+.mm-hero-vender { display: inline-flex; flex-wrap: wrap; align-items: center; gap: .3rem; margin-top: 1.1rem; font-size: .92rem; color: var(--mm-texto); }
+.mm-hero-vender strong { color: var(--mm-primario); }
+.mm-hero-vender:hover { color: var(--mm-texto); }
+@media (max-width: 575.98px) { .mm-hero-acciones .btn { flex: 1 1 100%; } }
+/* Cuatro productos reales de las tiendas, solo en pantallas anchas. */
+.mm-hero-vitrina { display: none; }
+@media (min-width: 992px) {
+  .mm-hero { padding: 3.25rem 0 3.5rem; }
+  .mm-hero-contenido.con-vitrina { grid-template-columns: minmax(0, 1.15fr) minmax(0, .85fr); gap: 3rem; }
+  .mm-hero-vitrina { position: relative; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; justify-self: end; width: 100%; max-width: 27rem; padding: 1rem; }
+  .mm-hero-vitrina::before { content: ""; position: absolute; inset: 10% -4% -2% 12%; z-index: -1; border-radius: 2rem; background: linear-gradient(135deg, rgba(36, 75, 255, .16), rgba(255, 177, 92, .22)); transform: rotate(-4deg); }
+}
+.mm-vitrina-item { display: block; aspect-ratio: 1; padding: .75rem; border: 1px solid var(--mm-borde); border-radius: 1.1rem; background: #fff; box-shadow: var(--mm-sombra-alta); transition: transform .35s ease, box-shadow .35s ease; }
+.mm-vitrina-item:nth-child(1) { transform: rotate(-3deg) translateY(.6rem); }
+.mm-vitrina-item:nth-child(2) { transform: rotate(2.5deg) translateY(-.6rem); }
+.mm-vitrina-item:nth-child(3) { transform: rotate(2deg) translateY(.2rem); }
+.mm-vitrina-item:nth-child(4) { transform: rotate(-2deg) translateY(-1rem); }
+.mm-vitrina-item:hover { transform: translateY(-4px); box-shadow: 0 18px 40px rgba(23, 32, 51, .18); }
+.mm-vitrina-item img { width: 100%; height: 100%; object-fit: contain; }
 
+/* --- Categorias --------------------------------------------------------- */
+/* Una fila que se desliza (.mm-fila): en el celular asoma la siguiente para invitar a deslizar; en pantallas anchas */
+/* caben siete y, si hay mas, aparecen las flechas. */
+.mm-fila-pista.mm-fila-categorias { grid-auto-columns: 7.25rem; gap: .75rem; }
+@media (min-width: 576px) { .mm-fila-pista.mm-fila-categorias { grid-auto-columns: calc((100% - 4 * .9rem) / 5); gap: .9rem; } }
+@media (min-width: 992px) { .mm-fila-pista.mm-fila-categorias { grid-auto-columns: calc((100% - 6 * 1rem) / 7); gap: 1rem; } }
+.mm-fila-categorias .mm-fila-item { display: flex; }
+.mm-categoria { display: flex; flex-direction: column; gap: .45rem; width: 100%; padding: .55rem .55rem .7rem; border: 1px solid var(--mm-borde); border-radius: var(--mm-radio); background: var(--mm-superficie); color: var(--mm-texto); text-align: center; transition: transform var(--mm-transicion), box-shadow var(--mm-transicion), border-color var(--mm-transicion); }
+.mm-categoria:hover { border-color: var(--mm-primario); box-shadow: var(--mm-sombra-alta); color: var(--mm-texto); text-decoration: none; transform: translateY(-3px); }
+.mm-categoria-foto { display: grid; place-items: center; aspect-ratio: 1; overflow: hidden; border-radius: .65rem; background: var(--mm-primario-suave); color: var(--mm-primario); font-size: 1.8rem; }
+.mm-categoria-foto img { width: 100%; height: 100%; object-fit: cover; transition: transform .5s ease; }
+.mm-categoria-foto.con-producto { background: #fff; }
+.mm-categoria-foto.con-producto img { object-fit: contain; padding: .3rem; }
+.mm-categoria:hover .mm-categoria-foto img { transform: scale(1.06); }
+.mm-categoria-nombre { font-size: .88rem; font-weight: 700; line-height: 1.25; color: var(--mm-oscuro); overflow-wrap: anywhere; hyphens: auto; }
+.mm-categoria-total { margin-top: auto; font-size: .78rem; color: var(--mm-texto-suave); }
 
-/* Tarjeta de tienda en el directorio. */
-.mm-tienda-tarjeta:hover { border-color: #c6d6e8; box-shadow: var(--mm-sombra-alta); transform: translateY(-2px); color: var(--mm-texto); text-decoration: none; }
-.mm-tienda-avatar { display: grid; place-items: center; flex: 0 0 3.5rem; height: 3.5rem; overflow: hidden; border-radius: .8rem; background: var(--mm-primario); color: #fff; font-size: 1.35rem; font-weight: 700; }
-.mm-tienda-avatar.con-logo { background: var(--mm-superficie); border: 1px solid var(--mm-borde); }
+/* --- Productos de todas las tiendas -------------------------------------- */
+.mm-rejilla { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .75rem; }
+@media (min-width: 576px) { .mm-rejilla { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; } }
+@media (min-width: 992px) { .mm-rejilla { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1.25rem; } }
+/* En el celular, ocho bastan: el resto esta a un toque en "Ver todos los productos". */
+@media (max-width: 575.98px) { .mm-rejilla-recortada > :nth-child(n + 9) { display: none; } }
+
+/* --- Tarjeta de tienda --------------------------------------------------- */
+/* En el celular una fila que se desliza; en pantallas anchas, una cuadricula. Con una sola tienda la tarjeta se */
+/* acuesta a todo el ancho para que no quede perdida. */
+.mm-tiendas { display: grid; grid-auto-flow: column; grid-auto-columns: min(84%, 20rem); gap: .9rem; margin: 0 -.15rem; padding: .25rem .15rem 1rem; overflow-x: auto; overscroll-behavior-x: contain; scroll-snap-type: x mandatory; scrollbar-width: none; }
+.mm-tiendas::-webkit-scrollbar { display: none; }
+.mm-tiendas.una-sola, .mm-tiendas-todas { grid-auto-flow: row; grid-auto-columns: auto; grid-template-columns: minmax(0, 1fr); overflow: visible; }
+@media (min-width: 576px) {
+  .mm-tiendas { grid-auto-flow: row; grid-auto-columns: auto; grid-template-columns: repeat(auto-fill, minmax(15.5rem, 1fr)); gap: 1.1rem; overflow: visible; }
+  .mm-tiendas.una-sola { grid-template-columns: minmax(0, 1fr); }
+}
+.mm-tienda { position: relative; display: flex; flex-direction: column; min-width: 0; height: 100%; overflow: hidden; scroll-snap-align: start; background: var(--mm-superficie); border: 1px solid var(--mm-borde); border-radius: var(--mm-radio); transition: transform var(--mm-transicion), box-shadow var(--mm-transicion), border-color var(--mm-transicion); }
+.mm-tienda:hover { border-color: #c4cdf9; box-shadow: var(--mm-sombra-alta); transform: translateY(-3px); }
+.mm-tienda:has(.stretched-link:focus-visible) { outline: 3px solid var(--mm-foco); outline-offset: 2px; }
+.mm-tienda .stretched-link:focus-visible { outline: 0; }
+.mm-tienda-portada { display: block; flex: 0 0 auto; height: 5.5rem; background-size: cover; background-position: center; transition: transform .6s ease; }
+.mm-tienda:hover .mm-tienda-portada { transform: scale(1.05); }
+/* Sin banner propio, un degradado de la marca; cambia de tono entre tiendas para que no se vean todas iguales. */
+.mm-tienda-tono-0 { background-color: var(--mm-oscuro); background-image: linear-gradient(120deg, var(--mm-oscuro), var(--mm-primario)); }
+.mm-tienda-tono-1 { background-color: var(--mm-primario); background-image: linear-gradient(120deg, var(--mm-primario), #7a8cff); }
+.mm-tienda-tono-2 { background-color: var(--mm-oscuro-2); background-image: linear-gradient(120deg, var(--mm-oscuro-2), #4b5d8c); }
+.mm-tienda-tono-3 { background-color: var(--mm-primario); background-image: linear-gradient(120deg, var(--mm-primario), var(--mm-calido)); }
+.mm-tienda-cuerpo { display: flex; flex-direction: column; flex: 1; gap: .55rem; padding: 0 1.15rem 1.1rem; }
+.mm-tienda-avatar { position: relative; display: grid; place-items: center; width: 3.75rem; height: 3.75rem; margin-top: -1.9rem; overflow: hidden; border: 3px solid var(--mm-superficie); border-radius: .9rem; background: var(--mm-primario); color: #fff; font-size: 1.4rem; font-weight: 800; box-shadow: 0 6px 16px rgba(23, 32, 51, .18); }
+.mm-tienda-avatar.con-logo { background: var(--mm-superficie); }
 .mm-tienda-avatar img { width: 100%; height: 100%; object-fit: contain; }
-.mm-tienda-tarjeta-nombre { display: block; font-size: 1.1rem; font-weight: 700; letter-spacing: -.01em; color: var(--mm-oscuro); }
-.mm-tienda-tarjeta-meta { display: block; font-size: .85rem; color: var(--mm-texto-suave); }
-.mm-tienda-tarjeta-texto { margin: 0; font-size: .92rem; line-height: 1.55; color: var(--mm-texto-suave); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-.mm-tienda-tarjeta-pie { display: flex; align-items: center; justify-content: space-between; margin-top: auto; padding-top: .9rem; border-top: 1px solid var(--mm-borde); font-size: .9rem; font-weight: 600; color: var(--mm-primario); }
-.mm-tienda-tarjeta-pie i { transition: transform var(--mm-transicion); }
-.mm-tienda-tarjeta:hover .mm-tienda-tarjeta-pie i { transform: translateX(3px); }
+.mm-tienda-datos { display: grid; gap: .3rem; }
+.mm-tienda-nombre { margin: 0; font-size: 1.1rem; font-weight: 700; letter-spacing: -.01em; overflow-wrap: anywhere; }
+.mm-tienda-nombre a { color: var(--mm-oscuro); }
+.mm-tienda-nombre a:hover { text-decoration: none; }
+.mm-tienda-categorias { margin: 0; font-size: .8rem; font-weight: 600; color: var(--mm-primario); }
+.mm-tienda-texto { margin: 0; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; font-size: .9rem; line-height: 1.5; color: var(--mm-texto-suave); }
+.mm-tienda-pie { display: flex; align-items: center; justify-content: space-between; gap: .75rem; margin-top: auto; padding-top: .8rem; border-top: 1px solid var(--mm-borde); font-size: .86rem; color: var(--mm-texto-suave); }
+.mm-tienda-visitar { display: inline-flex; align-items: center; gap: .35rem; padding: .4rem .8rem; border-radius: 999px; background: var(--mm-primario-suave); color: var(--mm-primario); font-weight: 700; white-space: nowrap; transition: background-color var(--mm-transicion), color var(--mm-transicion); }
+.mm-tienda:hover .mm-tienda-visitar { background: var(--mm-primario); color: #fff; }
+.mm-tienda-visitar i { transition: transform var(--mm-transicion); }
+.mm-tienda:hover .mm-tienda-visitar i { transform: translateX(3px); }
+/* Una sola tienda: la franja a la izquierda y los datos a la derecha. */
+@media (min-width: 768px) {
+  .mm-tiendas.una-sola .mm-tienda { flex-direction: row; }
+  .mm-tiendas.una-sola .mm-tienda-portada { width: 38%; height: auto; min-height: 11rem; }
+  .mm-tiendas.una-sola .mm-tienda-cuerpo { padding: 1.4rem 1.6rem; }
+  .mm-tiendas.una-sola .mm-tienda-avatar { margin-top: 0; }
+  .mm-tiendas.una-sola .mm-tienda-nombre { font-size: 1.35rem; }
+  .mm-tiendas.una-sola .mm-tienda-texto { -webkit-line-clamp: 3; font-size: .95rem; }
+}
 
-/* Compra con tranquilidad: enlaces a las politicas. */
+/* --- Para emprendedores -------------------------------------------------- */
+.mm-vender { position: relative; isolation: isolate; display: grid; gap: 1.75rem; overflow: hidden; padding: clamp(1.6rem, 4vw, 3rem); border-radius: 1.25rem; background: linear-gradient(135deg, var(--mm-oscuro) 0%, var(--mm-oscuro-2) 55%, #2a40c4 100%); color: var(--mm-sobre-oscuro); }
+.mm-vender::after { content: ""; position: absolute; z-index: -1; top: -8rem; right: -6rem; width: 22rem; height: 22rem; border-radius: 50%; background: radial-gradient(circle, rgba(255, 177, 92, .35), transparent 65%); pointer-events: none; }
+.mm-vender .mm-eyebrow { background: rgba(255, 255, 255, .1); color: #fff; }
+.mm-vender .mm-eyebrow i { color: var(--mm-calido); }
+.mm-vender h2 { margin: 0 0 .75rem; font-size: clamp(1.5rem, 1.1rem + 1.6vw, 2.1rem); line-height: 1.15; color: #fff; }
+.mm-vender-texto > p:not(.mm-eyebrow) { max-width: 34rem; line-height: 1.6; }
+.mm-vender-acciones { display: flex; flex-wrap: wrap; gap: .65rem; margin-top: 1.4rem; }
+.mm-vender-acciones .btn { display: inline-flex; align-items: center; justify-content: center; gap: .5rem; min-height: 3rem; border-radius: .8rem; }
+.mm-vender-nota { margin: .7rem 0 0; font-size: .85rem; color: var(--mm-sobre-oscuro-suave); }
+.mm-vender-lista { display: grid; gap: .9rem; margin: 0; padding: 0; list-style: none; }
+.mm-vender-lista li { display: flex; gap: .8rem; padding: .95rem 1rem; border: 1px solid rgba(255, 255, 255, .1); border-radius: .9rem; background: rgba(255, 255, 255, .05); font-size: .93rem; line-height: 1.5; }
+.mm-vender-lista i { flex: 0 0 auto; color: var(--mm-calido); font-size: 1.25rem; line-height: 1.2; }
+.mm-vender-lista strong { color: #fff; font-weight: 700; }
+@media (max-width: 575.98px) { .mm-vender-acciones .btn { flex: 1 1 100%; } }
+@media (min-width: 992px) { .mm-vender { grid-template-columns: minmax(0, 1.1fr) minmax(0, .9fr); align-items: center; gap: 3rem; } }
 
 /* --- Cuenta: entrar, crear y recuperar ---------------------------------- */
 .mm-acceso { display: grid; grid-template-columns: minmax(0, 1fr); max-width: 60rem; margin: 0 auto; overflow: hidden; background: var(--mm-superficie); border: 1px solid var(--mm-borde); border-radius: 1.1rem; box-shadow: var(--mm-sombra); }
-.mm-acceso-marca { display: none; padding: 2.5rem; color: #c3d3e6; background: radial-gradient(600px 300px at 100% 0, rgba(109, 181, 35, .2), transparent 60%), linear-gradient(160deg, var(--mm-oscuro), #0b3a7a); }
+.mm-acceso-marca { display: none; padding: 2.5rem; color: var(--mm-sobre-oscuro); background: radial-gradient(600px 300px at 100% 0, rgba(255, 177, 92, .2), transparent 60%), linear-gradient(160deg, var(--mm-oscuro), var(--mm-oscuro-2)); }
 .mm-acceso-marca h2 { margin: 1.75rem 0 .5rem; font-size: 1.45rem; color: #fff; }
 .mm-acceso-marca p { margin: 0; line-height: 1.6; }
 .mm-acceso-marca ul { display: grid; gap: .9rem; margin: 1.75rem 0 0; padding: 0; list-style: none; font-size: .92rem; }
 .mm-acceso-marca li { display: flex; gap: .65rem; }
-.mm-acceso-marca li i { color: var(--mm-hoja); }
+.mm-acceso-marca li i { color: var(--mm-calido); }
 .mm-acceso-logo { display: inline-flex; align-items: center; gap: .6rem; padding: .45rem .85rem .45rem .5rem; border-radius: .8rem; background: #fff; }
 .mm-acceso-logo img { height: 2.1rem; width: auto; }
-.mm-acceso-logo span { font-weight: 700; color: var(--mm-primario); letter-spacing: -.02em; }
+.mm-acceso-logo span { font-weight: 800; color: var(--mm-oscuro); letter-spacing: -.02em; }
 .mm-acceso-angosto { max-width: 34rem; }
 .mm-acceso-formulario { padding: clamp(1.5rem, 4vw, 2.5rem); }
 .mm-acceso-formulario h1 { font-size: 1.6rem; }
@@ -446,38 +670,30 @@ html:not(.js) .solo-con-js { display: none !important; }
 .mm-legal-texto li { margin-bottom: .4rem; padding-left: .2rem; }
 .mm-legal-texto li::marker { color: var(--mm-primario); }
 
-/* --- Pie ---------------------------------------------------------------- */
-.mm-pie h2 { margin-bottom: 1rem; font-size: .75rem; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: #fff; }
-.mm-pie-contacto li { display: flex; gap: .55rem; }
-.mm-pie-redes a { display: grid; place-items: center; width: 2.25rem; height: 2.25rem; border-radius: .6rem; background: rgba(255, 255, 255, .08); font-size: 1rem; }
-.mm-pie-redes a:hover { background: rgba(255, 255, 255, .16); text-decoration: none; }
-.mm-pie-sellos { display: inline-flex; flex-wrap: wrap; gap: .4rem 1.1rem; }
-.mm-pie-sellos span { display: inline-flex; align-items: center; gap: .35rem; }
-
 /* ==========================================================================
    Movimiento: menu lateral, filas que se deslizan, categorias y cinta
    ========================================================================== */
 
 /* --- Boton de 3 barras y menu lateral ----------------------------------- */
-.mm-btn-menu { display: grid; place-items: center; flex: 0 0 auto; width: 2.6rem; height: 2.6rem; padding: 0; border: 0; border-radius: .7rem; background: transparent; color: var(--mm-oscuro); font-size: 1.6rem; transition: background-color var(--mm-transicion); }
+.mm-btn-menu { display: grid; place-items: center; flex: 0 0 auto; width: 2.75rem; height: 2.75rem; padding: 0; border: 0; border-radius: .75rem; background: transparent; color: var(--mm-oscuro); font-size: 1.6rem; transition: background-color var(--mm-transicion), color var(--mm-transicion); }
 .mm-btn-menu:hover, .mm-btn-menu:focus-visible { background: var(--mm-primario-suave); color: var(--mm-primario); }
 .mm-menu { --bs-offcanvas-width: min(23rem, 88vw); border-right: 0 !important; }
 .mm-menu .offcanvas-header { border-bottom: 1px solid var(--mm-borde); }
 .mm-menu .offcanvas-title { margin: 0; font-size: 1.25rem; }
 .mm-menu .offcanvas-body { display: grid; align-content: start; gap: 1.4rem; }
 .mm-menu-grupo h2 { margin: 0 0 .4rem; padding: 0 .65rem; font-size: .72rem; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--mm-texto-suave); }
-.mm-menu-grupo > a, .mm-menu-grupo button, .mm-menu-sub a { display: flex; align-items: center; gap: .75rem; width: 100%; padding: .55rem .65rem; border: 0; border-radius: .6rem; background: none; color: var(--mm-texto); font-size: .95rem; font-weight: 500; text-align: left; transition: background-color var(--mm-transicion), color var(--mm-transicion), transform var(--mm-transicion); }
+.mm-menu-grupo > a, .mm-menu-grupo button, .mm-menu-sub a { display: flex; align-items: center; gap: .75rem; width: 100%; min-height: 2.75rem; padding: .55rem .65rem; border: 0; border-radius: .6rem; background: none; color: var(--mm-texto); font-size: .95rem; font-weight: 500; text-align: left; transition: background-color var(--mm-transicion), color var(--mm-transicion), transform var(--mm-transicion); }
 .mm-menu-grupo > a:hover, .mm-menu-grupo button:hover, .mm-menu-sub a:hover { background: var(--mm-primario-suave); color: var(--mm-primario); text-decoration: none; transform: translateX(3px); }
 .mm-menu-grupo > a > i:first-child, .mm-menu-grupo button > i:first-child { width: 1.2rem; font-size: 1.05rem; color: var(--mm-primario); }
 .mm-menu-desplegar .bi-chevron-down { transition: transform var(--mm-transicion); }
 .mm-menu-desplegar:not(.collapsed) .bi-chevron-down { transform: rotate(180deg); }
 .mm-menu-sub { margin: .1rem 0 .3rem 2.6rem; border-left: 2px solid var(--mm-borde); }
-.mm-menu-sub a { padding: .4rem .7rem; font-size: .9rem; border-radius: 0 .6rem .6rem 0; }
-.mm-menu-confianza { padding: 1rem; border-radius: var(--mm-radio); background: linear-gradient(160deg, var(--mm-oscuro), #0b3a7a); color: #c3d3e6; }
+.mm-menu-sub a { min-height: 2.5rem; padding: .4rem .7rem; font-size: .9rem; border-radius: 0 .6rem .6rem 0; }
+.mm-menu-confianza { padding: 1rem; border-radius: var(--mm-radio); background: linear-gradient(160deg, var(--mm-oscuro), var(--mm-oscuro-2)); color: var(--mm-sobre-oscuro); }
 .mm-menu-confianza h2 { padding: 0; color: #fff; }
 .mm-menu-confianza ul { display: grid; gap: .75rem; margin: .6rem 0 0; padding: 0; list-style: none; font-size: .86rem; line-height: 1.45; }
 .mm-menu-confianza li { display: flex; gap: .65rem; }
-.mm-menu-confianza i { color: var(--mm-hoja); font-size: 1rem; }
+.mm-menu-confianza i { color: var(--mm-calido); font-size: 1rem; }
 .mm-menu-confianza strong { color: #fff; font-weight: 600; }
 /* Los enlaces del menu entran uno tras otro al abrirlo. */
 .mm-menu.showing .mm-menu-grupo, .mm-menu.show .mm-menu-grupo { animation: mm-aparecer .45s ease both; }
@@ -487,31 +703,7 @@ html:not(.js) .solo-con-js { display: none !important; }
 .mm-menu .mm-menu-grupo:nth-child(5) { animation-delay: .2s; }
 .mm-menu .mm-menu-grupo:nth-child(6) { animation-delay: .25s; }
 
-/* --- Portada ------------------------------------------------------------ */
-.mm-portada { position: relative; isolation: isolate; padding: clamp(2.75rem, 7vw, 4.75rem) 0; text-align: center; color: #dbe6f2; background: linear-gradient(160deg, var(--mm-oscuro) 0%, #0b3a7a 55%, #0a5fb4 100%); background-size: 160% 160%; animation: mm-degradado 14s ease-in-out infinite alternate; }
-@keyframes mm-degradado { from { background-position: 0% 0%; } to { background-position: 100% 100%; } }
-/* Las luces van en su propio marco recortado: la portada no recorta, para que las sugerencias del buscador se vean. */
-.mm-portada-fondo { position: absolute; inset: 0; z-index: -1; overflow: hidden; pointer-events: none; }
-.mm-portada-luz { position: absolute; border-radius: 50%; filter: blur(60px); opacity: .55; pointer-events: none; }
-.mm-portada-luz-1 { top: -6rem; right: 8%; width: 22rem; height: 22rem; background: rgba(109, 181, 35, .45); animation: mm-flotar 11s ease-in-out infinite alternate; }
-.mm-portada-luz-2 { bottom: -8rem; left: 4%; width: 26rem; height: 26rem; background: rgba(11, 128, 205, .55); animation: mm-flotar 13s ease-in-out infinite alternate-reverse; }
-@keyframes mm-flotar { from { transform: translate(0, 0) scale(1); } to { transform: translate(3rem, 2rem) scale(1.15); } }
-.mm-portada-etiqueta { display: inline-flex; align-items: center; gap: .45rem; margin-bottom: 1rem; padding: .3rem .8rem; border: 1px solid rgba(255, 255, 255, .2); border-radius: 999px; font-size: .82rem; font-weight: 600; color: #fff; background: rgba(255, 255, 255, .06); animation: mm-aparecer .6s ease both; }
-.mm-portada-etiqueta i { color: var(--mm-hoja); }
-.mm-portada-titulo { max-width: 22ch; margin: 0 auto .9rem; font-size: clamp(1.9rem, 4.8vw, 3.1rem); font-weight: 700; line-height: 1.12; letter-spacing: -.03em; color: #fff; animation: mm-aparecer .7s .08s ease both; }
-.mm-portada-texto { max-width: 34rem; margin: 0 auto 1.75rem; font-size: clamp(1rem, 1.8vw, 1.12rem); color: #c3d3e6; animation: mm-aparecer .7s .16s ease both; }
-.mm-portada .mm-directorio-buscador { position: relative; z-index: 2; max-width: 36rem; margin: 0 auto; border: 0; box-shadow: 0 14px 36px rgba(0, 0, 0, .28); animation: mm-aparecer .7s .24s ease both; }
-.mm-portada .mm-sugerencias { text-align: left; }
-
-/* Tarjeta de tienda, con la franja de su banner. */
-.mm-tienda-tarjeta { display: flex; flex-direction: column; gap: .85rem; height: 100%; overflow: hidden; padding: 0 1.25rem 1.25rem; background: var(--mm-superficie); border: 1px solid var(--mm-borde); border-radius: var(--mm-radio); color: var(--mm-texto); transition: border-color var(--mm-transicion), box-shadow var(--mm-transicion), transform var(--mm-transicion); }
-.mm-tienda-tarjeta-portada { display: block; height: 5.5rem; margin: 0 -1.25rem; background: linear-gradient(120deg, var(--mm-primario), var(--mm-oscuro)); background-size: cover; background-position: center; transition: transform .6s ease; }
-.mm-tienda-tarjeta:hover .mm-tienda-tarjeta-portada { transform: scale(1.06); }
-.mm-tienda-tarjeta-cabeza { display: block; position: relative; margin-top: -1.9rem; }
-.mm-tienda-tarjeta-cabeza > span:last-child { display: block; margin-top: .55rem; }
-.mm-tienda-tarjeta .mm-tienda-avatar { width: 3.75rem; height: 3.75rem; border: 3px solid var(--mm-superficie); box-shadow: 0 6px 16px rgba(8, 42, 92, .18); }
-
-/* --- Fila que se desliza (productos o tiendas) --------------------------- */
+/* --- Fila que se desliza (productos) ------------------------------------ */
 .mm-fila { position: relative; }
 .mm-fila-pista { display: grid; grid-auto-flow: column; grid-auto-columns: calc((100% - 1rem) / 2.15); gap: 1rem; overflow-x: auto; overscroll-behavior-x: contain; scroll-snap-type: x mandatory; scroll-behavior: smooth; padding: .35rem .1rem 1rem; scrollbar-width: none; }
 .mm-fila-pista::-webkit-scrollbar { display: none; }
@@ -519,11 +711,7 @@ html:not(.js) .solo-con-js { display: none !important; }
 .mm-fila-item { scroll-snap-align: start; min-width: 0; }
 .mm-fila-item > .mm-tarjeta { height: 100%; }
 @media (min-width: 576px) { .mm-fila-pista { grid-auto-columns: calc((100% - 2rem) / 3.2); } }
-@media (min-width: 992px) {
-  .mm-fila-pista { grid-auto-columns: calc((100% - 3.75rem) / 4.25); gap: 1.25rem; }
-  .mm-fila-tiendas { grid-auto-columns: calc((100% - 2.5rem) / 3); }
-}
-@media (max-width: 575.98px) { .mm-fila-tiendas { grid-auto-columns: 85%; } }
+@media (min-width: 992px) { .mm-fila-pista { grid-auto-columns: calc((100% - 3.75rem) / 4.25); gap: 1.25rem; } }
 .mm-fila-flecha { position: absolute; top: 40%; z-index: 3; display: grid; place-items: center; width: 2.75rem; height: 2.75rem; border: 0; border-radius: 50%; background: var(--mm-superficie); color: var(--mm-oscuro); font-size: 1.15rem; box-shadow: var(--mm-sombra-alta); transform: translateY(-50%); transition: opacity var(--mm-transicion), transform var(--mm-transicion), background-color var(--mm-transicion); }
 .mm-fila-flecha:hover { background: var(--mm-primario); color: #fff; transform: translateY(-50%) scale(1.08); }
 .mm-fila-flecha:disabled { opacity: 0; pointer-events: none; }
@@ -531,7 +719,7 @@ html:not(.js) .solo-con-js { display: none !important; }
 .mm-fila-siguiente { right: -1.1rem; }
 @media (hover: none), (max-width: 767.98px) { .mm-fila-flecha { display: none; } }
 
-/* --- Categorias en burbujas --------------------------------------------- */
+/* --- Categorias en burbujas (inicio de cada tienda) --------------------- */
 .mm-burbujas { display: flex; gap: 1.1rem; overflow-x: auto; scroll-snap-type: x proximity; padding: .4rem .1rem 1rem; scrollbar-width: none; }
 .mm-burbujas::-webkit-scrollbar { display: none; }
 .mm-burbuja { display: grid; justify-items: center; gap: .55rem; flex: 0 0 auto; width: 6.75rem; scroll-snap-align: start; color: var(--mm-texto); text-align: center; }
@@ -545,23 +733,24 @@ html:not(.js) .solo-con-js { display: none !important; }
 .mm-burbuja-nombre { font-size: .86rem; font-weight: 600; line-height: 1.25; }
 
 /* --- Cinta con lo que ofrece la tienda ---------------------------------- */
-.mm-cinta { overflow: hidden; background: var(--mm-oscuro); color: #dbe6f2; mask-image: linear-gradient(90deg, transparent, #000 6%, #000 94%, transparent); }
+.mm-cinta { overflow: hidden; background: var(--mm-oscuro); color: var(--mm-sobre-oscuro); mask-image: linear-gradient(90deg, transparent, #000 6%, #000 94%, transparent); }
 .mm-cinta-pista { display: flex; width: max-content; animation: mm-cinta 32s linear infinite; }
 .mm-cinta:hover .mm-cinta-pista { animation-play-state: paused; }
 .mm-cinta ul { display: flex; flex: 0 0 auto; margin: 0; padding: 0; list-style: none; }
 .mm-cinta li { display: inline-flex; align-items: center; gap: .5rem; padding: .7rem 1.75rem; font-size: .88rem; font-weight: 500; white-space: nowrap; }
-.mm-cinta li i { color: var(--mm-hoja); font-size: 1rem; }
+.mm-cinta li i { color: var(--mm-calido); font-size: 1rem; }
 @keyframes mm-cinta { to { transform: translateX(-50%); } }
 
 /* --- Banner de la tienda con movimiento --------------------------------- */
 .mm-banner { position: relative; overflow: hidden; isolation: isolate; }
-.mm-banner::before { content: ""; position: absolute; z-index: -1; top: -30%; right: -10%; width: 34rem; height: 34rem; border-radius: 50%; background: radial-gradient(circle, rgba(109, 181, 35, .35), transparent 65%); animation: mm-flotar 12s ease-in-out infinite alternate; pointer-events: none; }
+.mm-banner::before { content: ""; position: absolute; z-index: -1; top: -30%; right: -10%; width: 34rem; height: 34rem; border-radius: 50%; background: radial-gradient(circle, rgba(255, 177, 92, .28), transparent 65%); animation: mm-flotar 12s ease-in-out infinite alternate; pointer-events: none; }
+@keyframes mm-flotar { from { transform: translate(0, 0) scale(1); } to { transform: translate(3rem, 2rem) scale(1.15); } }
 
 /* --- Llamado al catalogo ------------------------------------------------ */
 .mm-llamado { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 1.5rem 1.75rem; border-radius: var(--mm-radio); background: linear-gradient(120deg, var(--mm-primario), var(--mm-oscuro)); color: #fff; transition: transform var(--mm-transicion), box-shadow var(--mm-transicion); }
 .mm-llamado:hover { color: #fff; text-decoration: none; transform: translateY(-2px); box-shadow: var(--mm-sombra-alta); }
 .mm-llamado strong { display: block; font-size: 1.15rem; font-weight: 600; }
-.mm-llamado span span { color: #c3d3e6; font-size: .92rem; }
+.mm-llamado span span { color: var(--mm-sobre-oscuro); font-size: .92rem; }
 .mm-llamado > i { font-size: 2.2rem; transition: transform var(--mm-transicion); }
 .mm-llamado:hover > i { transform: translateX(4px); }
 
@@ -570,18 +759,44 @@ html:not(.js) .solo-con-js { display: none !important; }
   .mm-fila-pista { scroll-behavior: auto; }
 }
 
-/* --- Al deslizar: progreso, cabecera y volver arriba --------------------- */
-.mm-progreso { position: fixed; top: 0; left: 0; right: 0; z-index: 1040; height: 3px; background: linear-gradient(90deg, var(--mm-hoja), var(--mm-primario)); transform: scaleX(0); transform-origin: 0 50%; pointer-events: none; }
-.mm-cabecera { transition: box-shadow var(--mm-transicion), background-color var(--mm-transicion); }
-.mm-cabecera.con-sombra { box-shadow: 0 6px 24px rgba(8, 42, 92, .1); background-color: rgba(255, 255, 255, .92); backdrop-filter: saturate(1.4) blur(10px); }
-.mm-arriba { position: fixed; left: 1rem; bottom: 1rem; z-index: 1030; display: grid; place-items: center; width: 2.9rem; height: 2.9rem; border: 0; border-radius: 50%; background: var(--mm-oscuro); color: #fff; font-size: 1.2rem; box-shadow: var(--mm-sombra-alta); opacity: 0; transform: translateY(20px) scale(.8); pointer-events: none; transition: opacity .3s ease, transform .3s ease, background-color var(--mm-transicion); }
+/* --- Al deslizar: progreso y volver arriba ------------------------------- */
+.mm-progreso { position: fixed; top: 0; left: 0; right: 0; z-index: 1040; height: 3px; background: linear-gradient(90deg, var(--mm-calido), var(--mm-primario)); transform: scaleX(0); transform-origin: 0 50%; pointer-events: none; }
+.mm-arriba { position: fixed; left: 1rem; bottom: 1rem; z-index: 1030; display: grid; place-items: center; width: 2.9rem; height: 2.9rem; border: 0; border-radius: 50%; background: var(--mm-oscuro); color: #fff; font-size: 1.2rem; box-shadow: 0 0 0 2px rgba(255, 255, 255, .35), var(--mm-sombra-alta); opacity: 0; transform: translateY(20px) scale(.8); pointer-events: none; transition: opacity .3s ease, transform .3s ease, background-color var(--mm-transicion); }
 .mm-arriba.visible { opacity: 1; transform: none; pointer-events: auto; }
 .mm-arriba:hover { background: var(--mm-primario); }
-.mm-portada > .container, .mm-banner .container { will-change: transform; }
+.mm-banner .container { will-change: transform; }
 /* La tarjeta de producto levanta la foto y muestra un brillo al pasar el raton. */
 .mm-tarjeta-foto::after { content: ""; position: absolute; inset: 0; background: linear-gradient(115deg, transparent 35%, rgba(255, 255, 255, .35) 50%, transparent 65%); transform: translateX(-100%); transition: transform .8s ease; pointer-events: none; }
 .mm-tarjeta:hover .mm-tarjeta-foto::after { transform: translateX(100%); }
 @media (prefers-reduced-motion: reduce) { .mm-progreso { display: none; } }
+
+/* --- Barra de navegacion del telefono ---------------------------------------------- */
+/* Pedido del dueño el 2026-10-26: solo en pantallas angostas; en la PC (992 px o mas) no existe. Con ella la */
+/* cabecera del telefono deja de ser fija (la barra es lo unico fijo) y la cuenta y el carrito pasan a la barra. */
+.mm-barra-movil { position: fixed; left: 0; right: 0; bottom: 0; z-index: 1035; display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); padding: .25rem .2rem calc(.25rem + env(safe-area-inset-bottom)); background: rgba(255, 255, 255, .97); border-top: 1px solid var(--mm-borde); box-shadow: 0 -6px 20px rgba(23, 32, 51, .08); backdrop-filter: saturate(1.4) blur(10px); transition: transform .3s ease; }
+.mm-barra-movil a { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: .1rem; min-width: 0; min-height: 3.25rem; padding: .15rem .1rem; color: var(--mm-texto-suave); font-size: .7rem; font-weight: 600; line-height: 1.15; text-align: center; white-space: nowrap; }
+.mm-barra-movil a:hover { color: var(--mm-primario); text-decoration: none; }
+.mm-barra-movil a[aria-current="page"] { color: var(--mm-primario); }
+.mm-barra-icono { position: relative; display: grid; place-items: center; width: 3.25rem; height: 1.85rem; border-radius: 999px; font-size: 1.25rem; transition: background-color var(--mm-transicion); }
+.mm-barra-movil a[aria-current="page"] .mm-barra-icono { background: var(--mm-primario-suave); }
+.mm-barra-icono .mm-contador { top: -.2rem; right: .3rem; }
+@media (min-width: 992px) { .mm-barra-movil { display: none; } }
+@media (max-width: 991.98px) {
+  body.con-barra-movil { padding-bottom: calc(3.85rem + env(safe-area-inset-bottom)); }
+  .con-barra-movil .mm-cabecera { position: relative; top: auto; }
+  .con-barra-movil .mm-accion-cuenta, .con-barra-movil .mm-cabecera-carrito { display: none; }
+  .con-barra-movil .mm-cabecera.con-carrito .mm-cabecera-fila { grid-template-areas: "marca marca acciones acciones" "menu buscar buscar buscar"; }
+  .con-barra-movil .mm-whatsapp-flotante, .con-barra-movil .mm-arriba { bottom: calc(4.6rem + env(safe-area-inset-bottom)); }
+  body.con-barra-movil #avisos { bottom: calc(3.85rem + env(safe-area-inset-bottom)) !important; }
+  /* Se aparta mientras se escribe (el teclado no la sube encima del campo) y cuando la ficha muestra su barra de compra. */
+  body:has(.mm-compra-fija.visible) .mm-barra-movil,
+  body:has(:is(input:not([type="checkbox"], [type="radio"], [type="submit"], [type="button"], [type="hidden"]), textarea, select):focus) .mm-barra-movil { transform: translateY(115%); }
+}
+@media (prefers-reduced-motion: reduce) { .mm-barra-movil { transition: none; } }
+
+/* --- Avisos (toasts): el enlace al carrito de la tienda --------------------------- */
+.mm-aviso-enlace { margin-left: .35rem; color: inherit; font-weight: 700; text-decoration: underline; white-space: nowrap; }
+.mm-aviso-enlace:hover { color: inherit; }
 
 /* --- Ficha de producto: valoracion, cuenta regresiva y compra fija -------- */
 .mm-tarjeta-valoracion { display: flex; align-items: center; gap: .25rem; margin: -.2rem 0 .45rem; font-size: .8rem; font-weight: 600; color: var(--mm-texto); }
@@ -591,7 +806,7 @@ html:not(.js) .solo-con-js { display: none !important; }
 .mm-cuenta-atras .js-tiempo { font-variant-numeric: tabular-nums; }
 .mm-cuenta-atras i { animation: mm-latido 1.2s ease-in-out infinite; }
 @keyframes mm-latido { 50% { transform: scale(1.18); } }
-.mm-compra-fija { position: fixed; left: 0; right: 0; bottom: 0; z-index: 1034; display: flex; align-items: center; gap: .5rem; padding: .6rem .9rem calc(.6rem + env(safe-area-inset-bottom)); background: var(--mm-superficie); border-top: 1px solid var(--mm-borde); box-shadow: 0 -8px 24px rgba(8, 42, 92, .12); transform: translateY(130%); transition: transform .35s cubic-bezier(.2, .75, .2, 1); }
+.mm-compra-fija { position: fixed; left: 0; right: 0; bottom: 0; z-index: 1034; display: flex; align-items: center; gap: .5rem; padding: .6rem .9rem calc(.6rem + env(safe-area-inset-bottom)); background: var(--mm-superficie); border-top: 1px solid var(--mm-borde); box-shadow: 0 -8px 24px rgba(23, 32, 51, .12); transform: translateY(130%); transition: transform .35s cubic-bezier(.2, .75, .2, 1); }
 .mm-compra-fija.visible { transform: none; }
 .mm-compra-fija-datos { display: grid; flex: 1; min-width: 0; line-height: 1.2; }
 .mm-compra-fija-nombre { overflow: hidden; font-size: .82rem; color: var(--mm-texto-suave); white-space: nowrap; text-overflow: ellipsis; }
@@ -600,12 +815,13 @@ html:not(.js) .solo-con-js { display: none !important; }
   body:has(.mm-compra-fija.visible) .mm-whatsapp-flotante,
   body:has(.mm-compra-fija.visible) .mm-arriba { bottom: calc(4.75rem + env(safe-area-inset-bottom)) !important; }
 }
-.btn.mm-agregado { --bs-btn-bg: var(--mm-acento); --bs-btn-border-color: var(--mm-acento); --bs-btn-disabled-bg: var(--mm-acento); --bs-btn-disabled-border-color: var(--mm-acento); animation: mm-salto .45s ease; }
+/* "Agregado": el boton confirma en verde que el producto ya esta en el carrito. */
+.btn.mm-agregado { --bs-btn-color: #fff; --bs-btn-bg: var(--mm-verde); --bs-btn-border-color: var(--mm-verde); --bs-btn-hover-color: #fff; --bs-btn-hover-bg: var(--mm-verde-oscuro); --bs-btn-hover-border-color: var(--mm-verde-oscuro); --bs-btn-disabled-color: #fff; --bs-btn-disabled-bg: var(--mm-verde); --bs-btn-disabled-border-color: var(--mm-verde); animation: mm-salto .45s ease; }
 
-/* --- Categorias en botones (catalogo en el celular) y lupa de la foto ---- */
+/* --- Categorias en botones (catalogo y buscador) y lupa de la foto ------- */
 .mm-chips { display: flex; gap: .5rem; overflow-x: auto; padding: .15rem .05rem .35rem; scrollbar-width: none; }
 .mm-chips::-webkit-scrollbar { display: none; }
-.mm-chip { flex: 0 0 auto; padding: .45rem 1rem; border: 1px solid var(--mm-borde); border-radius: 999px; background: var(--mm-superficie); color: var(--mm-texto); font-size: .88rem; font-weight: 500; white-space: nowrap; transition: background-color var(--mm-transicion), color var(--mm-transicion), border-color var(--mm-transicion); }
+.mm-chip { display: inline-flex; align-items: center; flex: 0 0 auto; min-height: 2.5rem; padding: .45rem 1rem; border: 1px solid var(--mm-borde); border-radius: 999px; background: var(--mm-superficie); color: var(--mm-texto); font-size: .88rem; font-weight: 500; white-space: nowrap; transition: background-color var(--mm-transicion), color var(--mm-transicion), border-color var(--mm-transicion); }
 .mm-chip:hover { border-color: var(--mm-primario); color: var(--mm-primario); text-decoration: none; }
 .mm-chip.activa { background: var(--mm-primario); border-color: var(--mm-primario); color: #fff; }
 .mm-galeria-principal img { transition: transform .25s ease, opacity .2s ease; }
@@ -614,12 +830,12 @@ html:not(.js) .solo-con-js { display: none !important; }
 
 /* --- Envio gratis y fecha estimada de entrega ------------------------------------- */
 .mm-envio-gratis { margin-bottom: 1rem; padding: .7rem .8rem; border-radius: .7rem; background: var(--mm-primario-suave); }
-.mm-envio-gratis .progress { height: .45rem; background: rgba(10, 95, 180, .15); }
+.mm-envio-gratis .progress { height: .45rem; background: rgba(36, 75, 255, .15); }
 .mm-envio-gratis .progress-bar { background: var(--mm-primario); transition: width .4s ease; }
-.mm-envio-gratis.logrado { background: #e7f5ea; color: var(--mm-acento-oscuro); }
-.mm-envio-gratis.logrado .progress-bar { background: var(--mm-acento); }
-.mm-plazo { color: var(--mm-acento-oscuro); }
-.mm-plazo i { color: var(--mm-acento); }
+.mm-envio-gratis.logrado { background: var(--mm-verde-suave); color: var(--mm-verde-oscuro); }
+.mm-envio-gratis.logrado .progress-bar { background: var(--mm-verde); }
+.mm-plazo { color: var(--mm-verde-oscuro); }
+.mm-plazo i { color: var(--mm-verde); }
 
 /* --- Galeria deslizable: en el celular las fotos se pasan con el dedo ---------------- */
 .mm-galeria-pista { display: flex; height: 100%; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; overscroll-behavior-x: contain; }

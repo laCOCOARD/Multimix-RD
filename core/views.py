@@ -89,7 +89,7 @@ def manifiesto(request):
         'scope': '/',
         'display': 'standalone',
         'background_color': '#ffffff',
-        'theme_color': '#0a5fb4',
+        'theme_color': '#ffffff',
         'categories': ['shopping'],
         'icons': [
             icono('icono-192.png', '192x192'), icono('icono-512.png', '512x512'),

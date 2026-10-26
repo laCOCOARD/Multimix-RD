@@ -4,6 +4,7 @@ from django.contrib.auth.management import create_permissions
 from django.contrib.auth.models import Group, Permission
 from django.db import DEFAULT_DB_ALIAS, connections
 from django.db.models import Count, Q
+from django.db.models.functions import Coalesce
 from django.utils import timezone
 
 from .models import Banner, Tienda
@@ -86,13 +87,71 @@ def banners_de(tienda):
 
 
 def directorio():
-    """Tiendas activas con la cantidad de productos que tienen a la venta."""
-    a_la_venta = Q(productos__activo=True, productos__categoria__activa=True)
+    """Tiendas activas con la cantidad de productos que muestra su catalogo.
+
+    Como en los listados, de cada grupo de variantes cuenta solo el principal (o sus variantes, si el principal no
+    se vende): una camisa en tres tallas es un producto.
+    """
+    a_la_venta = Q(productos__activo=True, productos__categoria__activa=True) & (
+        Q(productos__variante_de__isnull=True) | Q(productos__variante_de__activo=False)
+    )
     # El orden se pide a mano: al agrupar, Django no aplica el `ordering` del modelo.
     return (
         Tienda.objects.activas().annotate(total_productos=Count('productos', filter=a_la_venta))
         .order_by('orden', 'nombre')
     )
+
+
+TONOS_DE_TARJETA = 4
+
+
+def para_el_directorio(tiendas, categorias=3):
+    """Prepara las tarjetas del directorio con una sola consulta para todas las tiendas.
+
+    Pone en cada tienda `categorias_principales` (los nombres de las categorias en las que tiene mas productos a la
+    venta) y `tono`, el degradado de su franja cuando no tiene banner, para que no se vean todas iguales.
+    """
+    from catalogo.models import Producto
+
+    tiendas = list(tiendas)
+    filas = (
+        Producto.objects.activos().sin_variantes_repetidas().filter(tienda__in=tiendas)
+        .annotate(principal=Coalesce('categoria__padre__nombre', 'categoria__nombre'))
+        .order_by().values('tienda_id', 'principal').annotate(total=Count('id'))
+        .order_by('tienda_id', '-total', 'principal')
+    )
+    por_tienda = {}
+    for fila in filas:
+        nombres = por_tienda.setdefault(fila['tienda_id'], [])
+        if len(nombres) < categorias:
+            nombres.append(fila['principal'])
+    for tienda in tiendas:
+        tienda.categorias_principales = por_tienda.get(tienda.pk, [])
+        tienda.tono = tienda.pk % TONOS_DE_TARJETA
+    return tiendas
+
+
+def como_vender(plataforma, paginas_publicadas=()):
+    """A donde escribe quien quiere vender en el sitio, o None si el sitio no tiene a donde.
+
+    Las tiendas las crea el administrador, asi que el camino es pedirla: el WhatsApp del sitio con el mensaje listo,
+    su correo o, si no hay ninguno, la pagina de contacto publicada.
+    """
+    from urllib.parse import quote
+
+    from pedidos.whatsapp import construir_enlace
+
+    if plataforma.whatsapp:
+        mensaje = f'Hola, quiero vender mis productos en {plataforma.nombre}. ¿Cómo abro mi tienda?'
+        return {'url': construir_enlace(plataforma.whatsapp, mensaje), 'medio': 'whatsapp'}
+    if plataforma.correo:
+        asunto = quote(f'Quiero vender en {plataforma.nombre}')
+        return {'url': f'mailto:{plataforma.correo}?subject={asunto}', 'medio': 'correo'}
+    if 'contacto' in paginas_publicadas:
+        from django.urls import reverse
+
+        return {'url': reverse('core:pagina', args=['contacto']), 'medio': 'pagina'}
+    return None
 
 
 def tienda_principal():

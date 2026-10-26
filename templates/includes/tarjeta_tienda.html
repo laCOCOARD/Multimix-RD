@@ -1,0 +1,22 @@
+{# Tarjeta de una tienda del directorio. Recibe `item` (de tiendas.services.directorio + para_el_directorio). #}
+{# Toda la tarjeta lleva a la tienda: el enlace es el nombre y su area cubre la tarjeta (stretched-link). #}
+<article class="mm-tienda">
+  <span class="mm-tienda-portada mm-tienda-tono-{{ item.tono }}"
+        {% if item.banner_imagen %}style="background-image: url('{{ item.banner_imagen.url }}');"{% endif %}></span>
+  <div class="mm-tienda-cuerpo">
+    <span class="mm-tienda-avatar{% if item.logo %} con-logo{% endif %}" aria-hidden="true">
+      {% if item.logo %}<img src="{{ item.logo.url }}" alt="" loading="lazy" decoding="async" width="60" height="60">{% else %}{{ item.nombre|slice:':1'|upper }}{% endif %}
+    </span>
+    <div class="mm-tienda-datos">
+      <h3 class="mm-tienda-nombre"><a class="stretched-link" href="{{ item.get_absolute_url }}">{{ item.nombre }}</a></h3>
+      {% if item.categorias_principales %}
+        <p class="mm-tienda-categorias">{{ item.categorias_principales|join:' · ' }}</p>
+      {% endif %}
+      {% if item.banner_subtitulo %}<p class="mm-tienda-texto">{{ item.banner_subtitulo }}</p>{% endif %}
+    </div>
+    <div class="mm-tienda-pie">
+      <span>{{ item.total_productos }} producto{{ item.total_productos|pluralize }}</span>
+      <span class="mm-tienda-visitar" aria-hidden="true">Visitar tienda <i class="bi bi-arrow-right"></i></span>
+    </div>
+  </div>
+</article>

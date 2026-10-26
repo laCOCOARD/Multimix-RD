@@ -4,12 +4,6 @@
 
   const sinMovimiento = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-  const escapar = (texto) => {
-    const nodo = document.createElement('div');
-    nodo.textContent = texto;
-    return nodo.innerHTML;
-  };
-
   /** Envia un formulario por POST con fetch. Devuelve el JSON del servidor. */
   async function enviar(url, datos) {
     const respuesta = await fetch(url, {
@@ -23,18 +17,37 @@
     return respuesta.json();
   }
 
-  function avisar(mensaje, tipo = 'exito') {
+  /** Aviso breve abajo de la pantalla. `enlace` ({texto, url}) agrega un enlace al final. Se arma con nodos: el
+   *  texto viene del servidor, pero nunca se trata como HTML. */
+  function avisar(mensaje, tipo = 'exito', enlace = null) {
     const contenedor = document.getElementById('avisos');
     if (!mensaje || !contenedor || !window.bootstrap) return;
     const colores = { exito: 'text-bg-success', error: 'text-bg-danger', aviso: 'text-bg-warning' };
     const toast = document.createElement('div');
     toast.className = `toast align-items-center border-0 ${colores[tipo] || colores.exito}`;
     toast.setAttribute('role', 'status');
-    toast.innerHTML = `<div class="d-flex"><div class="toast-body">${escapar(mensaje)}</div>
-      <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Cerrar"></button></div>`;
+    const fila = document.createElement('div');
+    fila.className = 'd-flex';
+    const cuerpo = document.createElement('div');
+    cuerpo.className = 'toast-body';
+    cuerpo.textContent = mensaje;
+    if (enlace) {
+      const ir = document.createElement('a');
+      ir.className = 'mm-aviso-enlace';
+      ir.href = enlace.url;
+      ir.textContent = enlace.texto;
+      cuerpo.append(' ', ir);
+    }
+    const cerrar = document.createElement('button');
+    cerrar.type = 'button';
+    cerrar.className = `btn-close ${tipo === 'aviso' ? '' : 'btn-close-white '}me-2 m-auto`;
+    cerrar.setAttribute('data-bs-dismiss', 'toast');
+    cerrar.setAttribute('aria-label', 'Cerrar');
+    fila.append(cuerpo, cerrar);
+    toast.appendChild(fila);
     contenedor.appendChild(toast);
     toast.addEventListener('hidden.bs.toast', () => toast.remove());
-    new bootstrap.Toast(toast, { delay: 3500 }).show();
+    new bootstrap.Toast(toast, { delay: enlace ? 6000 : 3500 }).show();
   }
 
   function actualizarContador(cantidad) {
@@ -52,9 +65,12 @@
   // Aparicion al deslizar. Cada grupo entra con su estilo y, si entran varios a la vez, en cascada.
   const quieto = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const animar = (selector, ...clases) => document.querySelectorAll(selector).forEach((nodo) => nodo.classList.add('revelar', ...clases));
-  animar('.mm-seccion-cabecera, .mm-legal-cabecera, main h1:not(.mm-portada-titulo):not(.mm-banner-titulo)', 'revelar-izq');
+  animar('.mm-seccion-cabecera, .mm-legal-cabecera, main h1:not(.mm-hero-titulo):not(.mm-banner-titulo)', 'revelar-izq');
   animar('.mm-burbuja', 'revelar-zoom');
-  animar('.mm-tienda-tarjeta, .mm-llamado, .mm-filtros, .mm-panel, .mm-legal-indice');
+  animar('.mm-vender, .mm-llamado, .mm-filtros, .mm-panel, .mm-legal-indice');
+  // Categorias y tiendas solo aparecen, sin moverse: van en filas que se deslizan (o no, segun el ancho) y un
+  // desplazamiento las sacaria de la fila o de la pagina mientras esperan a verse.
+  animar('.mm-fila .mm-categoria, .mm-tienda', 'revelar-suave');
   document.querySelectorAll('.mm-fila .mm-tarjeta').forEach((tarjeta) => tarjeta.classList.add('revelar-der'));
 
   const elementos = document.querySelectorAll('.revelar');
@@ -76,11 +92,11 @@
     elementos.forEach((elemento) => elemento.classList.add('visible'));
   }
 
-  // Al deslizar: barra de progreso, cabecera con sombra, boton para volver arriba y fondo de la portada mas lento.
+  // Al deslizar: barra de progreso, cabecera con sombra, boton para volver arriba y el banner de la tienda mas lento.
   const progreso = document.querySelector('.mm-progreso');
   const cabecera = document.querySelector('.mm-cabecera');
   const arriba = document.querySelector('.mm-arriba');
-  const capas = quieto ? [] : Array.from(document.querySelectorAll('.mm-portada > .container, .mm-banner .container'));
+  const capas = quieto ? [] : Array.from(document.querySelectorAll('.mm-banner .container'));
   let pendiente = false;
   const alDeslizar = () => {
     pendiente = false;
@@ -120,7 +136,13 @@
         return;
       }
       actualizarContador(datos.cantidad_total);
-      avisar(datos.mensaje, datos.ok ? 'exito' : 'error');
+      // Fuera de una tienda (portada, buscador del sitio, favoritos) no hay carrito en la cabecera: el aviso
+      // enlaza al carrito de la tienda del producto, que es la carpeta anterior de /carrito/agregar/.
+      const sinCarritoALaVista = !document.querySelector('.js-contador-carrito');
+      const enlace = datos.ok && sinCarritoALaVista
+        ? { texto: formulario.dataset.tienda ? `Ver carrito de ${formulario.dataset.tienda}` : 'Ver carrito', url: new URL('../', formulario.action).href }
+        : null;
+      avisar(datos.mensaje, datos.ok ? 'exito' : 'error', enlace);
       if (datos.ok && boton) {
         // El boton confirma por un momento que el producto ya esta en el carrito.
         const original = boton.innerHTML;
@@ -379,9 +401,21 @@
     if (!(foto instanceof HTMLImageElement) || !foto.closest('.mm-tarjeta-foto, .mm-galeria-principal, .mm-linea-foto')) return;
     const vacio = document.createElement('span');
     vacio.className = 'mm-sin-foto';
-    vacio.innerHTML = '<i class="bi bi-image"></i>';
+    vacio.innerHTML = '<i class="bi bi-image"></i><span>Sin foto</span>';
     foto.replaceWith(vacio);
   }, true);
+
+  // Barra del telefono: "Buscar" sube al buscador de la cabecera y lo deja listo para escribir. Sin JavaScript abre
+  // la pagina de busqueda (o el catalogo de la tienda).
+  document.querySelectorAll('.js-ir-al-buscador').forEach((enlace) => {
+    enlace.addEventListener('click', (evento) => {
+      const campo = document.querySelector('.mm-cabecera .mm-buscador-campo');
+      if (!campo) return;
+      evento.preventDefault();
+      window.scrollTo(0, 0);
+      campo.focus();
+    });
+  });
 
   // Botones que piden confirmacion antes de enviar (cancelar un pedido). Sin JavaScript el formulario se envia igual.
   document.addEventListener('click', (evento) => {

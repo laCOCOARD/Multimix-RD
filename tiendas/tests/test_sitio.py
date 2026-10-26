@@ -62,29 +62,210 @@ class DirectorioTests(DosTiendas):
         # En el sitio no hay carrito: se compra dentro de cada tienda.
         self.assertNotContains(respuesta, 'js-contador-carrito')
 
-    def test_la_portada_solo_muestra_tiendas_no_productos(self):
-        from catalogo.models import Producto
-
-        Producto.objects.update(precio_oferta=1)  # aunque haya ofertas y productos nuevos
+    def test_la_portada_muestra_productos_de_todas_las_tiendas_con_su_vendedor(self):
+        # Pedido del dueño el 2026-10-25: se compra sin conocer al vendedor, pero cada producto dice de que tienda es.
         portada = self.client.get('/')
-        self.assertContains(portada, 'Fitnes RD')
-        for producto in Producto.objects.all():
-            self.assertNotContains(portada, producto.nombre)
-        self.assertNotContains(portada, 'mm-tarjeta ')
+        self.assertEqual({p.nombre for p in portada.context['productos']}, {'Lámpara', 'Pesas rusas'})
+        self.assertContains(portada, 'Vendido por')
+        self.assertContains(portada, f'<a href="{self.fitnes.get_absolute_url()}">Fitnes RD</a>', html=True)
+        # Cada tarjeta compra en el carrito de su propia tienda.
+        self.assertContains(portada, ruta('carrito:agregar', tienda=self.fitnes))
+        self.assertContains(portada, ruta('carrito:agregar', tienda=self.multimix))
+        self.assertContains(portada, 'data-tienda="Fitnes RD"')
+
+    def test_la_portada_solo_ofrece_lo_que_se_puede_comprar_de_tiendas_activas(self):
+        from catalogo.models import Categoria, Producto
+
+        apagada = Tienda.objects.create(nombre='En preparación', activa=False)
+        crear_producto(nombre='Producto de tienda apagada', sku='X1', tienda=apagada)
+        oculta = Categoria.objects.create(nombre='Oculta', activa=False)
+        crear_producto(nombre='Producto de categoría apagada', sku='X2', categoria=oculta)
+        crear_producto(nombre='Producto inactivo', sku='X3', activo=False)
+        crear_producto(nombre='Producto agotado', sku='X4', disponibilidad=Producto.Disponibilidad.AGOTADO)
+        portada = self.client.get('/')
+        self.assertEqual({p.nombre for p in portada.context['productos']}, {'Lámpara', 'Pesas rusas'})
+        for nombre in ('tienda apagada', 'categoría apagada', 'Producto inactivo', 'Producto agotado', 'Oculta'):
+            self.assertNotContains(portada, nombre)
+
+    def test_la_seleccion_se_reparte_entre_las_tiendas(self):
+        from catalogo.services import vitrina_del_sitio
+
+        for numero in range(5):
+            crear_producto(nombre=f'Lámpara {numero}', sku=f'L-{numero}', destacado=True)
+        # Multimix tiene seis productos y Fitnes uno: con dos lugares, va uno de cada tienda.
+        self.assertEqual({p.tienda for p in vitrina_del_sitio(2)}, {self.multimix, self.fitnes})
+        self.assertEqual(len(vitrina_del_sitio(12)), 7)
 
     def test_la_portada_no_se_parece_al_inicio_de_una_tienda(self):
         portada = self.client.get('/')
-        # Sin banner, sin boton de catalogo y sin el lema de ninguna tienda en su encabezado.
+        # Sin el banner de las tiendas, sin su boton de catalogo y sin el lema de ninguna en su encabezado.
         self.assertNotContains(portada, 'mm-banner')
         self.assertNotContains(portada, 'Ver catálogo')
         self.assertNotContains(portada, 'Tu tienda de bienestar')
-        self.assertContains(portada, 'Compra en tiendas de confianza')
-        self.assertContains(portada, 'Busca un producto en todas las tiendas')
+        self.assertContains(portada, 'Muchos emprendedores.')
+        self.assertContains(portada, 'Explorar productos')
+        self.assertContains(portada, f'href="{reverse("tiendas:directorio")}"')
+        self.assertContains(portada, '¿Qué producto estás buscando?')
         self.assertContains(portada, 'Tiendas de emprendedores en un solo lugar.')
-        # El inicio de cada tienda si conserva su banner.
+        # El inicio de cada tienda si conserva su banner, y su buscador busca dentro de ella.
         tienda = self.client.get(self.multimix.get_absolute_url())
         self.assertContains(tienda, 'mm-banner-titulo')
         self.assertContains(tienda, 'Tu tienda de bienestar')
+        self.assertContains(tienda, 'placeholder="Buscar en Multimix RD"')
+
+    def test_las_categorias_llevan_al_buscador_del_sitio_con_sus_subcategorias(self):
+        from catalogo.models import Categoria
+
+        belleza = Categoria.objects.create(nombre='Belleza', orden=1)
+        maquillaje = Categoria.objects.create(nombre='Maquillaje', padre=belleza)
+        crear_producto(nombre='Labial rojo', sku='B1', categoria=maquillaje, tienda=self.fitnes)
+        crear_producto(nombre='Crema facial', sku='B2', categoria=belleza)
+        Categoria.objects.create(nombre='Sin productos')
+        portada = self.client.get('/')
+        categorias = {c.nombre: c.total_productos for c in portada.context['categorias']}
+        # Solo las principales con algo a la venta, con lo de sus subcategorias y de todas las tiendas.
+        self.assertEqual(categorias, {'Belleza': 2, 'General': 2})
+        self.assertContains(portada, '/buscar/?categoria=belleza')
+
+        resultado = self.client.get(reverse('tiendas:buscar'), {'categoria': 'belleza'})
+        self.assertEqual({p.nombre for p in resultado.context['pagina']}, {'Labial rojo', 'Crema facial'})
+        self.assertEqual(resultado.context['categoria'], belleza)
+        self.assertContains(resultado, '<h1 class="h3 mb-1">Belleza</h1>', html=True)
+        # Se puede seguir buscando dentro de la categoria.
+        resultado = self.client.get(reverse('tiendas:buscar'), {'categoria': 'belleza', 'q': 'labial'})
+        self.assertEqual([p.nombre for p in resultado.context['pagina']], ['Labial rojo'])
+        # Una categoria que no existe o esta apagada no rompe la busqueda: se ignora.
+        Categoria.objects.filter(pk=belleza.pk).update(activa=False)
+        for slug in ('belleza', 'no-existe'):
+            resultado = self.client.get(reverse('tiendas:buscar'), {'categoria': slug})
+            self.assertIsNone(resultado.context['categoria'])
+            self.assertEqual(resultado.status_code, 200)
+
+    def test_las_ofertas_salen_aparte_y_no_se_repiten(self):
+        self.pesas.precio_oferta = Decimal('2000')
+        self.pesas.save()
+        portada = self.client.get('/')
+        self.assertEqual(portada.context['ofertas'], [self.pesas])
+        self.assertEqual(portada.context['productos'], [self.lampara])
+        self.assertContains(portada, 'Ver todas las ofertas')
+        self.assertContains(portada, 'Oferta -20%')
+        # Sin ofertas vigentes no hay seccion de ofertas, y el enlace "Ofertas" lo dice en vez de "no encontramos".
+        self.pesas.precio_oferta = None
+        self.pesas.save()
+        self.assertNotContains(self.client.get('/'), 'Ver todas las ofertas')
+        self.assertContains(self.client.get(reverse('tiendas:buscar'), {'oferta': 'on'}), 'Por ahora no hay ofertas')
+
+    def test_directorio_de_todas_las_tiendas(self):
+        from catalogo.models import Categoria
+
+        Tienda.objects.create(nombre='En preparación', activa=False)
+        # Una camisa en dos tallas es un producto: el conteo es el del catalogo de la tienda.
+        ropa = Categoria.objects.create(nombre='Ropa')
+        camisa = crear_producto(nombre='Camisa', sku='C1', categoria=ropa, tienda=self.fitnes, nombre_variante='S')
+        crear_producto(nombre='Camisa M', sku='C2', categoria=ropa, tienda=self.fitnes, variante_de=camisa,
+                       nombre_variante='M')
+        respuesta = self.client.get(reverse('tiendas:directorio'))
+        self.assertEqual(respuesta.status_code, 200)
+        tiendas = {t.nombre: t for t in respuesta.context['tiendas']}
+        self.assertEqual(set(tiendas), {'Fitnes RD', 'Multimix RD'})
+        self.assertEqual(tiendas['Fitnes RD'].total_productos, 2)
+        self.assertCountEqual(tiendas['Fitnes RD'].categorias_principales, ['General', 'Ropa'])
+        self.assertContains(respuesta, '2 productos')
+        self.assertContains(respuesta, 'href="/tienda/fitnes-rd/"')
+        self.assertNotContains(respuesta, 'En preparación')
+        self.assertContains(self.client.get('/sitemap.xml'), reverse('tiendas:directorio'))
+        # Por paginas cuando son muchas.
+        with patch('tiendas.views.TIENDAS_POR_PAGINA', 1):
+            primera = self.client.get(reverse('tiendas:directorio'))
+            self.assertEqual([t.nombre for t in primera.context['tiendas']], ['Fitnes RD'])
+            segunda = self.client.get(reverse('tiendas:directorio'), {'pagina': 2})
+            self.assertEqual([t.nombre for t in segunda.context['tiendas']], ['Multimix RD'])
+
+    def test_la_portada_muestra_solo_las_primeras_tiendas(self):
+        with patch('tiendas.views.TIENDAS_EN_PORTADA', 1):
+            portada = self.client.get('/')
+        self.assertEqual(portada.context['tiendas'], [self.fitnes])
+        self.assertContains(portada, 'Ver todas las tiendas')
+        self.assertNotContains(self.client.get('/'), 'Ver todas las tiendas')
+
+    def test_quien_quiere_vender_escribe_al_sitio(self):
+        from core.models import ConfiguracionTienda, PaginaInformativa
+
+        configuracion = ConfiguracionTienda.obtener()
+        configuracion.whatsapp = '8095550123'
+        configuracion.save()
+        portada = self.client.get('/')
+        self.assertContains(portada, 'id="vender"')
+        self.assertContains(portada, 'https://wa.me/18095550123?text=Hola%2C%20quiero%20vender')
+        configuracion.whatsapp = ''
+        configuracion.correo = 'hola@example.com'
+        configuracion.save()
+        self.assertContains(self.client.get('/'), 'mailto:hola@example.com?subject=')
+        # Sin WhatsApp ni correo, la pagina de contacto; sin ella tampoco, no se ofrece.
+        configuracion.correo = ''
+        configuracion.save()
+        self.assertEqual(self.client.get('/').context['vender'], {'url': '/pagina/contacto/', 'medio': 'pagina'})
+        PaginaInformativa.objects.filter(slug='contacto').update(publicada=False)
+        portada = self.client.get('/')
+        self.assertNotContains(portada, 'id="vender"')
+        self.assertNotContains(portada, 'Vende en Multimix RD')
+
+    def test_el_panel_solo_se_enlaza_a_quien_tiene_acceso(self):
+        from django.conf import settings as ajustes
+        from django.contrib.auth import get_user_model
+
+        url_del_panel = f'/{ajustes.ADMIN_URL}/'
+        # Clientes y visitantes no ven la direccion del panel en ninguna pagina del sitio.
+        for url in ('/', reverse('tiendas:directorio'), reverse('tiendas:buscar'), self.fitnes.get_absolute_url()):
+            self.assertNotContains(self.client.get(url), url_del_panel, msg_prefix=url)
+        self.client.post(reverse('clientes:salir'))
+        self.assertNotContains(self.client.get('/'), url_del_panel)
+        vendedor = get_user_model().objects.create_user('vendedor', 'v@example.com', 'clave-segura-123')
+        self.fitnes.usuarios.add(vendedor)
+        from tiendas.services import dar_acceso_al_panel
+        dar_acceso_al_panel([vendedor])
+        self.client.force_login(vendedor)
+        portada = self.client.get('/')
+        self.assertContains(portada, url_del_panel)
+        self.assertContains(portada, 'Mi panel')
+        self.assertEqual(self.client.get(url_del_panel).status_code, 200)
+
+    def barra_del_telefono(self, respuesta):
+        html = respuesta.content.decode()
+        inicio = html.index('<nav class="mm-barra-movil"')
+        return html[inicio:html.index('</nav>', inicio)]
+
+    def test_la_barra_del_telefono_lleva_a_lo_principal(self):
+        # Pedido del dueño el 2026-10-26: barra abajo solo en el telefono (la oculta el CSS en la PC).
+        barra = self.barra_del_telefono(self.client.get('/'))
+        for etiqueta in ('Inicio', 'Tiendas', 'Buscar', 'Ofertas', 'Mi cuenta'):
+            self.assertIn(etiqueta, barra)
+        self.assertIn('href="/" aria-current="page"', barra)
+        self.assertIn(f'href="{reverse("tiendas:directorio")}"', barra)
+        self.assertIn(f'href="{reverse("tiendas:buscar")}?oferta=on"', barra)
+        # En el sitio no hay carrito: cada tienda tiene el suyo.
+        self.assertNotIn('js-contador-carrito', barra)
+        # Dentro de una tienda: su inicio, su catalogo y su carrito con el contador.
+        barra = self.barra_del_telefono(self.client.get(ruta('catalogo:lista', tienda=self.fitnes)))
+        self.assertIn(f'href="{ruta("catalogo:lista", tienda=self.fitnes)}" aria-current="page"', barra)
+        self.assertIn(f'href="{ruta("carrito:detalle", tienda=self.fitnes)}"', barra)
+        self.assertIn('js-contador-carrito', barra)
+        self.assertNotIn(ruta('carrito:detalle', tienda=self.multimix), barra)
+        # La cuenta se marca en sus paginas.
+        barra = self.barra_del_telefono(self.client.get(reverse('clientes:cuenta')))
+        self.assertIn(f'href="{reverse("clientes:cuenta")}" aria-current="page"', barra)
+
+    def test_sin_sesion_y_con_la_cuenta_obligatoria_no_hay_barra(self):
+        self.client.post(reverse('clientes:salir'))
+        with self.settings(CUENTA_OBLIGATORIA=True):
+            self.assertNotContains(self.client.get(reverse('clientes:entrar')), 'mm-barra-movil')
+
+    def test_el_menu_ofrece_entrar_a_quien_no_tiene_sesion(self):
+        self.assertContains(self.client.get('/'), 'Cerrar sesión')
+        self.client.post(reverse('clientes:salir'))
+        portada = self.client.get('/')
+        self.assertNotContains(portada, 'Cerrar sesión')
+        self.assertContains(portada, f'href="{reverse("clientes:registro")}"')
 
     def test_cada_tienda_lleva_su_marca_y_el_camino_de_regreso(self):
         respuesta = self.client.get(self.fitnes.get_absolute_url())

@@ -30,7 +30,8 @@ Al cerrar cada modulo: check, makemigrations, migrate, test y commit.
 ## Estructura
 - `config/` — settings, urls, wsgi.
 - `tiendas/` — Tienda (subtienda) y sus vendedores; `@de_tienda` para las vistas, `AdminDeTienda` para el
-  panel, grupo Vendedores, portada (directorio), buscador del sitio y enlaces anteriores.
+  panel, grupo Vendedores, portada del sitio, pagina de todas las tiendas (`/tiendas/`), buscador del sitio y
+  enlaces anteriores.
 - `core/` — ConfiguracionTienda (fila unica, ajustes del sitio), CuentaDelSitio (las unicas cuentas bancarias), panel (AdminSite propio),
   filtro `moneda`, telefonos RD, paginas informativas, sitemap/robots, comando `cargar_demo`.
 - `catalogo/` — Categoria (comun a todas las tiendas), Producto, FotoProducto; inicio, catalogo y detalle de cada tienda.
@@ -123,6 +124,8 @@ Al cerrar cada modulo: check, makemigrations, migrate, test y commit.
   el sitio; `no-cache`) y `/sin-conexion/`, todas con `@login_not_required`. El service worker no guarda paginas
   (traen datos de la cuenta): las pide a la red y sin internet muestra "Sin conexion"; los estaticos si, con la
   cache nombrada por la version de los estaticos. Iconos `static/img/icono-*.png` (salen del simbolo del logo).
+  En desarrollo (DEBUG) los estaticos no llevan huella y esa version no cambia: el navegador que ya instalo el
+  service worker sigue viendo el CSS/JS viejo hasta recargar con Ctrl+Shift+R o abrir una ventana privada.
   El menu ofrece "Instalar la app" cuando el navegador lo permite y explica el camino en iPhone.
 - JSON-LD del producto (`core.seo.producto_json_ld`): precio, disponibilidad y marca reales; la valoracion solo
   aparece si hay reseñas publicadas. Es la unica excepcion a "nada de |safe": el JSON se escapa como `json_script`.
@@ -222,20 +225,45 @@ Al cerrar cada modulo: check, makemigrations, migrate, test y commit.
   redes...) y expone `descripcion` (su `banner_subtitulo`). En las plantillas `tienda` es la subtienda actual
   (o nada en las paginas del sitio), `plataforma` la configuracion y `marca` la que firme la pagina
   (`tienda or plataforma`).
-- La portada del sitio (directorio) no lleva banner ni boton de catalogo, a pedido del dueño: se veia igual
-  que el inicio de una tienda. Tampoco lleva bloques de informacion (pedido del dueño): "Tu compra, protegida",
-  la ayuda y lo legal van en el menu de 3 barras (`includes/menu_lateral.html`, offcanvas, visible siempre). La
-  portada es buscador + la fila de tiendas + preguntas frecuentes: sin productos (pedido del dueño el 2026-10-19:
-  donde salen las tiendas no salen productos). Filas:
-  `includes/fila_productos.html` + `[data-fila]` en `tienda.js` (flechas, `data-auto` avanza solo). El inicio de
-  cada tienda: cinta en movimiento (`mm-cinta`), categorias en burbujas y una fila por seccion.
+- Portada del sitio (pedido del dueño el 2026-10-25; reemplaza la de "solo tiendas, sin productos" del 2026-10-19):
+  un sitio de muchas tiendas, para comprar sin conocer al vendedor o para entrar a una tienda. Orden: bienvenida
+  corta (`mm-hero`, clara, distinta del `mm-banner` oscuro de las tiendas; en pantallas anchas 4 fotos reales de la
+  seleccion), categorias del sitio (`catalogo.services.categorias_del_sitio`: principales con algo a la venta, con
+  cuantos productos y foto; llevan a `/buscar/?categoria=<slug>`), "Descubre productos" (`vitrina_del_sitio`: solo
+  lo comprable, con foto y destacados primero, repartido entre tiendas con un `RowNumber` por tienda; 12, ocho en el
+  celular), tiendas (8; "Ver todas" lleva a `/tiendas/`), ofertas (`ofertas_del_sitio`, solo si hay, y no se repiten
+  en la seleccion), "Para emprendedores" (`#vender`) y preguntas frecuentes. Todo sale de la base: una seccion sin
+  datos no se muestra. Fuera de una tienda la tarjeta de producto dice "Vendido por <tienda>" con enlace a ella.
+  "Tu compra, protegida", la ayuda y lo legal siguen en el menu de 3 barras y en el pie. Con una sola tienda su
+  tarjeta se acuesta a todo el ancho (`una-sola`).
+- Vender en el sitio: no hay alta propia (las tiendas las crea el superusuario). `tiendas.services.como_vender` da
+  el camino: el WhatsApp del sitio con el mensaje listo, su correo o la pagina de contacto; sin ninguno no se
+  ofrece. La direccion del panel (`ADMIN_URL`, secreta a pedido del dueño) solo se enlaza al personal
+  (`user.is_staff`: "Mi panel"); nunca a clientes ni visitantes.
+- Cabecera (todas las paginas): en pantallas anchas una fila fija y debajo la franja `mm-nav` (categorias,
+  tiendas, productos, ofertas, vender o "Mi panel"). En el telefono dos filas (marca y favoritos; menu y buscador)
+  que se van al bajar. El buscador ya no esta repetido en el menu de 3 barras. Al agregar al carrito fuera de una
+  tienda (portada, buscador, favoritos) el aviso enlaza al carrito de la tienda del producto (`data-tienda`).
+- Barra del telefono (`mm-barra-movil` en `base.html`, pedido del dueño el 2026-10-26: "para el telefono, no en
+  la PC"): solo por debajo de 992 px y con `puede_navegar`. En el sitio Inicio, Tiendas, Buscar, Ofertas y Mi
+  cuenta; dentro de una tienda Tienda, Catalogo, Buscar, Carrito (con contador) y Mi cuenta. Es lo unico fijo en el
+  telefono: la cuenta y el carrito de la cabecera se esconden alli (`con-barra-movil` en el body, que tambien deja
+  espacio abajo y sube WhatsApp, "volver arriba" y los avisos). "Buscar" sube al buscador de la cabecera y lo
+  enfoca (`js-ir-al-buscador`; sin JavaScript abre la busqueda). Se aparta mientras se escribe en un campo y cuando
+  la ficha muestra su barra de compra (`mm-compra-fija`).
+- Filas: `includes/fila_productos.html` + `[data-fila]` en `tienda.js` (flechas, `data-auto` avanza solo); las
+  categorias de la portada usan la misma fila. El inicio de cada tienda: cinta en movimiento (`mm-cinta`),
+  categorias en burbujas y una fila por seccion.
   Animaciones al deslizar en `tienda.js`: `revelar` (en cascada con `--retraso`; variantes `revelar-izq`,
   `-der`, `-zoom`, que el JS pone a titulos, burbujas, tarjetas y paneles), barra `mm-progreso`, cabecera
-  `con-sombra`, boton `mm-arriba` y el fondo de portada y banner mas lento. Con "reducir movimiento" no se anima.
+  `con-sombra`, boton `mm-arriba` y el banner de la tienda mas lento. Con "reducir movimiento" no se anima.
+  Ojo: algo con `position: absolute` (como un texto solo para lectores de pantalla) dentro de una fila que se
+  desliza necesita un ancestro posicionado dentro de la fila (`.mm-tarjeta` es `relative`): si no, cuando
+  `revelar` quita el `transform` escapa del recorte y ensancha toda la pagina en el celular.
   Letra: Inter servida desde `static/fonts/` (no por CDN). Pantallas de entrar/crear/recuperar con panel de marca
   (`mm-acceso con-marca`); politicas, terminos y preguntas con indice lateral (`paginas/_indice_legal.html`).
   Tampoco hay guia "Como comprar" (quitada a pedido del dueño): su ruta redirige al
-  inicio de la tienda. El banner (`mm-banner`) es solo de las tiendas; la portada usa `mm-directorio`.
+  inicio de la tienda. El banner (`mm-banner`) es solo de las tiendas.
 - WhatsApp siempre con codigo de pais: `core.telefonos.normalizar_whatsapp` antepone el 1 a los numeros
   dominicanos de 10 digitos. Se aplica al validar y guardar Tienda y ConfiguracionTienda y, por si acaso, al
   armar cada enlace (`construir_enlace`). Sin el 1, wa.me abre un numero de otro pais.
@@ -292,9 +320,15 @@ Al cerrar cada modulo: check, makemigrations, migrate, test y commit.
   mayusculas (`catalogo.services.marcas_de`). Asi el vendedor no depende del administrador para una marca nueva.
 - Buscador con sugerencias: `catalogo.services.sugerencias` (minimo 2 letras) en `/tienda/<slug>/sugerencias/` y
   `/sugerencias/` (todo el sitio). El desplegable se arma en `tienda.js` con nodos, nunca con HTML del servidor.
+  `/buscar/?categoria=<slug>` limita el buscador del sitio a una categoria con sus subcategorias (una que no existe
+  o esta apagada se ignora, como los demas filtros).
+- Directorio de tiendas (`tiendas.services.directorio`, portada y `/tiendas/`): solo las activas, con
+  `total_productos` contado como en el catalogo (una vez por grupo de variantes); `para_el_directorio` agrega sus
+  categorias con mas productos y el tono de su franja si no tiene banner, con una consulta para todas.
 - "Comprar ahora" es el mismo POST de agregar al carrito con `comprar=1`: redirige al checkout. Cada tarjeta de
   producto (`includes/tarjeta_producto.html`) lleva Agregar (icono) y Comprar, siempre contra el carrito de la
-  tienda del producto (`producto.tienda.slug`), asi que sirve tambien en el buscador del sitio y en favoritos.
+  tienda del producto (`producto.tienda.slug`), asi que sirve tambien en la portada, el buscador del sitio y
+  favoritos.
 - Busqueda sin tildes: `Producto.texto_busqueda` (nombre + marca + SKU + descripcion normalizados en `save()`).
   Ojo: `queryset.update()` de nombre/descripcion no lo refresca.
 - Cuenta para comprar: se navega y se arma el carrito sin cuenta (Google ve el catalogo); el checkout lleva
@@ -307,8 +341,8 @@ Al cerrar cada modulo: check, makemigrations, migrate, test y commit.
   los pedidos de invitado anteriores). Una vista nueva del sitio queda cerrada sin hacer nada. En las pruebas esta
   apagado (`CUENTA_OBLIGATORIA`); `clientes/tests/test_cuenta_obligatoria.py` lo prueba encendido. Sin sesion la
   plantilla oculta menu, buscador y carrito (`puede_navegar`). El checkout lleva ademas `@login_required`.
-- Experiencia de compra (tomado de las grandes tiendas; la barra inferior del celular se quito: al dueño no le
-  gusto): estrellas en las tarjetas
+- Experiencia de compra (tomado de las grandes tiendas; la primera barra inferior del celular se quito porque al
+  dueño no le gusto y volvio rediseñada el 2026-10-26, ver "Barra del telefono"): estrellas en las tarjetas
   (`ProductoQuerySet.con_valoracion`, subconsultas, dentro de `para_listado`), vistos recientemente en la sesion
   (`catalogo.services.recordar_visto`/`vistos`; dentro de una tienda solo los suyos, porque la tarjeta agrega al
   carrito de esa tienda), cuenta regresiva si la oferta termina en 7 dias o menos, barra de compra fija en la
@@ -327,10 +361,13 @@ Al cerrar cada modulo: check, makemigrations, migrate, test y commit.
 - Importacion Excel: `catalogo/resources.py`, identifica por `sku` dentro de la tienda elegida en el
   formulario y valida con `full_clean`. Solo el superusuario crea categorias al importar. No importa fotos
   ni `stock_reservado`.
-- Marca: azul y verde del logo en las variables de `tienda.css` y `panel.css`; recursos en `static/img/`. El
-  encabezado del sitio muestra el simbolo estatico con el nombre salvo que haya un logo en Configuracion; el
-  de cada tienda, su logo o su nombre, con una franja encima para volver a "Todas las tiendas".
-  El acento es un verde mas oscuro que el de la hoja (`--mm-hoja`, solo decorativo) para que el texto blanco se lea.
+- Marca: paleta del dueño (2026-10-25) en las variables de `:root` de `tienda.css`: azul `#244BFF` (botones,
+  enlaces, identidad), azul oscuro `#172033` (titulos y precios), naranja `#FFB15C` con texto oscuro solo para
+  ofertas y la accion principal de cada pagina (`.btn-acento`: comprar ahora, confirmar el pedido, boton del banner)
+  y fondo `#F5F7FB`; verde solo para lo que salio bien (agregado, envio gratis logrado). `panel.css` sigue con el
+  azul del logo. Recursos en `static/img/`. El encabezado del sitio muestra el simbolo estatico con el nombre salvo
+  que haya un logo en Configuracion; el de cada tienda, su logo o su nombre, con una franja encima para volver a
+  "Todas las tiendas".
 - Inicio de tienda: `catalogo.services.categorias_de_portada(tienda)` trae las categorias con productos de
   la tienda y da a la que no tiene imagen la foto de uno de ellos.
 - `core/migrations/0002` quita de la configuracion el logo o banner cuyo archivo ya no existe en el
