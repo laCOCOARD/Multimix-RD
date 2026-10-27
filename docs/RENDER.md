@@ -33,6 +33,7 @@ Cómo está desplegado el sitio hoy y cómo mantenerlo. Para un servidor propio 
 | `DJANGO_SUPERUSER_USERNAME`, `_EMAIL`, `_PASSWORD`      | Administrador principal. Su contraseña se repone en cada arranque.    |
 | `MEDIA_STORAGE=supabase` y las seis `SUPABASE_*`        | Fotos en Supabase.                                                    |
 | `SUPABASE_S3_BUCKET_PRIVADO`                            | Bucket **privado** para los comprobantes de pago (ver abajo).         |
+| `SUPABASE_S3_BUCKET_VIDEOS`                             | Bucket **público** para los videos de las tiendas (ver abajo).        |
 | `CABECERA_IP`                                           | Solo si cambia el proxy. Por defecto `CF-Connecting-IP` en Render.    |
 | `VERIFICAR_CORREO`                                      | `0` para no pedir que se confirme el correo antes de comprar.         |
 | `BREVO_API_KEY`                                         | Clave **API** de Brevo (no la SMTP). Sin ella no sale ningún correo.  |
@@ -55,6 +56,17 @@ Los comprobantes de transferencia llevan datos bancarios: no deben estar en el b
    las tareas periódicas. En el panel se ven igual (Pagos → el pago → Comprobante), a través del sitio.
 
 Mientras falte la variable, siguen en el bucket público y el detalle del pago lo avisa.
+
+### Videos de las tiendas en su propio bucket
+
+El bucket de las fotos (`multimix-media`) solo acepta imágenes, así que los videos (plan Premium) van a otro.
+
+1. En Supabase → Storage → *New bucket*: nombre `multimix-videos`, **con** *Public bucket* marcado. En sus
+   ajustes, *Allowed MIME types* `video/mp4` (o vacío) y un límite de archivo de 50 MB o más.
+2. En Render, la variable `SUPABASE_S3_BUCKET_VIDEOS=multimix-videos` (usa las mismas claves S3).
+3. Despliega. Desde ahí las tiendas con un plan que incluya videos pueden subirlos en Panel → Videos de las tiendas.
+
+Mientras falte la variable, el panel no deja subir videos y se lo explica al administrador.
 
 ### IP del visitante
 

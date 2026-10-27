@@ -49,15 +49,16 @@ Al cerrar cada modulo: check, makemigrations, migrate, test y commit.
 - `pagos/` — Pago (un intento de pago por pedido), comprobantes de transferencia (privados), conciliacion en el panel y
   el contrato de las pasarelas de tarjeta (`proveedores.py`, ninguna conectada). Ver `docs/PAGOS.md`.
 - `planes/` — Plan (tres: Basico, Estandar, Premium), Cargo (lo que cada tienda le debe al sitio: mensualidad, pedidos
-  de mas u otro, con su comprobante privado) y Anuncio (banners de las tiendas en la portada). `services.py`: cargos
-  del mes, excedente, recordatorios, cierre y habilitacion, comprobantes y anuncios. Ver `docs/PAGOS.md`.
+  de mas u otro, con su comprobante privado), Anuncio (banners de las tiendas en la portada) y Video (videos cortos
+  de las tiendas). `services.py`: cargos del mes, excedente, recordatorios, cierre y habilitacion, comprobantes,
+  anuncios y videos. Ver `docs/PAGOS.md`.
 - `templates/`, `static/` — plantillas y recursos de la tienda y del panel.
 - `docs/` — RENDER.md (despliegue real y traslado de la base), PAGOS.md, DESPLIEGUE.md (VPS) y esquema.sql
   (referencia; las tablas las crea `migrate`).
 
 ## Reglas que no se rompen
-- Nada cruza de una tienda a otra. Producto, Pedido, Pago, Cupon, ZonaEnvio, CuentaBancaria, Cargo y Anuncio llevan
-  `tienda`.
+- Nada cruza de una tienda a otra. Producto, Pedido, Pago, Cupon, ZonaEnvio, CuentaBancaria, Cargo, Anuncio y Video
+  llevan `tienda`.
   En el sitio toda vista de tienda usa `@de_tienda` y filtra por `request.tienda`; en el panel todo
   ModelAdmin con datos de tienda hereda `tiendas.panel.AdminDeTienda`. Un modelo o una pantalla nueva
   entra con su prueba de aislamiento (`tiendas/tests/`).
@@ -121,6 +122,18 @@ Al cerrar cada modulo: check, makemigrations, migrate, test y commit.
   productos de todas las tiendas y luego el reparto a cada una (`cobra_el_sitio=True`, Liquidaciones). Los anuncios
   (`Anuncio`) salen cuando el superusuario los aprueba; cambiar su contenido los devuelve a revision. Los tres
   planes los creo `planes/0002` con montos propuestos que el dueño cambia en el panel.
+- Videos de las tiendas (pedido del dueño el 2026-10-26: "el plan Premium permita un video de 15 segundos";
+  `planes.Video`, Premium trae 1 por `planes/0004`, `Plan.videos_portada`): "Videos de las tiendas" en la portada
+  (un circulo por tienda, orden al azar en cada visita, marcados "Anuncio") y arriba en la pagina de la tienda; el
+  visor tipo historias es `static/js/historias.js` (datos en atributos de `includes/visor_historias.html`, nada de
+  HTML). Sale solo aprobado por el superusuario (`services.aprobar_video`, correo a la tienda); cambiar video, titulo
+  o producto lo devuelve a revision. El plan cuenta todos los videos guardados, activos o no. No se convierte nada
+  (Render free no tiene ffmpeg): `core.videos` lee solo las cajas del MP4/MOV y exige H.264 (+AAC), la duracion y el
+  peso de `ConfiguracionTienda` (`video_segundos_maximos`, `video_megas_maximos`); el HEVC del iPhone se rechaza con
+  el consejo de reenviarlo por WhatsApp. Se guardan como `.mp4` en `STORAGES['videos']` (bucket publico
+  `SUPABASE_S3_BUCKET_VIDEOS`; el de las fotos rechaza video): sin ese bucket en produccion `VIDEOS_CONFIGURADOS` es
+  False y el panel no deja subirlos. Las vistas las suma `planes:vista_de_video` (POST, una por sesion). CSP:
+  `media-src 'self' blob: https:`.
 - La pagina del pedido lleva `<meta name="referrer" content="same-origin">`, nunca `no-referrer`: con este ultimo
   el navegador envia `Origin: null` en sus formularios (comprobante, cancelar, devolucion) y Django responde 403.
   Paso en produccion y las pruebas no lo ven, porque el cliente de pruebas no manda `Origin`.

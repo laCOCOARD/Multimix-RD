@@ -58,6 +58,11 @@ Cada plan define:
   administrador los aprueba; cambiar el texto, la imagen o el producto pide aprobarlo otra vez) y **productos
   anunciados** (la casilla "Anunciar en la portada" del producto: salen primero en "Descubre productos" con la
   etiqueta "Patrocinado"). La portada siempre dice que son anuncios.
+- **Videos en la portada** (Premium trae 1). La tienda sube un video corto en Panel → Videos de las tiendas (MP4 en
+  H.264, hasta 15 segundos y 10 MB; ambos se cambian en Configuración general). Sale cuando el administrador lo
+  aprueba, en "Videos de las tiendas" de la portada (un círculo por tienda que abre el visor, como las historias de
+  Instagram, marcado "Anuncio") y arriba en la página de la tienda. Cambiar el video, el texto o el producto pide
+  aprobarlo otra vez. La tienda ve cuántas personas lo vieron. Necesita el bucket de videos (ver `RENDER.md`).
 
 ### Cómo pagan y qué pasa si no pagan
 

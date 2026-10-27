@@ -10,13 +10,14 @@
 - Avisos por correo: unos dias antes, el dia que vence, el ultimo dia de gracia y al cerrarse.
 """
 import logging
+import random
 from dataclasses import dataclass, field
 from datetime import date, datetime, time, timedelta
 from decimal import ROUND_HALF_UP, Decimal
 from uuid import uuid4
 
 from django.db import transaction
-from django.db.models import Q
+from django.db.models import F, Q
 from django.urls import reverse
 from django.utils import timezone
 
@@ -27,7 +28,7 @@ from pedidos.models import Pedido
 from tiendas.models import Tienda
 from tiendas.services import ve_todas
 
-from .models import Anuncio, Cargo, Plan
+from .models import Anuncio, Cargo, Plan, Video, limite_de_videos
 
 logger = logging.getLogger('multimix.planes')
 
@@ -602,6 +603,92 @@ def aprobar_anuncio(anuncio, usuario=None):
 
 def limite_de_patrocinados(tienda):
     return tienda.plan.productos_patrocinados if tienda.plan_id else 0
+
+
+# --- Videos de las tiendas -------------------------------------------------------------
+# Como las historias de Instagram: un circulo por tienda en la portada; al tocarlo se abre el visor con sus videos
+# (static/js/historias.js). El video solo se descarga cuando alguien lo abre.
+
+VIDEOS_VISTOS = 'videos_vistos'
+TIENDAS_CON_VIDEO_EN_PORTADA = 20
+
+
+def videos_visibles():
+    """Los videos que se pueden mostrar: aprobados, activos, de una tienda activa cuyo plan incluye videos."""
+    return (
+        Video.objects.filter(activo=True, aprobado=True, tienda__activa=True, tienda__plan__videos_portada__gt=0)
+        .select_related('tienda__plan', 'producto__categoria', 'producto__tienda')
+        .order_by('orden', '-revisado_el', '-id')
+    )
+
+
+def _agrupar_por_tienda(videos):
+    """Un grupo por tienda, sin pasar de lo que permite su plan (por si le bajaron el plan despues de subirlos)."""
+    grupos = {}
+    for video in videos:
+        grupo = grupos.setdefault(video.tienda_id, {'tienda': video.tienda, 'videos': []})
+        if len(grupo['videos']) < video.tienda.plan.videos_portada:
+            grupo['videos'].append(video)
+    return list(grupos.values())
+
+
+def historias_para_la_portada(limite=TIENDAS_CON_VIDEO_EN_PORTADA):
+    """Los videos de la portada, agrupados por tienda. El orden de las tiendas cambia en cada visita: todas pagan lo
+    mismo por estar ahi y ninguna queda siempre de ultima."""
+    grupos = _agrupar_por_tienda(videos_visibles())
+    random.shuffle(grupos)
+    return grupos[:limite]
+
+
+def historias_de_la_tienda(tienda):
+    """Los videos de una tienda para arriba de su pagina: una lista con su grupo, o vacia."""
+    return _agrupar_por_tienda(videos_visibles().filter(tienda=tienda))
+
+
+def cupos_de_video(tienda):
+    """Cuantos videos mas puede subir la tienda segun su plan."""
+    return max(0, limite_de_videos(tienda) - tienda.videos.count())
+
+
+def contar_vista(video_id, sesion):
+    """Una vista mas de un video que se esta mostrando, una sola vez por persona (por sesion)."""
+    vistos = sesion.get(VIDEOS_VISTOS, [])
+    if video_id in vistos or not videos_visibles().filter(pk=video_id).exists():
+        return False
+    Video.objects.filter(pk=video_id).update(vistas=F('vistas') + 1)
+    sesion[VIDEOS_VISTOS] = [*vistos, video_id][-100:]
+    return True
+
+
+def avisar_video_por_revisar(video):
+    """Al administrador: una tienda subio o cambio un video y espera su aprobacion para salir en el sitio."""
+    def enviar_aviso():
+        from pedidos.avisos import correos_del_sitio
+
+        contexto = _contexto(
+            video.tienda, video=video,
+            enlace_video=url_absoluta(reverse('admin:planes_video_change', args=[video.pk])),
+        )
+        enviar(f'Video por revisar: {video.tienda.nombre}', 'sitio_video_por_revisar', contexto, correos_del_sitio())
+    _al_confirmar(enviar_aviso)
+
+
+def aprobar_video(video, usuario=None):
+    """El video sale en la portada y en la pagina de la tienda (si esta activa y su plan lo permite). La tienda
+    recibe un correo."""
+    if usuario is not None and not ve_todas(usuario):
+        raise CargoError('Solo el administrador principal aprueba videos.')
+    if video.aprobado:
+        return video
+    Video.objects.filter(pk=video.pk).update(aprobado=True, revisado_el=timezone.now())
+    video.refresh_from_db()
+
+    def enviar_aviso():
+        enviar(f'Tu video ya está en {ConfiguracionTienda.obtener().nombre}', 'tienda_video_aprobado',
+               _contexto(video.tienda, video=video, enlace_videos=url_absoluta(reverse('admin:planes_video_changelist'))),
+               correos_de_los_duenos(video.tienda))
+    _al_confirmar(enviar_aviso)
+    return video
 
 
 def planes_disponibles():

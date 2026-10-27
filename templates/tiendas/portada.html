@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load static %}
 
 {# Portada del sitio (pedido del dueño el 2026-10-25): un sitio de muchas tiendas. Se puede comprar sin conocer al #}
 {# vendedor (categorias y productos de todas las tiendas, cada uno con su tienda a la vista) o entrar a una tienda. #}
@@ -37,6 +38,37 @@
     {% endif %}
   </div>
 </section>
+
+{% if historias %}
+{# Videos de las tiendas (plan Premium), como las historias: un circulo por tienda que abre el visor. Son anuncios #}
+{# y lo dicen. El video solo se descarga cuando alguien lo toca; sin JavaScript el circulo abre el video tal cual. #}
+<section class="container mm-seccion mm-historias" aria-labelledby="titulo-historias">
+  <div class="mm-seccion-cabecera">
+    <h2 id="titulo-historias">Videos de las tiendas</h2>
+    <span class="mm-historias-etiqueta">Anuncios</span>
+  </div>
+  <div class="mm-fila" data-fila>
+    <button class="mm-fila-flecha mm-fila-anterior" type="button" data-mover="-1" aria-label="Ver videos anteriores" hidden><i class="bi bi-chevron-left"></i></button>
+    <div class="mm-fila-pista mm-fila-historias" tabindex="0">
+      {% for grupo in historias %}
+        <div class="mm-fila-item">
+          <a class="mm-historia" href="{{ grupo.videos.0.archivo.url }}" data-abrir-historia="{{ forloop.counter0 }}" aria-label="Ver el video de {{ grupo.tienda.nombre }}">
+            <span class="mm-historia-aro">
+              <span class="mm-historia-logo{% if grupo.tienda.logo %} con-logo{% endif %}">
+                {% if grupo.tienda.logo %}<img src="{{ grupo.tienda.logo.url }}" alt="" loading="lazy" decoding="async" width="72" height="72">{% else %}{{ grupo.tienda.nombre|slice:':1'|upper }}{% endif %}
+              </span>
+              <span class="mm-historia-play" aria-hidden="true"><i class="bi bi-play-fill"></i></span>
+            </span>
+            <span class="mm-historia-nombre">{{ grupo.tienda.nombre }}</span>
+          </a>
+        </div>
+      {% endfor %}
+    </div>
+    <button class="mm-fila-flecha mm-fila-siguiente" type="button" data-mover="1" aria-label="Ver más videos" hidden><i class="bi bi-chevron-right"></i></button>
+  </div>
+</section>
+{% include 'includes/visor_historias.html' with etiqueta='Anuncio' %}
+{% endif %}
 
 {% if categorias %}
 <section class="container mm-seccion" aria-labelledby="titulo-categorias">
@@ -192,3 +224,5 @@
 </section>
 {% endif %}
 {% endblock %}
+
+{% block scripts %}{% if historias %}<script src="{% static 'js/historias.js' %}" defer></script>{% endif %}{% endblock %}

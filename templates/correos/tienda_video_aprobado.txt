@@ -1,0 +1,7 @@
+{% autoescape off %}Hola, equipo de {{ tienda.nombre }}:
+
+Aprobamos tu video "{{ video.titulo }}": ya sale en "Videos de las tiendas" de la portada de {{ sitio }} y arriba en la página de tu tienda mientras esté activo.
+
+En tu panel ves cuántas personas lo han visto:
+{{ enlace_videos }}
+{% endautoescape %}

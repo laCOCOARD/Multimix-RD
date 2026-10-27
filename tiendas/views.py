@@ -29,7 +29,7 @@ def portada(request):
     """Portada del sitio: productos de todas las tiendas y las tiendas mismas, para comprar sin conocer al vendedor
     o para entrar a la tienda de un emprendedor. Cada producto se sigue comprando dentro de su tienda."""
     from core.models import PreguntaFrecuente
-    from planes.services import anuncios_para_la_portada
+    from planes.services import anuncios_para_la_portada, historias_para_la_portada
 
     tiendas = list(services.directorio()[:TIENDAS_EN_PORTADA + 1])
     # Los productos que las tiendas anuncian segun su plan van primero, marcados como "Patrocinado".
@@ -45,6 +45,8 @@ def portada(request):
         'hay_mas_tiendas': len(tiendas) > TIENDAS_EN_PORTADA,
         'categorias': categorias_del_sitio(),
         'anuncios': anuncios_para_la_portada(),
+        # Videos de las tiendas (plan Premium): un circulo por tienda, en otro orden en cada visita.
+        'historias': historias_para_la_portada(),
         'productos': productos,
         'ofertas': ofertas,
         # Fotos reales para el bloque de bienvenida (en pantallas anchas): los ultimos de la seleccion con foto.

@@ -19,15 +19,22 @@ class NombreUnico:
 
     El nombre original no se usa: Supabase rechaza los que traen tildes o ñ, y con uno que no se
     repite el almacenamiento no tiene que preguntar antes si el archivo ya existe.
+
+    Con `extension` todos llevan esa: los videos se guardan como .mp4 aunque lleguen como .mov, para que el
+    almacenamiento los sirva como video/mp4 (los MOV con H.264 se reproducen igual).
     """
 
-    def __init__(self, carpeta):
+    def __init__(self, carpeta, extension=None):
         self.carpeta = carpeta.strip('/')
+        self.extension = extension
 
     def __call__(self, instancia, nombre):
-        extension = Path(nombre).suffix.lower()
-        if extension not in EXTENSIONES_IMAGEN:
-            extension = ''
+        if self.extension is not None:
+            extension = self.extension
+        else:
+            extension = Path(nombre).suffix.lower()
+            if extension not in EXTENSIONES_IMAGEN:
+                extension = ''
         return f'{self.carpeta}/{uuid4().hex}{extension}'
 
 
@@ -36,6 +43,13 @@ def almacenamiento_privado():
     from django.core.files.storage import storages
 
     return storages['privado']
+
+
+def almacenamiento_de_videos():
+    """Donde van los videos de las tiendas: un bucket publico que acepte videos. Ver STORAGES['videos']."""
+    from django.core.files.storage import storages
+
+    return storages['videos']
 
 
 def hay_almacenamiento_privado():

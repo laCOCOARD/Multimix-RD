@@ -27,6 +27,10 @@ class ConfiguracionTiendaAdmin(AvisaImagenesSinGuardar, admin.ModelAdmin):
             'fields': ['dias_aviso_mensualidad', 'dias_de_gracia'],
             'description': 'Los planes, sus montos y límites se cambian en Planes; el plan de cada tienda, en Tiendas.',
         }),
+        ('Videos de las tiendas', {
+            'fields': ['video_segundos_maximos', 'video_megas_maximos'],
+            'description': 'Cuántos videos puede tener cada tienda lo dice su plan ("Videos en la portada", en Planes).',
+        }),
     ]
 
     change_form_template = 'admin/core/configuraciontienda/change_form.html'

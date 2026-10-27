@@ -86,6 +86,8 @@ div.breadcrumbs a:hover { color: #d6f0b8; }
 .panel-aviso-cobro h2 { margin: 0 0 .35rem; font-size: 1rem; }
 .panel-aviso-cobro p { margin: .2rem 0; }
 .panel-comprobante { max-width: min(100%, 420px); height: auto; border-radius: 8px; border: 1px solid #e3e8ee; }
+/* Aviso al elegir un video que pesa o dura de mas (panel.js). */
+.panel-aviso-video { margin: .5rem 0 0; padding: .55rem .8rem; border: 1px solid #f1b8b8; border-radius: 8px; background: #fdecec; color: #8a1c1c; font-weight: 600; }
 
 /* --- Miniaturas ---------------------------------------------------------- */
 .panel-miniatura { display: block; width: 48px; height: 48px; object-fit: cover; border-radius: 8px; background: var(--darkened-bg); }

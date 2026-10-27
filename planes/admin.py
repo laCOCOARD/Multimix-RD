@@ -1,4 +1,5 @@
 from django import forms
+from django.conf import settings
 from django.contrib import admin, messages
 from django.contrib.admin.utils import unquote
 from django.core.exceptions import ValidationError
@@ -11,14 +12,15 @@ from django.utils.html import format_html, format_html_join
 from catalogo.models import Producto
 from core.admin_avisos import AvisaImagenesSinGuardar
 from core.archivos import ERRORES_DE_ALMACENAMIENTO, almacenamiento_privado
-from core.models import cuentas_del_sitio
+from core.models import ConfiguracionTienda, cuentas_del_sitio
 from core.templatetags.moneda import formatear_monto
 from core.validators import validar_imagen
+from core.videos import CONSEJO, MEGA
 from tiendas.panel import AdminDeTienda, tiendas_del_panel
 from tiendas.services import ve_todas
 
 from . import services
-from .models import Anuncio, Cargo, Plan
+from .models import Anuncio, Cargo, Plan, Video, limite_de_videos
 
 Estado = Cargo.Estado
 
@@ -30,13 +32,13 @@ class PlanAdmin(admin.ModelAdmin):
 
     list_display = [
         'nombre', 'mensualidad_formateada', 'pedidos', 'porcentaje', 'anuncios_portada', 'productos_patrocinados',
-        'tiendas_con_el_plan', 'activo', 'orden',
+        'videos_portada', 'tiendas_con_el_plan', 'activo', 'orden',
     ]
     list_editable = ['activo', 'orden']
     fieldsets = [
         (None, {'fields': ['nombre', 'descripcion', 'mensualidad', 'activo', 'orden']}),
         ('Límite de pedidos', {'fields': ['pedidos_incluidos', 'porcentaje_excedente']}),
-        ('Anuncios en la portada', {'fields': ['anuncios_portada', 'productos_patrocinados']}),
+        ('Anuncios en la portada', {'fields': ['anuncios_portada', 'productos_patrocinados', 'videos_portada']}),
     ]
 
     def get_queryset(self, request):
@@ -376,3 +378,159 @@ class AnuncioAdmin(AvisaImagenesSinGuardar, AdminDeTienda, admin.ModelAdmin):
         if anuncio.aprobado:
             return format_html('<span class="panel-estado panel-cargo-pagado">Aprobado</span>')
         return format_html('<span class="panel-estado panel-cargo-en_revision">Por revisar</span>')
+
+
+@admin.register(Video)
+class VideoAdmin(AvisaImagenesSinGuardar, AdminDeTienda, admin.ModelAdmin):
+    """Videos cortos de las tiendas (plan Premium): salen en "Videos de las tiendas" de la portada y arriba en la
+    pagina de la tienda cuando el administrador principal los aprueba. Si la tienda cambia el video, su texto o su
+    producto, vuelve a revision. La tienda ve cuantas personas lo vieron."""
+
+    aviso_imagenes = (
+        'El video que elegiste todavía no se guardó porque hay errores en el formulario. Corrígelos y vuelve a '
+        'elegir el video antes de guardar.'
+    )
+    aviso_almacenamiento = (
+        'No se pudo guardar el video: el almacenamiento no respondió. No se guardó ningún cambio. Espera un '
+        'momento, vuelve a elegir el video e inténtalo otra vez.'
+    )
+    list_display = ['titulo', 'estado_de_revision', 'activo', 'duracion_legible', 'vistas', 'orden']
+    list_editable = ['activo', 'orden']
+    list_filter = ['aprobado', 'activo']
+    search_fields = ['titulo']
+    actions = ['aprobar', 'retirar_aprobacion']
+    fieldsets = [
+        (None, {'fields': ['tienda', 'titulo', 'archivo', 'vista_previa', 'producto']}),
+        ('Cuándo se muestra', {'fields': ['activo', 'orden']}),
+        ('Revisión', {'fields': ['aprobado', 'revisado_el', 'duracion_legible', 'peso_legible', 'vistas']}),
+    ]
+
+    def get_readonly_fields(self, request, obj=None):
+        campos = ['vista_previa', 'revisado_el', 'duracion_legible', 'peso_legible', 'vistas']
+        return campos if ve_todas(request.user) else ['aprobado', *campos]
+
+    def has_add_permission(self, request):
+        if not settings.VIDEOS_CONFIGURADOS or not super().has_add_permission(request):
+            return False
+        # La tienda sube videos solo si su plan los incluye y le quedan cupos.
+        return ve_todas(request.user) or any(services.cupos_de_video(t) for t in tiendas_del_panel(request))
+
+    def changelist_view(self, request, extra_context=None):
+        if request.method == 'GET':
+            self._explicar_limites(request)
+        return super().changelist_view(request, extra_context)
+
+    def _explicar_limites(self, request):
+        if not settings.VIDEOS_CONFIGURADOS:
+            self.message_user(request, (
+                'Los videos todavía no se pueden subir: falta el bucket de videos del almacenamiento (la variable '
+                'SUPABASE_S3_BUCKET_VIDEOS en Render).' if ve_todas(request.user)
+                else 'Los videos todavía no están disponibles. Te avisamos cuando lo estén.'
+            ), messages.WARNING)
+            return
+        if ve_todas(request.user):
+            return
+        for tienda in tiendas_del_panel(request):
+            limite = limite_de_videos(tienda)
+            if not limite:
+                self.message_user(request, f'El plan de {tienda.nombre} no incluye videos. Pide un plan que los '
+                                           'incluya para salir en "Videos de las tiendas" de la portada.', messages.INFO)
+            elif not services.cupos_de_video(tienda):
+                self.message_user(request, f'{tienda.nombre} ya tiene los {limite} video(s) que permite su plan: para '
+                                           'poner otro, cambia el archivo del que tienes o bórralo.', messages.INFO)
+
+    def formfield_for_foreignkey(self, db_field, request, **kwargs):
+        if db_field.name == 'producto':
+            kwargs['queryset'] = Producto.objects.filter(
+                tienda__in=tiendas_del_panel(request), activo=True,
+            ).order_by('nombre')
+        return super().formfield_for_foreignkey(db_field, request, **kwargs)
+
+    def get_form(self, request, obj=None, **kwargs):
+        formulario = super().get_form(request, obj, **kwargs)
+        config = ConfiguracionTienda.obtener()
+        archivo = formulario.base_fields.get('archivo')
+        if archivo is not None:
+            archivo.help_text = (
+                f'MP4 de hasta {config.video_segundos_maximos} segundos y {config.video_megas_maximos} MB, mejor '
+                f'vertical, como los estados de WhatsApp. Si pesa más: {CONSEJO[0].lower()}{CONSEJO[1:]}'
+            )
+            # panel.js avisa al elegirlo si dura o pesa de mas; el servidor lo vuelve a revisar al guardar.
+            archivo.widget.attrs.update({
+                'accept': 'video/mp4,video/quicktime,.mp4,.mov,.m4v',
+                'data-video-segundos': config.video_segundos_maximos,
+                'data-video-megas': config.video_megas_maximos,
+            })
+        producto = formulario.base_fields.get('producto')
+        if producto is not None:
+            for permiso in ('can_add_related', 'can_change_related', 'can_delete_related', 'can_view_related'):
+                setattr(producto.widget, permiso, False)
+        return formulario
+
+    def save_model(self, request, obj, form, change):
+        if ve_todas(request.user):
+            aprobar = obj.aprobado and (not change or 'aprobado' in form.changed_data)
+            if aprobar:
+                # Se guarda sin aprobar y se aprueba por su regla, que le avisa a la tienda por correo.
+                obj.aprobado = False
+            elif 'aprobado' in form.changed_data:
+                obj.revisado_el = timezone.now()
+            super().save_model(request, obj, form, change)
+            if aprobar:
+                services.aprobar_video(obj, request.user)
+            return
+        # Algo nuevo para el sitio: lo revisa el administrador antes de publicarlo.
+        por_revisar = not change or bool(set(form.changed_data) & set(Video.CAMPOS_DEL_CONTENIDO))
+        if por_revisar:
+            obj.aprobado = False
+        super().save_model(request, obj, form, change)
+        if por_revisar:
+            services.avisar_video_por_revisar(obj)
+            self.message_user(request, 'Tu video sale en el sitio cuando lo aprobemos. Te avisamos por correo.')
+
+    @admin.action(description='Aprobar y publicar en el sitio')
+    def aprobar(self, request, queryset):
+        if not ve_todas(request.user):
+            return
+        total = 0
+        for video in queryset:
+            services.aprobar_video(video, request.user)
+            total += 1
+        self.message_user(request, f'{total} video(s) aprobado(s).', messages.SUCCESS)
+
+    @admin.action(description='Quitar del sitio (vuelve a revisión)')
+    def retirar_aprobacion(self, request, queryset):
+        if not ve_todas(request.user):
+            return
+        total = queryset.update(aprobado=False, revisado_el=timezone.now())
+        self.message_user(request, f'{total} video(s) fuera del sitio.', messages.SUCCESS)
+
+    def get_actions(self, request):
+        acciones = super().get_actions(request)
+        if not ve_todas(request.user):
+            acciones.pop('aprobar', None)
+            acciones.pop('retirar_aprobacion', None)
+        return acciones
+
+    @admin.display(description='Revisión', ordering='aprobado')
+    def estado_de_revision(self, video):
+        if video.aprobado:
+            return format_html('<span class="panel-estado panel-cargo-pagado">Aprobado</span>')
+        return format_html('<span class="panel-estado panel-cargo-en_revision">Por revisar</span>')
+
+    @admin.display(description='Duración', ordering='duracion')
+    def duracion_legible(self, video):
+        return f'{video.duracion.normalize():f} s' if video.duracion else '—'
+
+    @admin.display(description='Peso')
+    def peso_legible(self, video):
+        return f'{video.peso / MEGA:.1f} MB' if video.peso else '—'
+
+    @admin.display(description='Vista previa')
+    def vista_previa(self, video):
+        if not video.pk or not video.archivo:
+            return 'Lo verás aquí después de guardarlo.'
+        return format_html(
+            '<video src="{}" controls preload="metadata" playsinline style="display: block; width: 220px; '
+            'max-height: 400px; border-radius: 10px; background: #000;"></video>', video.archivo.url,
+        )

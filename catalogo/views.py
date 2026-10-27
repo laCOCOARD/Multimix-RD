@@ -39,6 +39,8 @@ OPCIONES_ESTRELLAS = [
 
 @de_tienda
 def inicio(request):
+    from planes.services import historias_de_la_tienda
+
     tienda = request.tienda
     secciones = [
         {'titulo': 'Ofertas', 'icono': 'bi-tag-fill', 'productos': services.en_oferta(tienda), 'enlace': '?oferta=on'},
@@ -51,6 +53,8 @@ def inicio(request):
         'categorias': services.categorias_de_portada(tienda),
         'banners': banners_de(tienda),
         'vistos': services.vistos(request.session, tienda),
+        # Su video (plan Premium), arriba de la pagina.
+        'historias': historias_de_la_tienda(tienda),
     })
 
 

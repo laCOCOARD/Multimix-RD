@@ -66,6 +66,17 @@ class ConfiguracionTienda(models.Model):
         'avisar a las tiendas días antes', default=3, validators=[MaxValueValidator(7)],
         help_text='Cuántos días antes del vencimiento le llega a la tienda el primer recordatorio por correo.',
     )
+    # Videos de las tiendas (plan Premium, pedido del dueño el 2026-10-26): lo que se acepta al subirlos.
+    video_segundos_maximos = models.PositiveSmallIntegerField(
+        'duración máxima de los videos (segundos)', default=15,
+        validators=[MinValueValidator(5), MaxValueValidator(60)],
+        help_text='Los videos que suben las tiendas no pueden durar más. Cambiarla no afecta a los ya subidos.',
+    )
+    video_megas_maximos = models.PositiveSmallIntegerField(
+        'peso máximo de los videos (MB)', default=10, validators=[MinValueValidator(1), MaxValueValidator(50)],
+        help_text='Cada vez que alguien ve un video lo descarga entero: más liviano gasta menos datos del cliente y '
+                  'menos transferencia del almacenamiento. 10 MB alcanzan para 15 segundos en buena calidad.',
+    )
     mostrar_cantidad_exacta = models.BooleanField(
         'mostrar la cantidad exacta disponible', default=False,
         help_text='Si está apagado solo se muestra "Disponible" o "Quedan X" cuando hay poco.',

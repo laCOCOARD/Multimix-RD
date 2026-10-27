@@ -143,7 +143,8 @@ class TiendaAdmin(AvisaImagenesSinGuardar, admin.ModelAdmin):
             (f'Incluye {plan.pedidos_incluidos} pedidos cobrados al mes; por cada pedido de más se cobra el '
              f'{plan.porcentaje_excedente.normalize():f} % de lo vendido en él (productos, sin el envío).')
             if plan.pedidos_incluidos is not None else 'Pedidos al mes sin límite.',
-            f'Anuncios en la portada: {plan.anuncios_portada}. Productos anunciados: {plan.productos_patrocinados}.',
+            f'Anuncios en la portada: {plan.anuncios_portada}. Productos anunciados: {plan.productos_patrocinados}. '
+            f'Videos: {plan.videos_portada}.',
         ]
         return format_html(
             '<strong>Plan {}</strong><ul>{}</ul><a href="{}">Ver tus pagos al sitio</a> · <a href="{}">Ver los planes</a>',

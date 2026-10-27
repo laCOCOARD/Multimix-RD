@@ -250,9 +250,30 @@ if storage_default['BACKEND'] == 'storages.backends.s3.S3Storage':
         # Sin el bucket privado siguen en el publico, como antes; el panel lo avisa (pagos.admin).
         storage_privado = storage_default
 
+# Videos de las tiendas (plan Premium, 2026-10-26): el bucket de las fotos solo admite imagenes, asi que van a otro
+# bucket publico que acepte video/mp4 (SUPABASE_S3_BUCKET_VIDEOS). En desarrollo, a media/ como las fotos. Sin ese
+# bucket en produccion no se ofrece subir videos (VIDEOS_CONFIGURADOS): el de las fotos los rechazaria.
+SUPABASE_BUCKET_VIDEOS = os.getenv('SUPABASE_S3_BUCKET_VIDEOS', '').strip()
+storage_videos = storage_default
+VIDEOS_CONFIGURADOS = True
+if storage_default['BACKEND'] == 'storages.backends.s3.S3Storage':
+    VIDEOS_CONFIGURADOS = bool(SUPABASE_BUCKET_VIDEOS)
+    if SUPABASE_BUCKET_VIDEOS:
+        storage_videos = {
+            'BACKEND': 'storages.backends.s3.S3Storage',
+            'OPTIONS': {
+                **storage_default['OPTIONS'],
+                'bucket_name': SUPABASE_BUCKET_VIDEOS,
+                'custom_domain': (
+                    f"{supabase_url.removeprefix('https://')}/storage/v1/object/public/{SUPABASE_BUCKET_VIDEOS}"
+                ),
+            },
+        }
+
 STORAGES = {
     'default': storage_default,
     'privado': storage_privado,
+    'videos': storage_videos,
     'staticfiles': {
         'BACKEND': (
             'django.contrib.staticfiles.storage.StaticFilesStorage' if EN_TESTS
@@ -350,6 +371,8 @@ POLITICA_DE_CONTENIDO = '; '.join([
     "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net",
     "font-src 'self' data: https://cdn.jsdelivr.net",
     "img-src 'self' data: blob: https:",
+    # Videos de las tiendas (del almacenamiento) y, en el panel, el que se acaba de elegir para medir su duracion.
+    "media-src 'self' blob: https:",
     "connect-src 'self'",
     "object-src 'none'",
     "base-uri 'self'",

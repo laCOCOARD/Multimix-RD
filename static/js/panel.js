@@ -73,3 +73,39 @@
     formulario.reset();
   });
 })();
+
+// Videos de las tiendas: al elegir el archivo se avisa enseguida si pesa o dura mas de lo permitido, para no esperar a
+// que suba. Es solo un aviso: el servidor lo vuelve a revisar al guardar.
+(() => {
+  document.querySelectorAll('input[type="file"][data-video-segundos]').forEach((campo) => {
+    const aviso = document.createElement('p');
+    aviso.className = 'panel-aviso-video';
+    aviso.setAttribute('role', 'status');
+    aviso.hidden = true;
+    campo.insertAdjacentElement('afterend', aviso);
+    const decir = (texto) => { aviso.textContent = texto; aviso.hidden = !texto; };
+
+    campo.addEventListener('change', () => {
+      decir('');
+      const archivo = campo.files && campo.files[0];
+      if (!archivo) return;
+      const segundos = Number(campo.dataset.videoSegundos);
+      const megas = Number(campo.dataset.videoMegas);
+      if (megas && archivo.size > megas * 1024 * 1024) {
+        decir(`Este video pesa ${(archivo.size / 1048576).toFixed(1)} MB y el máximo es ${megas} MB: así no se va a poder guardar.`);
+        return;
+      }
+      const prueba = document.createElement('video');
+      const direccion = URL.createObjectURL(archivo);
+      prueba.preload = 'metadata';
+      prueba.addEventListener('loadedmetadata', () => {
+        URL.revokeObjectURL(direccion);
+        if (segundos && Number.isFinite(prueba.duration) && prueba.duration > segundos + 0.5) {
+          decir(`Este video dura ${Math.round(prueba.duration)} segundos y el máximo es ${segundos}: recórtalo antes de subirlo.`);
+        }
+      });
+      prueba.addEventListener('error', () => URL.revokeObjectURL(direccion));
+      prueba.src = direccion;
+    });
+  });
+})();

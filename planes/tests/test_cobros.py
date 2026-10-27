@@ -358,14 +358,14 @@ class ElAdministradorEditaTodoTests(ConPlan):
         respuesta = self.client.post(url, {
             'nombre': 'Estándar', 'descripcion': 'Nuevo texto', 'mensualidad': '1500', 'activo': 'on', 'orden': '2',
             'pedidos_incluidos': '', 'porcentaje_excedente': '2.5', 'anuncios_portada': '2',
-            'productos_patrocinados': '6',
+            'productos_patrocinados': '6', 'videos_portada': '1',
         })
         self.assertEqual(respuesta.status_code, 302)
         self.plan.refresh_from_db()
         self.assertEqual(
             (self.plan.mensualidad, self.plan.pedidos_incluidos, self.plan.porcentaje_excedente,
-             self.plan.anuncios_portada, self.plan.productos_patrocinados),
-            (D('1500.00'), None, D('2.50'), 2, 6),
+             self.plan.anuncios_portada, self.plan.productos_patrocinados, self.plan.videos_portada),
+            (D('1500.00'), None, D('2.50'), 2, 6, 1),
         )
         # Y crea otros.
         self.assertEqual(self.client.get(reverse('admin:planes_plan_add')).status_code, 200)

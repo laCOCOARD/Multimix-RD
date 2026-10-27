@@ -1,0 +1,41 @@
+{# Visor de los videos de las tiendas (static/js/historias.js), una sola vez por pagina. Recibe `historias` (de #}
+{# planes.services: un grupo por tienda) y `etiqueta` ("Anuncio" en la portada). Los datos van en atributos, ya #}
+{# escapados; el JS los lee con dataset y los pone con textContent, nunca como HTML. #}
+<div id="mm-historias-datos" hidden data-csrf="{{ csrf_token }}" data-etiqueta="{{ etiqueta|default:'' }}">
+  {% for grupo in historias %}
+    <div class="js-historia-grupo" data-nombre="{{ grupo.tienda.nombre }}" data-url="{{ grupo.tienda.get_absolute_url }}"{% if grupo.tienda.logo %} data-logo="{{ grupo.tienda.logo.url }}"{% endif %}>
+      {% for video in grupo.videos %}
+        {% with producto=video.url_del_producto %}
+          <span class="js-historia-video" data-id="{{ video.pk }}" data-src="{{ video.archivo.url }}" data-titulo="{{ video.titulo }}" data-vista="{% url 'planes:vista_de_video' video.pk %}"{% if producto %} data-producto="{{ producto }}"{% endif %}></span>
+        {% endwith %}
+      {% endfor %}
+    </div>
+  {% endfor %}
+</div>
+
+<dialog class="mm-visor" id="mm-visor" aria-label="Videos de las tiendas">
+  <div class="mm-visor-marco">
+    <div class="mm-visor-barras" aria-hidden="true"></div>
+    <div class="mm-visor-cabecera">
+      <a class="mm-visor-tienda" href="#">
+        <span class="mm-visor-logo" aria-hidden="true"></span>
+        <span class="mm-visor-datos"><span class="mm-visor-nombre"></span><span class="mm-visor-etiqueta"></span></span>
+      </a>
+      <button class="mm-visor-boton js-visor-pausa" type="button" aria-label="Pausar"><i class="bi bi-pause-fill" aria-hidden="true"></i></button>
+      <button class="mm-visor-boton js-visor-sonido" type="button" aria-label="Silenciar"><i class="bi bi-volume-up-fill" aria-hidden="true"></i></button>
+      <button class="mm-visor-boton js-visor-cerrar" type="button" aria-label="Cerrar"><i class="bi bi-x-lg" aria-hidden="true"></i></button>
+    </div>
+    <video class="mm-visor-video" playsinline preload="auto"></video>
+    <span class="mm-visor-cargando" hidden><span class="spinner-border" role="status"><span class="visually-hidden">Cargando el video…</span></span></span>
+    {# Tocar a la izquierda vuelve, a la derecha avanza y dejar el dedo puesto pausa, como en las historias. #}
+    <button class="mm-visor-zona mm-visor-zona-anterior js-visor-anterior" type="button" aria-label="Video anterior"><i class="bi bi-chevron-left" aria-hidden="true"></i></button>
+    <button class="mm-visor-zona mm-visor-zona-siguiente js-visor-siguiente" type="button" aria-label="Video siguiente"><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
+    <div class="mm-visor-pie">
+      <p class="mm-visor-titulo"></p>
+      <div class="mm-visor-acciones">
+        <a class="btn btn-acento js-visor-producto" href="#">Ver el producto</a>
+        <a class="btn btn-light js-visor-tienda" href="#">Visitar la tienda</a>
+      </div>
+    </div>
+  </div>
+</dialog>

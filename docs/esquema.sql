@@ -1537,3 +1537,42 @@ CREATE TABLE "tiendas_cuentabancaria" ("id" integer NOT NULL PRIMARY KEY AUTOINC
 CREATE INDEX "tiendas_tienda_plan_id_82c64cbc" ON "tiendas_tienda" ("plan_id");
 CREATE INDEX "tiendas_cuentabancaria_tienda_id_921c2131" ON "tiendas_cuentabancaria" ("tienda_id");
 COMMIT;
+
+-- ============================================================
+-- core 0021
+-- ============================================================
+BEGIN;
+--
+-- Add field video_megas_maximos to configuraciontienda
+--
+CREATE TABLE "new__core_configuraciontienda" ("id" integer NOT NULL PRIMARY KEY AUTOINCREMENT, "video_megas_maximos" smallint unsigned NOT NULL CHECK ("video_megas_maximos" >= 0), "nombre" varchar(80) NOT NULL, "logo" varchar(100) NOT NULL, "correo" varchar(254) NOT NULL, "telefono" varchar(20) NOT NULL, "horario" varchar(150) NOT NULL, "whatsapp" varchar(20) NOT NULL, "facebook" varchar(200) NOT NULL, "instagram" varchar(200) NOT NULL, "tiktok" varchar(200) NOT NULL, "dias_producto_nuevo" smallint unsigned NOT NULL CHECK ("dias_producto_nuevo" >= 0), "umbral_stock_bajo" smallint unsigned NOT NULL CHECK ("umbral_stock_bajo" >= 0), "horas_vencimiento_pedido" smallint unsigned NOT NULL CHECK ("horas_vencimiento_pedido" >= 0), "mostrar_cantidad_exacta" bool NOT NULL, "descripcion" varchar(220) NOT NULL, "dias_devolucion" smallint unsigned NOT NULL CHECK ("dias_devolucion" >= 0), "dias_aviso_mensualidad" smallint unsigned NOT NULL CHECK ("dias_aviso_mensualidad" >= 0), "dias_de_gracia" smallint unsigned NOT NULL CHECK ("dias_de_gracia" >= 0));
+INSERT INTO "new__core_configuraciontienda" ("id", "nombre", "logo", "correo", "telefono", "horario", "whatsapp", "facebook", "instagram", "tiktok", "dias_producto_nuevo", "umbral_stock_bajo", "horas_vencimiento_pedido", "mostrar_cantidad_exacta", "descripcion", "dias_devolucion", "dias_aviso_mensualidad", "dias_de_gracia", "video_megas_maximos") SELECT "id", "nombre", "logo", "correo", "telefono", "horario", "whatsapp", "facebook", "instagram", "tiktok", "dias_producto_nuevo", "umbral_stock_bajo", "horas_vencimiento_pedido", "mostrar_cantidad_exacta", "descripcion", "dias_devolucion", "dias_aviso_mensualidad", "dias_de_gracia", 10 FROM "core_configuraciontienda";
+DROP TABLE "core_configuraciontienda";
+ALTER TABLE "new__core_configuraciontienda" RENAME TO "core_configuraciontienda";
+--
+-- Add field video_segundos_maximos to configuraciontienda
+--
+CREATE TABLE "new__core_configuraciontienda" ("id" integer NOT NULL PRIMARY KEY AUTOINCREMENT, "nombre" varchar(80) NOT NULL, "logo" varchar(100) NOT NULL, "correo" varchar(254) NOT NULL, "telefono" varchar(20) NOT NULL, "horario" varchar(150) NOT NULL, "whatsapp" varchar(20) NOT NULL, "facebook" varchar(200) NOT NULL, "instagram" varchar(200) NOT NULL, "tiktok" varchar(200) NOT NULL, "dias_producto_nuevo" smallint unsigned NOT NULL CHECK ("dias_producto_nuevo" >= 0), "umbral_stock_bajo" smallint unsigned NOT NULL CHECK ("umbral_stock_bajo" >= 0), "horas_vencimiento_pedido" smallint unsigned NOT NULL CHECK ("horas_vencimiento_pedido" >= 0), "mostrar_cantidad_exacta" bool NOT NULL, "descripcion" varchar(220) NOT NULL, "dias_devolucion" smallint unsigned NOT NULL CHECK ("dias_devolucion" >= 0), "dias_aviso_mensualidad" smallint unsigned NOT NULL CHECK ("dias_aviso_mensualidad" >= 0), "dias_de_gracia" smallint unsigned NOT NULL CHECK ("dias_de_gracia" >= 0), "video_megas_maximos" smallint unsigned NOT NULL CHECK ("video_megas_maximos" >= 0), "video_segundos_maximos" smallint unsigned NOT NULL CHECK ("video_segundos_maximos" >= 0));
+INSERT INTO "new__core_configuraciontienda" ("id", "nombre", "logo", "correo", "telefono", "horario", "whatsapp", "facebook", "instagram", "tiktok", "dias_producto_nuevo", "umbral_stock_bajo", "horas_vencimiento_pedido", "mostrar_cantidad_exacta", "descripcion", "dias_devolucion", "dias_aviso_mensualidad", "dias_de_gracia", "video_megas_maximos", "video_segundos_maximos") SELECT "id", "nombre", "logo", "correo", "telefono", "horario", "whatsapp", "facebook", "instagram", "tiktok", "dias_producto_nuevo", "umbral_stock_bajo", "horas_vencimiento_pedido", "mostrar_cantidad_exacta", "descripcion", "dias_devolucion", "dias_aviso_mensualidad", "dias_de_gracia", "video_megas_maximos", 15 FROM "core_configuraciontienda";
+DROP TABLE "core_configuraciontienda";
+ALTER TABLE "new__core_configuraciontienda" RENAME TO "core_configuraciontienda";
+COMMIT;
+
+-- ============================================================
+-- planes 0003
+-- ============================================================
+BEGIN;
+--
+-- Add field videos_portada to plan
+--
+CREATE TABLE "new__planes_plan" ("id" integer NOT NULL PRIMARY KEY AUTOINCREMENT, "videos_portada" smallint unsigned NOT NULL CHECK ("videos_portada" >= 0), "nombre" varchar(40) NOT NULL UNIQUE, "descripcion" varchar(200) NOT NULL, "mensualidad" decimal NOT NULL, "pedidos_incluidos" integer unsigned NULL CHECK ("pedidos_incluidos" >= 0), "porcentaje_excedente" decimal NOT NULL, "anuncios_portada" smallint unsigned NOT NULL CHECK ("anuncios_portada" >= 0), "productos_patrocinados" smallint unsigned NOT NULL CHECK ("productos_patrocinados" >= 0), "activo" bool NOT NULL, "orden" smallint unsigned NOT NULL CHECK ("orden" >= 0));
+INSERT INTO "new__planes_plan" ("id", "nombre", "descripcion", "mensualidad", "pedidos_incluidos", "porcentaje_excedente", "anuncios_portada", "productos_patrocinados", "activo", "orden", "videos_portada") SELECT "id", "nombre", "descripcion", "mensualidad", "pedidos_incluidos", "porcentaje_excedente", "anuncios_portada", "productos_patrocinados", "activo", "orden", 0 FROM "planes_plan";
+DROP TABLE "planes_plan";
+ALTER TABLE "new__planes_plan" RENAME TO "planes_plan";
+--
+-- Create model Video
+--
+CREATE TABLE "planes_video" ("id" integer NOT NULL PRIMARY KEY AUTOINCREMENT, "titulo" varchar(80) NOT NULL, "archivo" varchar(120) NOT NULL, "activo" bool NOT NULL, "aprobado" bool NOT NULL, "revisado_el" datetime NULL, "duracion" decimal NOT NULL, "peso" integer unsigned NOT NULL CHECK ("peso" >= 0), "vistas" integer unsigned NOT NULL CHECK ("vistas" >= 0), "orden" smallint unsigned NOT NULL CHECK ("orden" >= 0), "creado" datetime NOT NULL, "actualizado" datetime NOT NULL, "producto_id" bigint NULL REFERENCES "catalogo_producto" ("id") DEFERRABLE INITIALLY DEFERRED, "tienda_id" bigint NOT NULL REFERENCES "tiendas_tienda" ("id") DEFERRABLE INITIALLY DEFERRED);
+CREATE INDEX "planes_video_producto_id_6e6430f9" ON "planes_video" ("producto_id");
+CREATE INDEX "planes_video_tienda_id_575bd47d" ON "planes_video" ("tienda_id");
+COMMIT;

@@ -7,16 +7,17 @@ sitio ya no cobra a los clientes ni se queda con un porcentaje de cada venta: ca
 from decimal import Decimal
 
 from django.conf import settings
-from django.core.exceptions import ValidationError
+from django.core.exceptions import NON_FIELD_ERRORS, ValidationError
 from django.core.validators import MaxValueValidator, MinValueValidator
-from django.db import models
+from django.db import models, transaction
 from django.db.models import Q
 from django.db.models.signals import post_delete
 from django.dispatch import receiver
 from django.utils import timezone
 
-from core.archivos import NombreUnico, almacenamiento_privado
+from core.archivos import NombreUnico, almacenamiento_de_videos, almacenamiento_privado
 from core.validators import validar_imagen
+from core.videos import VideoInvalido, leer_video, validar_video
 
 
 class Plan(models.Model):
@@ -47,6 +48,11 @@ class Plan(models.Model):
     productos_patrocinados = models.PositiveSmallIntegerField(
         'productos anunciados', default=0,
         help_text='Productos que la tienda puede mostrar como "Patrocinado" al inicio de la portada.',
+    )
+    videos_portada = models.PositiveSmallIntegerField(
+        'videos en la portada', default=0,
+        help_text='Videos cortos que la tienda puede tener en "Videos de las tiendas" de la portada y arriba en su '
+                  'página (los apruebas tú). La duración y el peso máximos están en Configuración general.',
     )
     activo = models.BooleanField(default=True, help_text='Apagado ya no se ofrece al asignar un plan.')
     orden = models.PositiveSmallIntegerField(default=0)
@@ -203,3 +209,102 @@ class Anuncio(models.Model):
 def borrar_imagen_del_anuncio(sender, instance, **kwargs):
     if instance.imagen:
         instance.imagen.delete(save=False)
+
+
+def limite_de_videos(tienda):
+    return tienda.plan.videos_portada if tienda.plan_id else 0
+
+
+class Video(models.Model):
+    """Video corto de una tienda (pedido del dueño el 2026-10-26: lo incluye el plan Premium).
+
+    Sale en "Videos de las tiendas" de la portada, como las historias de Instagram (un circulo por tienda que abre
+    el visor), y arriba en la pagina de la tienda. Cuantos puede tener lo dice su plan, y sale solo cuando el
+    administrador lo aprueba: cambiar el video, su texto o su producto pide aprobarlo otra vez.
+    """
+
+    tienda = models.ForeignKey('tiendas.Tienda', on_delete=models.CASCADE, related_name='videos')
+    titulo = models.CharField(
+        'de qué trata', max_length=80,
+        help_text='Una frase corta, por ejemplo "Nueva crema hidratante". Sale debajo del video.',
+    )
+    archivo = models.FileField(
+        'video', upload_to=NombreUnico('videos', extension='.mp4'), storage=almacenamiento_de_videos,
+        validators=[validar_video], max_length=120,
+        help_text='MP4, el formato normal de los teléfonos. Mejor vertical, como los estados de WhatsApp.',
+    )
+    producto = models.ForeignKey(
+        'catalogo.Producto', on_delete=models.SET_NULL, null=True, blank=True, related_name='+',
+        help_text='Si eliges uno, el video lleva el botón "Ver el producto". Vacío = solo "Visitar la tienda".',
+    )
+    activo = models.BooleanField(default=True, help_text='Apagado no se muestra, pero lo conservas.')
+    aprobado = models.BooleanField(default=False, help_text='Solo los videos aprobados salen en el sitio.')
+    revisado_el = models.DateTimeField('revisado el', null=True, blank=True, editable=False)
+    # Se miden al subirlo (core.videos): lo que dura y lo que pesa.
+    duracion = models.DecimalField('duración', max_digits=5, decimal_places=1, default=Decimal('0'), editable=False)
+    peso = models.PositiveIntegerField(default=0, editable=False)
+    vistas = models.PositiveIntegerField(
+        'veces que se vio', default=0, editable=False,
+        help_text='Una por persona: cuenta cuando empieza a reproducirse en el sitio.',
+    )
+    orden = models.PositiveSmallIntegerField(default=0)
+    creado = models.DateTimeField('fecha de creación', auto_now_add=True)
+    actualizado = models.DateTimeField('última actualización', auto_now=True)
+
+    # Si la tienda cambia alguno de estos, el video vuelve a revision.
+    CAMPOS_DEL_CONTENIDO = ('titulo', 'archivo', 'producto')
+
+    class Meta:
+        verbose_name = 'video de la tienda'
+        verbose_name_plural = 'videos de las tiendas'
+        ordering = ['orden', '-creado', '-id']
+
+    def __str__(self):
+        return self.titulo
+
+    def clean(self):
+        errores = {}
+        if self.producto_id and self.tienda_id and self.producto.tienda_id != self.tienda_id:
+            errores['producto'] = 'Elige un producto de tu tienda.'
+        if self.tienda_id and self.pk is None:
+            # El plan cuenta todos los videos guardados (no solo los activos): cada uno ocupa almacenamiento.
+            limite = limite_de_videos(self.tienda)
+            if not limite:
+                errores[NON_FIELD_ERRORS] = 'El plan de tu tienda no incluye videos. Pide un plan que los incluya.'
+            elif Video.objects.filter(tienda_id=self.tienda_id).count() >= limite:
+                errores[NON_FIELD_ERRORS] = (
+                    f'Tu plan permite {limite} video{"s" if limite != 1 else ""}. Para poner otro, cambia el archivo '
+                    'del que ya tienes o bórralo.'
+                )
+        if errores:
+            raise ValidationError(errores)
+
+    def save(self, *args, **kwargs):
+        anterior = None
+        if self.archivo and not self.archivo._committed:
+            # Video nuevo: se mide antes de subirlo. El de antes se borra del almacenamiento al confirmar el cambio.
+            try:
+                info = leer_video(self.archivo)
+            except VideoInvalido:
+                info = None
+            self.duracion = Decimal(str(info.duracion)).quantize(Decimal('0.1')) if info else Decimal('0')
+            self.peso = self.archivo.size
+            if self.pk:
+                anterior = Video.objects.filter(pk=self.pk).values_list('archivo', flat=True).first()
+        super().save(*args, **kwargs)
+        if anterior and anterior != self.archivo.name:
+            transaction.on_commit(lambda: almacenamiento_de_videos().delete(anterior))
+
+    def url_del_producto(self):
+        """El producto si sigue a la venta; si no, nada (el video lleva solo a la tienda)."""
+        producto = self.producto
+        if producto and producto.activo and producto.categoria.activa:
+            return producto.get_absolute_url()
+        return ''
+
+
+@receiver(post_delete, sender=Video)
+def borrar_archivo_del_video(sender, instance, **kwargs):
+    if instance.archivo:
+        nombre = instance.archivo.name
+        transaction.on_commit(lambda: almacenamiento_de_videos().delete(nombre))

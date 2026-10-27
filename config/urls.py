@@ -19,6 +19,7 @@ urlpatterns = [
     # Estas apps mezclan rutas de tienda y del sitio; cada una declara las suyas completas.
     path('', include('pedidos.urls')),
     path('', include('core.urls')),
+    path('', include('planes.urls')),
     path('', include('tiendas.urls')),
 ]
 

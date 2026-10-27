@@ -1,0 +1,7 @@
+{% autoescape off %}La tienda {{ tienda.nombre }} subió o cambió un video y espera tu aprobación:
+
+{{ video.titulo }} ({{ video.duracion|floatformat:"0" }} segundos)
+
+Míralo y apruébalo en el panel:
+{{ enlace_video }}
+{% endautoescape %}
