@@ -252,6 +252,20 @@ Al cerrar cada modulo: check, makemigrations, migrate, test y commit.
   retiro"); debajo, descripcion y "Detalles" (marca, categoria, SKU, disponibilidad). Sin mensajes de urgencia por
   existencias: la cantidad solo sale con inventario y `mostrar_cantidad_exacta`, en tono neutro. La tarjeta en el
   checkout dice "Todavia no disponible" (sin plazos).
+- Fase 4 del rediseño (2026-10-27):
+  - Miniaturas: `FotoProducto.miniatura` (WebP de 480 px, `catalogo.imagenes.LADO_MINIATURA`) se crea al subir la
+    foto; `url_tarjeta` la usa si existe (tarjetas, carrito, sugerencias, categorias, miniaturas de la galeria y
+    panel). La foto grande queda para la ficha y el JSON-LD. Las de antes las completan las tareas periodicas de a
+    cinco (`catalogo.services.crear_miniaturas_faltantes`) o el comando `crear_miniaturas`; si la original ya no se
+    puede leer, la miniatura apunta a ella para no reintentarlo.
+  - Medicion propia (`core.metricas`, tabla `core.ConteoDiario`): solo cuantas veces paso cada evento por dia y
+    tienda (busquedas y sin resultados, visitas a tiendas, productos vistos, agregados al carrito, inicios de compra,
+    errores al confirmar). Sin IP, cuenta ni texto buscado; no cuenta robots, peticiones sin navegador ni al
+    personal del panel; nunca rompe la pagina. Pedidos y solicitudes salen de sus tablas. Inicio del panel
+    (`admin/_indicadores.html`): el superusuario ve "El sitio" (tiendas, productos publicados, solicitudes y su
+    conversion solo con 5 revisadas o mas) y la actividad de todas las tiendas; el vendedor, solo la de las suyas.
+    En las pruebas hay que mandar `HTTP_USER_AGENT` de un navegador para que cuente.
+  - `requirements*.txt` con tope en la siguiente version mayor: Render instala lo mas nuevo en cada despliegue.
 - Disponibilidad comercial: el negocio no cuenta unidades fiables, asi que cada producto se vende segun
   `Producto.disponibilidad` (disponible, bajo pedido, agotado, temporalmente no disponible). El inventario es
   opcional por producto (`controla_stock`, apagado por defecto): solo entonces valen `stock_almacen` y

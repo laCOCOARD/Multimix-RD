@@ -244,3 +244,36 @@ class Intento(models.Model):
 
     def __str__(self):
         return f'{self.clave[:12]} · {self.creado:%Y-%m-%d %H:%M}'
+
+
+class ConteoDiario(models.Model):
+    """Cuantas veces paso algo en un dia, por tienda (Fase 4 del rediseño, 2026-10-27; ver core.metricas).
+
+    Solo numeros: no guarda quien, ni su IP, ni lo que escribio en el buscador. Los pedidos y las solicitudes de
+    tiendas no se cuentan aqui: salen de sus propias tablas, que son el registro real.
+    """
+
+    class Evento(models.TextChoices):
+        BUSQUEDA = 'busqueda', 'Búsquedas'
+        BUSQUEDA_SIN_RESULTADOS = 'busqueda_vacia', 'Búsquedas sin resultados'
+        VISITA_TIENDA = 'visita_tienda', 'Visitas a tiendas'
+        VISTA_PRODUCTO = 'vista_producto', 'Productos vistos'
+        AGREGADO_CARRITO = 'agregado_carrito', 'Agregados al carrito'
+        INICIO_COMPRA = 'inicio_compra', 'Inicios de compra'
+        ERROR_COMPRA = 'error_compra', 'Errores al confirmar un pedido'
+
+    fecha = models.DateField()
+    evento = models.CharField(max_length=20, choices=Evento.choices)
+    # Vacia = en el sitio (el buscador de la portada); con tienda = dentro de ella.
+    tienda = models.ForeignKey('tiendas.Tienda', on_delete=models.CASCADE, null=True, blank=True, related_name='+')
+    total = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        verbose_name = 'conteo diario'
+        verbose_name_plural = 'conteos diarios'
+        ordering = ['-fecha', 'evento']
+        indexes = [models.Index(fields=['fecha', 'evento'], name='conteo_fecha_evento_idx')]
+
+    def __str__(self):
+        return f'{self.fecha} · {self.get_evento_display()}: {self.total}'
+

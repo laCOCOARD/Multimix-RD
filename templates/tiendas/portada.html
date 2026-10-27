@@ -38,7 +38,7 @@
       <div class="mm-hero-vitrina">
         {% for producto in vitrina %}
           <a class="mm-vitrina-item" href="{{ producto.get_absolute_url }}" aria-label="{{ producto.nombre }}, de {{ producto.tienda.nombre }}">
-            <img src="{{ producto.foto_principal.imagen.url }}" alt="" loading="lazy" decoding="async" width="240" height="240">
+            <img src="{{ producto.foto_principal.url_tarjeta }}" alt="" decoding="async" width="240" height="240">
             <span class="mm-vitrina-tienda" aria-hidden="true"><i class="bi bi-shop"></i>{{ producto.tienda.nombre }}</span>
           </a>
         {% endfor %}

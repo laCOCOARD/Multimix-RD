@@ -10,6 +10,7 @@ from django.views.decorators.http import require_POST
 
 from carrito.carrito import Carrito, agregar_pedido
 from clientes import services as clientes
+from core import metricas
 from core.archivos import ERRORES_DE_ALMACENAMIENTO
 from core.models import cuentas_para_transferir
 from core.red import ip_del_cliente as _ip_cliente
@@ -100,6 +101,7 @@ def checkout(request):
             'metodo_pago': Pedido.Pago.TRANSFERENCIA,
             'cupon': carrito.codigo_cupon,
         })
+        metricas.anotar(request, metricas.Evento.INICIO_COMPRA, tienda)
         return render(request, 'pedidos/checkout.html', _contexto_checkout(request, carrito, formulario))
 
     formulario = CheckoutForm(request.POST, request.FILES, carrito=carrito)
@@ -113,6 +115,7 @@ def checkout(request):
             try:
                 pedido = services.crear_pedido(carrito, datos, ip=ip, cliente=cliente)
             except services.StockInsuficiente as error:
+                metricas.anotar(request, metricas.Evento.ERROR_COMPRA, tienda)
                 carrito.sincronizar()
                 messages.error(request, f'{error.mensaje} Revisa tu carrito y vuelve a confirmar.')
                 return redirect('carrito:detalle', tienda.slug)
@@ -126,6 +129,8 @@ def checkout(request):
                 carrito.vaciar()
                 clientes.recordar_pedido(cliente, pedido)
                 return redirect(pedido)
+    # El pedido no se creo (datos que faltan, limite, error de pago o del comprobante): se cuenta para verlo en el panel.
+    metricas.anotar(request, metricas.Evento.ERROR_COMPRA, tienda)
     return render(request, 'pedidos/checkout.html', _contexto_checkout(request, carrito, formulario))
 
 

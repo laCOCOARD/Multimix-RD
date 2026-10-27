@@ -1,7 +1,9 @@
 Django>=5.2,<5.3
-Pillow>=11.0
+# Topes en la siguiente version mayor (Fase 4, 2026-10-27): Render instala lo mas nuevo en cada despliegue y una
+# version mayor sin probar (Pillow 13) podria romper las fotos. Los parches de seguridad siguen entrando.
+Pillow>=11.0,<13
 # Generación de códigos QR para la verificación de facturas.
 qrcode[pil]>=8.0,<9
 # El extra [xlsx] instala openpyxl, necesario para importar/exportar Excel.
 django-import-export[xlsx]>=4.3,<5
-python-dotenv>=1.0
+python-dotenv>=1.0,<2

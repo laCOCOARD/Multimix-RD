@@ -122,10 +122,43 @@ SQLite; conviene repetirlo con calma la primera vez sobre PostgreSQL.
 
 Las fotos no se mueven: siguen en Supabase y la base solo guarda sus rutas.
 
+## Publicar un cambio sin riesgo
+
+El repositorio de GitHub tiene otra historia que la copia local (ver `CLAUDE.md`): los cambios se llevan con
+`git cherry-pick` en la carpeta `multimix_rd_github` (rama `github-main`). El auto-deploy de Render está apagado.
+
+1. **Antes:** `.venv\Scripts\python manage.py check`, `makemigrations --check` y `test` en la PC; todo debe pasar.
+   Si la base está por caducar, haz primero la copia de seguridad (sección anterior).
+2. **Llevar los commits:** en `C:\Users\elies\multimix_rd_github`, comprueba que `git diff --stat main github-main`
+   esté vacío salvo lo nuevo, luego `git cherry-pick <commits>` en orden y `git push origin github-main:main`.
+3. **Desplegar:** en Render, *Manual Deploy → Deploy latest commit*. El arranque corre `migrate` solo.
+4. **Comprobar:** `/salud/` responde "ok", el log de Render no tiene errores, la portada, una ficha, el carrito
+   y el panel abren. Si algo falla, *Rollback* en Render vuelve al despliegue anterior: las migraciones de estas
+   fases solo agregan tablas o columnas, así que el código anterior sigue funcionando con ellas.
+
+### Rediseño (fases 1 a 4, 2026-10-27) y videos de las tiendas
+
+| Commit | Qué trae | Migraciones |
+|---|---|---|
+| Videos de las tiendas | Videos del plan Premium | `core/0021`, `planes/0003`, `planes/0004` (Premium con 1 video) |
+| Fase 1 | Portada, paleta carbón y ámbar, corazón en las tarjetas | — |
+| Fase 2 | `/vender/` y solicitudes de tiendas | `tiendas/0017` (tabla nueva) |
+| Fase 3 | Buscador con tiendas y filtros, ficha con "Vendido por" | — |
+| Fase 4 | Miniaturas de las fotos, medición del negocio, topes de versiones | `catalogo/0017` (columna nueva), `core/0022` (tabla nueva) |
+
+- Ninguna migración borra ni cambia datos, salvo `planes/0004`, que pone 1 video al plan Premium si tenía 0.
+- **Variables:** ninguna obligatoria. `SUPABASE_S3_BUCKET_VIDEOS` solo para habilitar los videos (sección del
+  bucket de videos); sin ella el sitio funciona igual y no ofrece subirlos.
+- **Miniaturas:** las fotos nuevas las traen. Las que ya están en Supabase se completan solas, de cinco en cinco,
+  con las tareas periódicas (una vez por hora con visitas). Mientras tanto se usa la foto grande: nada se rompe.
+  Para hacerlas todas de una vez desde la PC: `$env:DATABASE_URL="<External Database URL>"`, las variables
+  `SUPABASE_*` del `.env` y `.venv\Scripts\python manage.py crear_miniaturas`.
+- **Dependencias:** `requirements*.txt` tienen ahora tope en la siguiente versión mayor (Render instala lo más nuevo
+  en cada despliegue). Para subir de versión mayor, cámbialo a propósito y prueba antes.
+
 ## Pendiente antes de vender en serio
 
 - Pasar la base a un plan de pago (o repetir el traslado cada mes) y tener respaldos periódicos.
 - Dominio propio: mejora la confianza y que los correos no caigan en spam.
-- Escribir y publicar las páginas de políticas (Panel → Páginas informativas).
-- Bucket privado para los comprobantes de pago (hoy comparten el bucket público de las fotos).
+- Revisar las páginas de políticas (Panel → Páginas informativas) y completar la razón social y el RNC.
 - Afiliación con AZUL o CardNET para aceptar tarjetas (`PAGOS.md`).

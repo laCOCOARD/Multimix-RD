@@ -11,6 +11,7 @@ from django.urls import reverse
 from django.views.decorators.http import require_GET, require_POST
 
 from clientes.services import es_favorito
+from core import metricas
 from core.archivos import ERRORES_DE_ALMACENAMIENTO
 from core.red import quien_es
 from core.seo import producto_json_ld, ruta_json_ld
@@ -42,6 +43,7 @@ def inicio(request):
     from planes.services import historias_de_la_tienda
 
     tienda = request.tienda
+    metricas.anotar(request, metricas.Evento.VISITA_TIENDA, tienda)
     secciones = [
         {'titulo': 'Ofertas', 'icono': 'bi-tag-fill', 'productos': services.en_oferta(tienda), 'enlace': '?oferta=on'},
         {'titulo': 'Destacados', 'icono': 'bi-star-fill', 'productos': services.destacados(tienda), 'enlace': ''},
@@ -65,6 +67,10 @@ def lista(request, slug=None):
     filtros = formulario.filtros()
     productos = services.filtrar_catalogo(filtros, categoria, request.tienda)
     pagina = Paginator(productos, PRODUCTOS_POR_PAGINA).get_page(request.GET.get('pagina'))
+    if filtros.get('q') and pagina.number == 1:
+        metricas.anotar(request, metricas.Evento.BUSQUEDA, request.tienda)
+        if not pagina.object_list:
+            metricas.anotar(request, metricas.Evento.BUSQUEDA_SIN_RESULTADOS, request.tienda)
     return render(request, 'catalogo/lista.html', {
         'categoria': categoria,
         'categorias': services.categorias_de(request.tienda),
@@ -92,7 +98,7 @@ def sugerencias_de_productos(productos, con_tienda=False):
             'nombre': item.nombre,
             'url': item.get_absolute_url(),
             'precio': formatear_monto(item.precio_final),
-            'foto': foto.imagen.url if foto else '',
+            'foto': foto.url_tarjeta if foto else '',
             'tienda': item.tienda.nombre if con_tienda else '',
         })
     return resultados
@@ -115,6 +121,7 @@ def producto(request, slug):
     consulta = f'Hola, me interesa este producto: {item.nombre} (SKU {item.sku})\n{url_absoluta}'
     vistos_antes = services.vistos(request.session, tienda, excluir=item.pk)
     services.recordar_visto(request.session, item)
+    metricas.anotar(request, metricas.Evento.VISTA_PRODUCTO, tienda)
     zonas = zonas_activas(tienda)
     return render(request, 'catalogo/producto.html', {
         'producto': item,

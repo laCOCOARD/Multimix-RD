@@ -35,6 +35,10 @@ def ejecutar_si_toca():
         from pagos.services import mover_comprobantes_al_privado
 
         mover_comprobantes_al_privado()
+        from catalogo.services import crear_miniaturas_faltantes
+
+        # Las fotos subidas antes de las miniaturas (2026-10-27), de cinco en cinco.
+        crear_miniaturas_faltantes()
         from catalogo.avisos import avisar_disponibles
 
         # Los cambios hechos en masa (acciones del panel, importacion) no pasan por el aviso inmediato.

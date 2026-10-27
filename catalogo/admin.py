@@ -318,7 +318,7 @@ class ProductoAdmin(AvisaImagenesSinGuardar, AdminDeTienda, ImportExportModelAdm
     def miniatura(self, producto):
         foto = producto.foto_principal
         if foto:
-            return format_html('<img src="{}" alt="" class="panel-miniatura" loading="lazy">', foto.imagen.url)
+            return format_html('<img src="{}" alt="" class="panel-miniatura" loading="lazy">', foto.url_tarjeta)
         return format_html('<span class="panel-miniatura panel-sin-foto">{}</span>', '—')
 
     @admin.display(description='Producto', ordering='nombre')

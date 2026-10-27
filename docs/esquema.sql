@@ -1590,3 +1590,29 @@ CREATE INDEX "tiendas_solicitudtienda_revisada_por_id_2f13825d" ON "tiendas_soli
 CREATE INDEX "tiendas_solicitudtienda_tienda_id_00fa117b" ON "tiendas_solicitudtienda" ("tienda_id");
 CREATE INDEX "solicitud_estado_idx" ON "tiendas_solicitudtienda" ("estado", "creada" DESC);
 COMMIT;
+
+-- ============================================================
+-- catalogo 0017
+-- ============================================================
+BEGIN;
+--
+-- Add field miniatura to fotoproducto
+--
+CREATE TABLE "new__catalogo_fotoproducto" ("id" integer NOT NULL PRIMARY KEY AUTOINCREMENT, "miniatura" varchar(100) NOT NULL, "imagen" varchar(100) NOT NULL, "orden" smallint unsigned NOT NULL CHECK ("orden" >= 0), "principal" bool NOT NULL, "producto_id" bigint NOT NULL REFERENCES "catalogo_producto" ("id") DEFERRABLE INITIALLY DEFERRED);
+INSERT INTO "new__catalogo_fotoproducto" ("id", "imagen", "orden", "principal", "producto_id", "miniatura") SELECT "id", "imagen", "orden", "principal", "producto_id", '' FROM "catalogo_fotoproducto";
+DROP TABLE "catalogo_fotoproducto";
+ALTER TABLE "new__catalogo_fotoproducto" RENAME TO "catalogo_fotoproducto";
+CREATE INDEX "catalogo_fotoproducto_producto_id_f83ae5fd" ON "catalogo_fotoproducto" ("producto_id");
+COMMIT;
+
+-- ============================================================
+-- core 0022
+-- ============================================================
+BEGIN;
+--
+-- Create model ConteoDiario
+--
+CREATE TABLE "core_conteodiario" ("id" integer NOT NULL PRIMARY KEY AUTOINCREMENT, "fecha" date NOT NULL, "evento" varchar(20) NOT NULL, "total" integer unsigned NOT NULL CHECK ("total" >= 0), "tienda_id" bigint NULL REFERENCES "tiendas_tienda" ("id") DEFERRABLE INITIALLY DEFERRED);
+CREATE INDEX "core_conteodiario_tienda_id_671406a6" ON "core_conteodiario" ("tienda_id");
+CREATE INDEX "conteo_fecha_evento_idx" ON "core_conteodiario" ("fecha", "evento");
+COMMIT;

@@ -6,6 +6,7 @@ from django.views.decorators.http import require_GET, require_POST
 
 from catalogo.models import Producto
 from catalogo.services import sugerencias_para_el_carrito
+from core import metricas
 from core.templatetags.moneda import formatear_monto
 from pedidos.services import progreso_envio_gratis
 from promociones.services import CuponInvalido
@@ -104,6 +105,7 @@ def agregar(request):
         mensaje = f'Solo hay {final} disponibles de "{producto.nombre}"; dejamos esa cantidad en tu carrito.'
     else:
         mensaje = f'"{producto.nombre}" se agregó al carrito.'
+    metricas.anotar(request, metricas.Evento.AGREGADO_CARRITO, request.tienda)
     if request.POST.get('comprar') and not _es_fetch(request):
         # "Comprar ahora": el producto queda en el carrito y el cliente va directo a confirmar.
         if ajustada:

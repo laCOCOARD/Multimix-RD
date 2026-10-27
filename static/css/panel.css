@@ -105,6 +105,12 @@ a.panel-tarjeta:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba
 .panel-tarjeta-aviso { border-left-color: #e08a00; }
 .panel-tarjeta-bajo { border-left-color: #e08a00; }
 .panel-tarjeta-agotado { border-left-color: #d23b3b; }
+/* Indicadores y actividad (Fase 4, 2026-10-27). */
+.panel-subtitulo { margin: 8px 0 12px; font-size: 1.05rem; }
+.panel-actividad { max-width: 640px; }
+.panel-actividad td { text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; }
+.panel-etiqueta-real { background: #1a8f5a; }
+.panel-nota { font-size: .8rem; color: var(--body-quiet-color); font-weight: 400; }
 .panel-columnas { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 18px; align-items: start; }
 .panel-columnas .module { margin-bottom: 0; overflow-x: auto; }
 .panel-columnas table { width: 100%; }

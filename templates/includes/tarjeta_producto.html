@@ -6,7 +6,7 @@
   <a class="mm-tarjeta-foto" href="{{ producto.get_absolute_url }}" tabindex="-1" aria-hidden="true">
     {% with foto=producto.foto_principal %}
       {% if foto %}
-        <img src="{{ foto.imagen.url }}" alt="" loading="lazy" decoding="async" width="400" height="400">
+        <img src="{{ foto.url_tarjeta }}" alt="" loading="lazy" decoding="async" width="400" height="400">
       {% else %}
         <span class="mm-sin-foto"><i class="bi bi-image"></i><span>Sin foto</span></span>
       {% endif %}

@@ -1,0 +1,60 @@
+{# Indicadores del negocio (Fase 4 del rediseño, 2026-10-27). `indicadores` solo llega al administrador principal; #}
+{# `actividad` llega a todos, ya limitada a las tiendas de quien mira (core.metricas.resumen). #}
+{% if indicadores %}
+<section class="panel-resumen" aria-labelledby="titulo-indicadores">
+  <h2 class="panel-subtitulo" id="titulo-indicadores">El sitio</h2>
+  <div class="panel-tarjetas">
+    <a class="panel-tarjeta" href="{% url 'admin:tiendas_tienda_changelist' %}?activa__exact=1">
+      <span class="panel-tarjeta-titulo">Tiendas activas</span>
+      <strong class="panel-tarjeta-valor">{{ indicadores.tiendas_activas }}</strong>
+      <span class="panel-tarjeta-nota">De {{ indicadores.tiendas_registradas }} registradas</span>
+    </a>
+    <div class="panel-tarjeta">
+      <span class="panel-tarjeta-titulo">Productos publicados</span>
+      <strong class="panel-tarjeta-valor">{{ indicadores.productos_publicados }}</strong>
+      <span class="panel-tarjeta-nota">Activos, en tiendas abiertas</span>
+    </div>
+    <a class="panel-tarjeta{% if indicadores.solicitudes_pendientes %} panel-tarjeta-aviso{% endif %}" href="{% url 'admin:tiendas_solicitudtienda_changelist' %}?estado__exact=pendiente">
+      <span class="panel-tarjeta-titulo">Solicitudes pendientes</span>
+      <strong class="panel-tarjeta-valor">{{ indicadores.solicitudes_pendientes }}</strong>
+      <span class="panel-tarjeta-nota">{{ indicadores.solicitudes_recibidas }} recibida{{ indicadores.solicitudes_recibidas|pluralize }} en {{ actividad.dias }} días</span>
+    </a>
+    <div class="panel-tarjeta">
+      <span class="panel-tarjeta-titulo">Solicitudes aprobadas</span>
+      {% if indicadores.conversion_solicitudes is not None %}
+        <strong class="panel-tarjeta-valor">{{ indicadores.conversion_solicitudes }} %</strong>
+        <span class="panel-tarjeta-nota">{{ indicadores.solicitudes_aprobadas }} de {{ indicadores.solicitudes_revisadas }} revisadas</span>
+      {% else %}
+        <strong class="panel-tarjeta-valor">—</strong>
+        <span class="panel-tarjeta-nota">Se calcula con {{ indicadores.minimo_para_conversion }} revisadas o más ({{ indicadores.solicitudes_revisadas }} por ahora)</span>
+      {% endif %}
+    </div>
+  </div>
+</section>
+{% endif %}
+
+{% if actividad %}
+<section class="panel-resumen" aria-labelledby="titulo-actividad">
+  <h2 class="panel-subtitulo" id="titulo-actividad">Actividad de los últimos {{ actividad.dias }} días{% if not indicadores %} en tu tienda{% endif %}</h2>
+  <div class="module panel-actividad">
+    <table>
+      <thead><tr><th scope="col">Paso</th><th scope="col">Cantidad</th></tr></thead>
+      <tbody>
+        {% for fila in actividad.embudo %}
+          <tr>
+            <th scope="row">{{ fila.etiqueta }}{% if not fila.medido %} <span class="panel-etiqueta panel-etiqueta-real">registro real</span>{% endif %}</th>
+            <td>{{ fila.valor }}</td>
+          </tr>
+        {% endfor %}
+        <tr><th scope="row">Búsquedas{% if not indicadores %} dentro de tu tienda{% endif %}</th><td>{{ actividad.busquedas }} <span class="panel-nota">({{ actividad.busquedas_sin_resultados }} sin resultados)</span></td></tr>
+        <tr><th scope="row">Intentos de pedido que no se completaron</th><td>{{ actividad.errores_de_compra }}</td></tr>
+        <tr><th scope="row">Pedidos cancelados</th><td>{{ actividad.pedidos_cancelados }}</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="panel-nota">
+    {% if actividad.contando_desde %}Las visitas, vistas, agregados, búsquedas e intentos se cuentan desde el {{ actividad.contando_desde|date:"j \d\e F \d\e Y" }}{% else %}Las visitas, vistas, agregados, búsquedas e intentos todavía no se han contado{% endif %}:
+    son cargas de página aproximadas, no personas, y no incluyen robots ni al personal del panel. Los pedidos salen de su registro real.
+  </p>
+</section>
+{% endif %}

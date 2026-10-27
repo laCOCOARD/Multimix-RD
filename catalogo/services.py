@@ -1,4 +1,5 @@
 """Catalogo: secciones de la portada de cada tienda, filtros del listado y carga de fotos por SKU."""
+import logging
 from dataclasses import dataclass
 from datetime import timedelta
 from pathlib import Path
@@ -7,8 +8,8 @@ from django.conf import settings
 from django.core.cache import cache
 from django.core.exceptions import ValidationError
 from django.core.files.storage import default_storage
-from django.db.models import Count, Exists, F, OuterRef, Q, Subquery, Sum, Window
-from django.db.models.functions import Coalesce, RowNumber
+from django.db.models import CharField, Count, Exists, F, OuterRef, Q, Subquery, Sum, Value, Window
+from django.db.models.functions import Coalesce, NullIf, RowNumber
 from django.utils import timezone
 from PIL import Image
 
@@ -18,6 +19,8 @@ from core.validators import validar_imagen
 from pedidos.models import DetallePedido, Pedido
 
 from .models import Categoria, FotoProducto, Producto, q_comprable, q_oferta_vigente
+
+logger = logging.getLogger('multimix.catalogo')
 
 
 def clave_mas_vendidos(tienda):
@@ -132,7 +135,9 @@ def _foto_de_la_categoria(**filtros):
             Q(producto__categoria=OuterRef('pk')) | Q(producto__categoria__padre=OuterRef('pk')),
             producto__activo=True, principal=True, **filtros,
         )
-        .order_by('-producto__destacado', '-producto__creado', '-producto__id').values('imagen')[:1]
+        .order_by('-producto__destacado', '-producto__creado', '-producto__id')
+        .annotate(ruta=Coalesce(NullIf('miniatura', Value('')), 'imagen', output_field=CharField()))
+        .values('ruta')[:1]
     )
 
 
@@ -379,3 +384,52 @@ def asignar_foto_por_sku(archivo, tienda, reemplazar=False):
         for anterior in producto.fotos.exclude(pk=nueva.pk):
             anterior.delete()
     return FotoPorSku(archivo.name, sku, True, producto.nombre)
+
+
+# --- Miniaturas de las fotos (Fase 4 del rediseño, 2026-10-27) ------------------------------
+
+def crear_miniaturas_faltantes(limite=5):
+    """Crea la miniatura de las fotos subidas antes de que existieran. Devuelve cuantas hizo.
+
+    Lo llaman las tareas periodicas, de a pocas: cada una es una descarga, una conversion y una subida, y la visita que
+    dispara la tarea espera a que terminen. Si la foto original ya no se puede leer, la miniatura apunta a ella misma
+    para no intentarlo cada hora.
+    """
+    from io import BytesIO
+    from uuid import uuid4
+
+    from core.archivos import ERRORES_DE_ALMACENAMIENTO
+
+    from .imagenes import LADO_MINIATURA, convertir_a_webp
+
+    hechas = 0
+    for foto in FotoProducto.objects.filter(miniatura='').exclude(imagen='').order_by('-principal', 'pk')[:limite]:
+        try:
+            datos = None
+            if foto.imagen.storage.exists(foto.imagen.name):
+                with foto.imagen.open('rb') as archivo:
+                    datos = archivo.read()
+        except ERRORES_DE_ALMACENAMIENTO:
+            # Sin conexion con el almacenamiento: se intenta en la proxima vuelta.
+            logger.exception('No se pudo leer la foto %s para su miniatura', foto.pk)
+            break
+        chica = None
+        if datos:
+            try:
+                chica = convertir_a_webp(BytesIO(datos), lado_maximo=LADO_MINIATURA)
+            except (OSError, ValueError):
+                logger.warning('La foto %s no se pudo convertir: su miniatura sera la foto grande', foto.pk)
+        if chica is None:
+            # La foto ya no existe o no se puede abrir: se usa la grande y no se vuelve a intentar.
+            nombre = foto.imagen.name
+        else:
+            try:
+                nombre = foto.miniatura.storage.save(
+                    FotoProducto._meta.get_field('miniatura').generate_filename(foto, f'{uuid4().hex}.webp'), chica,
+                )
+            except ERRORES_DE_ALMACENAMIENTO:
+                logger.exception('No se pudo subir la miniatura de la foto %s', foto.pk)
+                break
+        FotoProducto.objects.filter(pk=foto.pk).update(miniatura=nombre)
+        hechas += 1
+    return hechas

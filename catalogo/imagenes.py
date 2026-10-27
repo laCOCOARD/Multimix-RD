@@ -6,6 +6,10 @@ from PIL import Image
 
 from core.validators import maximo_de_pixeles
 
+# Miniatura de las fotos de producto (Fase 4, 2026-10-27): las tarjetas miden unos 250 px; 480 px se ven nitidas en
+# pantallas de doble densidad y pesan una fraccion de la foto de 1200 px.
+LADO_MINIATURA = 480
+
 # Giro que pide la etiqueta Orientation (0x0112) del EXIF; lo mismo que hace ImageOps.exif_transpose.
 _GIROS = {
     2: Image.Transpose.FLIP_LEFT_RIGHT,

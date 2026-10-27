@@ -18,7 +18,7 @@ from core.models import ConfiguracionTienda
 from core.texto import generar_slug_unico, normalizar
 from core.validators import validar_imagen
 
-from .imagenes import convertir_a_webp
+from .imagenes import LADO_MINIATURA, convertir_a_webp
 
 
 def q_oferta_vigente(ahora=None):
@@ -406,6 +406,10 @@ class FotoProducto(models.Model):
         upload_to='productos/%Y/%m/', validators=[validar_imagen],
         help_text='JPG, PNG o WebP de hasta 5 MB. Se ajusta a 1200 px y se guarda en WebP.',
     )
+    # Fase 4 del rediseño (2026-10-27): la foto grande (1200 px) es para la ficha; las tarjetas, el carrito y el buscador
+    # usan esta, mucho mas liviana. Se crea al subir la foto; las de antes las completan las tareas periodicas
+    # (`catalogo.services.crear_miniaturas_faltantes`). Vacia = todavia no se hizo: se usa la grande.
+    miniatura = models.ImageField(upload_to='productos/miniaturas/%Y/%m/', blank=True, editable=False)
     orden = models.PositiveSmallIntegerField(default=0)
     principal = models.BooleanField(default=False, help_text='Es la foto que se ve en las tarjetas.')
 
@@ -417,10 +421,19 @@ class FotoProducto(models.Model):
     def __str__(self):
         return f'Foto de {self.producto}'
 
+    @property
+    def url_tarjeta(self):
+        """La foto para mostrar en chico (tarjetas, carrito, buscador): la miniatura si ya existe."""
+        return (self.miniatura or self.imagen).url
+
     def save(self, *args, **kwargs):
         if self.imagen and not self.imagen._committed:
-            contenido = convertir_a_webp(self.imagen.file)
-            self.imagen.save(f'{uuid4().hex}.webp', contenido, save=False)
+            # Las dos versiones se preparan antes de subir nada: al subirla, el almacenamiento puede cerrar el archivo.
+            grande = convertir_a_webp(self.imagen.file)
+            chica = convertir_a_webp(grande, lado_maximo=LADO_MINIATURA)
+            nombre = uuid4().hex
+            self.imagen.save(f'{nombre}.webp', grande, save=False)
+            self.miniatura.save(f'{nombre}.webp', chica, save=False)
         otras = FotoProducto.objects.filter(producto_id=self.producto_id).exclude(pk=self.pk)
         if self.principal:
             otras.filter(principal=True).update(principal=False)
@@ -431,6 +444,9 @@ class FotoProducto(models.Model):
 
 @receiver(post_delete, sender=FotoProducto)
 def borrar_archivo_de_foto(sender, instance, **kwargs):
+    # La miniatura puede ser la misma foto grande (si la original ya no se pudo leer): se borra una sola vez.
+    if instance.miniatura and instance.miniatura.name != instance.imagen.name:
+        instance.miniatura.delete(save=False)
     if instance.imagen:
         instance.imagen.delete(save=False)
 

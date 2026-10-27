@@ -16,6 +16,7 @@ class PanelAdminSite(admin.AdminSite):
         from tiendas.panel import tiendas_del_panel
         from tiendas.services import solicitudes_pendientes, ve_todas
 
+        from . import metricas
         from .panel import resumen_panel, ventas_por_tienda
 
         from planes.services import estado_de_cuenta, resumen_para_el_administrador
@@ -29,6 +30,9 @@ class PanelAdminSite(admin.AdminSite):
                     'cobros': resumen_para_el_administrador(),
                     # Negocios que pidieron abrir su tienda desde /vender/solicitar/.
                     'solicitudes_pendientes': solicitudes_pendientes(),
+                    # Indicadores del sitio y actividad de todas las tiendas (core.metricas).
+                    'indicadores': metricas.indicadores_del_sitio(),
+                    'actividad': metricas.resumen(),
                 }
             else:
                 tiendas = tiendas_del_panel(request)
@@ -38,6 +42,8 @@ class PanelAdminSite(admin.AdminSite):
                     # Su plan y lo que debe al sitio; y si no tiene cuentas, sus clientes no pueden transferirle.
                     'estados_de_cuenta': [estado_de_cuenta(tienda) for tienda in tiendas],
                     'tiendas_sin_cuentas': [t for t in tiendas if not t.cuentas.filter(activa=True).exists()],
+                    # Solo la actividad de sus tiendas.
+                    'actividad': metricas.resumen(tiendas),
                 }
         contexto.update(extra_context or {})
         return super().index(request, extra_context=contexto)

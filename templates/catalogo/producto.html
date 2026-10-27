@@ -65,7 +65,7 @@
           <div class="mm-galeria-miniaturas">
             {% for foto in fotos %}
               <a class="mm-miniatura{% if forloop.first %} activa{% endif %} js-miniatura" href="{{ foto.imagen.url }}" target="_blank" rel="noopener">
-                <img src="{{ foto.imagen.url }}" alt="Foto {{ forloop.counter }} de {{ producto.nombre }}" loading="lazy" decoding="async" width="90" height="90">
+                <img src="{{ foto.url_tarjeta }}" alt="Foto {{ forloop.counter }} de {{ producto.nombre }}" loading="lazy" decoding="async" width="90" height="90">
               </a>
             {% endfor %}
           </div>

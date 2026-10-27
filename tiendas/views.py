@@ -14,6 +14,7 @@ from catalogo.services import (
     sugerencias as sugerencias_de_productos, vitrina_del_sitio,
 )
 from catalogo.views import sugerencias_de_productos as datos_de_sugerencias
+from core import metricas
 from core.models import ConfiguracionTienda
 from core.seo import sitio_json_ld
 
@@ -90,6 +91,10 @@ def buscar(request):
     if tienda is not None:
         productos = productos.filter(tienda=tienda)
     pagina = Paginator(productos, RESULTADOS_POR_PAGINA).get_page(request.GET.get('pagina'))
+    if filtros.get('q') and pagina.number == 1:
+        metricas.anotar(request, metricas.Evento.BUSQUEDA)
+        if not pagina.object_list:
+            metricas.anotar(request, metricas.Evento.BUSQUEDA_SIN_RESULTADOS)
     campos = ('precio_min', 'precio_max', 'oferta', 'disponibles')
     hay_filtros = bool(
         tienda or any(filtros.get(campo) not in (None, '', False) for campo in campos)

@@ -17,7 +17,7 @@
           <div class="mm-linea js-linea" data-producto="{{ linea.producto.pk }}">
             <a class="mm-linea-foto" href="{{ linea.producto.get_absolute_url }}">
               {% with foto=linea.producto.foto_principal %}
-                {% if foto %}<img src="{{ foto.imagen.url }}" alt="" loading="lazy" width="96" height="96">
+                {% if foto %}<img src="{{ foto.url_tarjeta }}" alt="" loading="lazy" decoding="async" width="96" height="96">
                 {% else %}<span class="mm-sin-foto"><i class="bi bi-image"></i></span>{% endif %}
               {% endwith %}
             </a>

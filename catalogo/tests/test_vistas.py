@@ -54,12 +54,12 @@ class CatalogoVistasTests(TestCase):
             foto = FotoProducto.objects.create(producto=self.lampara, imagen=imagen_de_prueba())
             FotoProducto.objects.create(producto=self.oculto, imagen=imagen_de_prueba())
             portada = {c.nombre: c for c in services.categorias_de_portada(tienda_de_prueba())}
-            self.assertEqual(portada['Hogar'].url_portada, foto.imagen.url)
+            self.assertEqual(portada['Hogar'].url_portada, foto.miniatura.url)  # la liviana (Fase 4)
             self.assertTrue(portada['Hogar'].usa_foto_de_producto)
             self.assertEqual(portada['Tecnología'].url_portada, '')
             respuesta = self.client.get(ruta('catalogo:inicio'))
             self.assertContains(respuesta, 'mm-burbuja-foto con-producto')
-            self.assertContains(respuesta, f'src="{foto.imagen.url}"')
+            self.assertContains(respuesta, f'src="{foto.miniatura.url}"')
 
     def test_lista_excluye_inactivos(self):
         respuesta = self.client.get(ruta('catalogo:lista'))
