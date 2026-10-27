@@ -23,6 +23,10 @@ class ConfiguracionTiendaAdmin(AvisaImagenesSinGuardar, admin.ModelAdmin):
             'fields': ['dias_producto_nuevo', 'umbral_stock_bajo', 'mostrar_cantidad_exacta'],
         }),
         ('Pedidos (todas las tiendas)', {'fields': ['horas_vencimiento_pedido', 'dias_devolucion']}),
+        ('Cobro a las tiendas (planes)', {
+            'fields': ['dias_aviso_mensualidad', 'dias_de_gracia'],
+            'description': 'Los planes, sus montos y límites se cambian en Planes; el plan de cada tienda, en Tiendas.',
+        }),
     ]
 
     change_form_template = 'admin/core/configuraciontienda/change_form.html'

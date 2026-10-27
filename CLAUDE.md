@@ -114,7 +114,11 @@ Al cerrar cada modulo: check, makemigrations, migrate, test y commit.
   anula. Avisos: `dias_aviso_mensualidad` antes, el dia que vence y el ultimo dia de gracia; pasados
   `dias_de_gracia` (4) la tienda se cierra (`activa=False`, `cerrada_por_falta_de_pago`) hasta que el superusuario la
   habilita (encender "Activa" o la accion "Habilitar"; `habilitada_el` evita que lo ya vencido la vuelva a cerrar).
-  Todo corre en `revisar_cobros`, dentro de las tareas periodicas (o el comando del mismo nombre). Los anuncios
+  Todo corre en `revisar_cobros`, dentro de las tareas periodicas (o el comando del mismo nombre). El superusuario
+  edita todo en el panel (pedido del dueño): Planes, Cargos (monto, fechas, tipo, mes y estado; el estado pasa por
+  `services.cambiar_estado_del_cargo`, con sus correos) y en Configuracion general los dias de aviso y de gracia.
+  Tarjeta (decision del 2026-10-26, pendiente de construir): una sola afiliacion del dueño, un carrito unico con
+  productos de todas las tiendas y luego el reparto a cada una (`cobra_el_sitio=True`, Liquidaciones). Los anuncios
   (`Anuncio`) salen cuando el superusuario los aprueba; cambiar su contenido los devuelve a revision. Los tres
   planes los creo `planes/0002` con montos propuestos que el dueño cambia en el panel.
 - La pagina del pedido lleva `<meta name="referrer" content="same-origin">`, nunca `no-referrer`: con este ultimo

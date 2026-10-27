@@ -342,3 +342,70 @@ class ComprobantesTests(ConPlan):
         self.client.post(editar, {'nombre': 'Multimix RD', 'plan': premium.pk, 'activa': ''})
         self.tienda.refresh_from_db()
         self.assertEqual((self.tienda.plan, self.tienda.activa), (self.plan, True))
+
+
+class ElAdministradorEditaTodoTests(ConPlan):
+    """Pedido del dueño el 2026-10-26: todo lo de los planes y los cobros se cambia desde el panel."""
+
+    def setUp(self):
+        super().setUp()
+        self.dar_plan()
+        [self.cargo] = services.generar_mensualidades(date(2026, 10, 26))
+        self.client.force_login(self.admin)
+
+    def test_cambia_los_planes(self):
+        url = reverse('admin:planes_plan_change', args=[self.plan.pk])
+        respuesta = self.client.post(url, {
+            'nombre': 'Estándar', 'descripcion': 'Nuevo texto', 'mensualidad': '1500', 'activo': 'on', 'orden': '2',
+            'pedidos_incluidos': '', 'porcentaje_excedente': '2.5', 'anuncios_portada': '2',
+            'productos_patrocinados': '6',
+        })
+        self.assertEqual(respuesta.status_code, 302)
+        self.plan.refresh_from_db()
+        self.assertEqual(
+            (self.plan.mensualidad, self.plan.pedidos_incluidos, self.plan.porcentaje_excedente,
+             self.plan.anuncios_portada, self.plan.productos_patrocinados),
+            (D('1500.00'), None, D('2.50'), 2, 6),
+        )
+        # Y crea otros.
+        self.assertEqual(self.client.get(reverse('admin:planes_plan_add')).status_code, 200)
+
+    def test_los_dias_de_gracia_y_de_aviso_estan_en_la_configuracion(self):
+        pagina = self.client.get(reverse('admin:core_configuraciontienda_change', args=[1]))
+        self.assertContains(pagina, 'name="dias_de_gracia"')
+        self.assertContains(pagina, 'name="dias_aviso_mensualidad"')
+
+    def datos_del_cargo(self, **cambios):
+        datos = {'tipo': 'mensualidad', 'periodo': '2026-11-01', 'concepto': self.cargo.concepto, 'detalle': '',
+                 'monto': '1000.00', 'vence': '2026-11-01', 'estado': self.cargo.estado, 'nota': ''}
+        datos.update(cambios)
+        return datos
+
+    def test_cambia_monto_fechas_y_estado_del_cargo(self):
+        url = reverse('admin:planes_cargo_change', args=[self.cargo.pk])
+        self.client.post(url, self.datos_del_cargo(monto='800.00', vence='2026-11-03'))
+        self.cargo.refresh_from_db()
+        self.assertEqual((self.cargo.monto, self.cargo.vence), (D('800.00'), date(2026, 11, 3)))
+        # Pagado por el formulario: igual que la accion, con el correo a la tienda.
+        mail.outbox.clear()
+        with self.captureOnCommitCallbacks(execute=True):
+            self.client.post(url, self.datos_del_cargo(monto='800.00', vence='2026-11-03', estado='pagado'))
+        self.cargo.refresh_from_db()
+        self.assertEqual((self.cargo.estado, self.cargo.revisado_por), (Estado.PAGADO, self.admin))
+        self.assertTrue(mail.outbox[0].subject.startswith('Recibimos tu pago'))
+        # Lo reabre y lo anula.
+        self.client.post(url, self.datos_del_cargo(monto='800.00', vence='2026-11-03', estado='pendiente'))
+        self.cargo.refresh_from_db()
+        self.assertEqual(self.cargo.estado, Estado.PENDIENTE)
+        self.client.post(url, self.datos_del_cargo(estado='anulado', nota='Mes de regalo'))
+        self.cargo.refresh_from_db()
+        self.assertEqual((self.cargo.estado, self.cargo.nota), (Estado.ANULADO, 'Mes de regalo'))
+
+    def test_pendiente_desde_revision_es_rechazar_el_comprobante(self):
+        services.subir_comprobante(self.cargo, imagen_de_prueba(), 'REF-1')
+        url = reverse('admin:planes_cargo_change', args=[self.cargo.pk])
+        with self.captureOnCommitCallbacks(execute=True):
+            self.client.post(url, self.datos_del_cargo(estado='pendiente', nota='No llegó'))
+        self.cargo.refresh_from_db()
+        self.assertEqual((self.cargo.estado, self.cargo.nota), (Estado.PENDIENTE, 'No llegó'))
+        self.assertTrue(mail.outbox[-1].subject.startswith('No pudimos confirmar tu pago'))

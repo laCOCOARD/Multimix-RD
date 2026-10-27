@@ -80,10 +80,14 @@ puede usar `python manage.py revisar_cobros` una vez al día.
 ## Tarjetas: qué falta
 
 La estructura está en `pagos/proveedores.py`, pero **no hay ninguna pasarela conectada** y el sitio no ofrece
-pago con tarjeta. Como cada tienda cobra lo suyo, hace falta decidir primero si la tarjeta la cobra cada tienda con su
-propia afiliación (AZUL o CardNET) o el sitio con una sola y luego le reparte. Después:
+pago con tarjeta.
 
-1. **Afiliación del comercio** con AZUL o CardNET. El banco entrega las credenciales de pruebas y de producción.
+**Decisión del dueño (2026-10-26):** una **sola afiliación, la del dueño**, para que el cliente pueda tener **un solo
+carrito con productos de todas las tiendas** y pagarlo de una vez; después el dueño **le reparte a cada tienda** lo
+suyo. Es el siguiente paso: hoy el carrito es de una sola tienda. Hace falta:
+
+1. **Afiliación del comercio** con AZUL o CardNET a nombre del dueño. El banco entrega las credenciales de pruebas y
+   de producción.
 2. **Documentación y credenciales de pruebas** de la pasarela elegida:
    - AZUL: https://dev.azul.com.do/Pages/developer/pages/lib/index.aspx
    - CardNET: https://developers.cardnet.com.do/guias/boton-de-pago/
@@ -93,8 +97,10 @@ propia afiliación (AZUL o CardNET) o el sitio con una sola y luego le reparte. 
    que indique su documentación. Nunca van en el código ni en la base de datos.
 5. Pruebas en el entorno de pruebas del proveedor (aprobado, rechazado, cancelado y notificación repetida) antes
    de usar las credenciales reales.
-6. Si la cobra el sitio, el pedido debe nacer con `cobra_el_sitio=True` (en `crear_pedido`) para que entre al
-   reparto como cobrado por el sitio.
+6. El cobro con tarjeta lo recibe el dueño: esos pedidos nacen con `cobra_el_sitio=True` (en `crear_pedido`) para
+   que entren al reparto (Liquidaciones) como cobrados por el sitio.
+7. El carrito único: un pago que cubre los pedidos de varias tiendas (cada tienda sigue recibiendo su propio pedido,
+   con su numeración, su entrega y su seguimiento).
 
 No se guardan números de tarjeta ni códigos de seguridad en ningún caso: del proveedor solo se conservan la
 referencia del pago y el código de autorización.

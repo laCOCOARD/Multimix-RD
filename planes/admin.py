@@ -104,9 +104,12 @@ class CargoAdmin(AdminDeTienda, admin.ModelAdmin):
             if obj is None:
                 return [(None, {'fields': ['tienda', 'tipo', 'periodo', 'concepto', 'detalle', 'monto', 'vence']})]
             return [
-                ('Cargo', {'fields': [
-                    'tienda', 'tipo', 'periodo', 'concepto', 'detalle', 'monto', 'vence', 'estado_con_color', 'cierre',
-                ]}),
+                ('Cargo', {
+                    'fields': ['tienda', 'tipo', 'periodo', 'concepto', 'detalle', 'monto', 'vence', 'estado', 'cierre'],
+                    'description': 'Al cambiar el estado: "Pagado" confirma el pago (le llega un correo a la tienda), '
+                                   '"Pendiente" rechaza el comprobante en revisión (con la nota como motivo) o reabre '
+                                   'el cargo, y "Anulado" lo deja sin efecto.',
+                }),
                 ('Pago de la tienda', {'fields': ['vista_del_comprobante', 'referencia', 'enviado_el']}),
                 ('Revisión', {'fields': ['revisado_el', 'revisado_por', 'nota', 'avisos_enviados']}),
             ]
@@ -124,9 +127,10 @@ class CargoAdmin(AdminDeTienda, admin.ModelAdmin):
 
     def get_readonly_fields(self, request, obj=None):
         if ve_todas(request.user):
+            # El administrador cambia todo menos de que tienda es y lo que escribio o subio la tienda.
             campos = ['estado_con_color', 'cierre', 'vista_del_comprobante', 'enviado_el', 'revisado_el',
                       'revisado_por', 'avisos_enviados']
-            return campos + (['tienda', 'tipo', 'periodo', 'referencia'] if obj is not None else [])
+            return campos + (['tienda', 'referencia'] if obj is not None else [])
         campos = [campo for _, opciones in self.get_fieldsets(request, obj) for campo in opciones['fields']]
         return [campo for campo in campos if campo not in self.CAMPOS_DE_LA_TIENDA]
 
@@ -156,7 +160,20 @@ class CargoAdmin(AdminDeTienda, admin.ModelAdmin):
 
     def save_model(self, request, obj, form, change):
         if ve_todas(request.user):
+            if not (change and 'estado' in form.changed_data):
+                super().save_model(request, obj, form, change)
+                return
+            # Primero lo demas con el estado de antes; despues el cambio de estado por su regla (y su correo).
+            nuevo, obj.estado = obj.estado, form.initial['estado']
             super().save_model(request, obj, form, change)
+            try:
+                services.cambiar_estado_del_cargo(obj, nuevo, request.user, obj.nota)
+            except services.CargoError as error:
+                self.message_user(request, error.mensaje, messages.ERROR)
+            obj.refresh_from_db()
+            if obj.estado == Estado.PAGADO and obj.tienda.cerrada_por_falta_de_pago and not obj.tienda.activa:
+                self.message_user(request, f'{obj.tienda.nombre} sigue cerrada por falta de pago: habilítala en '
+                                           'Tiendas cuando quieras.', messages.WARNING)
             return
         try:
             services.subir_comprobante(obj, form.cleaned_data['archivo'], form.cleaned_data.get('referencia'))

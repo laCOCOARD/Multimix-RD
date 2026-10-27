@@ -497,17 +497,46 @@ def rechazar_comprobante(cargo, usuario=None, nota=''):
 
 @transaction.atomic
 def anular_cargo(cargo, usuario=None, nota=''):
-    """Un cargo que no corresponde (por ejemplo, un mes que se le regalo a la tienda)."""
+    """Un cargo que no corresponde (por ejemplo, un mes que se le regalo a la tienda, o uno que se devolvio)."""
     _solo_el_administrador(usuario)
     cargo = Cargo.objects.select_for_update().get(pk=cargo.pk)
-    if cargo.estado == Estado.PAGADO:
-        raise CargoError(f'"{cargo.concepto}" ya está pagado: no se puede anular.')
+    if cargo.estado == Estado.ANULADO:
+        return cargo
     cargo.estado = Estado.ANULADO
     cargo.nota = (nota or cargo.nota or 'Anulado por el administrador.')[:255]
     cargo.revisado_el = timezone.now()
     cargo.revisado_por = usuario
     cargo.save(update_fields=['estado', 'nota', 'revisado_el', 'revisado_por'])
     return cargo
+
+
+@transaction.atomic
+def reabrir_cargo(cargo, usuario=None, nota=''):
+    """Vuelve a dejar pendiente un cargo pagado o anulado (por ejemplo, si se confirmo por error)."""
+    _solo_el_administrador(usuario)
+    cargo = Cargo.objects.select_for_update().get(pk=cargo.pk)
+    cargo.estado = Estado.PENDIENTE
+    cargo.nota = (nota or cargo.nota)[:255]
+    cargo.revisado_el = timezone.now()
+    cargo.revisado_por = usuario
+    cargo.save(update_fields=['estado', 'nota', 'revisado_el', 'revisado_por'])
+    return cargo
+
+
+def cambiar_estado_del_cargo(cargo, nuevo, usuario=None, nota=''):
+    """El administrador elige el estado en el formulario del cargo: cada cambio pasa por su regla (y su correo)."""
+    anterior = Cargo.objects.only('estado').get(pk=cargo.pk).estado
+    if nuevo == anterior:
+        return cargo
+    if nuevo == Estado.PAGADO:
+        return aprobar_cargo(cargo, usuario)
+    if nuevo == Estado.ANULADO:
+        return anular_cargo(cargo, usuario, nota)
+    if nuevo == Estado.PENDIENTE:
+        if anterior == Estado.EN_REVISION:
+            return rechazar_comprobante(cargo, usuario, nota)
+        return reabrir_cargo(cargo, usuario, nota)
+    raise CargoError('Un cargo queda "en revisión" solo cuando la tienda sube su comprobante.')
 
 
 # --- Anuncios en la portada ------------------------------------------------------------
