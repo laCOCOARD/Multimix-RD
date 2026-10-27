@@ -9,7 +9,7 @@ from core.templatetags.moneda import formatear_monto
 
 from .models import Banner, CuentaBancaria, SolicitudTienda, Tienda
 from .panel import AdminDeTienda, tiendas_del_panel
-from .services import dar_acceso_al_panel, revisar_solicitud, ve_todas
+from .services import avisar_resultado_de_solicitud, dar_acceso_al_panel, revisar_solicitud, ve_todas
 
 
 @admin.register(Tienda)
@@ -247,9 +247,12 @@ class SolicitudTiendaAdmin(admin.ModelAdmin):
         return False
 
     def save_model(self, request, obj, form, change):
-        if 'estado' in form.changed_data:
+        nuevo_estado = 'estado' in form.changed_data
+        if nuevo_estado:
             revisar_solicitud(obj, request.user)
         super().save_model(request, obj, form, change)
+        if nuevo_estado:
+            avisar_resultado_de_solicitud(obj)
 
     def _cambiar_estado(self, request, queryset, estado):
         total = 0
@@ -257,6 +260,7 @@ class SolicitudTiendaAdmin(admin.ModelAdmin):
             solicitud.estado = estado
             revisar_solicitud(solicitud, request.user)
             solicitud.save(update_fields=['estado', 'revisada_por', 'revisada_el', 'actualizada'])
+            avisar_resultado_de_solicitud(solicitud)
             total += 1
         return total
 
@@ -268,7 +272,7 @@ class SolicitudTiendaAdmin(admin.ModelAdmin):
     @admin.action(description='Rechazar')
     def rechazar(self, request, queryset):
         total = self._cambiar_estado(request, queryset, SolicitudTienda.Estado.RECHAZADA)
-        self.message_user(request, f'{total} solicitud(es) rechazada(s). El negocio no recibe ningún aviso.', messages.SUCCESS)
+        self.message_user(request, f'{total} solicitud(es) rechazada(s). A cada negocio le avisamos por correo.', messages.SUCCESS)
 
     @admin.display(description='Estado', ordering='estado')
     def estado_legible(self, solicitud):

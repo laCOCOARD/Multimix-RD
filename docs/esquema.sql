@@ -1616,3 +1616,13 @@ CREATE TABLE "core_conteodiario" ("id" integer NOT NULL PRIMARY KEY AUTOINCREMEN
 CREATE INDEX "core_conteodiario_tienda_id_671406a6" ON "core_conteodiario" ("tienda_id");
 CREATE INDEX "conteo_fecha_evento_idx" ON "core_conteodiario" ("fecha", "evento");
 COMMIT;
+
+-- ============================================================
+-- core 0023
+-- ============================================================
+BEGIN;
+--
+-- Raw Python operation
+--
+-- THIS OPERATION CANNOT BE WRITTEN AS SQL
+COMMIT;

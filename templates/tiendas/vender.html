@@ -163,9 +163,17 @@
     <details class="mm-panel mb-2">
       <summary class="fw-semibold">¿Cuánto cuesta tener una tienda?</summary>
       <div class="mt-2 mm-descripcion">
-        <p>Cada tienda tiene un plan con una mensualidad. Al revisar tu solicitud te explicamos los planes disponibles y lo que incluye cada uno.</p>
+        <p>Cada tienda tiene un plan con una mensualidad. Al revisar tu solicitud te explicamos los planes disponibles y lo que incluye cada uno.{% if 'condiciones-para-vendedores' in paginas_publicadas %} Cómo se paga y qué pasa si un pago se atrasa está en las <a href="{% url 'core:pagina' 'condiciones-para-vendedores' %}">condiciones para vendedores</a>.{% endif %}</p>
       </div>
     </details>
+    {% if 'condiciones-para-vendedores' in paginas_publicadas %}
+      <details class="mm-panel mb-2">
+        <summary class="fw-semibold">¿Qué condiciones aplican a las tiendas?</summary>
+        <div class="mt-2 mm-descripcion">
+          <p>Qué hace cada tienda, qué no se puede vender, cómo funciona el plan y qué pasa si un pago se atrasa: está todo en las <a href="{% url 'core:pagina' 'condiciones-para-vendedores' %}">condiciones para vendedores</a>.</p>
+        </div>
+      </details>
+    {% endif %}
     <details class="mm-panel mb-2">
       <summary class="fw-semibold">¿Quién ve los datos de mi solicitud?</summary>
       <div class="mt-2 mm-descripcion">

@@ -1,0 +1,12 @@
+{% autoescape off %}Hola, {{ solicitud.nombre_responsable }}:
+
+¡Buenas noticias! Aprobamos tu solicitud para abrir "{{ solicitud.nombre_comercial }}" en {{ sitio }}.
+{% if enlace_tienda %}
+Tu tienda ya está creada: {{ enlace_tienda }}
+{% endif %}
+Te escribiremos con tu acceso al panel, desde donde subes tu logo y tu portada, registras las cuentas donde cobras y cargas tus productos. Antes de empezar, revisa las condiciones para vendedores publicadas en el sitio.
+{% if correo_sitio %}
+Si tienes dudas, escríbenos a {{ correo_sitio }}.
+{% endif %}
+{{ sitio }}
+{% endautoescape %}

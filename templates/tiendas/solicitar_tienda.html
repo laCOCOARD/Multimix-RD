@@ -44,8 +44,10 @@
                   <div class="form-check">
                     {{ campo }}
                     <label class="form-check-label" for="{{ campo.id_for_label }}">{{ campo.label }} <span class="mm-obligatorio" aria-hidden="true">*</span></label>
-                    {% if paginas_publicadas and 'privacidad' in paginas_publicadas %}
-                      <div class="form-text">Lee nuestra <a href="{% url 'core:pagina' 'privacidad' %}" target="_blank" rel="noopener">política de privacidad</a>.</div>
+                    {% if 'privacidad' in paginas_publicadas or 'condiciones-para-vendedores' in paginas_publicadas %}
+                      <div class="form-text">
+                        {% if 'privacidad' in paginas_publicadas %}Lee nuestra <a href="{% url 'core:pagina' 'privacidad' %}" target="_blank" rel="noopener">política de privacidad</a>{% endif %}{% if 'privacidad' in paginas_publicadas and 'condiciones-para-vendedores' in paginas_publicadas %} y las {% elif 'condiciones-para-vendedores' in paginas_publicadas %}Lee las {% endif %}{% if 'condiciones-para-vendedores' in paginas_publicadas %}<a href="{% url 'core:pagina' 'condiciones-para-vendedores' %}" target="_blank" rel="noopener">condiciones para vendedores</a>{% endif %}.
+                      </div>
                     {% endif %}
                     {% if campo.errors %}<div class="invalid-feedback d-block" id="{{ campo.auto_id }}_error">{{ campo.errors|join:' ' }}</div>{% endif %}
                   </div>

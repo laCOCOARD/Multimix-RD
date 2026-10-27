@@ -26,7 +26,8 @@
         <h2>Quién te vende</h2>
         <ul>
           <li>Cada compra se hace dentro de una sola tienda, con el carrito de esa tienda. Si compras en dos tiendas son dos pedidos distintos.</li>
-          <li>El pedido se confirma en este sitio y lo recibe la tienda. El efectivo lo cobra la tienda; las transferencias van a las cuentas de {{ plataforma.nombre }} que se muestran en tu pedido, que cobra por cuenta de la tienda. Paga solo a esas cuentas, nunca a una cuenta que te pasen por otro medio.</li>
+          <li>El pedido se confirma en este sitio y lo recibe la tienda. La tienda cobra directamente: las transferencias van a las cuentas de la tienda que se muestran en tu pedido y el efectivo se le paga a ella. La tienda confirma tu pago. Paga solo a esas cuentas, nunca a una cuenta que te pasen por otro medio.</li>
+          <li>Por ahora no se aceptan pagos con tarjeta en el sitio. Nadie te pedirá los datos de tu tarjeta.</li>
           <li>La tienda que te vende responde por sus productos, precios, existencias, entregas, cambios y devoluciones. Sus datos de contacto están al pie de cada página de la tienda.</li>
           <li>El comprobante que recibes es una constancia del pedido de esa tienda; no es un comprobante fiscal.</li>
         </ul>
@@ -47,6 +48,11 @@
           <li>Para hacer un pedido das tu nombre, tu teléfono (obligatorio, para coordinar la entrega) y, si pides envío, tu dirección. Esos datos los recibe la tienda donde compras para atender tu pedido. Más detalles en la <a href="{% url 'core:pagina' 'privacidad' %}">política de privacidad</a>.</li>
           <li>Una tienda no ve los pedidos ni los clientes de las demás. La administración de {{ plataforma.nombre }} puede ver los pedidos para dar soporte y mantener el sitio.</li>
         </ul>
+      </section>
+
+      <section>
+        <h2>Para las tiendas</h2>
+        <p>Las tiendas las abre la administración de {{ plataforma.nombre }} después de revisar cada solicitud{% if 'condiciones-para-vendedores' in paginas_publicadas %}, y se rigen por las <a href="{% url 'core:pagina' 'condiciones-para-vendedores' %}">condiciones para vendedores</a>{% endif %}. Si quieres vender aquí, <a href="{% url 'tiendas:vender' %}">mira cómo funciona</a>.</p>
       </section>
 
       <section>

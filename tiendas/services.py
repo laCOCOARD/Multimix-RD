@@ -250,3 +250,28 @@ def revisar_solicitud(solicitud, usuario):
     solicitud.revisada_por = usuario
     solicitud.revisada_el = timezone.now()
 
+
+def avisar_resultado_de_solicitud(solicitud):
+    """Al negocio, cuando su solicitud pasa a aprobada o rechazada: un correo, sin las notas internas.
+
+    El panel lo llama solo al cambiar el estado, asi que guardar otra vez la misma solicitud no lo repite.
+    """
+    from django.db import transaction
+
+    from core.correo import enviar, url_absoluta
+    from core.models import ConfiguracionTienda
+
+    Estado = SolicitudTienda.Estado
+    if solicitud.estado not in (Estado.APROBADA, Estado.RECHAZADA):
+        return
+    config = ConfiguracionTienda.obtener()
+    contexto = {
+        'solicitud': solicitud, 'sitio': config.nombre, 'correo_sitio': config.correo,
+        'enlace_tienda': url_absoluta(solicitud.tienda.get_absolute_url()) if solicitud.tienda_id else '',
+    }
+    if solicitud.estado == Estado.APROBADA:
+        asunto, plantilla = f'Tu tienda en {config.nombre}: solicitud aprobada', 'solicitante_aprobada'
+    else:
+        asunto, plantilla = f'Tu solicitud para vender en {config.nombre}', 'solicitante_rechazada'
+    transaction.on_commit(lambda: enviar(asunto, plantilla, contexto, [solicitud.correo]))
+

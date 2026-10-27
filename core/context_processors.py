@@ -9,7 +9,7 @@ from tiendas.services import como_vender
 from .models import ConfiguracionTienda, contenido_del_pie
 
 
-PAGINAS_LEGALES = {'privacidad', 'garantias', 'contacto'}
+PAGINAS_LEGALES = {'privacidad', 'garantias', 'contacto', 'condiciones-para-vendedores'}
 
 
 def tienda(request):

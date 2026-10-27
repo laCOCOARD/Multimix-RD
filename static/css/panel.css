@@ -1,9 +1,10 @@
-/* Panel de administracion de Multimix RD: colores de la marca sobre el admin de Django. */
+/* Panel de administracion de Multimix RD: la paleta del sitio (carbon y ambar, 2026-10-27) sobre el admin de Django.
+   Los enlaces van en ambar oscuro (#b45309): el ambar de la marca no se lee sobre blanco. */
 
 :root {
-  --primary: #0a5fb4;
-  --secondary: #082a5c;
-  --accent: #6db523;
+  --primary: #1f2937;
+  --secondary: #111827;
+  --accent: #f59e0b;
   --primary-fg: #fff;
 
   --header-color: #fff;
@@ -11,42 +12,42 @@
   --header-bg: var(--secondary);
   --header-link-color: #fff;
 
-  --breadcrumbs-fg: #dbe7f3;
+  --breadcrumbs-fg: #d1d5db;
   --breadcrumbs-link-fg: #fff;
   --breadcrumbs-bg: var(--primary);
 
-  --link-fg: #0a5fb4;
-  --link-hover-color: #196a21;
-  --link-selected-fg: #083b8a;
+  --link-fg: #b45309;
+  --link-hover-color: #92400e;
+  --link-selected-fg: #92400e;
 
   --button-fg: #fff;
-  --button-bg: var(--primary);
-  --button-hover-bg: #083b8a;
+  --button-bg: #374151;
+  --button-hover-bg: var(--primary);
   --default-button-bg: var(--secondary);
-  --default-button-hover-bg: #051c40;
-  --object-tools-bg: var(--primary);
+  --default-button-hover-bg: #000;
+  --object-tools-bg: #374151;
   --object-tools-hover-bg: var(--secondary);
 
-  --selected-row: #eef7e4;
-  --selected-bg: #e8f2fb;
+  --selected-row: #fef3c7;
+  --selected-bg: #f3f4f6;
 }
 
-/* En modo oscuro se aclaran los enlaces para que se lean sobre el fondo. */
+/* En modo oscuro el ambar se aclara para que se lea sobre el fondo. */
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --link-fg: #7fb6ea;
-    --link-selected-fg: #a9cff3;
-    --link-hover-color: #a8dc72;
-    --selected-row: #24313f;
-    --selected-bg: #1b2a3a;
+    --link-fg: #fbbf24;
+    --link-selected-fg: #fde68a;
+    --link-hover-color: #fcd34d;
+    --selected-row: #2b2f36;
+    --selected-bg: #1f2937;
   }
 }
 html[data-theme="dark"] {
-  --link-fg: #7fb6ea;
-  --link-selected-fg: #a9cff3;
-  --link-hover-color: #a8dc72;
-  --selected-row: #24313f;
-  --selected-bg: #1b2a3a;
+  --link-fg: #fbbf24;
+  --link-selected-fg: #fde68a;
+  --link-hover-color: #fcd34d;
+  --selected-row: #2b2f36;
+  --selected-bg: #1f2937;
 }
 
 #header { border-bottom: 3px solid var(--accent); }
@@ -54,7 +55,7 @@ html[data-theme="dark"] {
 .panel-marca-sub { font-size: .7em; font-weight: 400; opacity: .75; margin-left: .3em; }
 .login #header { justify-content: center; }
 .module h2, .module caption, .inline-group h2 { background: var(--primary); }
-div.breadcrumbs a:hover { color: #d6f0b8; }
+div.breadcrumbs a:hover { color: #fcd34d; }
 
 /* --- Etiquetas de color ------------------------------------------------- */
 .panel-etiqueta, .panel-estado { display: inline-block; padding: .2em .65em; border-radius: 999px; font-size: .78rem; font-weight: 700; white-space: nowrap; color: #fff; }
@@ -98,7 +99,7 @@ div.breadcrumbs a:hover { color: #d6f0b8; }
 .panel-resumen { margin-bottom: 24px; }
 .panel-tarjetas { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 14px; margin-bottom: 20px; }
 .panel-tarjeta { display: flex; flex-direction: column; gap: 4px; padding: 16px 18px; border-radius: 12px; border: 1px solid var(--hairline-color); border-left: 5px solid var(--primary); background: var(--body-bg); color: var(--body-fg); text-decoration: none; transition: transform .2s ease, box-shadow .2s ease; }
-a.panel-tarjeta:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(8, 42, 92, .15); color: var(--body-fg); }
+a.panel-tarjeta:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(17, 24, 39, .15); color: var(--body-fg); }
 .panel-tarjeta-titulo { font-size: .8rem; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--body-quiet-color); }
 .panel-tarjeta-valor { font-size: 1.6rem; line-height: 1.2; }
 .panel-tarjeta-nota { font-size: .8rem; color: var(--body-quiet-color); }

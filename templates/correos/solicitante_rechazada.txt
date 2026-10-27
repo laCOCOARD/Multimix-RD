@@ -1,0 +1,8 @@
+{% autoescape off %}Hola, {{ solicitud.nombre_responsable }}:
+
+Gracias por tu interés en vender en {{ sitio }}. Revisamos tu solicitud para "{{ solicitud.nombre_comercial }}" y por ahora no podemos abrir tu tienda.
+{% if correo_sitio %}
+Si quieres saber más o crees que podemos reconsiderarla, escríbenos a {{ correo_sitio }}.
+{% endif %}
+{{ sitio }}
+{% endautoescape %}
