@@ -283,9 +283,18 @@ Al cerrar cada modulo: check, makemigrations, migrate, test y commit.
   datos no se muestra. Fuera de una tienda la tarjeta de producto dice "Vendido por <tienda>" con enlace a ella.
   "Tu compra, protegida", la ayuda y lo legal siguen en el menu de 3 barras y en el pie. Con una sola tienda su
   tarjeta se acuesta a todo el ancho (`una-sola`).
-- Vender en el sitio: no hay alta propia (las tiendas las crea el superusuario). `tiendas.services.como_vender` da
-  el camino: el WhatsApp del sitio con el mensaje listo, su correo o la pagina de contacto; sin ninguno no se
-  ofrece. La direccion del panel (`ADMIN_URL`, secreta a pedido del dueño) solo se enlaza al personal
+- Vender en el sitio (Fase 2 del rediseño, 2026-10-27): no hay alta propia; las tiendas las sigue creando el
+  superusuario. `/vender/` (`tiendas:vender`) explica como funciona, lo que trae una tienda y preguntas frecuentes, sin
+  prometer precios, comisiones, aprobacion automatica ni plazos. "Solicitar mi tienda" (`/vender/solicitar/`, abierta
+  sin sesion) guarda una `tiendas.SolicitudTienda` en estado pendiente (`services.registrar_solicitud`: correo al
+  sitio con el enlace del panel y confirmacion a quien la envia; limite 3 por IP y hora, 2 por correo y dia y 40 en el
+  sitio por dia; honeypot `sitio_web`) y lleva a `/vender/solicitud-enviada/`. No crea cuentas ni da acceso: el
+  superusuario la revisa en Panel > Solicitudes de tiendas (`SolicitudTiendaAdmin`, solo `ve_todas`; los vendedores
+  no la ven), cambia su estado (`revisar_solicitud` anota quien y cuando) y "Crear la tienda con estos datos" abre el
+  alta de la tienda con nombre y contactos puestos; los vendedores se asignan alli como siempre. El inicio del panel
+  avisa de las pendientes. Todos los accesos ("Vende en...", la seccion `#vender` de la portada, el menu y el pie)
+  llevan a `/vender/` o al formulario; `como_vender` (WhatsApp, correo o contacto) queda como "¿Prefieres hablar
+  antes?". Dentro de una tienda no se ofrece. La direccion del panel (`ADMIN_URL`, secreta a pedido del dueño) solo se enlaza al personal
   (`user.is_staff`: "Mi panel"); nunca a clientes ni visitantes.
 - Cabecera (todas las paginas): en pantallas anchas una fila fija y debajo la franja `mm-nav` (categorias,
   tiendas, productos, ofertas, vender o "Mi panel"). En el telefono dos filas (marca y favoritos; menu y buscador)

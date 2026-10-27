@@ -14,7 +14,7 @@ class PanelAdminSite(admin.AdminSite):
     def index(self, request, extra_context=None):
         # Se importa aqui: los modelos aun no existen al crear el sitio.
         from tiendas.panel import tiendas_del_panel
-        from tiendas.services import ve_todas
+        from tiendas.services import solicitudes_pendientes, ve_todas
 
         from .panel import resumen_panel, ventas_por_tienda
 
@@ -27,6 +27,8 @@ class PanelAdminSite(admin.AdminSite):
                 contexto = {
                     'resumen': resumen_panel(), 'ventas_por_tienda': ventas_por_tienda(),
                     'cobros': resumen_para_el_administrador(),
+                    # Negocios que pidieron abrir su tienda desde /vender/solicitar/.
+                    'solicitudes_pendientes': solicitudes_pendientes(),
                 }
             else:
                 tiendas = tiendas_del_panel(request)

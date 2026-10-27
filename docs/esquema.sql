@@ -1576,3 +1576,17 @@ CREATE TABLE "planes_video" ("id" integer NOT NULL PRIMARY KEY AUTOINCREMENT, "t
 CREATE INDEX "planes_video_producto_id_6e6430f9" ON "planes_video" ("producto_id");
 CREATE INDEX "planes_video_tienda_id_575bd47d" ON "planes_video" ("tienda_id");
 COMMIT;
+
+-- ============================================================
+-- tiendas 0017
+-- ============================================================
+BEGIN;
+--
+-- Create model SolicitudTienda
+--
+CREATE TABLE "tiendas_solicitudtienda" ("id" integer NOT NULL PRIMARY KEY AUTOINCREMENT, "nombre_responsable" varchar(120) NOT NULL, "nombre_comercial" varchar(80) NOT NULL, "correo" varchar(150) NOT NULL, "telefono" varchar(10) NOT NULL, "descripcion" text NOT NULL, "redes" varchar(200) NOT NULL, "estado" varchar(12) NOT NULL, "notas" text NOT NULL, "revisada_el" datetime NULL, "creada" datetime NOT NULL, "actualizada" datetime NOT NULL, "categoria_id" bigint NULL REFERENCES "catalogo_categoria" ("id") DEFERRABLE INITIALLY DEFERRED, "revisada_por_id" integer NULL REFERENCES "auth_user" ("id") DEFERRABLE INITIALLY DEFERRED, "tienda_id" bigint NULL REFERENCES "tiendas_tienda" ("id") DEFERRABLE INITIALLY DEFERRED);
+CREATE INDEX "tiendas_solicitudtienda_categoria_id_6ccc58ee" ON "tiendas_solicitudtienda" ("categoria_id");
+CREATE INDEX "tiendas_solicitudtienda_revisada_por_id_2f13825d" ON "tiendas_solicitudtienda" ("revisada_por_id");
+CREATE INDEX "tiendas_solicitudtienda_tienda_id_00fa117b" ON "tiendas_solicitudtienda" ("tienda_id");
+CREATE INDEX "solicitud_estado_idx" ON "tiendas_solicitudtienda" ("estado", "creada" DESC);
+COMMIT;

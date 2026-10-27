@@ -7,9 +7,9 @@ from django.utils.html import format_html, format_html_join
 from core.admin_avisos import AvisaImagenesSinGuardar
 from core.templatetags.moneda import formatear_monto
 
-from .models import Banner, CuentaBancaria, Tienda
+from .models import Banner, CuentaBancaria, SolicitudTienda, Tienda
 from .panel import AdminDeTienda, tiendas_del_panel
-from .services import dar_acceso_al_panel, ve_todas
+from .services import dar_acceso_al_panel, revisar_solicitud, ve_todas
 
 
 @admin.register(Tienda)
@@ -206,3 +206,104 @@ class BannerAdmin(AvisaImagenesSinGuardar, AdminDeTienda, admin.ModelAdmin):
         (None, {'fields': ['tienda', 'titulo', 'subtitulo', 'imagen', 'texto_boton', 'enlace']}),
         ('Cuándo se muestra', {'fields': ['activo', 'orden', 'vigente_desde', 'vigente_hasta']}),
     ]
+
+
+@admin.register(SolicitudTienda)
+class SolicitudTiendaAdmin(admin.ModelAdmin):
+    """Solicitudes de quienes quieren vender (formulario de /vender/solicitar/). Solo el administrador principal las ve:
+    traen datos personales. Aprobar no crea nada solo: desde aqui se crea la tienda con los datos de la solicitud y se
+    le da acceso a sus vendedores en la pantalla de la tienda, como siempre."""
+
+    list_display = ['nombre_comercial', 'nombre_responsable', 'categoria', 'estado_legible', 'creada']
+    list_filter = ['estado', 'categoria']
+    search_fields = ['nombre_comercial', 'nombre_responsable', 'correo', 'telefono']
+    date_hierarchy = 'creada'
+    actions = ['marcar_en_revision', 'rechazar']
+    readonly_fields = [
+        'nombre_responsable', 'nombre_comercial', 'contacto', 'categoria', 'descripcion', 'redes', 'creada',
+        'revisada_por', 'revisada_el', 'crear_tienda',
+    ]
+    fieldsets = [
+        ('Quién la envía', {'fields': ['nombre_responsable', 'nombre_comercial', 'contacto', 'categoria', 'redes', 'creada']}),
+        ('Qué vende', {'fields': ['descripcion']}),
+        ('Revisión', {'fields': ['estado', 'notas', 'tienda', 'crear_tienda', 'revisada_por', 'revisada_el']}),
+    ]
+
+    # Solo el administrador principal: los vendedores no ven ni el menu.
+    def has_module_permission(self, request):
+        return ve_todas(request.user)
+
+    def has_view_permission(self, request, obj=None):
+        return ve_todas(request.user)
+
+    def has_change_permission(self, request, obj=None):
+        return ve_todas(request.user)
+
+    def has_delete_permission(self, request, obj=None):
+        return ve_todas(request.user)
+
+    def has_add_permission(self, request):
+        # Llegan del formulario del sitio.
+        return False
+
+    def save_model(self, request, obj, form, change):
+        if 'estado' in form.changed_data:
+            revisar_solicitud(obj, request.user)
+        super().save_model(request, obj, form, change)
+
+    def _cambiar_estado(self, request, queryset, estado):
+        total = 0
+        for solicitud in queryset.exclude(estado=estado):
+            solicitud.estado = estado
+            revisar_solicitud(solicitud, request.user)
+            solicitud.save(update_fields=['estado', 'revisada_por', 'revisada_el', 'actualizada'])
+            total += 1
+        return total
+
+    @admin.action(description='Marcar en revisión')
+    def marcar_en_revision(self, request, queryset):
+        total = self._cambiar_estado(request, queryset, SolicitudTienda.Estado.EN_REVISION)
+        self.message_user(request, f'{total} solicitud(es) en revisión.', messages.SUCCESS)
+
+    @admin.action(description='Rechazar')
+    def rechazar(self, request, queryset):
+        total = self._cambiar_estado(request, queryset, SolicitudTienda.Estado.RECHAZADA)
+        self.message_user(request, f'{total} solicitud(es) rechazada(s). El negocio no recibe ningún aviso.', messages.SUCCESS)
+
+    @admin.display(description='Estado', ordering='estado')
+    def estado_legible(self, solicitud):
+        clases = {'pendiente': 'pendiente', 'en_revision': 'en_revision', 'aprobada': 'pagado', 'rechazada': 'anulado'}
+        return format_html(
+            '<span class="panel-estado panel-cargo-{}">{}</span>', clases.get(solicitud.estado, 'pendiente'),
+            solicitud.get_estado_display(),
+        )
+
+    @admin.display(description='Contacto')
+    def contacto(self, solicitud):
+        from core.telefonos import formatear_telefono, telefono_internacional
+
+        return format_html(
+            '<a href="mailto:{}">{}</a><br><a href="tel:+{}">{}</a> · '
+            '<a href="https://wa.me/{}" target="_blank" rel="noopener">WhatsApp</a>',
+            solicitud.correo, solicitud.correo, telefono_internacional(solicitud.telefono),
+            formatear_telefono(solicitud.telefono), telefono_internacional(solicitud.telefono),
+        )
+
+    @admin.display(description='Crear la tienda')
+    def crear_tienda(self, solicitud):
+        if solicitud.tienda_id:
+            return format_html('<a href="{}">Ver {}</a>', reverse('admin:tiendas_tienda_change', args=[solicitud.tienda_id]),
+                               solicitud.tienda.nombre)
+        from urllib.parse import urlencode
+
+        datos = urlencode({
+            'nombre': solicitud.nombre_comercial, 'correo': solicitud.correo, 'telefono': solicitud.telefono,
+            'whatsapp': solicitud.telefono, 'banner_subtitulo': solicitud.descripcion[:200],
+        })
+        return format_html(
+            '<a class="button" href="{}?{}">Crear la tienda con estos datos</a><br><span class="help">Abre el '
+            'formulario de una tienda nueva con el nombre y los contactos ya puestos; ahí eliges su código y sus '
+            'vendedores. Después marca esta solicitud como aprobada y elige la tienda arriba.</span>',
+            reverse('admin:tiendas_tienda_add'), datos,
+        )
+

@@ -31,6 +31,12 @@
     <p>Tus clientes no pueden pagarte por transferencia hasta que registres una. <a href="{% url 'admin:tiendas_cuentabancaria_add' %}">Agregar una cuenta</a></p>
   </section>
 {% endfor %}
+{% if solicitudes_pendientes %}
+  <section class="panel-aviso-cobro panel-aviso-urgente" aria-label="Solicitudes de tiendas">
+    <h2>Negocios que quieren vender</h2>
+    <p><a href="{% url 'admin:tiendas_solicitudtienda_changelist' %}?estado__exact=pendiente">{{ solicitudes_pendientes }} solicitud{{ solicitudes_pendientes|pluralize:"es" }} de tienda pendiente{{ solicitudes_pendientes|pluralize }}</a>: revísalas y contacta a cada negocio.</p>
+  </section>
+{% endif %}
 {% if cobros %}
   <section class="panel-aviso-cobro{% if cobros.comprobantes_por_revisar or cobros.cargos_vencidos %} panel-aviso-urgente{% endif %}" aria-label="Pagos de las tiendas al sitio">
     <h2>Pagos de las tiendas</h2>

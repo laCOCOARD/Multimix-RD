@@ -214,14 +214,17 @@ class DirectorioTests(DosTiendas):
         configuracion.correo = 'hola@example.com'
         configuracion.save()
         self.assertContains(self.client.get('/'), 'mailto:hola@example.com?subject=')
-        # Sin WhatsApp ni correo, la pagina de contacto; sin ella tampoco, no se ofrece.
+        # Sin WhatsApp ni correo, la pagina de contacto; sin ella tampoco no hay a donde escribir, pero desde la Fase 2
+        # (2026-10-27) siempre queda el formulario de solicitud.
         configuracion.correo = ''
         configuracion.save()
         self.assertEqual(self.client.get('/').context['vender'], {'url': '/pagina/contacto/', 'medio': 'pagina'})
         PaginaInformativa.objects.filter(slug='contacto').update(publicada=False)
         portada = self.client.get('/')
-        self.assertNotContains(portada, 'id="vender"')
-        self.assertNotContains(portada, 'Vende en Multimix RD')
+        self.assertIsNone(portada.context['vender'])
+        self.assertContains(portada, 'id="vender"')
+        self.assertContains(portada, reverse('tiendas:solicitar_tienda'))
+        self.assertNotContains(portada, '¿Prefieres hablar antes?')
 
     def test_el_panel_solo_se_enlaza_a_quien_tiene_acceso(self):
         from django.conf import settings as ajustes

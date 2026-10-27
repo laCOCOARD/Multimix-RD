@@ -1,0 +1,14 @@
+{% autoescape off %}{{ solicitud.nombre_responsable }} quiere abrir una tienda en {{ sitio }}:
+
+Negocio: {{ solicitud.nombre_comercial }}
+Categoría: {{ solicitud.categoria.nombre|default:"No la eligió" }}
+Correo: {{ solicitud.correo }}
+Teléfono: {{ solicitud.telefono }}
+{% if solicitud.redes %}Redes o sitio web: {{ solicitud.redes }}
+{% endif %}
+Qué vende:
+{{ solicitud.descripcion }}
+
+Revísala en el panel (la solicitud no crea la tienda ni da acceso; eso lo haces tú):
+{{ enlace }}
+{% endautoescape %}

@@ -1,0 +1,86 @@
+{% extends 'base.html' %}
+
+{# Formulario de solicitud de tienda. El navegador revisa lo basico (atributos de cada campo) y Django todo. Django #}
+{# 5.2 enlaza cada campo con su ayuda (`<id>_helptext`) y su error (`<id>_error`) por aria-describedby. #}
+{% block titulo %}Solicitar mi tienda · {{ plataforma.nombre }}{% endblock %}
+{% block descripcion %}Envía la solicitud para abrir la tienda de tu negocio en {{ plataforma.nombre }}.{% endblock %}
+
+{% block contenido %}
+<div class="container py-4 py-lg-5">
+  <nav aria-label="Ruta de navegación">
+    <ol class="breadcrumb small">
+      <li class="breadcrumb-item"><a href="{% url 'tiendas:vender' %}">Vende en {{ plataforma.nombre }}</a></li>
+      <li class="breadcrumb-item active" aria-current="page">Solicitar mi tienda</li>
+    </ol>
+  </nav>
+  <div class="row g-4 g-lg-5">
+    <div class="col-lg-7">
+      <div class="mm-panel mm-solicitud">
+        <h1 class="h2 mb-2">Solicita tu tienda</h1>
+        <p class="text-muted mb-4">Cuéntanos de tu negocio. Revisamos cada solicitud y te contactamos. Los campos marcados con <span class="mm-obligatorio" aria-hidden="true">*</span><span class="visually-hidden">asterisco</span> son obligatorios.</p>
+
+        {% if formulario.errors %}
+          {# Resumen de errores: se lee primero y lleva a cada campo. #}
+          <div class="alert alert-danger mm-errores" role="alert" tabindex="-1" id="errores-solicitud">
+            <p class="fw-semibold mb-1">Revisa {{ formulario.errors|length }} dato{{ formulario.errors|length|pluralize }} antes de enviar:</p>
+            <ul class="mb-0">
+              {% for error in formulario.non_field_errors %}<li>{{ error }}</li>{% endfor %}
+              {% for campo in formulario %}{% for error in campo.errors %}<li><a href="#{{ campo.auto_id }}">{{ campo.label }}</a>: {{ error }}</li>{% endfor %}{% endfor %}
+            </ul>
+          </div>
+        {% endif %}
+
+        <form method="post" action="{% url 'tiendas:solicitar_tienda' %}" class="mm-formulario-solicitud">
+          {% csrf_token %}
+          <div class="row g-3">
+            {% for campo in formulario %}
+              {% if campo.name == 'sitio_web' %}
+                <div class="mm-campo-extra" aria-hidden="true">
+                  <label for="{{ campo.id_for_label }}">Sitio web (no llenar)</label>
+                  <input type="text" id="{{ campo.id_for_label }}" name="sitio_web" tabindex="-1" autocomplete="off">
+                </div>
+              {% elif campo.name == 'acepta' %}
+                <div class="col-12">
+                  <div class="form-check">
+                    {{ campo }}
+                    <label class="form-check-label" for="{{ campo.id_for_label }}">{{ campo.label }} <span class="mm-obligatorio" aria-hidden="true">*</span></label>
+                    {% if paginas_publicadas and 'privacidad' in paginas_publicadas %}
+                      <div class="form-text">Lee nuestra <a href="{% url 'core:pagina' 'privacidad' %}" target="_blank" rel="noopener">política de privacidad</a>.</div>
+                    {% endif %}
+                    {% if campo.errors %}<div class="invalid-feedback d-block" id="{{ campo.auto_id }}_error">{{ campo.errors|join:' ' }}</div>{% endif %}
+                  </div>
+                </div>
+              {% else %}
+                <div class="{% if campo.name == 'descripcion' or campo.name == 'redes' %}col-12{% else %}col-md-6{% endif %}">
+                  <label class="form-label" for="{{ campo.id_for_label }}">{{ campo.label }}{% if campo.field.required %} <span class="mm-obligatorio" aria-hidden="true">*</span>{% endif %}</label>
+                  {{ campo }}
+                  {% if campo.help_text %}<div class="form-text" id="{{ campo.auto_id }}_helptext">{{ campo.help_text }}</div>{% endif %}
+                  {% if campo.errors %}<div class="invalid-feedback d-block" id="{{ campo.auto_id }}_error">{{ campo.errors|join:' ' }}</div>{% endif %}
+                </div>
+              {% endif %}
+            {% endfor %}
+          </div>
+          <button class="btn btn-acento btn-lg w-100 mt-4" type="submit"><i class="bi bi-send me-2" aria-hidden="true"></i>Enviar solicitud</button>
+          <p class="small text-muted text-center mt-3 mb-0">Enviar la solicitud no abre la tienda ni crea una cuenta: primero la revisamos.</p>
+        </form>
+      </div>
+    </div>
+
+    <aside class="col-lg-5" aria-label="Qué pasa después">
+      <div class="mm-panel mm-despues">
+        <h2 class="h5">Qué pasa después</h2>
+        <ol class="mm-despues-pasos">
+          <li><strong>Recibes un correo</strong> confirmando que nos llegó tu solicitud.</li>
+          <li><strong>La revisamos</strong> y te escribimos al correo o al teléfono que nos dejes.</li>
+          <li><strong>Si avanzamos</strong>, creamos tu tienda y te damos acceso a tu panel para prepararla.</li>
+        </ol>
+        <hr>
+        <p class="small mb-0"><i class="bi bi-lock me-1" aria-hidden="true"></i>Tus datos solo los ve el equipo de {{ plataforma.nombre }}. No se publican en el sitio.</p>
+      </div>
+      {% if vender %}
+        <p class="small text-muted mt-3">¿Prefieres hablar antes? <a href="{{ vender.url }}"{% if vender.medio == 'whatsapp' %} target="_blank" rel="noopener"{% endif %}>{% if vender.medio == 'whatsapp' %}Escríbenos por WhatsApp{% elif vender.medio == 'correo' %}Escríbenos un correo{% else %}Contáctanos{% endif %}</a>.</p>
+      {% endif %}
+    </aside>
+  </div>
+</div>
+{% endblock %}

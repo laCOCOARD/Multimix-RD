@@ -12,7 +12,7 @@ class PaginasSitemap(Sitemap):
     priority = 0.6
 
     def items(self):
-        return ['tiendas:portada', 'tiendas:directorio', 'tiendas:buscar', 'core:terminos']
+        return ['tiendas:portada', 'tiendas:directorio', 'tiendas:buscar', 'tiendas:vender', 'core:terminos']
 
     def location(self, item):
         return reverse(item)

@@ -46,8 +46,8 @@
         {% endif %}
         {% if user.is_staff %}
           <a href="{% url 'admin:index' %}"><i class="bi bi-speedometer2"></i>Mi panel</a>
-        {% elif vender %}
-          <a href="{% url 'tiendas:portada' %}#vender"><i class="bi bi-shop-window"></i>Vende en {{ plataforma.nombre }}</a>
+        {% elif not tienda %}
+          <a href="{% url 'tiendas:vender' %}"><i class="bi bi-shop-window"></i>Vende en {{ plataforma.nombre }}</a>
         {% endif %}
       </nav>
 

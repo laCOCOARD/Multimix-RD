@@ -7,7 +7,7 @@ from django.db.models import Count, Q
 from django.db.models.functions import Coalesce
 from django.utils import timezone
 
-from .models import Banner, Tienda
+from .models import Banner, SolicitudTienda, Tienda
 
 GRUPO_VENDEDORES = 'Vendedores'
 
@@ -167,3 +167,68 @@ def como_vender(plataforma, paginas_publicadas=()):
 def tienda_principal():
     """La tienda mas antigua que siga activa: recibe los enlaces de cuando habia una sola tienda."""
     return Tienda.objects.activas().order_by('pk').first()
+
+
+# --- Solicitudes de tiendas (Fase 2 del rediseño, 2026-10-27) -----------------------------
+# Quien quiere vender llena el formulario de /vender/solicitar/. Queda pendiente hasta que el administrador principal
+# la revisa: no se crean cuentas ni se da acceso al panel; la tienda la sigue creando el administrador.
+
+SOLICITUDES_POR_CONEXION = 3       # por hora, desde una misma IP
+SOLICITUDES_POR_CORREO = 2         # por dia, con un mismo correo
+SOLICITUDES_DEL_SITIO = 40         # por dia, en todo el sitio (por si llegan bots desde muchas IP)
+HORA, DIA = 60 * 60, 24 * 60 * 60
+
+
+def solicitud_bloqueada(ip, correo):
+    from core import limites
+
+    return (
+        bool(ip and limites.bloqueado('solicitud-tienda', ip, maximo=SOLICITUDES_POR_CONEXION, ventana=HORA))
+        or limites.bloqueado('solicitud-tienda-correo', correo, maximo=SOLICITUDES_POR_CORREO, ventana=DIA)
+        or limites.bloqueado('solicitud-tienda-sitio', maximo=SOLICITUDES_DEL_SITIO, ventana=DIA)
+    )
+
+
+def _anotar_solicitud(ip, correo):
+    from core import limites
+
+    if ip:
+        limites.anotar_intento('solicitud-tienda', ip)
+    limites.anotar_intento('solicitud-tienda-correo', correo)
+    limites.anotar_intento('solicitud-tienda-sitio')
+
+
+def registrar_solicitud(datos, ip=None):
+    """Guarda la solicitud como pendiente y avisa al sitio (con el enlace para revisarla) y a quien la envio."""
+    from django.db import transaction
+    from django.urls import reverse
+
+    from core.correo import enviar, url_absoluta
+    from core.models import ConfiguracionTienda
+    from pedidos.avisos import correos_del_sitio
+
+    solicitud = SolicitudTienda.objects.create(**datos)
+    _anotar_solicitud(ip, solicitud.correo)
+    sitio = ConfiguracionTienda.obtener().nombre
+
+    def avisar():
+        contexto = {'solicitud': solicitud, 'sitio': sitio}
+        enviar(
+            f'Solicitud de tienda: {solicitud.nombre_comercial}', 'sitio_solicitud_tienda',
+            {**contexto, 'enlace': url_absoluta(reverse('admin:tiendas_solicitudtienda_change', args=[solicitud.pk]))},
+            correos_del_sitio(),
+        )
+        enviar(f'Recibimos tu solicitud para vender en {sitio}', 'solicitante_tienda', contexto, [solicitud.correo])
+    transaction.on_commit(avisar)
+    return solicitud
+
+
+def solicitudes_pendientes():
+    return SolicitudTienda.objects.filter(estado=SolicitudTienda.Estado.PENDIENTE).count()
+
+
+def revisar_solicitud(solicitud, usuario):
+    """Anota quien y cuando cambio el estado (lo llama el panel al guardar un estado nuevo)."""
+    solicitud.revisada_por = usuario
+    solicitud.revisada_el = timezone.now()
+

@@ -30,8 +30,8 @@
         <li><i class="bi bi-person-check" aria-hidden="true"></i>Compras directo a cada emprendedor</li>
         <li><i class="bi bi-truck" aria-hidden="true"></i>Sigues tu pedido en línea</li>
       </ul>
-      {% if vender and not user.is_staff %}
-        <a class="mm-hero-vender" href="#vender">¿Tienes un negocio? <strong>Vende en {{ plataforma.nombre }}</strong> <i class="bi bi-arrow-right" aria-hidden="true"></i></a>
+      {% if not user.is_staff %}
+        <a class="mm-hero-vender" href="{% url 'tiendas:vender' %}">¿Tienes un negocio? <strong>Vende en {{ plataforma.nombre }}</strong> <i class="bi bi-arrow-right" aria-hidden="true"></i></a>
       {% endif %}
     </div>
     {% if vitrina|length == 4 %}
@@ -198,25 +198,24 @@
 </section>
 {% endif %}
 
-{% if vender %}
+{# Para emprendedores: lleva a la pagina de vender y al formulario de solicitud (Fase 2, 2026-10-27). #}
 <section class="container mm-seccion" id="vender" aria-labelledby="titulo-vender">
   <div class="mm-vender">
     <div class="mm-vender-texto">
       <p class="mm-eyebrow"><i class="bi bi-rocket-takeoff" aria-hidden="true"></i>Para emprendedores</p>
-      <h2 id="titulo-vender">Tu negocio merece llegar más lejos</h2>
-      <p>Abre tu espacio en {{ plataforma.nombre }}, muestra tus productos y conecta con nuevos clientes. Escríbenos y te ayudamos a abrir tu tienda.</p>
+      <h2 id="titulo-vender">Tu marca merece su propia tienda online</h2>
+      <p>Presenta tus productos, construye tu identidad digital y gestiona los pedidos de tu negocio desde {{ plataforma.nombre }}.</p>
       <div class="mm-vender-acciones">
-        <a class="btn btn-acento btn-lg" href="{{ vender.url }}"{% if vender.medio == 'whatsapp' %} target="_blank" rel="noopener"{% endif %}>
-          {% if vender.medio == 'whatsapp' %}<i class="bi bi-whatsapp" aria-hidden="true"></i>{% elif vender.medio == 'correo' %}<i class="bi bi-envelope" aria-hidden="true"></i>{% else %}<i class="bi bi-chat-dots" aria-hidden="true"></i>{% endif %}
-          <span>Quiero vender<span class="d-none d-sm-inline"> en {{ plataforma.nombre }}</span></span>
-        </a>
         {% if user.is_staff %}
-          <a class="btn btn-outline-light btn-lg" href="{% url 'admin:index' %}"><i class="bi bi-speedometer2" aria-hidden="true"></i>Ir a mi panel</a>
+          <a class="btn btn-acento btn-lg" href="{% url 'admin:index' %}"><i class="bi bi-speedometer2" aria-hidden="true"></i>Ir a mi panel</a>
+        {% else %}
+          <a class="btn btn-acento btn-lg" href="{% url 'tiendas:solicitar_tienda' %}"><i class="bi bi-shop-window" aria-hidden="true"></i>Solicitar mi tienda</a>
+          <a class="btn btn-outline-light btn-lg" href="{% url 'tiendas:vender' %}#como-funciona"><i class="bi bi-signpost-split" aria-hidden="true"></i>Cómo funciona</a>
         {% endif %}
       </div>
-      <p class="mm-vender-nota">
-        {% if vender.medio == 'whatsapp' %}Te respondemos por WhatsApp.{% elif vender.medio == 'correo' %}Te respondemos por correo.{% else %}Ahí encontrarás cómo contactarnos.{% endif %}
-      </p>
+      {% if vender and not user.is_staff %}
+        <p class="mm-vender-nota">¿Prefieres hablar antes? <a class="text-white text-decoration-underline" href="{{ vender.url }}"{% if vender.medio == 'whatsapp' %} target="_blank" rel="noopener"{% endif %}>{% if vender.medio == 'whatsapp' %}Escríbenos por WhatsApp{% elif vender.medio == 'correo' %}Escríbenos un correo{% else %}Contáctanos{% endif %}</a>.</p>
+      {% endif %}
     </div>
     <ul class="mm-vender-lista">
       <li><i class="bi bi-shop-window" aria-hidden="true"></i><span><strong>Tu propia tienda</strong> con tu logo, tu portada y su dirección dentro del sitio.</span></li>
@@ -225,7 +224,6 @@
     </ul>
   </div>
 </section>
-{% endif %}
 
 <section class="container mm-seccion" aria-labelledby="titulo-confianza">
   <div class="mm-seccion-cabecera">

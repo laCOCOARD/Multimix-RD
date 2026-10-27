@@ -1,8 +1,10 @@
+from django.contrib.auth.decorators import login_not_required
 from django.core.paginator import Paginator
 from django.http import Http404
 from django.shortcuts import redirect, render
 from django.templatetags.static import static
 from django.urls import reverse
+from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_GET
 
 from catalogo.forms import ORDENES, FiltroCatalogoForm
@@ -108,3 +110,40 @@ def enlace_anterior(request, **kwargs):
     destino = principal.get_absolute_url().rstrip('/') + request.path
     consulta = request.META.get('QUERY_STRING')
     return redirect(f'{destino}?{consulta}' if consulta else destino)
+
+
+# --- Vender en el sitio (Fase 2 del rediseño, 2026-10-27) ----------------------------------
+# Abiertas sin sesion: quien quiere vender no tiene por que tener una cuenta de cliente. La solicitud no crea cuentas
+# ni da acceso al panel: queda pendiente para el administrador principal.
+
+@login_not_required
+@require_GET
+def vender(request):
+    return render(request, 'tiendas/vender.html')
+
+
+@login_not_required
+@never_cache
+def solicitar_tienda(request):
+    from core.red import ip_del_cliente
+
+    from .forms import SolicitudTiendaForm
+
+    inicial = {}
+    if request.user.is_authenticated:
+        inicial = {'nombre_responsable': request.user.get_full_name(), 'correo': request.user.email}
+    formulario = SolicitudTiendaForm(request.POST or None, initial=inicial)
+    if request.method == 'POST' and formulario.is_valid():
+        ip = ip_del_cliente(request)
+        if services.solicitud_bloqueada(ip, formulario.cleaned_data['correo']):
+            formulario.add_error(None, 'Ya recibimos varias solicitudes desde aquí. Espera un rato o escríbenos.')
+        else:
+            services.registrar_solicitud(formulario.datos_de_la_solicitud(), ip=ip)
+            return redirect('tiendas:solicitud_enviada')
+    return render(request, 'tiendas/solicitar_tienda.html', {'formulario': formulario})
+
+
+@login_not_required
+@require_GET
+def solicitud_enviada(request):
+    return render(request, 'tiendas/solicitud_enviada.html')

@@ -1,0 +1,11 @@
+{% autoescape off %}Hola, {{ solicitud.nombre_responsable }}:
+
+Recibimos tu solicitud para abrir la tienda "{{ solicitud.nombre_comercial }}" en {{ sitio }}.
+
+Revisamos cada solicitud a mano. Cuando la revisemos te escribimos a este correo o al teléfono que nos dejaste para
+contarte los siguientes pasos.
+
+Si no fuiste tú quien la envió, ignora este correo.
+
+{{ sitio }}
+{% endautoescape %}

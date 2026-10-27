@@ -1,0 +1,20 @@
+{% extends 'base.html' %}
+
+{# Despues de enviar la solicitud (redireccion: recargar no la envia otra vez). No muestra ningun dato personal. #}
+{% block titulo %}Solicitud enviada · {{ plataforma.nombre }}{% endblock %}
+{% block meta %}<meta name="robots" content="noindex">{% endblock %}
+
+{% block contenido %}
+<div class="container py-5">
+  <div class="mm-panel mm-enviada text-center">
+    <i class="bi bi-check-circle-fill mm-icono-estado" aria-hidden="true"></i>
+    <h1 class="h2 mt-3">¡Recibimos tu solicitud!</h1>
+    <p class="lead mb-1">Gracias por querer vender en {{ plataforma.nombre }}.</p>
+    <p class="text-muted">Te enviamos un correo de confirmación. Revisamos cada solicitud y te escribimos para contarte los siguientes pasos.</p>
+    <div class="d-flex flex-wrap justify-content-center gap-2 mt-4">
+      <a class="btn btn-primary btn-lg" href="{% url 'tiendas:directorio' %}"><i class="bi bi-shop me-2" aria-hidden="true"></i>Ver las tiendas</a>
+      <a class="btn btn-outline-primary btn-lg" href="{% url 'tiendas:portada' %}">Volver al inicio</a>
+    </div>
+  </div>
+</div>
+{% endblock %}

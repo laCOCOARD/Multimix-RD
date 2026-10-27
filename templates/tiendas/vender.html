@@ -1,0 +1,195 @@
+{% extends 'base.html' %}
+
+{# Pagina para emprendedores (Fase 2 del rediseño, 2026-10-27). Todo lo que dice existe en el sitio: no promete #}
+{# precios, comisiones, aprobacion automatica ni plazos. Las tiendas las crea el administrador tras revisar la #}
+{# solicitud (tiendas.SolicitudTienda). #}
+{% block titulo %}Vende en {{ plataforma.nombre }} · Abre la tienda online de tu negocio{% endblock %}
+{% block descripcion %}Solicita tu tienda en {{ plataforma.nombre }}: tu marca, tu catálogo y tus pedidos en un solo panel, dentro de un sitio con tiendas de emprendedores dominicanos.{% endblock %}
+
+{% block contenido %}
+<section class="mm-hero mm-hero-vendedor" aria-labelledby="titulo-vender-pagina">
+  <div class="container mm-hero-contenido con-vitrina">
+    <div class="mm-hero-texto">
+      <p class="mm-eyebrow"><i class="bi bi-rocket-takeoff" aria-hidden="true"></i>Para emprendedores</p>
+      <h1 class="mm-hero-titulo" id="titulo-vender-pagina">Tu marca merece su propia <span>tienda online.</span></h1>
+      <p class="mm-hero-subtitulo">Presenta tus productos, construye tu identidad digital y gestiona los pedidos de tu negocio desde {{ plataforma.nombre }}.</p>
+      <div class="mm-hero-acciones">
+        <a class="btn btn-acento btn-lg" href="{% url 'tiendas:solicitar_tienda' %}"><i class="bi bi-shop-window" aria-hidden="true"></i>Solicitar mi tienda</a>
+        <a class="btn btn-outline-light btn-lg" href="#como-funciona"><i class="bi bi-signpost-split" aria-hidden="true"></i>Cómo funciona</a>
+      </div>
+      <ul class="mm-hero-puntos">
+        <li><i class="bi bi-person-badge" aria-hidden="true"></i>Tu propio panel</li>
+        <li><i class="bi bi-cash-coin" aria-hidden="true"></i>Cobras en tus cuentas</li>
+        <li><i class="bi bi-search" aria-hidden="true"></i>Te encuentran en el buscador del sitio</li>
+      </ul>
+    </div>
+    {# Ilustracion de una tienda (sin datos inventados: solo formas). #}
+    <div class="mm-maqueta" aria-hidden="true">
+      <div class="mm-maqueta-portada"></div>
+      <div class="mm-maqueta-cuerpo">
+        <span class="mm-maqueta-logo"><i class="bi bi-shop"></i></span>
+        <span class="mm-maqueta-nombre">Tu marca</span>
+        <span class="mm-maqueta-linea"></span>
+        <span class="mm-maqueta-linea corta"></span>
+        <div class="mm-maqueta-productos">
+          <span><i class="bi bi-image"></i></span><span><i class="bi bi-image"></i></span><span><i class="bi bi-image"></i></span>
+        </div>
+      </div>
+      <span class="mm-maqueta-aviso"><i class="bi bi-bag-check"></i>Pedido nuevo</span>
+    </div>
+  </div>
+</section>
+
+<section class="container mm-seccion" id="como-funciona" aria-labelledby="titulo-como-funciona">
+  <div class="mm-seccion-cabecera">
+    <div>
+      <h2 id="titulo-como-funciona">Cómo funciona</h2>
+      <p class="mm-seccion-texto">Tres pasos para tener tu tienda dentro de {{ plataforma.nombre }}.</p>
+    </div>
+  </div>
+  <ol class="mm-pasos">
+    <li>
+      <span class="mm-paso-numero" aria-hidden="true">1</span>
+      <i class="bi bi-envelope-paper" aria-hidden="true"></i>
+      <h3>Solicita tu tienda</h3>
+      <p>Llena el formulario con los datos de tu negocio. Revisamos cada solicitud y te contactamos para los siguientes pasos.</p>
+    </li>
+    <li>
+      <span class="mm-paso-numero" aria-hidden="true">2</span>
+      <i class="bi bi-palette" aria-hidden="true"></i>
+      <h3>Personaliza tu marca y prepara tu catálogo</h3>
+      <p>Con tu acceso al panel subes tu logo y tu portada, registras las cuentas donde cobras y cargas tus productos con fotos y precios.</p>
+    </li>
+    <li>
+      <span class="mm-paso-numero" aria-hidden="true">3</span>
+      <i class="bi bi-box-seam" aria-hidden="true"></i>
+      <h3>Publica tus productos y administra tus pedidos</h3>
+      <p>Tus productos salen en tu tienda y en el buscador del sitio. Cada pedido llega a tu panel y a tu correo para que le des seguimiento.</p>
+    </li>
+  </ol>
+</section>
+
+<div class="mm-banda">
+<section class="container mm-seccion" aria-labelledby="titulo-beneficios">
+  <div class="mm-seccion-cabecera">
+    <div>
+      <h2 id="titulo-beneficios">Lo que tienes con tu tienda</h2>
+      <p class="mm-seccion-texto">Herramientas que ya usan las tiendas del sitio.</p>
+    </div>
+  </div>
+  <ul class="mm-beneficios">
+    <li>
+      <i class="bi bi-brush" aria-hidden="true"></i>
+      <h3>Identidad visual propia</h3>
+      <p>Tu tienda con su propia dirección dentro del sitio, tu logo, tu portada y banners para tus promociones.</p>
+    </li>
+    <li>
+      <i class="bi bi-grid-3x3-gap" aria-hidden="true"></i>
+      <h3>Catálogo organizado</h3>
+      <p>Productos por categorías, con varias fotos, opciones como talla o color, ofertas con fecha y productos bajo pedido.</p>
+    </li>
+    <li>
+      <i class="bi bi-pencil-square" aria-hidden="true"></i>
+      <h3>Gestión de productos</h3>
+      <p>Creas y editas cada producto desde el panel, o los cargas todos juntos desde un Excel y subes sus fotos de una vez.</p>
+    </li>
+    <li>
+      <i class="bi bi-person-lock" aria-hidden="true"></i>
+      <h3>Tu propio panel</h3>
+      <p>Acceso individual para ti y tu equipo. Cada tienda ve y edita solo lo suyo: productos, pedidos, clientes y reportes.</p>
+    </li>
+    <li>
+      <i class="bi bi-receipt-cutoff" aria-hidden="true"></i>
+      <h3>Pedidos y cobros</h3>
+      <p>Tus clientes te transfieren a tus cuentas o pagan en efectivo si lo permites. Tú confirmas el pago, cambias el estado del pedido y el cliente ve su seguimiento.</p>
+    </li>
+    <li>
+      <i class="bi bi-shop" aria-hidden="true"></i>
+      <h3>Presencia en el marketplace</h3>
+      <p>Tus productos aparecen en el buscador y en las categorías del sitio y pueden salir en la portada; tu tienda, en el directorio de tiendas.</p>
+    </li>
+  </ul>
+</section>
+</div>
+
+<section class="container mm-seccion" aria-labelledby="titulo-preguntas-vender">
+  <div class="mm-seccion-cabecera">
+    <h2 id="titulo-preguntas-vender">Preguntas frecuentes</h2>
+  </div>
+  {# Respuestas que corresponden a como funciona el sitio hoy. Sin precios ni plazos: no hay una politica publicada. #}
+  <div class="mm-preguntas mm-preguntas-vender">
+    <details class="mm-panel mb-2">
+      <summary class="fw-semibold">¿Cómo solicito mi tienda?</summary>
+      <div class="mt-2 mm-descripcion">
+        <p>Llena el <a href="{% url 'tiendas:solicitar_tienda' %}">formulario de solicitud</a> con tu nombre, el de tu negocio, tus datos de contacto y una descripción de lo que vendes. La solicitud queda pendiente hasta que la revisemos; después te escribimos al correo o al teléfono que nos dejes.</p>
+      </div>
+    </details>
+    <details class="mm-panel mb-2">
+      <summary class="fw-semibold">¿Mi tienda se abre al enviar la solicitud?</summary>
+      <div class="mt-2 mm-descripcion">
+        <p>No. Revisamos cada solicitud a mano. Si avanzamos, creamos tu tienda y te damos acceso a tu panel para que la prepares antes de recibir pedidos.</p>
+      </div>
+    </details>
+    <details class="mm-panel mb-2">
+      <summary class="fw-semibold">¿Qué información debo preparar?</summary>
+      <div class="mt-2 mm-descripcion">
+        <ul>
+          <li>El nombre de tu tienda, tu logo y una foto de portada.</li>
+          <li>Tus productos: nombre, precio, descripción y buenas fotos de cada uno.</li>
+          <li>Las cuentas bancarias donde tus clientes te van a transferir.</li>
+          <li>Cómo entregas: las zonas a las que envías y su costo, o la dirección donde se recoge.</li>
+          <li>Tus datos de contacto: WhatsApp, teléfono, correo y redes.</li>
+        </ul>
+      </div>
+    </details>
+    <details class="mm-panel mb-2">
+      <summary class="fw-semibold">¿Cómo administro mis productos?</summary>
+      <div class="mt-2 mm-descripcion">
+        <p>Desde tu panel creas, editas, ocultas o eliminas productos, les pones fotos y ofertas, y marcas si están disponibles, bajo pedido o agotados. Si tienes muchos, puedes cargarlos con un archivo de Excel y subir las fotos nombradas con el código (SKU) de cada producto.</p>
+      </div>
+    </details>
+    <details class="mm-panel mb-2">
+      <summary class="fw-semibold">¿Tengo que llevar inventario?</summary>
+      <div class="mt-2 mm-descripcion">
+        <p>No es obligatorio. Cada producto se vende según la disponibilidad que tú le pongas. Si quieres, puedes activar el control de existencias en los productos que lo necesiten.</p>
+      </div>
+    </details>
+    <details class="mm-panel mb-2">
+      <summary class="fw-semibold">¿Cómo recibo los pagos de mis clientes?</summary>
+      <div class="mt-2 mm-descripcion">
+        <p>Cobras directamente: tus clientes te transfieren a las cuentas que registres en tu panel y suben el comprobante, o te pagan en efectivo al recoger o contra entrega si lo permites. Tú confirmas cada pago desde el panel. Por ahora el sitio no recibe pagos con tarjeta.</p>
+      </div>
+    </details>
+    <details class="mm-panel mb-2">
+      <summary class="fw-semibold">¿Cuánto cuesta tener una tienda?</summary>
+      <div class="mt-2 mm-descripcion">
+        <p>Cada tienda tiene un plan con una mensualidad. Al revisar tu solicitud te explicamos los planes disponibles y lo que incluye cada uno.</p>
+      </div>
+    </details>
+    <details class="mm-panel mb-2">
+      <summary class="fw-semibold">¿Quién ve los datos de mi solicitud?</summary>
+      <div class="mt-2 mm-descripcion">
+        <p>Solo el equipo que administra {{ plataforma.nombre }}. No se publican en el sitio y los usamos para revisar tu solicitud y contactarte.</p>
+      </div>
+    </details>
+  </div>
+</section>
+
+<section class="container mm-seccion" aria-labelledby="titulo-empezar">
+  <div class="mm-vender mm-vender-final">
+    <div class="mm-vender-texto">
+      <h2 id="titulo-empezar">¿Listo para abrir tu tienda?</h2>
+      <p>Envíanos tu solicitud en un par de minutos. La revisamos y te contactamos.</p>
+      <div class="mm-vender-acciones">
+        <a class="btn btn-acento btn-lg" href="{% url 'tiendas:solicitar_tienda' %}"><i class="bi bi-shop-window" aria-hidden="true"></i>Solicitar mi tienda</a>
+        {% if vender %}
+          <a class="btn btn-outline-light btn-lg" href="{{ vender.url }}"{% if vender.medio == 'whatsapp' %} target="_blank" rel="noopener"{% endif %}>
+            {% if vender.medio == 'whatsapp' %}<i class="bi bi-whatsapp" aria-hidden="true"></i>Escríbenos por WhatsApp{% elif vender.medio == 'correo' %}<i class="bi bi-envelope" aria-hidden="true"></i>Escríbenos un correo{% else %}<i class="bi bi-chat-dots" aria-hidden="true"></i>Contáctanos{% endif %}
+          </a>
+        {% endif %}
+      </div>
+      {% if vender %}<p class="mm-vender-nota">¿Tienes dudas antes de solicitarla? Escríbenos.</p>{% endif %}
+    </div>
+  </div>
+</section>
+{% endblock %}

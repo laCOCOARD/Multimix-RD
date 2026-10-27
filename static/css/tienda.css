@@ -1030,3 +1030,58 @@ html.mm-visor-abierto { overflow: hidden; }
 .mm-sin-conexion main { max-width: 26rem; }
 .mm-sin-conexion h1 { font-size: 1.5rem; margin: 1rem 0 .5rem; }
 .mm-sin-conexion a { display: inline-block; margin-top: 1rem; padding: .7rem 1.4rem; border-radius: .7rem; background: var(--mm-primario); color: #fff; font-weight: 600; text-decoration: none; }
+
+/* ==========================================================================
+   Vender en el sitio (Fase 2 del rediseño, 2026-10-27): /vender/, la solicitud y su confirmacion
+   ========================================================================== */
+/* Ilustracion de una tienda en la bienvenida: solo formas, sin datos inventados. */
+.mm-maqueta { position: relative; display: none; width: 100%; max-width: 26rem; justify-self: end; overflow: visible; }
+.mm-maqueta-portada { height: 7.5rem; border-radius: var(--mm-radio-grande) var(--mm-radio-grande) 0 0; background: radial-gradient(circle at 80% 30%, rgba(var(--mm-calido-rgb), .55), transparent 60%), linear-gradient(120deg, #374151, var(--mm-calido-oscuro)); }
+.mm-maqueta-cuerpo { display: grid; gap: .55rem; padding: 0 1.4rem 1.4rem; border-radius: 0 0 var(--mm-radio-grande) var(--mm-radio-grande); background: #fff; box-shadow: 0 24px 60px rgba(0, 0, 0, .35); }
+.mm-maqueta-logo { display: grid; place-items: center; width: 4rem; height: 4rem; margin-top: -2rem; border: 3px solid #fff; border-radius: 1rem; background: var(--mm-oscuro); color: var(--mm-calido); font-size: 1.6rem; }
+.mm-maqueta-nombre { font-size: 1.25rem; font-weight: 800; letter-spacing: -.02em; color: var(--mm-oscuro); }
+.mm-maqueta-linea { height: .6rem; border-radius: 999px; background: var(--mm-borde); }
+.mm-maqueta-linea.corta { width: 60%; }
+.mm-maqueta-productos { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .6rem; margin-top: .4rem; }
+.mm-maqueta-productos span { display: grid; place-items: center; aspect-ratio: 1; border: 1px solid var(--mm-borde); border-radius: .75rem; background: var(--mm-fondo); color: #9ca3af; font-size: 1.4rem; }
+.mm-maqueta-aviso { position: absolute; right: -1.25rem; top: 5.5rem; display: inline-flex; align-items: center; gap: .45rem; padding: .6rem .9rem; border-radius: var(--mm-radio); background: var(--mm-calido); color: var(--mm-oscuro); font-size: .88rem; font-weight: 700; box-shadow: 0 12px 30px rgba(0, 0, 0, .3); }
+@media (min-width: 992px) { .mm-maqueta { display: block; } }
+
+/* Como funciona: tres pasos numerados. */
+.mm-pasos { display: grid; gap: 1rem; margin: 0; padding: 0; list-style: none; counter-reset: paso; }
+@media (min-width: 768px) { .mm-pasos { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1.25rem; } }
+.mm-pasos li { position: relative; padding: 1.4rem 1.3rem 1.3rem; border: 1px solid var(--mm-borde); border-radius: var(--mm-radio-grande); background: var(--mm-superficie); box-shadow: var(--mm-sombra); }
+.mm-pasos li > .bi { display: grid; place-items: center; width: 3rem; height: 3rem; margin-bottom: .9rem; border-radius: .9rem; background: var(--mm-oscuro); color: var(--mm-calido); font-size: 1.35rem; }
+.mm-paso-numero { position: absolute; top: 1.1rem; right: 1.2rem; font-size: 2.4rem; font-weight: 800; line-height: 1; color: var(--mm-borde); }
+.mm-pasos h3, .mm-beneficios h3 { margin: 0 0 .4rem; font-size: 1.05rem; font-weight: 700; letter-spacing: -.01em; }
+.mm-pasos p, .mm-beneficios p { margin: 0; font-size: .92rem; line-height: 1.55; color: var(--mm-texto-suave); }
+
+/* Beneficios: tarjetas con icono. */
+.mm-beneficios { display: grid; gap: 1rem; margin: 0; padding: 0; list-style: none; }
+@media (min-width: 576px) { .mm-beneficios { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (min-width: 992px) { .mm-beneficios { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1.25rem; } }
+.mm-beneficios li { padding: 1.3rem; border: 1px solid var(--mm-borde); border-radius: var(--mm-radio); background: var(--mm-fondo); }
+.mm-beneficios li > .bi { display: grid; place-items: center; width: 2.75rem; height: 2.75rem; margin-bottom: .8rem; border-radius: .8rem; background: var(--mm-calido-suave); color: var(--mm-calido-texto); font-size: 1.25rem; }
+
+/* Preguntas de la pagina: el texto de cada respuesta. */
+.mm-preguntas-vender summary { cursor: pointer; }
+.mm-preguntas-vender .mm-descripcion p:last-child, .mm-preguntas-vender ul { margin-bottom: 0; }
+.mm-vender-final { grid-template-columns: minmax(0, 1fr) !important; text-align: center; }
+.mm-vender-final .mm-vender-texto > p:not(.mm-eyebrow) { margin-inline: auto; }
+.mm-vender-final .mm-vender-acciones { justify-content: center; }
+
+/* Formulario de solicitud. */
+.mm-solicitud { padding: clamp(1.25rem, 3vw, 2rem); }
+.mm-obligatorio { color: var(--mm-peligro); font-weight: 700; }
+.mm-errores ul { padding-left: 1.1rem; }
+.mm-errores a { color: inherit; font-weight: 600; text-decoration: underline; }
+.mm-errores:focus { outline: 3px solid var(--mm-foco); outline-offset: 2px; }
+.form-control[aria-invalid="true"], .form-select[aria-invalid="true"], .form-check-input[aria-invalid="true"] { border-color: var(--mm-peligro); }
+/* El navegador marca lo que falta solo despues de que la persona toco el campo. */
+.mm-formulario-solicitud :is(input, textarea, select):user-invalid { border-color: var(--mm-peligro); }
+.mm-despues { position: sticky; top: 6rem; }
+.mm-despues-pasos { display: grid; gap: .75rem; margin: 1rem 0; padding-left: 1.2rem; font-size: .93rem; line-height: 1.5; }
+.mm-despues-pasos li::marker { font-weight: 800; color: var(--mm-calido-texto); }
+.mm-enviada { max-width: 38rem; margin: 0 auto; padding: clamp(1.75rem, 5vw, 3rem); }
+.mm-enviada .mm-icono-estado { color: var(--mm-verde); }
+@media (max-width: 991.98px) { .mm-despues { position: static; } }

@@ -250,3 +250,52 @@ class Banner(models.Model):
 
         if self.vigente_desde and self.vigente_hasta and self.vigente_hasta <= self.vigente_desde:
             raise ValidationError({'vigente_hasta': 'La vigencia debe terminar después de su inicio.'})
+
+
+class SolicitudTienda(models.Model):
+    """Un negocio que pide abrir su tienda en el sitio (Fase 2 del rediseño, 2026-10-27).
+
+    No crea cuentas ni da acceso al panel: las tiendas las sigue creando el administrador principal, que revisa la
+    solicitud, contacta al negocio y, si la aprueba, crea la tienda (con los datos de la solicitud ya puestos) y le da
+    acceso a sus vendedores como siempre. Los datos son privados: solo el administrador principal los ve.
+    """
+
+    class Estado(models.TextChoices):
+        PENDIENTE = 'pendiente', 'Pendiente'
+        EN_REVISION = 'en_revision', 'En revisión'
+        APROBADA = 'aprobada', 'Aprobada'
+        RECHAZADA = 'rechazada', 'Rechazada'
+
+    nombre_responsable = models.CharField('nombre del responsable', max_length=120)
+    nombre_comercial = models.CharField('nombre comercial', max_length=80)
+    correo = models.EmailField(max_length=150)
+    telefono = models.CharField('teléfono', max_length=10, help_text='10 dígitos, sin guiones.')
+    categoria = models.ForeignKey(
+        'catalogo.Categoria', on_delete=models.SET_NULL, null=True, blank=True, related_name='+',
+        verbose_name='categoría principal',
+    )
+    descripcion = models.TextField('qué vende')
+    redes = models.CharField('redes o sitio web', max_length=200, blank=True)
+    estado = models.CharField(max_length=12, choices=Estado.choices, default=Estado.PENDIENTE)
+    notas = models.TextField(
+        'notas internas', blank=True, help_text='Solo las ve el administrador principal; el negocio no las recibe.',
+    )
+    tienda = models.ForeignKey(
+        Tienda, on_delete=models.SET_NULL, null=True, blank=True, related_name='solicitudes',
+        help_text='La tienda que se creó a partir de esta solicitud, si se aprobó.',
+    )
+    revisada_por = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='+', editable=False,
+    )
+    revisada_el = models.DateTimeField('revisada el', null=True, blank=True, editable=False)
+    creada = models.DateTimeField('recibida el', auto_now_add=True)
+    actualizada = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = 'solicitud de tienda'
+        verbose_name_plural = 'solicitudes de tiendas'
+        ordering = ['-creada', '-id']
+        indexes = [models.Index(fields=['estado', '-creada'], name='solicitud_estado_idx')]
+
+    def __str__(self):
+        return f'{self.nombre_comercial} ({self.get_estado_display().lower()})'

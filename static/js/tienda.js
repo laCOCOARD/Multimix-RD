@@ -62,6 +62,10 @@
 
   window.Multimix = { enviar, avisar, actualizarContador };
 
+  // Un formulario que vuelve con errores lleva el foco a su resumen (se lee primero y enlaza a cada campo).
+  const resumenDeErrores = document.querySelector('.mm-errores[tabindex]');
+  if (resumenDeErrores) resumenDeErrores.focus();
+
   // Aparicion al deslizar. Cada grupo entra con su estilo y, si entran varios a la vez, en cascada.
   const quieto = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const animar = (selector, ...clases) => document.querySelectorAll(selector).forEach((nodo) => nodo.classList.add('revelar', ...clases));
