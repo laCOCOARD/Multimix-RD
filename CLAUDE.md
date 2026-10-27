@@ -404,6 +404,15 @@ Al cerrar cada modulo: check, makemigrations, migrate, test y commit.
   (`tiendas.services.buscar_tiendas`: nombre, descripcion y categorias principales, sin tildes, en Python porque
   son pocas). `/sugerencias/` devuelve tambien `tiendas` y el desplegable muestra "Buscando…", grupos Tiendas y
   Productos y "No encontramos nada" con "Buscar de todos modos".
+- Politicas al dia (pedido del dueño el 2026-10-27; `core/0023`): metodos de pago con comprobante obligatorio,
+  privacidad con las solicitudes de tiendas y la medicion sin datos personales, entregas con la fecha estimada,
+  contacto con el nombre comercial (el sitio aun no esta registrado: sin razon social ni RNC hasta que el dueño los
+  de) y la pagina nueva "Condiciones para vendedores" (`condiciones-para-vendedores`, con los dias de aviso y de
+  gracia de la configuracion; en el pie con lo legal, enlazada en /vender/, la solicitud y los terminos). La migracion
+  solo cambia frases del texto estandar que sigan tal cual. Los terminos dicen que cada tienda cobra en sus cuentas.
+  Al aprobar o rechazar una solicitud el negocio recibe un correo (`services.avisar_resultado_de_solicitud`, solo al
+  cambiar el estado, sin las notas internas). Para despues, decidido por el dueño: carrito unico junto con la
+  tarjeta; los precios de los planes no se publican.
 - Directorio de tiendas (`tiendas.services.directorio`, portada y `/tiendas/`): solo las activas, con
   `total_productos` contado como en el catalogo (una vez por grupo de variantes); `para_el_directorio` agrega sus
   categorias con mas productos y el tono de su franja si no tiene banner, con una consulta para todas.
@@ -450,7 +459,7 @@ Al cerrar cada modulo: check, makemigrations, migrate, test y commit.
   el pedido, boton del banner), `--mm-calido-texto` `#B45309` para ambar sobre fondo claro (el `#F59E0B` no se lee
   sobre blanco), fondo `#F3F4F6`, tarjetas blancas, texto secundario `#64748B`, bordes `#E5E7EB`; verde solo para lo
   que salio bien. Los enlaces van en carbon: dentro de un texto (`.mm-legal-texto`) se subrayan. `panel.css` sigue
-  con el azul del logo. Recursos en `static/img/`. El encabezado del sitio muestra el simbolo estatico con el nombre salvo
+  con la misma paleta desde el 2026-10-27 (enlaces en ambar oscuro `#b45309`). Recursos en `static/img/`. El encabezado del sitio muestra el simbolo estatico con el nombre salvo
   que haya un logo en Configuracion; el de cada tienda, su logo o su nombre, con una franja encima para volver a
   "Todas las tiendas".
 - Inicio de tienda: `catalogo.services.categorias_de_portada(tienda)` trae las categorias con productos de
