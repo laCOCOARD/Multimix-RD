@@ -157,3 +157,23 @@ class FavoritosTests(TestCase):
         self.assertIn(reverse('clientes:entrar'), self.client.post(self.url).url)
         self.assertEqual(self.client.get(self.url).status_code, 405)
         self.assertFalse(Favorito.objects.exists())
+
+    def test_el_corazon_de_las_tarjetas(self):
+        """En la portada (y cualquier listado) cada tarjeta lleva su corazon, lleno si el cliente ya lo guardo."""
+        portada = self.client.get('/')
+        self.assertContains(portada, f'action="{self.url}"')
+        self.assertContains(portada, 'aria-pressed="false"')
+        # tienda.js lo cambia sin recargar: la respuesta es JSON y no deja el mensaje para la pagina siguiente.
+        respuesta = self.client.post(self.url, headers={'X-Requested-With': 'fetch'})
+        self.assertEqual(respuesta.json(), {
+            'ok': True, 'favorito': True, 'mensaje': 'Guardamos "Lámpara" en tus favoritos.',
+        })
+        portada = self.client.get('/')
+        self.assertContains(portada, 'aria-pressed="true"')
+        self.assertNotContains(portada, 'Guardamos')
+        self.assertFalse(self.client.post(self.url, headers={'X-Requested-With': 'fetch'}).json()['favorito'])
+        # Sin sesion, el corazon lleva a entrar y vuelve a la pagina.
+        self.client.logout()
+        portada = self.client.get('/')
+        self.assertContains(portada, f'{reverse("clientes:entrar")}?next=/')
+        self.assertNotContains(portada, f'action="{self.url}"')

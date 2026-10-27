@@ -2,6 +2,7 @@
 {# Agregar y Comprar van siempre al carrito de la tienda del producto, aunque la tarjeta salga en el buscador del sitio o en favoritos. #}
 {# Fuera de una tienda (portada, buscador del sitio, favoritos) la tarjeta dice quien lo vende y enlaza a su tienda. #}
 <article class="mm-tarjeta h-100 revelar">
+  <div class="mm-tarjeta-media">
   <a class="mm-tarjeta-foto" href="{{ producto.get_absolute_url }}" tabindex="-1" aria-hidden="true">
     {% with foto=producto.foto_principal %}
       {% if foto %}
@@ -18,6 +19,25 @@
       {% if producto.destacado %}<span class="badge mm-etiqueta-destacado">Destacado</span>{% endif %}
     </span>
   </a>
+  {# Favoritos: con sesion, el corazon guarda o quita (tienda.js lo hace sin recargar); sin sesion lleva a entrar. #}
+  {% if puede_navegar %}
+    {% if user.is_authenticated %}
+      {% if producto.pk in favoritos_ids %}
+        <form class="mm-favorito-form js-favorito" method="post" action="{% url 'clientes:alternar_favorito' producto.pk %}" data-favoritos="{% url 'clientes:favoritos' %}">
+          {% csrf_token %}<input type="hidden" name="next" value="{{ request.get_full_path }}">
+          <button class="mm-favorito activo" type="submit" aria-pressed="true" aria-label="Quitar {{ producto.nombre }} de favoritos" title="Quitar de favoritos"><i class="bi bi-heart-fill" aria-hidden="true"></i></button>
+        </form>
+      {% else %}
+        <form class="mm-favorito-form js-favorito" method="post" action="{% url 'clientes:alternar_favorito' producto.pk %}" data-favoritos="{% url 'clientes:favoritos' %}">
+          {% csrf_token %}<input type="hidden" name="next" value="{{ request.get_full_path }}">
+          <button class="mm-favorito" type="submit" aria-pressed="false" aria-label="Guardar {{ producto.nombre }} en favoritos" title="Guardar en favoritos"><i class="bi bi-heart" aria-hidden="true"></i></button>
+        </form>
+      {% endif %}
+    {% else %}
+      <a class="mm-favorito" href="{% url 'clientes:entrar' %}?next={{ request.get_full_path|urlencode }}" aria-label="Inicia sesión para guardar {{ producto.nombre }} en favoritos" title="Guardar en favoritos"><i class="bi bi-heart" aria-hidden="true"></i></a>
+    {% endif %}
+  {% endif %}
+  </div>
   <div class="mm-tarjeta-cuerpo">
     {% if tienda %}<p class="mm-tarjeta-categoria">{{ producto.categoria.nombre }}</p>{% endif %}
     <h3 class="mm-tarjeta-nombre"><a href="{{ producto.get_absolute_url }}">{{ producto.nombre }}</a></h3>
@@ -33,16 +53,17 @@
       </p>
     {% endif %}
     {% if producto.total_variantes %}<p class="mm-tarjeta-opciones">{{ producto.total_variantes|add:1 }} opciones</p>{% endif %}
-    <p class="mm-precio mb-3">
+    <div class="mm-tarjeta-pie">
+    <p class="mm-precio">
       <span class="mm-precio-final">{{ producto.precio_final|moneda }}</span>
       {% if producto.en_oferta %}<s class="mm-precio-anterior">{{ producto.precio|moneda }}</s>{% endif %}
     </p>
     {% if producto.agotado %}
-      <a class="btn btn-outline-secondary w-100 mt-auto" href="{{ producto.get_absolute_url }}#avisame"
+      <a class="btn btn-outline-secondary w-100" href="{{ producto.get_absolute_url }}#avisame"
          aria-label="{{ producto.nombre }}: avísame cuando esté disponible"><i class="bi bi-bell me-1"></i>Avísame</a>
     {% else %}
       {# "Comprar" es el mismo envio con comprar=1: el producto queda en el carrito y se va directo a pagar. #}
-      <form class="mt-auto js-agregar mm-tarjeta-acciones" method="post" action="{% url 'carrito:agregar' producto.tienda.slug %}"
+      <form class="js-agregar mm-tarjeta-acciones" method="post" action="{% url 'carrito:agregar' producto.tienda.slug %}"
             data-tienda="{{ producto.tienda.nombre }}">
         {% csrf_token %}
         <input type="hidden" name="producto_id" value="{{ producto.pk }}">
@@ -53,5 +74,6 @@
         <button class="btn btn-primary flex-grow-1 mm-tarjeta-comprar" type="submit" name="comprar" value="1"><i class="bi bi-lightning-charge-fill me-1"></i>Comprar</button>
       </form>
     {% endif %}
+    </div>
   </div>
 </article>

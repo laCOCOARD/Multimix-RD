@@ -78,14 +78,7 @@
 
     <section class="mm-menu-grupo mm-menu-confianza">
       <h2>Tu compra, protegida</h2>
-      <ul>
-        <li><i class="bi bi-shield-check"></i><span><strong>Pago verificado.</strong> La tienda confirma tu pago antes de preparar el pedido. Nunca te pedimos datos de tarjeta.</span></li>
-        <li><i class="bi bi-geo-alt"></i><span><strong>Seguimiento en línea.</strong> Ves cada paso de tu pedido y te avisamos por correo.</span></li>
-        {% if plataforma.dias_devolucion %}
-          <li><i class="bi bi-arrow-repeat"></i><span><strong>Cambios y devoluciones.</strong> {{ plataforma.dias_devolucion }} días después de la entrega para solicitarlos.</span></li>
-        {% endif %}
-        <li><i class="bi bi-chat-dots"></i><span><strong>Atención directa.</strong> Escríbele a la tienda o a nosotros.</span></li>
-      </ul>
+      <ul>{% include 'includes/confianza.html' %}</ul>
     </section>
 
     <nav class="mm-menu-grupo" aria-label="Ayuda">

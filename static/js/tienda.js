@@ -158,6 +158,30 @@
     boton.disabled = false;
   });
 
+  // Corazon de las tarjetas: guarda o quita el favorito sin recargar. Si algo falla, se envia de la forma normal.
+  document.addEventListener('submit', async (evento) => {
+    const formulario = evento.target.closest('form.js-favorito');
+    if (!formulario) return;
+    evento.preventDefault();
+    const boton = formulario.querySelector('button');
+    boton.disabled = true;
+    try {
+      const datos = await enviar(formulario.action, new FormData(formulario));
+      const guardado = Boolean(datos.favorito);
+      boton.classList.toggle('activo', guardado);
+      boton.setAttribute('aria-pressed', String(guardado));
+      boton.title = guardado ? 'Quitar de favoritos' : 'Guardar en favoritos';
+      boton.setAttribute('aria-label', boton.getAttribute('aria-label').replace(guardado ? /^Guardar (.*) en favoritos$/ : /^Quitar (.*) de favoritos$/, guardado ? 'Quitar $1 de favoritos' : 'Guardar $1 en favoritos'));
+      boton.firstElementChild.className = guardado ? 'bi bi-heart-fill' : 'bi bi-heart';
+      avisar(datos.mensaje, 'exito', guardado ? { texto: 'Ver favoritos', url: formulario.dataset.favoritos } : null);
+    } catch (error) {
+      formulario.classList.remove('js-favorito');
+      formulario.submit();
+      return;
+    }
+    boton.disabled = false;
+  });
+
   // Compartir un producto: el menu del telefono si existe; si no, copia el enlace.
   document.querySelectorAll('.js-compartir').forEach((boton) => {
     boton.addEventListener('click', async () => {

@@ -13,16 +13,23 @@
 {% endblock %}
 
 {% block contenido %}
+{# Bienvenida (Fase 1 del rediseño, 2026-10-27): dice de entrada que es un sitio de muchas tiendas. Las fotos son #}
+{# productos reales de la seleccion, cada uno con su tienda; con menos de cuatro con foto no se muestran. #}
 <section class="mm-hero" aria-labelledby="titulo-portada">
   <div class="container mm-hero-contenido{% if vitrina|length == 4 %} con-vitrina{% endif %}">
     <div class="mm-hero-texto">
-      <p class="mm-eyebrow"><i class="bi bi-geo-alt-fill" aria-hidden="true"></i>Tiendas de emprendedores dominicanos</p>
-      <h1 class="mm-hero-titulo" id="titulo-portada">Muchos emprendedores. <span>Un solo lugar.</span></h1>
-      <p class="mm-hero-subtitulo">Descubre productos, conoce tiendas locales y compra en línea de forma sencilla.</p>
+      <p class="mm-eyebrow"><i class="bi bi-shop" aria-hidden="true"></i>Tiendas de emprendedores dominicanos</p>
+      <h1 class="mm-hero-titulo" id="titulo-portada">Descubre. Compra. <span>Emprende.</span></h1>
+      <p class="mm-hero-subtitulo">Encuentra productos de diferentes negocios dominicanos y descubre tiendas que tienen algo especial para ti.</p>
       <div class="mm-hero-acciones">
-        <a class="btn btn-primary btn-lg" href="{% url 'tiendas:buscar' %}"><i class="bi bi-grid" aria-hidden="true"></i>Explorar productos</a>
-        <a class="btn btn-outline-primary btn-lg" href="{% url 'tiendas:directorio' %}"><i class="bi bi-shop" aria-hidden="true"></i>Explorar tiendas</a>
+        <a class="btn btn-acento btn-lg" href="{% url 'tiendas:buscar' %}"><i class="bi bi-grid" aria-hidden="true"></i>Explorar productos</a>
+        <a class="btn btn-outline-light btn-lg" href="{% url 'tiendas:directorio' %}"><i class="bi bi-shop" aria-hidden="true"></i>Conocer las tiendas</a>
       </div>
+      <ul class="mm-hero-puntos">
+        <li><i class="bi bi-shop-window" aria-hidden="true"></i>Varias tiendas en un solo lugar</li>
+        <li><i class="bi bi-person-check" aria-hidden="true"></i>Compras directo a cada emprendedor</li>
+        <li><i class="bi bi-truck" aria-hidden="true"></i>Sigues tu pedido en línea</li>
+      </ul>
       {% if vender and not user.is_staff %}
         <a class="mm-hero-vender" href="#vender">¿Tienes un negocio? <strong>Vende en {{ plataforma.nombre }}</strong> <i class="bi bi-arrow-right" aria-hidden="true"></i></a>
       {% endif %}
@@ -30,8 +37,9 @@
     {% if vitrina|length == 4 %}
       <div class="mm-hero-vitrina">
         {% for producto in vitrina %}
-          <a class="mm-vitrina-item" href="{{ producto.get_absolute_url }}">
-            <img src="{{ producto.foto_principal.imagen.url }}" alt="{{ producto.nombre }}" loading="lazy" decoding="async" width="240" height="240">
+          <a class="mm-vitrina-item" href="{{ producto.get_absolute_url }}" aria-label="{{ producto.nombre }}, de {{ producto.tienda.nombre }}">
+            <img src="{{ producto.foto_principal.imagen.url }}" alt="" loading="lazy" decoding="async" width="240" height="240">
+            <span class="mm-vitrina-tienda" aria-hidden="true"><i class="bi bi-shop"></i>{{ producto.tienda.nombre }}</span>
           </a>
         {% endfor %}
       </div>
@@ -90,8 +98,11 @@
                 <i class="bi bi-tags" aria-hidden="true"></i>
               {% endif %}
             </span>
-            <span class="mm-categoria-nombre">{{ categoria.nombre }}</span>
-            <span class="mm-categoria-total">{{ categoria.total_productos }} producto{{ categoria.total_productos|pluralize }}</span>
+            <span class="mm-categoria-texto">
+              <span class="mm-categoria-nombre">{{ categoria.nombre }}</span>
+              <span class="mm-categoria-total">{{ categoria.total_productos }} producto{{ categoria.total_productos|pluralize }}</span>
+              <span class="mm-categoria-ir" aria-hidden="true">Ver productos <i class="bi bi-arrow-right"></i></span>
+            </span>
           </a>
         </div>
       {% endfor %}
@@ -153,10 +164,11 @@
   {% endif %}
 </section>
 
+<div class="mm-banda">
 <section class="container mm-seccion" id="tiendas" aria-labelledby="titulo-tiendas">
   <div class="mm-seccion-cabecera">
     <div>
-      <h2 id="titulo-tiendas">Explora nuestras tiendas</h2>
+      <h2 id="titulo-tiendas">Tiendas para conocer</h2>
       <p class="mm-seccion-texto">Conoce a los emprendedores y entra a su catálogo.</p>
     </div>
     {% if hay_mas_tiendas %}<a href="{% url 'tiendas:directorio' %}">Ver todas las tiendas <i class="bi bi-arrow-right" aria-hidden="true"></i></a>{% endif %}
@@ -174,6 +186,7 @@
     </div>
   {% endif %}
 </section>
+</div>
 
 {% if ofertas %}
 <section class="container mm-seccion" aria-labelledby="titulo-ofertas">
@@ -213,6 +226,13 @@
   </div>
 </section>
 {% endif %}
+
+<section class="container mm-seccion" aria-labelledby="titulo-confianza">
+  <div class="mm-seccion-cabecera">
+    <h2 id="titulo-confianza">Compra con confianza</h2>
+  </div>
+  <ul class="mm-confianza">{% include 'includes/confianza.html' %}</ul>
+</section>
 
 {% if preguntas %}
 <section class="container mm-seccion" aria-labelledby="titulo-preguntas">

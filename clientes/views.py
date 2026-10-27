@@ -3,6 +3,7 @@ from django.contrib.auth import login
 from django.contrib.auth import views as acceso
 from django.contrib.auth.decorators import login_not_required, login_required
 from django.core.paginator import Paginator
+from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse_lazy
 from django.utils.http import url_has_allowed_host_and_scheme, urlencode
@@ -249,10 +250,15 @@ def favoritos(request):
 @login_required
 def alternar_favorito(request, producto_id):
     producto = get_object_or_404(Producto.objects.activos(), pk=producto_id)
-    if services.alternar_favorito(request.user, producto):
-        messages.success(request, f'Guardamos "{producto.nombre}" en tus favoritos.')
+    guardado = services.alternar_favorito(request.user, producto)
+    if guardado:
+        mensaje = f'Guardamos "{producto.nombre}" en tus favoritos.'
     else:
-        messages.info(request, f'Quitamos "{producto.nombre}" de tus favoritos.')
+        mensaje = f'Quitamos "{producto.nombre}" de tus favoritos.'
+    # El corazon de las tarjetas lo cambia sin recargar la pagina (tienda.js); sin JavaScript vuelve a la pagina.
+    if request.headers.get('X-Requested-With') == 'fetch':
+        return JsonResponse({'ok': True, 'favorito': guardado, 'mensaje': mensaje})
+    (messages.success if guardado else messages.info)(request, mensaje)
     return redirect(_destino(request, producto.get_absolute_url()))
 
 

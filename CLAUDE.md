@@ -263,6 +263,14 @@ Al cerrar cada modulo: check, makemigrations, migrate, test y commit.
   redes...) y expone `descripcion` (su `banner_subtitulo`). En las plantillas `tienda` es la subtienda actual
   (o nada en las paginas del sitio), `plataforma` la configuracion y `marca` la que firme la pagina
   (`tienda or plataforma`).
+- Portada, Fase 1 del rediseño (2026-10-27): bienvenida carbon "Descubre. Compra. Emprende." con "Explorar productos"
+  (ambar) y "Conocer las tiendas", tres puntos ciertos para cualquier tienda y cuatro productos reales de la seleccion
+  con el nombre de su tienda; categorias como tarjetas con foto y "Ver productos"; tiendas en una banda blanca
+  (`mm-banda`) con boton "Visitar tienda"; "Compra con confianza" (`includes/confianza.html`, el mismo texto del
+  menu). Corazon de favoritos en cada tarjeta de producto: `favoritos_ids` (perezoso, en `core.context_processors`)
+  dice si esta guardado; `clientes:alternar_favorito` responde JSON a `tienda.js` (`X-Requested-With: fetch`) y sin
+  JavaScript redirige como antes; sin sesion lleva a entrar. Precio y botones van en `.mm-tarjeta-pie`, abajo, para
+  quedar alineados entre tarjetas.
 - Portada del sitio (pedido del dueño el 2026-10-25; reemplaza la de "solo tiendas, sin productos" del 2026-10-19):
   un sitio de muchas tiendas, para comprar sin conocer al vendedor o para entrar a una tienda. Orden: bienvenida
   corta (`mm-hero`, clara, distinta del `mm-banner` oscuro de las tiendas; en pantallas anchas 4 fotos reales de la
@@ -401,11 +409,14 @@ Al cerrar cada modulo: check, makemigrations, migrate, test y commit.
 - Importacion Excel: `catalogo/resources.py`, identifica por `sku` dentro de la tienda elegida en el
   formulario y valida con `full_clean`. Solo el superusuario crea categorias al importar. No importa fotos
   ni `stock_reservado`.
-- Marca: paleta del dueño (2026-10-25) en las variables de `:root` de `tienda.css`: azul `#244BFF` (botones,
-  enlaces, identidad), azul oscuro `#172033` (titulos y precios), naranja `#FFB15C` con texto oscuro solo para
-  ofertas y la accion principal de cada pagina (`.btn-acento`: comprar ahora, confirmar el pedido, boton del banner)
-  y fondo `#F5F7FB`; verde solo para lo que salio bien (agregado, envio gratis logrado). `panel.css` sigue con el
-  azul del logo. Recursos en `static/img/`. El encabezado del sitio muestra el simbolo estatico con el nombre salvo
+- Marca: paleta del dueño del 2026-10-27 (Fase 1 del rediseño; reemplaza la azul `#244BFF` del 2026-10-25) en las
+  variables de `:root` de `tienda.css`, unico lugar de colores, radios, sombras y espacios (los `rgba` usan
+  `--mm-*-rgb`): carbon `#111827` (identidad, botones, titulos, precios), ambar `#F59E0B` con texto carbon solo para
+  acciones importantes y ofertas (`.btn-acento`: buscar, la accion principal de la portada, comprar ahora, confirmar
+  el pedido, boton del banner), `--mm-calido-texto` `#B45309` para ambar sobre fondo claro (el `#F59E0B` no se lee
+  sobre blanco), fondo `#F3F4F6`, tarjetas blancas, texto secundario `#64748B`, bordes `#E5E7EB`; verde solo para lo
+  que salio bien. Los enlaces van en carbon: dentro de un texto (`.mm-legal-texto`) se subrayan. `panel.css` sigue
+  con el azul del logo. Recursos en `static/img/`. El encabezado del sitio muestra el simbolo estatico con el nombre salvo
   que haya un logo en Configuracion; el de cada tienda, su logo o su nombre, con una franja encima para volver a
   "Todas las tiendas".
 - Inicio de tienda: `catalogo.services.categorias_de_portada(tienda)` trae las categorias con productos de

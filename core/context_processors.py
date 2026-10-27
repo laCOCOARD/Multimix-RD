@@ -1,4 +1,5 @@
 from django.conf import settings
+from django.utils.functional import SimpleLazyObject
 
 from carrito.carrito import cantidad_en_sesion
 from catalogo.services import categorias_de, categorias_del_menu
@@ -21,7 +22,10 @@ def tienda(request):
     pie = contenido_del_pie()
     actual = getattr(request, 'tienda', None)
     marca = actual or plataforma
+    usuario = getattr(request, 'user', None)
     contexto = {
+        # Los productos que el cliente guardo, para el corazon de las tarjetas. Solo consulta si la pagina las muestra.
+        'favoritos_ids': SimpleLazyObject(lambda: _favoritos_de(usuario)),
         'plataforma': plataforma,
         'tienda': actual,
         'marca': marca,
@@ -51,3 +55,11 @@ def tienda(request):
         contexto['categorias_menu'] = categorias_del_menu()
         contexto['vender'] = como_vender(plataforma, contexto['paginas_publicadas'])
     return contexto
+
+
+def _favoritos_de(usuario):
+    if not getattr(usuario, 'is_authenticated', False):
+        return frozenset()
+    from clientes.models import Favorito
+
+    return frozenset(Favorito.objects.filter(usuario=usuario).values_list('producto_id', flat=True))
