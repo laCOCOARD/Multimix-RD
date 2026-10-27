@@ -116,8 +116,11 @@ def entrega_estimada(carrito, metodo_entrega, zona=None):
 
 
 def metodos_pago_disponibles(metodo_entrega, tienda):
-    """Formas de pago que la tienda acepta para el metodo de entrega elegido."""
-    metodos = [Pago.TRANSFERENCIA]
+    """Formas de pago que la tienda acepta para el metodo de entrega elegido.
+
+    La transferencia va a las cuentas de la tienda (pedido del dueño el 2026-10-26): sin cuentas activas no se ofrece.
+    """
+    metodos = [Pago.TRANSFERENCIA] if tienda.cuentas.filter(activa=True).exists() else []
     if metodo_entrega == Entrega.RECOGER:
         metodos.append(Pago.EFECTIVO_RECOGER)
     elif metodo_entrega == Entrega.ENVIO and tienda.permitir_contra_entrega:
@@ -246,7 +249,8 @@ def crear_pedido(carrito, datos, ip=None, cliente=None):
         # Lo marca registrar_comprobante, y solo con el comprobante.
         transferencia_realizada=False,
         referencia_transferencia='',
-        cobra_el_sitio=por_transferencia,
+        # Cada tienda cobra lo suyo desde el 2026-10-26: el sitio ya no recibe el dinero de los clientes.
+        cobra_el_sitio=False,
         cupon=cupon,
         codigo_cupon=cupon.codigo if cupon else '',
         subtotal=subtotal,

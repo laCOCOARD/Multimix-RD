@@ -144,6 +144,8 @@
             </div>
           {% endif %}
           {% if formulario.metodo_pago.errors %}<p class="text-danger small mt-2 mb-0">{{ formulario.metodo_pago.errors.0 }}</p>{% endif %}
+          {# Sin cuentas de la tienda ni efectivo contra entrega, el envio no tiene forma de pago: se avisa. #}
+          <p class="text-danger small mt-2 mb-0 js-sin-pago" hidden>{{ tienda.nombre }} todavía no recibe pagos para esta forma de entrega. Elige otra o escríbele a la tienda.</p>
 
           <div class="js-bloque-transferencia mt-3">
             <p class="small text-muted">Transfiere el total a cualquiera de estas cuentas. Tu pedido queda registrado y la tienda lo confirma al verificar el pago.</p>

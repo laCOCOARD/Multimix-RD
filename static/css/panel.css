@@ -76,6 +76,15 @@ div.breadcrumbs a:hover { color: #d6f0b8; }
 .panel-pago-aprobado { background: #1a8f5a; }
 .panel-pago-rechazado, .panel-pago-cancelado { background: #d23b3b; }
 .panel-pago-reembolsado { background: #6b7785; }
+/* Cargos del sitio a las tiendas (planes). */
+.panel-cargo-pendiente { background: #b45309; }
+.panel-cargo-en_revision { background: #7a4fd6; }
+.panel-cargo-pagado { background: #1a8f5a; }
+.panel-cargo-anulado { background: #6b7785; }
+.panel-aviso-cobro { margin: 0 0 1rem; padding: .9rem 1.1rem; border-radius: 10px; border: 1px solid #e3e8ee; background: var(--darkened-bg); }
+.panel-aviso-cobro.panel-aviso-urgente { border-color: #f1b8b8; background: #fdecec; color: #8a1c1c; }
+.panel-aviso-cobro h2 { margin: 0 0 .35rem; font-size: 1rem; }
+.panel-aviso-cobro p { margin: .2rem 0; }
 .panel-comprobante { max-width: min(100%, 420px); height: auto; border-radius: 8px; border: 1px solid #e3e8ee; }
 
 /* --- Miniaturas ---------------------------------------------------------- */

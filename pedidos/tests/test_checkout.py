@@ -21,9 +21,9 @@ class CheckoutTests(TestCase):
         self.tienda.save()
         self.producto = crear_producto(nombre='Lámpara', precio=Decimal('1000'), stock_almacen=5)
         self.zona = zona_de_prueba()
-        CuentaDelSitio.objects.create(
-            banco='Banco Popular', numero='123456789', titular='Multimix RD SRL',
-        )
+        # El cliente transfiere a las cuentas de la tienda (2026-10-26); la del sitio no la ve.
+        self.tienda.cuentas.update(banco='Banco Popular', numero='123456789', titular='Multimix RD SRL')
+        CuentaDelSitio.objects.create(banco='Banco del dueño', numero='999', titular='Dueño')
         self.url = ruta('pedidos:checkout')
         self.cliente = entrar_como_cliente(self.client, 'ana@example.com')
 

@@ -561,6 +561,23 @@ html:not(.js) .solo-con-js { display: none !important; }
 .mm-categoria-nombre { font-size: .88rem; font-weight: 700; line-height: 1.25; color: var(--mm-oscuro); overflow-wrap: anywhere; hyphens: auto; }
 .mm-categoria-total { margin-top: auto; font-size: .78rem; color: var(--mm-texto-suave); }
 
+/* --- Anuncios de las tiendas (segun su plan) ------------------------------ */
+/* Siempre dicen que son anuncios ("Anuncio · tienda"), como los productos "Patrocinado". */
+.mm-fila-pista.mm-fila-anuncios { grid-auto-columns: 86%; }
+@media (min-width: 576px) { .mm-fila-pista.mm-fila-anuncios { grid-auto-columns: calc((100% - 1rem) / 2); } }
+@media (min-width: 992px) { .mm-fila-pista.mm-fila-anuncios { grid-auto-columns: calc((100% - 2.5rem) / 3); gap: 1.25rem; } }
+.mm-fila-anuncios .mm-fila-item { display: flex; }
+.mm-anuncio { position: relative; display: flex; flex-direction: column; width: 100%; overflow: hidden; border: 1px solid var(--mm-borde); border-radius: var(--mm-radio); background: var(--mm-superficie); color: var(--mm-texto); transition: transform var(--mm-transicion), box-shadow var(--mm-transicion), border-color var(--mm-transicion); }
+.mm-anuncio:hover { border-color: #c4cdf9; box-shadow: var(--mm-sombra-alta); transform: translateY(-3px); color: var(--mm-texto); text-decoration: none; }
+.mm-anuncio-foto { display: block; aspect-ratio: 2 / 1; overflow: hidden; background: var(--mm-primario-suave); }
+.mm-anuncio-foto img { width: 100%; height: 100%; object-fit: cover; transition: transform .5s ease; }
+.mm-anuncio:hover .mm-anuncio-foto img { transform: scale(1.04); }
+.mm-anuncio-cuerpo { display: grid; gap: .25rem; padding: .85rem 1rem 1rem; }
+.mm-anuncio-etiqueta { overflow: hidden; font-size: .72rem; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--mm-texto-suave); white-space: nowrap; text-overflow: ellipsis; }
+.mm-anuncio-titulo { font-size: 1.05rem; font-weight: 700; line-height: 1.3; color: var(--mm-oscuro); }
+.mm-anuncio-texto { font-size: .9rem; line-height: 1.45; color: var(--mm-texto-suave); }
+.badge.mm-etiqueta-patrocinado { --bs-badge-color: var(--mm-oscuro); background: #fff; border: 1px solid var(--mm-borde); }
+
 /* --- Productos de todas las tiendas -------------------------------------- */
 .mm-rejilla { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .75rem; }
 @media (min-width: 576px) { .mm-rejilla { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; } }

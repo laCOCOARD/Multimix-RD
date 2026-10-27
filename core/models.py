@@ -1,5 +1,5 @@
 from django.core.cache import cache
-from django.core.validators import MinValueValidator
+from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 
 from .archivos import NombreUnico
@@ -56,6 +56,16 @@ class ConfiguracionTienda(models.Model):
         'días para pedir una devolución', default=7,
         help_text='Días después de la entrega en que el cliente puede solicitar una devolución. 0 = no se ofrecen.',
     )
+    # Cobro a las tiendas (pedido del dueño el 2026-10-26): la mensualidad vence el dia 1.
+    dias_de_gracia = models.PositiveSmallIntegerField(
+        'días de gracia de la mensualidad', default=4, validators=[MaxValueValidator(27)],
+        help_text='Días después del vencimiento para pagar. Pasados, la tienda se cierra hasta que la habilites. '
+                  'Con 4, la mensualidad vence el día 1 y la tienda que no pagó se cierra el día 5.',
+    )
+    dias_aviso_mensualidad = models.PositiveSmallIntegerField(
+        'avisar a las tiendas días antes', default=3, validators=[MaxValueValidator(7)],
+        help_text='Cuántos días antes del vencimiento le llega a la tienda el primer recordatorio por correo.',
+    )
     mostrar_cantidad_exacta = models.BooleanField(
         'mostrar la cantidad exacta disponible', default=False,
         help_text='Si está apagado solo se muestra "Disponible" o "Quedan X" cuando hay poco.',
@@ -92,8 +102,10 @@ class ConfiguracionTienda(models.Model):
 
 
 class CuentaDelSitio(models.Model):
-    """Cuenta del dueño del sitio. Todas las transferencias de todas las tiendas llegan aqui: es la unica cuenta que
-    ve el cliente. Las tiendas no registran cuentas; el sitio les deposita lo suyo en la liquidacion."""
+    """Cuenta del dueño del sitio. Aqui le pagan las tiendas su mensualidad y sus cargos (app `planes`).
+
+    Del 2026-10-15 al 2026-10-26 tambien recibia las transferencias de los clientes de todas las tiendas; desde
+    entonces cada tienda cobra en sus propias cuentas (`tiendas.CuentaBancaria`)."""
 
     class Tipo(models.TextChoices):
         AHORROS = 'ahorros', 'Ahorros'
@@ -122,8 +134,13 @@ class CuentaDelSitio(models.Model):
         return f'{self.banco} · {self.get_tipo_cuenta_display()} · {self.numero}'
 
 
-def cuentas_para_transferir():
-    """Las cuentas que ve el cliente de cualquier tienda: siempre las del sitio."""
+def cuentas_para_transferir(tienda):
+    """Las cuentas que ve el cliente al pagar por transferencia: las de la tienda donde compra."""
+    return tienda.cuentas.filter(activa=True)
+
+
+def cuentas_del_sitio():
+    """A donde le pagan las tiendas su mensualidad y sus cargos."""
     return CuentaDelSitio.objects.filter(activa=True)
 
 

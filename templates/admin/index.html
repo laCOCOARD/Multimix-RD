@@ -2,6 +2,46 @@
 {% load moneda %}
 
 {% block content %}
+{% for estado in estados_de_cuenta %}
+  {% with tienda=estado.tienda %}
+  <section class="panel-aviso-cobro{% if estado.vencido or tienda.cerrada_por_falta_de_pago and not tienda.activa %} panel-aviso-urgente{% endif %}" aria-label="Tu plan y tus pagos al sitio">
+    {% if tienda.cerrada_por_falta_de_pago and not tienda.activa %}
+      <h2>{{ tienda.nombre }} está cerrada por falta de pago</h2>
+      <p>Tus clientes no la ven. Paga lo pendiente y sube el comprobante: cuando lo confirmemos la volvemos a abrir.</p>
+    {% else %}
+      <h2>Tu plan{% if estado.plan %}: {{ estado.plan.nombre }}{% endif %}{% if estados_de_cuenta|length > 1 %} · {{ tienda.nombre }}{% endif %}</h2>
+    {% endif %}
+    {% if estado.plan %}
+      <p>Mensualidad: {{ estado.plan.mensualidad|moneda }}, vence el día 1 de cada mes.
+        {% if estado.uso.incluidos is not None %}Este mes llevas {{ estado.uso.pedidos }} de {{ estado.uso.incluidos }} pedidos cobrados incluidos{% if estado.uso.restantes == 0 %}; los siguientes pagan el {{ estado.plan.porcentaje_excedente|floatformat:'-2' }} % de lo vendido{% endif %}.{% endif %}
+        <a href="{% url 'admin:tiendas_tienda_change' tienda.pk %}">Ver tu plan</a></p>
+    {% else %}
+      <p>Tu tienda todavía no tiene un plan.</p>
+    {% endif %}
+    {% if estado.pendientes %}
+      <p><strong>Debes {{ estado.total_pendiente|moneda }}</strong>{% if estado.proximo_vencimiento %}: vence el {{ estado.proximo_vencimiento|date:"j \d\e F" }} y, si no se paga, la tienda se cierra el {{ estado.cierre|date:"j \d\e F" }}{% endif %}.{% if estado.en_revision %} Tienes {{ estado.en_revision }} comprobante(s) en revisión.{% endif %}
+        <a href="{% url 'admin:planes_cargo_changelist' %}">Pagar y subir el comprobante</a></p>
+    {% endif %}
+  </section>
+  {% endwith %}
+{% endfor %}
+{% for tienda in tiendas_sin_cuentas %}
+  <section class="panel-aviso-cobro panel-aviso-urgente" aria-label="Cuentas bancarias">
+    <h2>{{ tienda.nombre }} no tiene cuentas bancarias</h2>
+    <p>Tus clientes no pueden pagarte por transferencia hasta que registres una. <a href="{% url 'admin:tiendas_cuentabancaria_add' %}">Agregar una cuenta</a></p>
+  </section>
+{% endfor %}
+{% if cobros %}
+  <section class="panel-aviso-cobro{% if cobros.comprobantes_por_revisar or cobros.cargos_vencidos %} panel-aviso-urgente{% endif %}" aria-label="Pagos de las tiendas al sitio">
+    <h2>Pagos de las tiendas</h2>
+    <p>
+      <a href="{% url 'admin:planes_cargo_changelist' %}?estado__exact=en_revision">{{ cobros.comprobantes_por_revisar }} comprobante(s) por revisar</a> ·
+      <a href="{% url 'admin:planes_cargo_changelist' %}?estado__exact=pendiente">{{ cobros.cargos_vencidos }} cargo(s) vencido(s)</a> ·
+      <a href="{% url 'admin:tiendas_tienda_changelist' %}?cerrada_por_falta_de_pago__exact=1">{{ cobros.tiendas_cerradas }} tienda(s) cerrada(s) por falta de pago</a> ·
+      <a href="{% url 'admin:tiendas_tienda_changelist' %}?plan__isnull=True">{{ cobros.tiendas_sin_plan }} tienda(s) activa(s) sin plan</a>
+    </p>
+  </section>
+{% endif %}
 {% if resumen %}
 <section class="panel-resumen" aria-label="Resumen de ventas, pedidos y stock">
   <div class="panel-tarjetas">

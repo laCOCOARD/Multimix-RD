@@ -1,0 +1,8 @@
+{% load moneda %}{% autoescape off %}Hola, equipo de {{ tienda.nombre }}:
+
+Confirmamos tu pago de {{ cargo.concepto }} ({{ cargo.monto|moneda }}). ¡Gracias!
+{% if tienda.cerrada_por_falta_de_pago and not tienda.activa %}
+Tu tienda sigue cerrada por ahora: te avisamos en cuanto la volvamos a habilitar.{% endif %}
+Puedes ver todos tus pagos en tu panel:
+{{ enlace_panel }}
+{% endautoescape %}

@@ -11,6 +11,7 @@
       {% endif %}
     {% endwith %}
     <span class="mm-etiquetas">
+      {% if producto.es_patrocinado %}<span class="badge mm-etiqueta-patrocinado">Patrocinado</span>{% endif %}
       {% if producto.agotado %}<span class="badge mm-etiqueta-agotado">{{ producto.estado_venta.label }}</span>{% elif producto.bajo_pedido %}<span class="badge mm-etiqueta-pedido">Bajo pedido</span>{% endif %}
       {% if producto.en_oferta %}<span class="badge mm-etiqueta-oferta">Oferta -{{ producto.porcentaje_descuento }}%</span>{% endif %}
       {% if producto.es_nuevo %}<span class="badge mm-etiqueta-nuevo">Nuevo</span>{% endif %}

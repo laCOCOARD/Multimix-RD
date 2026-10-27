@@ -1,0 +1,6 @@
+{% load moneda %}{% autoescape off %}La tienda {{ tienda.nombre }} se cerró por falta de pago. Debe:
+{% for cargo in cargos %}- {{ cargo.concepto }}: {{ cargo.monto|moneda }} (venció el {{ cargo.vence|date:"j \d\e F" }})
+{% endfor %}
+Ya le avisamos por correo. Para volver a abrirla, entra a la tienda en el panel y enciende "Activa" (o usa la acción "Habilitar"):
+{{ enlace_tienda }}
+{% endautoescape %}

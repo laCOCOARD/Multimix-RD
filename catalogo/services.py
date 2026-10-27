@@ -222,12 +222,38 @@ def _repartidos_entre_tiendas(productos, limite):
 
 def vitrina_del_sitio(limite=12, excluir=()):
     """Productos de todas las tiendas para la portada del sitio: solo lo que se puede comprar."""
+    if limite <= 0:
+        return []
     return _repartidos_entre_tiendas(_base().filter(q_comprable()).exclude(pk__in=excluir), limite)
 
 
-def ofertas_del_sitio(limite=10):
+def ofertas_del_sitio(limite=10, excluir=()):
     """Ofertas vigentes de todas las tiendas que se pueden comprar, repartidas entre las tiendas."""
-    return _repartidos_entre_tiendas(_base().filter(q_oferta_vigente()).filter(q_comprable()), limite)
+    return _repartidos_entre_tiendas(
+        _base().filter(q_oferta_vigente()).filter(q_comprable()).exclude(pk__in=excluir), limite,
+    )
+
+
+def patrocinados_del_sitio(limite=4):
+    """Productos que las tiendas anuncian en la portada (planes, 2026-10-26): van primero en "Descubre productos"
+    con la etiqueta "Patrocinado". Cada tienda, hasta lo que permite su plan; una de cada tienda por vuelta."""
+    productos = (
+        _base().filter(q_comprable(), patrocinado=True, tienda__plan__productos_patrocinados__gt=0)
+        .select_related('tienda__plan').order_by('-actualizado', '-id')[:200]
+    )
+    por_tienda = {}
+    for producto in productos:
+        lista = por_tienda.setdefault(producto.tienda_id, [])
+        if len(lista) < producto.tienda.plan.productos_patrocinados:
+            lista.append(producto)
+    filas, elegidos = list(por_tienda.values()), []
+    while len(elegidos) < limite and any(filas):
+        for fila in filas:
+            if fila and len(elegidos) < limite:
+                elegidos.append(fila.pop(0))
+    for producto in elegidos:
+        producto.es_patrocinado = True
+    return elegidos
 
 
 # Vistos recientemente (como en las grandes tiendas): ids en la sesion, el mas reciente primero.

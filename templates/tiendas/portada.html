@@ -69,6 +69,33 @@
 </section>
 {% endif %}
 
+{% if anuncios %}
+{# Anuncios de las tiendas segun su plan, aprobados por el administrador. Siempre dicen que son anuncios. #}
+<section class="container mm-seccion" aria-labelledby="titulo-anuncios">
+  <div class="mm-seccion-cabecera">
+    <h2 id="titulo-anuncios">Promociones de nuestras tiendas</h2>
+  </div>
+  <div class="mm-fila" data-fila>
+    <button class="mm-fila-flecha mm-fila-anterior" type="button" data-mover="-1" aria-label="Ver anuncios anteriores" hidden><i class="bi bi-chevron-left"></i></button>
+    <div class="mm-fila-pista mm-fila-anuncios" tabindex="0">
+      {% for anuncio in anuncios %}
+        <div class="mm-fila-item">
+          <a class="mm-anuncio" href="{{ anuncio.get_url }}">
+            <span class="mm-anuncio-foto"><img src="{{ anuncio.imagen.url }}" alt="" loading="lazy" decoding="async" width="600" height="300"></span>
+            <span class="mm-anuncio-cuerpo">
+              <span class="mm-anuncio-etiqueta">Anuncio · {{ anuncio.tienda.nombre }}</span>
+              <span class="mm-anuncio-titulo">{{ anuncio.titulo }}</span>
+              {% if anuncio.texto %}<span class="mm-anuncio-texto">{{ anuncio.texto }}</span>{% endif %}
+            </span>
+          </a>
+        </div>
+      {% endfor %}
+    </div>
+    <button class="mm-fila-flecha mm-fila-siguiente" type="button" data-mover="1" aria-label="Ver más anuncios" hidden><i class="bi bi-chevron-right"></i></button>
+  </div>
+</section>
+{% endif %}
+
 <section class="container mm-seccion" id="productos" aria-labelledby="titulo-productos">
   <div class="mm-seccion-cabecera">
     <div>

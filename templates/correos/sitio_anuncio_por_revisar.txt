@@ -1,0 +1,8 @@
+{% autoescape off %}La tienda {{ tienda.nombre }} creó o cambió un anuncio para la portada y espera tu aprobación:
+
+{{ anuncio.titulo }}{% if anuncio.texto %}
+{{ anuncio.texto }}{% endif %}
+
+Revísalo y apruébalo en el panel:
+{{ enlace_anuncio }}
+{% endautoescape %}

@@ -54,6 +54,7 @@ INSTALLED_APPS = [
     'pagos',
     'clientes',
     'opiniones',
+    'planes',
 ]
 
 MIDDLEWARE = [

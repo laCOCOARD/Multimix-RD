@@ -1,6 +1,11 @@
 """Reparto a las tiendas: cuanto le toca a cada una de lo vendido y registro de cada deposito.
 
-Reglas:
+Desde el 2026-10-26 (pedido del dueño) cada tienda cobra en sus propias cuentas y el sitio no se queda con un
+porcentaje de las ventas: lo que el sitio cobra a las tiendas es su plan (app `planes`). Este reparto queda para los
+pedidos que el sitio cobro antes de esa fecha: se le deposita a la tienda lo que el sitio recibio, menos la comision
+de esos pedidos. Lo que cobra la tienda ya no paga comision.
+
+Reglas de antes:
 - Entra en cuenta un pedido cobrado y ya entregado. Hasta entonces esta "en curso".
 - La comision del sitio se calcula sobre los productos (subtotal menos descuento); el envio es de la tienda.
 - Toda transferencia llega a las cuentas del sitio (`Pedido.cobra_el_sitio`): el dinero lo tiene el sitio y hay que
@@ -71,6 +76,9 @@ class Saldo:
 
 
 def comision_de(pedido, porcentaje):
+    """Solo los pedidos que cobro el sitio pagan comision: lo que cobra la tienda ya no (2026-10-26)."""
+    if not pedido.cobra_el_sitio:
+        return CERO
     base = max(pedido.subtotal - pedido.descuento, CERO)
     return (base * porcentaje / Decimal('100')).quantize(CENTAVO, rounding=ROUND_HALF_UP)
 

@@ -1,0 +1,4 @@
+{% autoescape off %}Hola, equipo de {{ tienda.nombre }}:
+
+Aprobamos tu anuncio "{{ anuncio.titulo }}": ya sale en la portada de {{ sitio }} mientras esté activo y dentro de sus fechas.
+{% endautoescape %}

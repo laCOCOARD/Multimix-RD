@@ -1,5 +1,7 @@
-"""Correos de los pedidos: a la tienda cuando entra uno, llega un comprobante o el sitio confirma su pago, y al
-cliente cuando cambia. Si el pedido lo cobra el sitio, el comprobante le llega al sitio."""
+"""Correos de los pedidos: a la tienda cuando entra uno o llega un comprobante, y al cliente cuando cambia.
+
+Desde el 2026-10-26 cada tienda cobra lo suyo y el comprobante le llega a ella. Los pedidos de antes que cobro el
+sitio (`cobra_el_sitio`) siguen avisando al sitio y, al confirmarse, a la tienda ("Pago confirmado")."""
 from django.contrib.auth import get_user_model
 from django.db import transaction
 from django.urls import reverse

@@ -5,13 +5,19 @@ from tiendas.models import Tienda
 TIENDA_POR_DEFECTO = 'Multimix RD'
 
 
-def tienda_de_prueba(nombre=TIENDA_POR_DEFECTO, **datos):
-    """Tienda con ese nombre; se crea la primera vez. Sin nombre es la tienda en la que corren casi todas las pruebas."""
+def tienda_de_prueba(nombre=TIENDA_POR_DEFECTO, con_cuenta=True, **datos):
+    """Tienda con ese nombre; se crea la primera vez. Sin nombre es la tienda en la que corren casi todas las pruebas.
+
+    Nace con una cuenta bancaria: cada tienda cobra en las suyas y sin una no ofrece transferencia (2026-10-26).
+    """
     valores = {'prefijo': 'MMX', 'banner_titulo': 'Tu tienda de bienestar'} if nombre == TIENDA_POR_DEFECTO else {}
     # Sin ITBIS para que los totales de las pruebas sean los de los productos; el impuesto tiene las suyas.
     valores['itbis_porcentaje'] = 0
     valores.update(datos)
-    return Tienda.objects.get_or_create(nombre=nombre, defaults=valores)[0]
+    tienda, creada = Tienda.objects.get_or_create(nombre=nombre, defaults=valores)
+    if creada and con_cuenta:
+        tienda.cuentas.create(banco='Banco de prueba', numero=f'000-{tienda.pk}', titular=nombre)
+    return tienda
 
 
 def ruta(nombre, *args, tienda=None):

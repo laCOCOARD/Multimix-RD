@@ -32,7 +32,7 @@ Al cerrar cada modulo: check, makemigrations, migrate, test y commit.
 - `tiendas/` — Tienda (subtienda) y sus vendedores; `@de_tienda` para las vistas, `AdminDeTienda` para el
   panel, grupo Vendedores, portada del sitio, pagina de todas las tiendas (`/tiendas/`), buscador del sitio y
   enlaces anteriores.
-- `core/` — ConfiguracionTienda (fila unica, ajustes del sitio), CuentaDelSitio (las unicas cuentas bancarias), panel (AdminSite propio),
+- `core/` — ConfiguracionTienda (fila unica, ajustes del sitio), CuentaDelSitio (a donde le pagan las tiendas su plan), panel (AdminSite propio),
   filtro `moneda`, telefonos RD, paginas informativas, sitemap/robots, comando `cargar_demo`.
 - `catalogo/` — Categoria (comun a todas las tiendas), Producto, FotoProducto; inicio, catalogo y detalle de cada tienda.
 - `promociones/` — Cupon y su validacion.
@@ -48,12 +48,16 @@ Al cerrar cada modulo: check, makemigrations, migrate, test y commit.
   al cliente le llega un correo. La tienda puede ocultarlas.
 - `pagos/` — Pago (un intento de pago por pedido), comprobantes de transferencia (privados), conciliacion en el panel y
   el contrato de las pasarelas de tarjeta (`proveedores.py`, ninguna conectada). Ver `docs/PAGOS.md`.
+- `planes/` — Plan (tres: Basico, Estandar, Premium), Cargo (lo que cada tienda le debe al sitio: mensualidad, pedidos
+  de mas u otro, con su comprobante privado) y Anuncio (banners de las tiendas en la portada). `services.py`: cargos
+  del mes, excedente, recordatorios, cierre y habilitacion, comprobantes y anuncios. Ver `docs/PAGOS.md`.
 - `templates/`, `static/` — plantillas y recursos de la tienda y del panel.
 - `docs/` — RENDER.md (despliegue real y traslado de la base), PAGOS.md, DESPLIEGUE.md (VPS) y esquema.sql
   (referencia; las tablas las crea `migrate`).
 
 ## Reglas que no se rompen
-- Nada cruza de una tienda a otra. Producto, Pedido, Pago, Cupon y ZonaEnvio llevan `tienda`.
+- Nada cruza de una tienda a otra. Producto, Pedido, Pago, Cupon, ZonaEnvio, CuentaBancaria, Cargo y Anuncio llevan
+  `tienda`.
   En el sitio toda vista de tienda usa `@de_tienda` y filtra por `request.tienda`; en el panel todo
   ModelAdmin con datos de tienda hereda `tiendas.panel.AdminDeTienda`. Un modelo o una pantalla nueva
   entra con su prueba de aislamiento (`tiendas/tests/`).
@@ -79,7 +83,8 @@ Al cerrar cada modulo: check, makemigrations, migrate, test y commit.
 
 ## Decisiones tomadas
 - Reparto a las tiendas (`pagos/liquidaciones.py`, Panel > Liquidaciones > Saldos por tienda, solo superusuario):
-  entra en cuenta el pedido cobrado y entregado. Comision del sitio (`Tienda.comision_porcentaje`) sobre
+  desde el 2026-10-26 solo queda para los pedidos que cobro el sitio antes (`cobra_el_sitio`); lo que cobra la tienda
+  ya no paga comision (`comision_de` da 0). Reglas de entonces: entra en cuenta el pedido cobrado y entregado. Comision del sitio (`Tienda.comision_porcentaje`) sobre
   subtotal - descuento; el envio es de la tienda. Las transferencias las tiene el sitio y se le depositan a la
   tienda menos la comision; el efectivo siempre lo cobra la tienda y va en su propio apartado
   (`Saldo.del_sitio` / `Saldo.de_la_tienda`): no se le deposita, pero su comision se descuenta. Saldo negativo = la
@@ -88,14 +93,30 @@ Al cerrar cada modulo: check, makemigrations, migrate, test y commit.
   (`ajuste_liquidacion`). Lo que cobre el banco por enviar el deposito (`Liquidacion.costo_transferencia`, un monto
   que se escribe al liquidar) lo paga el sitio (pedido del dueño el 2026-10-19): se anota como gasto del sitio y
   la tienda recibe su saldo completo; el vendedor no ve ese campo. El vendedor ve sus liquidaciones pero no la comision ni quien cobra en el formulario.
-- Cobro del sitio (pedido del dueño el 2026-10-15): todas las transferencias de todas las tiendas van a las cuentas
-  del dueño (`CuentaDelSitio`, `core.models.cuentas_para_transferir`); las tiendas no tienen cuentas (se quitaron
-  `CuentaBancaria` y `Tienda.el_sitio_cobra`; `core/0017` paso al sitio las de la tienda mas antigua).
-  `Pedido.cobra_el_sitio` se fija al crear el pedido (toda transferencia) y lo usa la liquidacion: los pedidos de
-  antes, transferidos a la tienda, quedaron en False y cuentan como cobrados por ella.
-  En esos pedidos el comprobante le llega al sitio (`avisos.correos_del_sitio`), solo el superusuario aprueba o
-  rechaza (`pagos.services.puede_resolver`) y marca Pagado o Reembolsado (`transiciones_permitidas(pedido,
-  usuario)`), y al pasar a Pagado la tienda recibe "Pago confirmado" (`avisos.pago_confirmado_a_la_tienda`).
+- Cada tienda cobra lo suyo (pedido del dueño el 2026-10-26; reemplaza el "cobro del sitio" del 2026-10-15): sus
+  clientes transfieren a las cuentas de la tienda (`tiendas.CuentaBancaria`, las registra el vendedor;
+  `core.models.cuentas_para_transferir(tienda)`), el comprobante le llega a ella y ella aprueba el pago. Sin cuentas
+  activas la tienda no ofrece transferencia (`metodos_pago_disponibles`) y el checkout avisa si el envio queda sin
+  forma de pago. `crear_pedido` deja `cobra_el_sitio=False`. `tiendas/0016` copio las cuentas del sitio a la tienda
+  mas antigua (la del dueño), para que sus clientes sigan transfiriendo. En la prueba, `tienda_de_prueba()` nace
+  con una cuenta (`con_cuenta=False` para probar sin ella).
+  Los pedidos que cobro el sitio del 2026-10-15 al 26 (`cobra_el_sitio=True`) siguen como entonces: el comprobante
+  le llega al sitio (`avisos.correos_del_sitio`), solo el superusuario aprueba o rechaza
+  (`pagos.services.puede_resolver`) y marca Pagado o Reembolsado (`transiciones_permitidas(pedido, usuario)`), y al
+  pasar a Pagado la tienda recibe "Pago confirmado" (`avisos.pago_confirmado_a_la_tienda`).
+- Planes y cobro a las tiendas (pedido del dueño el 2026-10-26; app `planes`, ver `docs/PAGOS.md`): el sitio no
+  cobra porcentaje por articulo. Cada tienda tiene un plan (`Tienda.plan`, lo asigna el superusuario; sin plan no se
+  cobra nada ni hay anuncios): mensualidad, pedidos cobrados incluidos al mes, % sobre lo vendido (productos menos
+  descuento, sin envio) en los pedidos de mas, anuncios en la portada y productos "Patrocinado". La mensualidad vence
+  el dia 1 (el cargo aparece una semana antes; quien recibe el plan a mitad de mes empieza el siguiente, `plan_desde`)
+  y el excedente del mes anterior se calcula el dia 1 y vence ese dia. La tienda transfiere a `CuentaDelSitio` y sube
+  el comprobante en su panel (`CargoAdmin`, `services.subir_comprobante`); solo el superusuario confirma, rechaza o
+  anula. Avisos: `dias_aviso_mensualidad` antes, el dia que vence y el ultimo dia de gracia; pasados
+  `dias_de_gracia` (4) la tienda se cierra (`activa=False`, `cerrada_por_falta_de_pago`) hasta que el superusuario la
+  habilita (encender "Activa" o la accion "Habilitar"; `habilitada_el` evita que lo ya vencido la vuelva a cerrar).
+  Todo corre en `revisar_cobros`, dentro de las tareas periodicas (o el comando del mismo nombre). Los anuncios
+  (`Anuncio`) salen cuando el superusuario los aprueba; cambiar su contenido los devuelve a revision. Los tres
+  planes los creo `planes/0002` con montos propuestos que el dueño cambia en el panel.
 - La pagina del pedido lleva `<meta name="referrer" content="same-origin">`, nunca `no-referrer`: con este ultimo
   el navegador envia `Origin: null` en sus formularios (comprobante, cancelar, devolucion) y Django responde 403.
   Paso en produccion y las pruebas no lo ven, porque el cliente de pruebas no manda `Origin`.
@@ -281,9 +302,10 @@ Al cerrar cada modulo: check, makemigrations, migrate, test y commit.
 - Rutas de tienda bajo `/tienda/<tienda_slug>/` (`tiendas.decoradores.RUTA_DE_TIENDA`). `pedidos` y `core`
   mezclan rutas de tienda y del sitio, por eso declaran las suyas completas y se incluyen en la raiz.
   Las paginas por token (confirmacion, factura) ponen `request.tienda = pedido.tienda`.
-- El vendedor no toca nada que decida a donde va el dinero (pedido del dueño el 2026-10-15): las cuentas
-  bancarias (de tienda y del sitio), la comision, quien cobra y el ITBIS son solo del superusuario. Los permisos
-  del grupo se fijan con `set` al migrar, asi que quitar uno de `PERMISOS_VENDEDOR` se lo quita al grupo.
+- Lo que el vendedor no toca: su plan, la comision de los pedidos viejos, el ITBIS, las cuentas del sitio, abrir su
+  tienda cerrada y aprobar sus pagos al sitio o sus anuncios: solo el superusuario. Desde el 2026-10-26 si maneja las
+  cuentas bancarias de su tienda (cobra lo suyo). Los permisos del grupo se fijan con `set` al migrar, asi que
+  quitar uno de `PERMISOS_VENDEDOR` se lo quita al grupo.
 - Las tiendas las crea el superusuario. Al asignar usuarios en `TiendaAdmin` se llama
   `dar_acceso_al_panel` (personal + grupo Vendedores); `tienda.usuarios.add()` a secas no da permisos.
   El grupo y sus permisos (`PERMISOS_VENDEDOR`) se crean con `post_migrate`.

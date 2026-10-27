@@ -1431,3 +1431,109 @@ CREATE INDEX "pedido_telefono_idx" ON "pedidos_pedido" ("telefono");
 CREATE INDEX "pedido_ip_creado_idx" ON "pedidos_pedido" ("ip", "creado" DESC);
 CREATE INDEX "pedido_tienda_creado_idx" ON "pedidos_pedido" ("tienda_id", "creado" DESC);
 COMMIT;
+
+-- ============================================================
+-- catalogo 0016
+-- ============================================================
+BEGIN;
+--
+-- Add field patrocinado to producto
+--
+CREATE TABLE "new__catalogo_producto" ("id" integer NOT NULL PRIMARY KEY AUTOINCREMENT, "patrocinado" bool NOT NULL, "nombre" varchar(150) NOT NULL, "slug" varchar(170) NOT NULL, "sku" varchar(40) NOT NULL, "descripcion" text NOT NULL, "precio" decimal NOT NULL, "precio_oferta" decimal NULL, "oferta_inicio" datetime NULL, "oferta_fin" datetime NULL, "stock_almacen" integer unsigned NOT NULL CHECK ("stock_almacen" >= 0), "stock_reservado" integer unsigned NOT NULL CHECK ("stock_reservado" >= 0), "destacado" bool NOT NULL, "nuevo" bool NOT NULL, "activo" bool NOT NULL, "creado" datetime NOT NULL, "actualizado" datetime NOT NULL, "categoria_id" bigint NOT NULL REFERENCES "catalogo_categoria" ("id") DEFERRABLE INITIALLY DEFERRED, "texto_busqueda" text NOT NULL, "tienda_id" bigint NOT NULL REFERENCES "tiendas_tienda" ("id") DEFERRABLE INITIALLY DEFERRED, "controla_stock" bool NOT NULL, "disponibilidad" varchar(15) NOT NULL, "marca" varchar(60) NOT NULL, "exento_itbis" bool NOT NULL, "nombre_variante" varchar(40) NOT NULL, "tipo_variante" varchar(30) NOT NULL, "variante_de_id" bigint NULL REFERENCES "catalogo_producto" ("id") DEFERRABLE INITIALLY DEFERRED, CONSTRAINT "producto_precio_positivo" CHECK ("precio" > '0'), CONSTRAINT "producto_oferta_menor_que_precio" CHECK (("precio_oferta" IS NULL OR ("precio_oferta" > '0' AND "precio_oferta" < ("precio")))), CONSTRAINT "producto_reservado_no_supera_almacen" CHECK ("stock_reservado" <= ("stock_almacen")), CONSTRAINT "producto_sku_unico_por_tienda" UNIQUE ("tienda_id", "sku"), CONSTRAINT "producto_slug_unico_por_tienda" UNIQUE ("tienda_id", "slug"));
+INSERT INTO "new__catalogo_producto" ("id", "nombre", "slug", "sku", "descripcion", "precio", "precio_oferta", "oferta_inicio", "oferta_fin", "stock_almacen", "stock_reservado", "destacado", "nuevo", "activo", "creado", "actualizado", "categoria_id", "texto_busqueda", "tienda_id", "controla_stock", "disponibilidad", "marca", "exento_itbis", "nombre_variante", "tipo_variante", "variante_de_id", "patrocinado") SELECT "id", "nombre", "slug", "sku", "descripcion", "precio", "precio_oferta", "oferta_inicio", "oferta_fin", "stock_almacen", "stock_reservado", "destacado", "nuevo", "activo", "creado", "actualizado", "categoria_id", "texto_busqueda", "tienda_id", "controla_stock", "disponibilidad", "marca", "exento_itbis", "nombre_variante", "tipo_variante", "variante_de_id", 0 FROM "catalogo_producto";
+DROP TABLE "catalogo_producto";
+ALTER TABLE "new__catalogo_producto" RENAME TO "catalogo_producto";
+CREATE INDEX "catalogo_producto_slug_178d3ecc" ON "catalogo_producto" ("slug");
+CREATE INDEX "catalogo_producto_categoria_id_19eecf17" ON "catalogo_producto" ("categoria_id");
+CREATE INDEX "catalogo_producto_tienda_id_cbac6c3f" ON "catalogo_producto" ("tienda_id");
+CREATE INDEX "catalogo_producto_variante_de_id_019b89f2" ON "catalogo_producto" ("variante_de_id");
+CREATE INDEX "producto_activo_creado_idx" ON "catalogo_producto" ("activo", "creado" DESC);
+CREATE INDEX "producto_activo_destacado_idx" ON "catalogo_producto" ("activo", "destacado");
+CREATE INDEX "producto_categoria_activo_idx" ON "catalogo_producto" ("categoria_id", "activo");
+CREATE INDEX "producto_precio_idx" ON "catalogo_producto" ("precio");
+CREATE INDEX "producto_tienda_activo_idx" ON "catalogo_producto" ("tienda_id", "activo", "creado" DESC);
+CREATE INDEX "producto_disponibilidad_idx" ON "catalogo_producto" ("tienda_id", "disponibilidad");
+COMMIT;
+
+-- ============================================================
+-- core 0020
+-- ============================================================
+BEGIN;
+--
+-- Add field dias_aviso_mensualidad to configuraciontienda
+--
+CREATE TABLE "new__core_configuraciontienda" ("id" integer NOT NULL PRIMARY KEY AUTOINCREMENT, "dias_aviso_mensualidad" smallint unsigned NOT NULL CHECK ("dias_aviso_mensualidad" >= 0), "nombre" varchar(80) NOT NULL, "logo" varchar(100) NOT NULL, "correo" varchar(254) NOT NULL, "telefono" varchar(20) NOT NULL, "horario" varchar(150) NOT NULL, "whatsapp" varchar(20) NOT NULL, "facebook" varchar(200) NOT NULL, "instagram" varchar(200) NOT NULL, "tiktok" varchar(200) NOT NULL, "dias_producto_nuevo" smallint unsigned NOT NULL CHECK ("dias_producto_nuevo" >= 0), "umbral_stock_bajo" smallint unsigned NOT NULL CHECK ("umbral_stock_bajo" >= 0), "horas_vencimiento_pedido" smallint unsigned NOT NULL CHECK ("horas_vencimiento_pedido" >= 0), "mostrar_cantidad_exacta" bool NOT NULL, "descripcion" varchar(220) NOT NULL, "dias_devolucion" smallint unsigned NOT NULL CHECK ("dias_devolucion" >= 0));
+INSERT INTO "new__core_configuraciontienda" ("id", "nombre", "logo", "correo", "telefono", "horario", "whatsapp", "facebook", "instagram", "tiktok", "dias_producto_nuevo", "umbral_stock_bajo", "horas_vencimiento_pedido", "mostrar_cantidad_exacta", "descripcion", "dias_devolucion", "dias_aviso_mensualidad") SELECT "id", "nombre", "logo", "correo", "telefono", "horario", "whatsapp", "facebook", "instagram", "tiktok", "dias_producto_nuevo", "umbral_stock_bajo", "horas_vencimiento_pedido", "mostrar_cantidad_exacta", "descripcion", "dias_devolucion", 3 FROM "core_configuraciontienda";
+DROP TABLE "core_configuraciontienda";
+ALTER TABLE "new__core_configuraciontienda" RENAME TO "core_configuraciontienda";
+--
+-- Add field dias_de_gracia to configuraciontienda
+--
+CREATE TABLE "new__core_configuraciontienda" ("id" integer NOT NULL PRIMARY KEY AUTOINCREMENT, "nombre" varchar(80) NOT NULL, "logo" varchar(100) NOT NULL, "correo" varchar(254) NOT NULL, "telefono" varchar(20) NOT NULL, "horario" varchar(150) NOT NULL, "whatsapp" varchar(20) NOT NULL, "facebook" varchar(200) NOT NULL, "instagram" varchar(200) NOT NULL, "tiktok" varchar(200) NOT NULL, "dias_producto_nuevo" smallint unsigned NOT NULL CHECK ("dias_producto_nuevo" >= 0), "umbral_stock_bajo" smallint unsigned NOT NULL CHECK ("umbral_stock_bajo" >= 0), "horas_vencimiento_pedido" smallint unsigned NOT NULL CHECK ("horas_vencimiento_pedido" >= 0), "mostrar_cantidad_exacta" bool NOT NULL, "descripcion" varchar(220) NOT NULL, "dias_devolucion" smallint unsigned NOT NULL CHECK ("dias_devolucion" >= 0), "dias_aviso_mensualidad" smallint unsigned NOT NULL CHECK ("dias_aviso_mensualidad" >= 0), "dias_de_gracia" smallint unsigned NOT NULL CHECK ("dias_de_gracia" >= 0));
+INSERT INTO "new__core_configuraciontienda" ("id", "nombre", "logo", "correo", "telefono", "horario", "whatsapp", "facebook", "instagram", "tiktok", "dias_producto_nuevo", "umbral_stock_bajo", "horas_vencimiento_pedido", "mostrar_cantidad_exacta", "descripcion", "dias_devolucion", "dias_aviso_mensualidad", "dias_de_gracia") SELECT "id", "nombre", "logo", "correo", "telefono", "horario", "whatsapp", "facebook", "instagram", "tiktok", "dias_producto_nuevo", "umbral_stock_bajo", "horas_vencimiento_pedido", "mostrar_cantidad_exacta", "descripcion", "dias_devolucion", "dias_aviso_mensualidad", 4 FROM "core_configuraciontienda";
+DROP TABLE "core_configuraciontienda";
+ALTER TABLE "new__core_configuraciontienda" RENAME TO "core_configuraciontienda";
+COMMIT;
+
+-- ============================================================
+-- planes 0001
+-- ============================================================
+BEGIN;
+--
+-- Create model Plan
+--
+CREATE TABLE "planes_plan" ("id" integer NOT NULL PRIMARY KEY AUTOINCREMENT, "nombre" varchar(40) NOT NULL UNIQUE, "descripcion" varchar(200) NOT NULL, "mensualidad" decimal NOT NULL, "pedidos_incluidos" integer unsigned NULL CHECK ("pedidos_incluidos" >= 0), "porcentaje_excedente" decimal NOT NULL, "anuncios_portada" smallint unsigned NOT NULL CHECK ("anuncios_portada" >= 0), "productos_patrocinados" smallint unsigned NOT NULL CHECK ("productos_patrocinados" >= 0), "activo" bool NOT NULL, "orden" smallint unsigned NOT NULL CHECK ("orden" >= 0));
+--
+-- Create model Anuncio
+--
+CREATE TABLE "planes_anuncio" ("id" integer NOT NULL PRIMARY KEY AUTOINCREMENT, "titulo" varchar(70) NOT NULL, "texto" varchar(140) NOT NULL, "imagen" varchar(100) NOT NULL, "activo" bool NOT NULL, "aprobado" bool NOT NULL, "revisado_el" datetime NULL, "orden" smallint unsigned NOT NULL CHECK ("orden" >= 0), "vigente_desde" datetime NULL, "vigente_hasta" datetime NULL, "creado" datetime NOT NULL, "actualizado" datetime NOT NULL, "producto_id" bigint NULL REFERENCES "catalogo_producto" ("id") DEFERRABLE INITIALLY DEFERRED, "tienda_id" bigint NOT NULL REFERENCES "tiendas_tienda" ("id") DEFERRABLE INITIALLY DEFERRED);
+--
+-- Create model Cargo
+--
+CREATE TABLE "planes_cargo" ("id" integer NOT NULL PRIMARY KEY AUTOINCREMENT, "tipo" varchar(12) NOT NULL, "periodo" date NOT NULL, "concepto" varchar(160) NOT NULL, "detalle" text NOT NULL, "monto" decimal NOT NULL, "vence" date NOT NULL, "estado" varchar(12) NOT NULL, "comprobante" varchar(100) NOT NULL, "referencia" varchar(60) NOT NULL, "enviado_el" datetime NULL, "revisado_el" datetime NULL, "nota" varchar(255) NOT NULL, "avisos" text NOT NULL CHECK ((JSON_VALID("avisos") OR "avisos" IS NULL)), "creado" datetime NOT NULL, "revisado_por_id" integer NULL REFERENCES "auth_user" ("id") DEFERRABLE INITIALLY DEFERRED, "tienda_id" bigint NOT NULL REFERENCES "tiendas_tienda" ("id") DEFERRABLE INITIALLY DEFERRED, CONSTRAINT "cargo_monto_positivo" CHECK ("monto" > '0'));
+CREATE INDEX "planes_anuncio_producto_id_93903157" ON "planes_anuncio" ("producto_id");
+CREATE INDEX "planes_anuncio_tienda_id_83a09bf4" ON "planes_anuncio" ("tienda_id");
+CREATE UNIQUE INDEX "un_cargo_por_tipo_y_mes" ON "planes_cargo" ("tienda_id", "tipo", "periodo") WHERE NOT ("tipo" = 'otro');
+CREATE INDEX "planes_cargo_revisado_por_id_b15b34f3" ON "planes_cargo" ("revisado_por_id");
+CREATE INDEX "planes_cargo_tienda_id_a904e38b" ON "planes_cargo" ("tienda_id");
+CREATE INDEX "cargo_estado_vence_idx" ON "planes_cargo" ("estado", "vence");
+COMMIT;
+
+-- ============================================================
+-- tiendas 0015
+-- ============================================================
+BEGIN;
+--
+-- Add field cerrada_el to tienda
+--
+ALTER TABLE "tiendas_tienda" ADD COLUMN "cerrada_el" datetime NULL;
+--
+-- Add field cerrada_por_falta_de_pago to tienda
+--
+CREATE TABLE "new__tiendas_tienda" ("id" integer NOT NULL PRIMARY KEY AUTOINCREMENT, "nombre" varchar(80) NOT NULL UNIQUE, "slug" varchar(60) NOT NULL UNIQUE, "prefijo" varchar(5) NOT NULL UNIQUE, "activa" bool NOT NULL, "orden" smallint unsigned NOT NULL CHECK ("orden" >= 0), "logo" varchar(100) NOT NULL, "banner_titulo" varchar(120) NOT NULL, "banner_subtitulo" varchar(220) NOT NULL, "banner_texto_boton" varchar(40) NOT NULL, "banner_imagen" varchar(100) NOT NULL, "correo" varchar(254) NOT NULL, "telefono" varchar(20) NOT NULL, "horario" varchar(150) NOT NULL, "whatsapp" varchar(20) NOT NULL, "direccion_tienda" varchar(255) NOT NULL, "facebook" varchar(200) NOT NULL, "instagram" varchar(200) NOT NULL, "tiktok" varchar(200) NOT NULL, "permitir_contra_entrega" bool NOT NULL, "creada" datetime NOT NULL, "itbis_porcentaje" decimal NOT NULL, "comision_porcentaje" decimal NOT NULL, "dias_bajo_pedido" smallint unsigned NOT NULL CHECK ("dias_bajo_pedido" >= 0), "dias_para_recoger" smallint unsigned NOT NULL CHECK ("dias_para_recoger" >= 0), "envio_gratis_desde" decimal NULL, "cerrada_el" datetime NULL, "cerrada_por_falta_de_pago" bool NOT NULL);
+INSERT INTO "new__tiendas_tienda" ("id", "nombre", "slug", "prefijo", "activa", "orden", "logo", "banner_titulo", "banner_subtitulo", "banner_texto_boton", "banner_imagen", "correo", "telefono", "horario", "whatsapp", "direccion_tienda", "facebook", "instagram", "tiktok", "permitir_contra_entrega", "creada", "itbis_porcentaje", "comision_porcentaje", "dias_bajo_pedido", "dias_para_recoger", "envio_gratis_desde", "cerrada_el", "cerrada_por_falta_de_pago") SELECT "id", "nombre", "slug", "prefijo", "activa", "orden", "logo", "banner_titulo", "banner_subtitulo", "banner_texto_boton", "banner_imagen", "correo", "telefono", "horario", "whatsapp", "direccion_tienda", "facebook", "instagram", "tiktok", "permitir_contra_entrega", "creada", "itbis_porcentaje", "comision_porcentaje", "dias_bajo_pedido", "dias_para_recoger", "envio_gratis_desde", "cerrada_el", 0 FROM "tiendas_tienda";
+DROP TABLE "tiendas_tienda";
+ALTER TABLE "new__tiendas_tienda" RENAME TO "tiendas_tienda";
+--
+-- Add field habilitada_el to tienda
+--
+ALTER TABLE "tiendas_tienda" ADD COLUMN "habilitada_el" datetime NULL;
+--
+-- Add field plan to tienda
+--
+ALTER TABLE "tiendas_tienda" ADD COLUMN "plan_id" bigint NULL REFERENCES "planes_plan" ("id") DEFERRABLE INITIALLY DEFERRED;
+--
+-- Add field plan_desde to tienda
+--
+ALTER TABLE "tiendas_tienda" ADD COLUMN "plan_desde" date NULL;
+--
+-- Alter field comision_porcentaje on tienda
+--
+-- (no-op)
+--
+-- Create model CuentaBancaria
+--
+CREATE TABLE "tiendas_cuentabancaria" ("id" integer NOT NULL PRIMARY KEY AUTOINCREMENT, "banco" varchar(80) NOT NULL, "tipo_cuenta" varchar(10) NOT NULL, "numero" varchar(30) NOT NULL, "titular" varchar(120) NOT NULL, "cedula_rnc" varchar(20) NOT NULL, "activa" bool NOT NULL, "orden" smallint unsigned NOT NULL CHECK ("orden" >= 0), "tienda_id" bigint NOT NULL REFERENCES "tiendas_tienda" ("id") DEFERRABLE INITIALLY DEFERRED, CONSTRAINT "cuenta_bancaria_unica_por_tienda" UNIQUE ("tienda_id", "banco", "numero"));
+CREATE INDEX "tiendas_tienda_plan_id_82c64cbc" ON "tiendas_tienda" ("plan_id");
+CREATE INDEX "tiendas_cuentabancaria_tienda_id_921c2131" ON "tiendas_cuentabancaria" ("tienda_id");
+COMMIT;

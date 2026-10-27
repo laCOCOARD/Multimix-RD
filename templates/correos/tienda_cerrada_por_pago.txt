@@ -1,0 +1,16 @@
+{% load moneda %}{% autoescape off %}Hola, equipo de {{ tienda.nombre }}:
+
+Tu tienda en {{ sitio }} se cerró porque no recibimos a tiempo el pago de:
+{% for cargo in cargos %}- {{ cargo.concepto }}: {{ cargo.monto|moneda }} (venció el {{ cargo.vence|date:"j \d\e F" }})
+{% endfor %}
+Mientras esté cerrada, tus clientes no ven la tienda ni sus productos. Tus pedidos en curso siguen en tu panel.
+
+Para volver a abrirla, transfiere lo pendiente{% if cuentas %} a cualquiera de estas cuentas:
+{% for cuenta in cuentas %}- {{ cuenta.banco }}, cuenta {{ cuenta.get_tipo_cuenta_display|lower }} {{ cuenta.numero }}, a nombre de {{ cuenta.titular }}{% if cuenta.cedula_rnc %} ({{ cuenta.cedula_rnc }}){% endif %}
+{% endfor %}{% else %}.
+{% endif %}
+y sube el comprobante en tu panel:
+{{ enlace_panel }}
+
+Cuando confirmemos el pago te avisamos y la habilitamos.
+{% endautoescape %}

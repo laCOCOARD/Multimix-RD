@@ -14,7 +14,11 @@ GRUPO_VENDEDORES = 'Vendedores'
 # Lo que un vendedor puede hacer en el panel. El panel ademas le muestra solo lo de sus tiendas
 # (tiendas.panel.AdminDeTienda); las categorias y la configuracion general quedan para el administrador.
 PERMISOS_VENDEDOR = {
-    'tiendas': ['view_tienda', 'change_tienda', 'view_banner', 'add_banner', 'change_banner', 'delete_banner'],
+    # Desde el 2026-10-26 cada tienda cobra en sus propias cuentas: las registra el vendedor.
+    'tiendas': [
+        'view_tienda', 'change_tienda', 'view_banner', 'add_banner', 'change_banner', 'delete_banner',
+        'view_cuentabancaria', 'add_cuentabancaria', 'change_cuentabancaria', 'delete_cuentabancaria',
+    ],
     'catalogo': [
         'view_producto', 'add_producto', 'change_producto', 'delete_producto',
         'view_fotoproducto', 'add_fotoproducto', 'change_fotoproducto', 'delete_fotoproducto',
@@ -31,8 +35,13 @@ PERMISOS_VENDEDOR = {
     # Las reseñas se ven; publicarlas o rechazarlas es del administrador principal. Las preguntas las responde
     # la tienda.
     'opiniones': ['view_resena', 'view_pregunta', 'change_pregunta'],
-    # Sin 'core': las cuentas bancarias que ve el cliente las registra solo el administrador principal, para que
-    # nadie cambie a donde transfieren los clientes.
+    # Su plan lo asigna el administrador; la tienda ve los planes, sube el comprobante de lo que debe al sitio (no lo
+    # aprueba) y maneja sus anuncios, que se publican cuando el administrador los aprueba.
+    'planes': [
+        'view_plan', 'view_cargo', 'change_cargo',
+        'view_anuncio', 'add_anuncio', 'change_anuncio', 'delete_anuncio',
+    ],
+    # Sin 'core': las cuentas del sitio (a donde le pagan las tiendas) las registra solo el administrador principal.
 }
 
 

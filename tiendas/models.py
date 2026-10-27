@@ -105,8 +105,18 @@ class Tienda(models.Model):
     comision_porcentaje = models.DecimalField(
         'comisión del sitio (%)', max_digits=5, decimal_places=2, default=Decimal('0.00'),
         validators=[MinValueValidator(Decimal('0')), MaxValueValidator(Decimal('100'))],
-        help_text='Lo que se queda el sitio de cada venta, sobre los productos (no sobre el envío).',
+        help_text='Solo para liquidar los pedidos que cobró el sitio antes del 26 de octubre de 2026. Desde entonces '
+                  'cada tienda cobra lo suyo y el sitio no se queda con un porcentaje de las ventas.',
     )
+    # Plan y cobros del sitio a la tienda (pedido del dueño el 2026-10-26): ver la app `planes`.
+    plan = models.ForeignKey(
+        'planes.Plan', on_delete=models.PROTECT, null=True, blank=True, related_name='tiendas',
+        help_text='Mensualidad, pedidos incluidos al mes y anuncios. Sin plan no se le cobra nada ni puede anunciarse.',
+    )
+    plan_desde = models.DateField('con este plan desde', null=True, blank=True, editable=False)
+    cerrada_por_falta_de_pago = models.BooleanField(default=False, editable=False)
+    cerrada_el = models.DateTimeField('cerrada el', null=True, blank=True, editable=False)
+    habilitada_el = models.DateTimeField('habilitada otra vez el', null=True, blank=True, editable=False)
     creada = models.DateTimeField('fecha de creación', auto_now_add=True)
 
     objects = TiendaQuerySet.as_manager()
@@ -125,12 +135,27 @@ class Tienda(models.Model):
         self.whatsapp = normalizar_whatsapp(self.whatsapp)
         super().clean_fields(exclude=exclude)
 
+    @classmethod
+    def from_db(cls, db, field_names, values):
+        tienda = super().from_db(db, field_names, values)
+        # Para saber al guardar si cambio el plan (y desde cuando lo tiene).
+        tienda._plan_original = tienda.__dict__.get('plan_id')
+        return tienda
+
     def save(self, *args, **kwargs):
         if not self.slug:
             self.slug = generar_slug_unico(self, self.nombre, largo=60)
         self.prefijo = (self.prefijo or '').strip().upper() or self._prefijo_libre()
         self.whatsapp = normalizar_whatsapp(self.whatsapp)
+        if 'plan_id' in self.__dict__ and self.plan_id != getattr(self, '_plan_original', None):
+            from django.utils import timezone
+
+            self.plan_desde = timezone.localdate() if self.plan_id else None
+            campos = kwargs.get('update_fields')
+            if campos is not None:
+                kwargs['update_fields'] = {*campos, 'plan_desde'}
         super().save(*args, **kwargs)
+        self._plan_original = self.__dict__.get('plan_id')
 
     def get_absolute_url(self):
         return reverse('catalogo:inicio', args=[self.slug])
@@ -150,6 +175,38 @@ class Tienda(models.Model):
             prefijo = f'{base[:LARGO_PREFIJO - len(sufijo)]}{sufijo}'
             numero += 1
         return prefijo
+
+
+class CuentaBancaria(models.Model):
+    """Cuenta de la tienda: a ella le transfieren sus clientes y ella confirma el pago (pedido del dueño el
+    2026-10-26: cada tienda es responsable de sus pagos). Sin cuentas activas la tienda no ofrece transferencia."""
+
+    class Tipo(models.TextChoices):
+        AHORROS = 'ahorros', 'Ahorros'
+        CORRIENTE = 'corriente', 'Corriente'
+
+    tienda = models.ForeignKey(Tienda, on_delete=models.CASCADE, related_name='cuentas')
+    banco = models.CharField(max_length=80)
+    tipo_cuenta = models.CharField('tipo de cuenta', max_length=10, choices=Tipo.choices, default=Tipo.AHORROS)
+    numero = models.CharField('número de cuenta', max_length=30)
+    titular = models.CharField(max_length=120)
+    cedula_rnc = models.CharField('cédula o RNC', max_length=20, blank=True)
+    activa = models.BooleanField(default=True, help_text='Solo las activas las ven tus clientes al pagar.')
+    orden = models.PositiveSmallIntegerField(default=0)
+
+    class Meta:
+        verbose_name = 'cuenta bancaria'
+        verbose_name_plural = 'cuentas bancarias de la tienda'
+        ordering = ['orden', 'banco']
+        constraints = [
+            models.UniqueConstraint(
+                fields=['tienda', 'banco', 'numero'], name='cuenta_bancaria_unica_por_tienda',
+                violation_error_message='Ya registraste esa cuenta de ese banco.',
+            ),
+        ]
+
+    def __str__(self):
+        return f'{self.banco} · {self.get_tipo_cuenta_display()} · {self.numero}'
 
 
 def validar_enlace_interno_o_seguro(valor):

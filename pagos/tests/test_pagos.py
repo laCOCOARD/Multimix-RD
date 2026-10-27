@@ -170,7 +170,7 @@ class PagoTests(TestCase):
 
 @override_settings(MEDIA_ROOT=CARPETA)
 class PanelDePagosTests(TestCase):
-    """Cada vendedor ve solo los pagos de su tienda; las transferencias las concilia el administrador principal."""
+    """Cada vendedor ve y concilia solo los pagos de su tienda (cada tienda cobra lo suyo desde el 2026-10-26)."""
 
     @classmethod
     def setUpTestData(cls):
@@ -195,16 +195,22 @@ class PanelDePagosTests(TestCase):
         self.assertEqual(self.client.get(reverse('admin:pagos_pago_change', args=[self.pago_ajeno.pk])).status_code, 302)
         self.assertEqual(self.client.get(reverse('admin:pagos_pago_change', args=[self.pago_propio.pk])).status_code, 200)
 
-    def test_el_vendedor_no_aprueba_ni_rechaza_transferencias_ni_de_su_tienda_ni_de_otra(self):
-        for accion in ('aprobar', 'rechazar'):
-            self.client.post(self.lista, {
-                'action': accion, '_selected_action': [self.pago_propio.pk, self.pago_ajeno.pk],
-            })
-        for pago in (self.pago_propio, self.pago_ajeno):
-            pago.refresh_from_db()
-            self.assertEqual(pago.estado, Estado.EN_REVISION)
+    def test_el_vendedor_aprueba_los_de_su_tienda_y_no_los_de_otra(self):
+        self.client.post(self.lista, {
+            'action': 'aprobar', '_selected_action': [self.pago_propio.pk, self.pago_ajeno.pk],
+        })
+        self.pago_propio.refresh_from_db()
+        self.pago_ajeno.refresh_from_db()
+        self.assertEqual((self.pago_propio.estado, self.pago_ajeno.estado), (Estado.APROBADO, Estado.EN_REVISION))
         self.pedido_propio.refresh_from_db()
-        self.assertEqual(self.pedido_propio.estado, Pedido.Estado.PENDIENTE)
+        self.assertEqual(self.pedido_propio.estado, Pedido.Estado.PAGADO)
+
+    def test_el_vendedor_no_resuelve_los_pedidos_de_antes_que_cobro_el_sitio(self):
+        Pedido.objects.filter(pk=self.pedido_propio.pk).update(cobra_el_sitio=True)
+        for accion in ('aprobar', 'rechazar'):
+            self.client.post(self.lista, {'action': accion, '_selected_action': [self.pago_propio.pk]})
+        self.pago_propio.refresh_from_db()
+        self.assertEqual(self.pago_propio.estado, Estado.EN_REVISION)
 
     def test_el_administrador_aprueba_y_rechaza_desde_la_lista(self):
         admin = get_user_model().objects.create_superuser('admin', 'admin@example.com', 'clave-segura-123')

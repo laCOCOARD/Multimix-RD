@@ -1,0 +1,9 @@
+{% load moneda %}{% autoescape off %}La tienda {{ tienda.nombre }} subió el comprobante de:
+{{ cargo.concepto }}: {{ cargo.monto|moneda }}{% if cargo.referencia %}
+Referencia: {{ cargo.referencia }}{% endif %}
+
+Comprueba en la app del banco que el dinero llegó y confirma o rechaza el pago en el panel:
+{{ enlace_cargo }}
+{% if tienda.cerrada_por_falta_de_pago and not tienda.activa %}
+La tienda está cerrada por falta de pago: al confirmar el pago, habilítala en Tiendas.{% endif %}
+{% endautoescape %}

@@ -42,6 +42,10 @@ def ejecutar_si_toca():
         from clientes.services import recordar_carritos_abandonados
 
         recordar_carritos_abandonados()
+        from planes.services import revisar_cobros
+
+        # Mensualidades y pedidos de mas de cada tienda, sus recordatorios y el cierre de quien no pago.
+        revisar_cobros()
     except Exception:
         # El mantenimiento nunca debe tumbar la pagina que alguien esta viendo.
         logger.exception('Fallaron las tareas periodicas')

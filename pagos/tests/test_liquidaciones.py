@@ -18,8 +18,13 @@ CLAVE = 'clave-segura-123'
 Estado = Pedido.Estado
 
 
-def entregado(producto, cantidad=1, **cambios):
+def entregado(producto, cantidad=1, del_sitio=True, **cambios):
+    """Pedido entregado. Por defecto, como los de antes del 2026-10-26: transferido a las cuentas del sitio, que es lo
+    que queda por liquidar. Desde entonces cada tienda cobra lo suyo (`del_sitio=False`)."""
     pedido = pedido_de_prueba(producto, cantidad, **cambios)
+    if del_sitio and pedido.paga_por_transferencia:
+        Pedido.objects.filter(pk=pedido.pk).update(cobra_el_sitio=True)
+        pedido.refresh_from_db()
     if pedido.estado == Estado.PENDIENTE and pedido.paga_por_transferencia:
         cambiar_estado(pedido, Estado.PAGADO)
     return cambiar_estado(pedido, Estado.ENTREGADO)
@@ -48,22 +53,18 @@ class SaldoTests(TestCase):
         # y el envio completo (250).
         self.assertEqual(saldo.monto, (saldo.productos - saldo.comision) + saldo.envios)
 
-    def test_el_efectivo_lo_cobra_la_tienda_y_debe_la_comision(self):
+    def test_lo_que_cobra_la_tienda_ya_no_paga_comision(self):
+        # Pedido del dueño el 2026-10-26: el sitio no se queda con un porcentaje de lo que vende cada tienda.
         entregado(self.producto, 1, metodo_pago=Pedido.Pago.EFECTIVO_RECOGER)
+        entregado(self.producto, 3, del_sitio=False)
         saldo = liquidaciones.saldo_de(self.tienda)
-        self.assertEqual((saldo.cobrado_por_el_sitio, saldo.comision, saldo.monto), (D('0.00'), D('100.00'), D('-100.00')))
+        self.assertEqual((saldo.cobrado_por_el_sitio, saldo.comision, saldo.monto), (D('0.00'), D('0.00'), D('0.00')))
 
-    def test_un_pedido_de_antes_transferido_a_la_tienda_solo_debe_la_comision(self):
-        pedido = entregado(self.producto, 3)
-        Pedido.objects.filter(pk=pedido.pk).update(cobra_el_sitio=False)
-        saldo = liquidaciones.saldo_de(self.tienda)
-        self.assertEqual((saldo.cobrado_por_el_sitio, saldo.monto), (D('0.00'), D('-300.00')))
-
-    def test_toda_transferencia_la_cobra_el_sitio(self):
-        self.assertTrue(entregado(self.producto, 1).cobra_el_sitio)
+    def test_cada_tienda_cobra_sus_transferencias(self):
+        self.assertFalse(entregado(self.producto, 1, del_sitio=False).cobra_el_sitio)
         self.assertFalse(entregado(self.producto, 1, metodo_pago=Pedido.Pago.EFECTIVO_RECOGER).cobra_el_sitio)
 
-    def test_el_efectivo_va_aparte_no_se_deposita_pero_paga_comision(self):
+    def test_el_efectivo_va_aparte_y_no_paga_comision(self):
         transferido = entregado(self.producto, 2)
         efectivo = entregado(self.producto, 1, metodo_pago=Pedido.Pago.EFECTIVO_RECOGER)
         saldo = liquidaciones.saldo_de(self.tienda)
@@ -71,14 +72,14 @@ class SaldoTests(TestCase):
         self.assertEqual((saldo.del_sitio.ventas, saldo.del_sitio.comision, saldo.del_sitio.neto),
                          (D('2000.00'), D('200.00'), D('1800.00')))
         self.assertEqual(saldo.de_la_tienda.pedidos, [efectivo])
-        self.assertEqual((saldo.de_la_tienda.ventas, saldo.de_la_tienda.comision), (D('1000.00'), D('100.00')))
-        # Se le deposita lo transferido menos toda la comision: 1,800 - 100 del efectivo.
-        self.assertEqual(saldo.monto, D('1700.00'))
+        self.assertEqual((saldo.de_la_tienda.ventas, saldo.de_la_tienda.comision), (D('1000.00'), D('0.00')))
+        # Se le deposita lo que el sitio cobro por ella menos la comision de eso: el efectivo ya no paga comision.
+        self.assertEqual(saldo.monto, D('1800.00'))
         liquidacion = liquidaciones.liquidar(self.tienda)
         self.assertEqual(
             (liquidacion.cobrado_por_el_sitio, liquidacion.cobrado_por_la_tienda,
              liquidacion.comision_de_lo_cobrado_por_la_tienda, liquidacion.monto),
-            (D('2000.00'), D('1000.00'), D('100.00'), D('1700.00')),
+            (D('2000.00'), D('1000.00'), D('0.00'), D('1800.00')),
         )
 
     def test_cada_tienda_con_su_porcentaje(self):
@@ -205,7 +206,7 @@ class PanelDeLiquidacionesTests(TestCase):
 
     def test_el_administrador_cambia_el_porcentaje_de_cada_tienda_por_separado(self):
         self.client.force_login(self.admin)
-        self.assertContains(self.client.get(reverse('admin:tiendas_tienda_changelist')), 'Tu comisión')
+        self.assertContains(self.client.get(reverse('admin:tiendas_tienda_changelist')), 'Pagos al sitio')
         editar = reverse('admin:tiendas_tienda_change', args=[self.ajena.pk])
         self.assertContains(self.client.get(editar), 'comision_porcentaje')
         self.client.post(editar, {

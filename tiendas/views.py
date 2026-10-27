@@ -8,8 +8,8 @@ from django.views.decorators.http import require_GET
 from catalogo.forms import ORDENES, FiltroCatalogoForm
 from catalogo.models import Categoria
 from catalogo.services import (
-    categorias_del_sitio, en_oferta, filtrar_catalogo, nuevos, ofertas_del_sitio, sugerencias as sugerencias_de_productos,
-    vitrina_del_sitio,
+    categorias_del_sitio, en_oferta, filtrar_catalogo, nuevos, ofertas_del_sitio, patrocinados_del_sitio,
+    sugerencias as sugerencias_de_productos, vitrina_del_sitio,
 )
 from catalogo.views import respuesta_de_sugerencias
 from core.models import ConfiguracionTienda
@@ -20,6 +20,7 @@ from . import services
 RESULTADOS_POR_PAGINA = 12
 TIENDAS_EN_PORTADA = 8
 PRODUCTOS_EN_PORTADA = 12
+PATROCINADOS_EN_PORTADA = 4
 TIENDAS_POR_PAGINA = 24
 
 
@@ -28,16 +29,22 @@ def portada(request):
     """Portada del sitio: productos de todas las tiendas y las tiendas mismas, para comprar sin conocer al vendedor
     o para entrar a la tienda de un emprendedor. Cada producto se sigue comprando dentro de su tienda."""
     from core.models import PreguntaFrecuente
+    from planes.services import anuncios_para_la_portada
 
     tiendas = list(services.directorio()[:TIENDAS_EN_PORTADA + 1])
-    ofertas = ofertas_del_sitio()
+    # Los productos que las tiendas anuncian segun su plan van primero, marcados como "Patrocinado".
+    patrocinados = patrocinados_del_sitio(PATROCINADOS_EN_PORTADA)
+    ofertas = ofertas_del_sitio(excluir=[producto.pk for producto in patrocinados])
     # Lo que ya sale en ofertas no se repite en la seleccion.
-    productos = vitrina_del_sitio(PRODUCTOS_EN_PORTADA, excluir=[producto.pk for producto in ofertas])
+    productos = patrocinados + vitrina_del_sitio(
+        PRODUCTOS_EN_PORTADA - len(patrocinados), excluir=[producto.pk for producto in (*ofertas, *patrocinados)],
+    )
     plataforma = ConfiguracionTienda.obtener()
     return render(request, 'tiendas/portada.html', {
         'tiendas': services.para_el_directorio(tiendas[:TIENDAS_EN_PORTADA]),
         'hay_mas_tiendas': len(tiendas) > TIENDAS_EN_PORTADA,
         'categorias': categorias_del_sitio(),
+        'anuncios': anuncios_para_la_portada(),
         'productos': productos,
         'ofertas': ofertas,
         # Fotos reales para el bloque de bienvenida (en pantallas anchas): los ultimos de la seleccion con foto.

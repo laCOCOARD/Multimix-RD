@@ -417,8 +417,10 @@ class PedidoPorTiendaTests(DosTiendas):
         pagina = self.client.get(self.pedir(self.fitnes).url)
         self.assertEqual(pagina.context['tienda'], self.fitnes)
         self.assertTrue(pagina.context['enlace_whatsapp'].startswith('https://wa.me/18295559999?text='))
-        # Las cuentas son las del sitio en todas las tiendas.
-        self.assertContains(pagina, 'Banco Popular')
+        # Las cuentas son las de la tienda que vendio, no las de otra ni las del sitio.
+        self.assertContains(pagina, f'000-{self.fitnes.pk}')
+        self.assertNotContains(pagina, f'000-{self.multimix.pk}')
+        self.assertNotContains(pagina, 'Banco Popular')
         self.assertContains(pagina, 'Compra en <strong>Fitnes RD</strong>')
 
     def test_cada_tienda_numera_sus_pedidos_por_separado(self):

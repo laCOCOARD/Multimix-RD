@@ -201,6 +201,11 @@ class Producto(models.Model):
         help_text='Solo en el producto principal: "Color", "Talla", "Tamaño"... Vacío = "Opción".',
     )
     destacado = models.BooleanField(default=False)
+    patrocinado = models.BooleanField(
+        'anunciar en la portada', default=False,
+        help_text='Sale como "Patrocinado" al inicio de los productos de la portada del sitio. Cuántos puedes anunciar '
+                  'a la vez lo dice tu plan.',
+    )
     nuevo = models.BooleanField(default=False, help_text='Márcalo para mostrarlo siempre como nuevo.')
     activo = models.BooleanField(default=True)
     texto_busqueda = models.TextField(
@@ -259,8 +264,23 @@ class Producto(models.Model):
                 'el almacén no puede quedar por debajo de esa cantidad.'
             )
         errores.update(self._errores_de_variante())
+        errores.update(self._errores_de_anuncio())
         if errores:
             raise ValidationError(errores)
+
+    def _errores_de_anuncio(self):
+        """Anunciar productos en la portada es parte del plan de la tienda: no mas de los que incluye."""
+        if not self.patrocinado or not self.tienda_id:
+            return {}
+        plan = self.tienda.plan
+        limite = plan.productos_patrocinados if plan else 0
+        anunciados = Producto.objects.filter(tienda_id=self.tienda_id, patrocinado=True).exclude(pk=self.pk).count()
+        if anunciados < limite:
+            return {}
+        if not limite:
+            return {'patrocinado': 'Tu plan no incluye productos anunciados en la portada.'}
+        return {'patrocinado': f'Tu plan permite anunciar {limite} producto{"s" if limite != 1 else ""} a la vez: '
+                               'quita el anuncio de otro primero.'}
 
     def _errores_de_variante(self):
         """Un solo nivel: el principal no es variante de otro, y todo queda dentro de la misma tienda."""

@@ -1,0 +1,17 @@
+{% load moneda %}{% autoescape off %}Hola, equipo de {{ tienda.nombre }}:
+
+{% if aviso == 'por_vencer' %}Te recordamos que el {{ vence }} vence el pago de tu tienda en {{ sitio }}.{% elif aviso == 'vence_hoy' %}El pago de tu tienda en {{ sitio }} venció el {{ vence }}. Si sigue pendiente el {{ cierre }}, ese día la tienda se cierra y deja de verse.{% else %}Hoy es el último día para pagar: si mañana ({{ cierre }}) sigue pendiente, tu tienda en {{ sitio }} se cierra y deja de verse hasta que la volvamos a habilitar.{% endif %}
+
+Lo que debes:
+{% for cargo in cargos %}- {{ cargo.concepto }}: {{ cargo.monto|moneda }}
+{% endfor %}Total: {{ total|moneda }}
+
+{% if cuentas %}Transfiere a cualquiera de estas cuentas:
+{% for cuenta in cuentas %}- {{ cuenta.banco }}, cuenta {{ cuenta.get_tipo_cuenta_display|lower }} {{ cuenta.numero }}, a nombre de {{ cuenta.titular }}{% if cuenta.cedula_rnc %} ({{ cuenta.cedula_rnc }}){% endif %}
+{% endfor %}{% else %}Escríbenos y te enviamos los datos de la cuenta.
+{% endif %}
+Después sube la foto del comprobante en tu panel, en "Mensualidades y cargos":
+{{ enlace_panel }}
+
+Gracias por vender en {{ sitio }}.
+{% endautoescape %}

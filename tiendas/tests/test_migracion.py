@@ -84,9 +84,13 @@ class DeUnaTiendaASubtiendasTests(TransactionTestCase):
         for modelo in (Producto, Pedido, ZonaEnvio, Cupon):
             self.assertEqual(list(modelo.objects.values_list('tienda_id', flat=True)), [tienda.pk], modelo.__name__)
         self.assertEqual(Pedido.objects.get().numero, f'MMX-{anio}-00007')
-        # La cuenta que tenia la primera tienda queda como cuenta del sitio: a ella transfieren todos los clientes.
+        # La cuenta que tenia la primera tienda paso al sitio (2026-10-15) y, desde que cada tienda cobra lo suyo
+        # (2026-10-26), la primera tienda tiene tambien su copia: sus clientes siguen pudiendo transferir.
         self.assertEqual(
             list(CuentaDelSitio.objects.values_list('banco', 'numero', 'titular')), [('Popular', '111', 'Multimix')],
+        )
+        self.assertEqual(
+            list(tienda.cuentas.values_list('banco', 'numero', 'titular')), [('Popular', '111', 'Multimix')],
         )
 
         # La numeracion de pedidos sigue donde iba.

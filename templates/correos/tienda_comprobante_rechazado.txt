@@ -1,0 +1,8 @@
+{% load moneda %}{% autoescape off %}Hola, equipo de {{ tienda.nombre }}:
+
+No pudimos confirmar tu pago de {{ cargo.concepto }} ({{ cargo.monto|moneda }}).
+Motivo: {{ cargo.nota }}
+
+Revisa la transferencia y sube otro comprobante en tu panel. Si sigue pendiente, la tienda se cierra el {{ cierre }}.
+{{ enlace_panel }}
+{% endautoescape %}

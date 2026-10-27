@@ -70,7 +70,7 @@
   animar('.mm-vender, .mm-llamado, .mm-filtros, .mm-panel, .mm-legal-indice');
   // Categorias y tiendas solo aparecen, sin moverse: van en filas que se deslizan (o no, segun el ancho) y un
   // desplazamiento las sacaria de la fila o de la pagina mientras esperan a verse.
-  animar('.mm-fila .mm-categoria, .mm-tienda', 'revelar-suave');
+  animar('.mm-fila .mm-categoria, .mm-fila .mm-anuncio, .mm-tienda', 'revelar-suave');
   document.querySelectorAll('.mm-fila .mm-tarjeta').forEach((tarjeta) => tarjeta.classList.add('revelar-der'));
 
   const elementos = document.querySelectorAll('.revelar');

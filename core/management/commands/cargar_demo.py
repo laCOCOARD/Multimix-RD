@@ -223,7 +223,12 @@ class Command(BaseCommand):
 
     def cuenta_y_zonas(self, tienda, demo):
         banco, numero, titular, documento = demo['cuenta']
-        # Las cuentas son del sitio (todas las transferencias llegan alli): solo se crea la de la primera tienda.
+        # Cada tienda cobra en sus propias cuentas (2026-10-26). La del sitio es a donde le pagan las tiendas su plan.
+        if not tienda.cuentas.exists():
+            tienda.cuentas.create(
+                banco=banco, numero=numero, tipo_cuenta=CuentaDelSitio.Tipo.CORRIENTE, titular=titular,
+                cedula_rnc=documento,
+            )
         if not CuentaDelSitio.objects.exists():
             CuentaDelSitio.objects.create(
                 banco=banco, numero=numero, tipo_cuenta=CuentaDelSitio.Tipo.CORRIENTE, titular=titular,

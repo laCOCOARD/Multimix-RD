@@ -167,6 +167,7 @@ class ProductoAdmin(AvisaImagenesSinGuardar, AdminDeTienda, ImportExportModelAdm
     list_editable = ['disponibilidad', 'destacado', 'nuevo', 'activo']
     list_filter = [
         'categoria', 'marca', 'activo', 'disponibilidad', EnOfertaFilter, 'controla_stock', StockFilter, 'destacado', 'nuevo',
+        'patrocinado',
     ]
     search_fields = ['nombre', 'sku', 'marca', 'texto_busqueda']
     list_per_page = 40
@@ -193,7 +194,7 @@ class ProductoAdmin(AvisaImagenesSinGuardar, AdminDeTienda, ImportExportModelAdm
             'description': 'Déjalo sin marcar si no cuentas las unidades: el producto se vende según su disponibilidad.',
             'fields': ['controla_stock', 'stock_almacen', 'stock_reservado', 'stock_disponible_actual'],
         }),
-        ('Visibilidad', {'fields': ['activo', 'destacado', 'nuevo', 'creado', 'actualizado']}),
+        ('Visibilidad', {'fields': ['activo', 'destacado', 'nuevo', 'patrocinado', 'creado', 'actualizado']}),
     ]
 
     def get_queryset(self, request):
@@ -215,6 +216,15 @@ class ProductoAdmin(AvisaImagenesSinGuardar, AdminDeTienda, ImportExportModelAdm
         if campo is not None:
             for permiso in ('can_add_related', 'can_change_related', 'can_delete_related', 'can_view_related'):
                 setattr(campo.widget, permiso, False)
+        tiendas = tiendas_del_panel(request)
+        if 'patrocinado' in formulario.base_fields and not ve_todas(request.user) and len(tiendas) == 1:
+            # Cuantos puede anunciar segun su plan, a la vista al marcar la casilla.
+            plan, usados = tiendas[0].plan, tiendas[0].productos.filter(patrocinado=True).count()
+            formulario.base_fields['patrocinado'].help_text = (
+                f'Sale como "Patrocinado" al inicio de la portada. Tu plan {plan.nombre} permite '
+                f'{plan.productos_patrocinados}; tienes {usados} anunciado(s).' if plan and plan.productos_patrocinados
+                else 'Tu plan no incluye productos anunciados en la portada.'
+            )
         return formulario
 
     def get_urls(self):

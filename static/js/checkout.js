@@ -43,6 +43,8 @@
       const primero = formulario.querySelector('.js-pago:not(:disabled)');
       if (primero) primero.checked = true;
     }
+    const sinPago = formulario.querySelector('.js-sin-pago');
+    if (sinPago) sinPago.hidden = permitidos.length > 0;
     bloqueTransferencia.classList.toggle('mm-oculto', pagoElegido() !== 'transferencia');
   }
 
