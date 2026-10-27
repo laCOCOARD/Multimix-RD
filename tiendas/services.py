@@ -164,6 +164,24 @@ def como_vender(plataforma, paginas_publicadas=()):
     return None
 
 
+
+def buscar_tiendas(texto, limite=6):
+    """Tiendas activas cuyo nombre, descripcion o categorias principales contienen todas las palabras escritas (sin
+    tildes ni mayusculas). Las tiendas son pocas: se comparan en Python, con las mismas tarjetas del directorio."""
+    from core.texto import normalizar
+
+    palabras = normalizar(texto or '').split()
+    if not palabras or max(len(palabra) for palabra in palabras) < 2:
+        return []
+    encontradas = []
+    for tienda in para_el_directorio(directorio()):
+        donde = normalizar(' '.join([tienda.nombre, tienda.banner_subtitulo, *tienda.categorias_principales]))
+        if all(palabra in donde for palabra in palabras):
+            encontradas.append(tienda)
+            if len(encontradas) == limite:
+                break
+    return encontradas
+
 def tienda_principal():
     """La tienda mas antigua que siga activa: recibe los enlaces de cuando habia una sola tienda."""
     return Tienda.objects.activas().order_by('pk').first()

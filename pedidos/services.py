@@ -128,6 +128,15 @@ def metodos_pago_disponibles(metodo_entrega, tienda):
     return metodos
 
 
+
+def formas_de_pago(tienda, hay_envio=True):
+    """Las formas de pago de la tienda, como las ofrece el checkout (metodos_pago_disponibles), para mostrarlas en la
+    ficha del producto. Nunca la tarjeta: no hay pasarela conectada."""
+    metodos = dict.fromkeys(metodos_pago_disponibles(Entrega.RECOGER, tienda))
+    if hay_envio:
+        metodos.update(dict.fromkeys(metodos_pago_disponibles(Entrega.ENVIO, tienda)))
+    return [Pago(metodo).label for metodo in metodos]
+
 def supera_limite_por_ip(ip):
     """Anti-spam: True si esa IP ya creo demasiados pedidos en la ventana configurada."""
     if not ip:

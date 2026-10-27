@@ -246,6 +246,12 @@ Al cerrar cada modulo: check, makemigrations, migrate, test y commit.
   la WhatsApp Cloud API de Meta (`pedidos/whatsapp_api.py`, `WHATSAPP_TOKEN` + `WHATSAPP_NUMERO_ID`, plantilla
   aprobada `estado_pedido` con 4 variables): solo si el cliente lo acepto en el checkout (`Pedido.avisos_whatsapp`;
   sin configurar no se ofrece) y sale con los correos de `pedidos.avisos`. Nunca lanza.
+- Ficha del producto (Fase 3, 2026-10-27): galeria fija en pantallas anchas; a la derecha la compra, "Vendido por"
+  (la tienda con "Ver la tienda" y su WhatsApp como "Preguntar", contacto secundario) y entrega y pago tal como los
+  ofrece el checkout (`pedidos.services.formas_de_pago`: sin cuentas activas no dice transferencia; sin zonas, "solo
+  retiro"); debajo, descripcion y "Detalles" (marca, categoria, SKU, disponibilidad). Sin mensajes de urgencia por
+  existencias: la cantidad solo sale con inventario y `mostrar_cantidad_exacta`, en tono neutro. La tarjeta en el
+  checkout dice "Todavia no disponible" (sin plazos).
 - Disponibilidad comercial: el negocio no cuenta unidades fiables, asi que cada producto se vende segun
   `Producto.disponibilidad` (disponible, bajo pedido, agotado, temporalmente no disponible). El inventario es
   opcional por producto (`controla_stock`, apagado por defecto): solo entonces valen `stock_almacen` y
@@ -378,7 +384,12 @@ Al cerrar cada modulo: check, makemigrations, migrate, test y commit.
 - Buscador con sugerencias: `catalogo.services.sugerencias` (minimo 2 letras) en `/tienda/<slug>/sugerencias/` y
   `/sugerencias/` (todo el sitio). El desplegable se arma en `tienda.js` con nodos, nunca con HTML del servidor.
   `/buscar/?categoria=<slug>` limita el buscador del sitio a una categoria con sus subcategorias (una que no existe
-  o esta apagada se ignora, como los demas filtros).
+  o esta apagada se ignora, como los demas filtros). Fase 3 del rediseño (2026-10-27): el buscador del sitio tiene
+  los filtros del catalogo de una tienda (precio, oferta, disponibles, orden) mas `?tienda=<slug>` (solo activas),
+  filtros aplicados que se quitan uno a uno y "Limpiar filtros"; arriba muestra las tiendas que coinciden
+  (`tiendas.services.buscar_tiendas`: nombre, descripcion y categorias principales, sin tildes, en Python porque
+  son pocas). `/sugerencias/` devuelve tambien `tiendas` y el desplegable muestra "Buscando…", grupos Tiendas y
+  Productos y "No encontramos nada" con "Buscar de todos modos".
 - Directorio de tiendas (`tiendas.services.directorio`, portada y `/tiendas/`): solo las activas, con
   `total_productos` contado como en el catalogo (una vez por grupo de variantes); `para_el_directorio` agrega sus
   categorias con mas productos y el tono de su franja si no tiene banner, con una consulta para todas.

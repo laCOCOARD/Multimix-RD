@@ -1,6 +1,6 @@
 from django.contrib.auth.decorators import login_not_required
 from django.core.paginator import Paginator
-from django.http import Http404
+from django.http import Http404, JsonResponse
 from django.shortcuts import redirect, render
 from django.templatetags.static import static
 from django.urls import reverse
@@ -13,7 +13,7 @@ from catalogo.services import (
     categorias_del_sitio, en_oferta, filtrar_catalogo, nuevos, ofertas_del_sitio, patrocinados_del_sitio,
     sugerencias as sugerencias_de_productos, vitrina_del_sitio,
 )
-from catalogo.views import respuesta_de_sugerencias
+from catalogo.views import sugerencias_de_productos as datos_de_sugerencias
 from core.models import ConfiguracionTienda
 from core.seo import sitio_json_ld
 
@@ -74,20 +74,39 @@ def directorio(request):
 
 @require_GET
 def buscar(request):
-    """Buscador del sitio: productos de todas las tiendas. Cada resultado se compra dentro de su tienda.
+    """Buscador del sitio: productos de todas las tiendas (y las tiendas que coinciden con lo escrito). Cada resultado
+    se compra dentro de su tienda.
 
     `?categoria=<slug>` limita a una categoria (con sus subcategorias): es a donde llevan las categorias de la portada.
+    `?tienda=<slug>` limita a una tienda activa. Un filtro que no existe o no vale se ignora.
     """
     filtros = FiltroCatalogoForm(request.GET).filtros()
     slug = request.GET.get('categoria', '')[:100]
-    # Una categoria que no existe o esta apagada se ignora, como los demas filtros que no valen.
     categoria = Categoria.objects.filter(slug=slug, activa=True).first() if slug else None
-    pagina = Paginator(filtrar_catalogo(filtros, categoria), RESULTADOS_POR_PAGINA).get_page(request.GET.get('pagina'))
+    tiendas_activas = list(services.directorio())
+    slug_tienda = request.GET.get('tienda', '')[:100]
+    tienda = next((item for item in tiendas_activas if item.slug == slug_tienda), None) if slug_tienda else None
+    productos = filtrar_catalogo(filtros, categoria)
+    if tienda is not None:
+        productos = productos.filter(tienda=tienda)
+    pagina = Paginator(productos, RESULTADOS_POR_PAGINA).get_page(request.GET.get('pagina'))
+    campos = ('precio_min', 'precio_max', 'oferta', 'disponibles')
+    hay_filtros = bool(
+        tienda or any(filtros.get(campo) not in (None, '', False) for campo in campos)
+        or filtros.get('orden') not in (None, '', 'nuevos')
+    )
     return render(request, 'tiendas/buscar.html', {
         # Sin resultados no se deja la pagina vacia: se sugieren ofertas o lo nuevo.
         'sugeridos': (en_oferta(None, limite=10) or nuevos(None, limite=10)) if not pagina.object_list else [],
+        # Las tiendas que coinciden con lo escrito, arriba de los productos (solo en la primera pagina).
+        'tiendas_encontradas': (
+            services.buscar_tiendas(filtros.get('q')) if filtros.get('q') and pagina.number == 1 and not tienda else []
+        ),
         'categoria': categoria,
+        'tienda_filtro': tienda,
+        'tiendas_filtro': tiendas_activas if len(tiendas_activas) > 1 else [],
         'filtros': filtros,
+        'hay_filtros': hay_filtros,
         'ordenes': ORDENES,
         'orden_actual': filtros.get('orden') or 'nuevos',
         'pagina': pagina,
@@ -96,9 +115,16 @@ def buscar(request):
 
 @require_GET
 def sugerencias(request):
-    """Sugerencias del buscador del sitio: productos de todas las tiendas activas."""
-    productos = sugerencias_de_productos(request.GET.get('q', '')[:80])
-    return respuesta_de_sugerencias(productos, con_tienda=True)
+    """Sugerencias del buscador del sitio: tiendas y productos de todas las tiendas activas."""
+    texto = request.GET.get('q', '')[:80]
+    return JsonResponse({
+        'resultados': datos_de_sugerencias(sugerencias_de_productos(texto), con_tienda=True),
+        'tiendas': [
+            {'nombre': item.nombre, 'url': item.get_absolute_url(), 'foto': item.logo.url if item.logo else '',
+             'detalle': f'Tienda · {item.total_productos} producto{"s" if item.total_productos != 1 else ""}'}
+            for item in services.buscar_tiendas(texto, limite=3)
+        ],
+    })
 
 
 @require_GET

@@ -1085,3 +1085,44 @@ html.mm-visor-abierto { overflow: hidden; }
 .mm-enviada { max-width: 38rem; margin: 0 auto; padding: clamp(1.75rem, 5vw, 3rem); }
 .mm-enviada .mm-icono-estado { color: var(--mm-verde); }
 @media (max-width: 991.98px) { .mm-despues { position: static; } }
+
+/* ==========================================================================
+   Fase 3 del rediseño (2026-10-27): buscador del sitio y ficha del producto
+   ========================================================================== */
+/* Sugerencias: grupos (Tiendas / Productos), "Buscando..." y "sin resultados". */
+.mm-sugerencia-grupo span { display: block; padding: .45rem .5rem .2rem; font-size: .7rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--mm-texto-suave); }
+.mm-sugerencia-estado span { display: block; padding: .6rem .5rem; font-size: .9rem; color: var(--mm-texto-suave); }
+.mm-sugerencia-inicial { display: grid; flex: 0 0 auto; place-items: center; width: 44px; height: 44px; border-radius: .45rem; background: var(--mm-oscuro); color: #fff; font-weight: 800; }
+
+/* Filtros aplicados en el buscador: cada uno se quita con un toque. */
+.mm-filtros-activos { display: flex; flex-wrap: wrap; gap: .45rem; margin: 0 0 1rem; padding: 0; list-style: none; }
+.mm-filtros-activos a { display: inline-flex; align-items: center; gap: .4rem; min-height: 2.25rem; padding: .3rem .8rem; border: 1px solid var(--mm-borde-fuerte); border-radius: 999px; background: var(--mm-superficie); color: var(--mm-texto); font-size: .85rem; font-weight: 600; }
+.mm-filtros-activos a:hover { border-color: var(--mm-oscuro); text-decoration: none; }
+.mm-filtros-activos .bi { font-size: .7rem; }
+.mm-filtros-activos .mm-filtros-limpiar { border-color: transparent; background: none; color: var(--mm-calido-texto); text-decoration: underline; }
+.mm-tiendas-encontradas { padding-bottom: .25rem; }
+
+/* Ficha: la galeria queda fija mientras se baja por la compra (pantallas anchas). */
+@media (min-width: 992px) { .mm-galeria { position: sticky; top: 7.5rem; } }
+.mm-ficha-nombre { margin: 0 0 .35rem; font-size: clamp(1.5rem, 1.2rem + 1.2vw, 2.1rem); font-weight: 800; line-height: 1.15; letter-spacing: -.03em; }
+.mm-ficha-acciones { display: flex; flex-wrap: wrap; gap: .25rem 1.25rem; margin: .25rem 0 1rem; }
+.mm-ficha-acciones form { margin: 0; }
+.mm-ficha-acciones .btn-link { padding: .35rem 0; color: var(--mm-texto); font-weight: 600; text-decoration: none; }
+.mm-ficha-acciones .btn-link:hover { color: var(--mm-calido-texto); }
+/* "Vendido por": la tienda con su logo, sus datos y como contactarla. */
+.mm-vendedor { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: .5rem .9rem; padding: 1rem; border: 1px solid var(--mm-borde); border-radius: var(--mm-radio); background: var(--mm-superficie); box-shadow: var(--mm-sombra); }
+.mm-vendedor-avatar { width: 3.25rem; height: 3.25rem; margin: 0; border-width: 1px; border-color: var(--mm-borde); box-shadow: none; font-size: 1.2rem; }
+.mm-vendedor-etiqueta { font-size: .75rem; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: var(--mm-texto-suave); }
+.mm-vendedor-nombre { margin: 0; font-size: 1.05rem; font-weight: 700; }
+.mm-vendedor-nombre a { color: var(--mm-oscuro); }
+.mm-vendedor-detalle { font-size: .85rem; color: var(--mm-texto-suave); }
+.mm-vendedor-acciones { display: flex; flex-wrap: wrap; gap: .5rem; grid-column: 1 / -1; }
+.mm-vendedor-acciones .btn { flex: 1 1 auto; min-height: 2.5rem; display: inline-flex; align-items: center; justify-content: center; }
+@media (min-width: 1200px) { .mm-vendedor { grid-template-columns: auto minmax(0, 1fr) auto; } .mm-vendedor-acciones { grid-column: auto; flex-direction: column; } }
+.mm-garantias a { font-weight: 600; }
+/* Detalles del producto: una tabla sencilla de dos columnas. */
+.mm-detalles { margin: 0; border: 1px solid var(--mm-borde); border-radius: var(--mm-radio); background: var(--mm-superficie); overflow: hidden; }
+.mm-detalles > div { display: grid; grid-template-columns: minmax(7rem, 40%) minmax(0, 1fr); gap: 1rem; padding: .7rem 1rem; border-bottom: 1px solid var(--mm-borde); font-size: .92rem; }
+.mm-detalles > div:last-child { border-bottom: 0; }
+.mm-detalles dt { font-weight: 600; color: var(--mm-texto-suave); }
+.mm-detalles dd { margin: 0; overflow-wrap: anywhere; color: var(--mm-texto); }

@@ -239,65 +239,111 @@
       campo.setAttribute('aria-activedescendant', enlaces[activa].id);
     };
 
-    function pintar(resultados, texto) {
-      lista.replaceChildren();
-      resultados.forEach((resultado, i) => {
-        const enlace = document.createElement('a');
-        enlace.href = resultado.url;
-        enlace.id = `${lista.id}-${i}`;
-        enlace.setAttribute('role', 'option');
-        if (resultado.foto) {
-          const foto = document.createElement('img');
-          foto.src = resultado.foto;
-          foto.alt = '';
-          foto.width = 44;
-          foto.height = 44;
-          enlace.appendChild(foto);
-        }
-        const cuerpo = document.createElement('span');
-        cuerpo.className = 'mm-sugerencia-cuerpo';
-        const nombre = document.createElement('span');
-        nombre.className = 'mm-sugerencia-nombre';
-        nombre.textContent = resultado.nombre;
-        const detalle = document.createElement('span');
-        detalle.className = 'mm-sugerencia-detalle';
-        detalle.textContent = resultado.tienda ? `${resultado.precio} · ${resultado.tienda}` : resultado.precio;
-        cuerpo.append(nombre, detalle);
-        enlace.appendChild(cuerpo);
-        const fila = document.createElement('li');
-        fila.setAttribute('role', 'none');
-        fila.appendChild(enlace);
-        lista.appendChild(fila);
-      });
-      if (resultados.length) {
-        const fila = document.createElement('li');
-        fila.setAttribute('role', 'none');
-        const todos = document.createElement('a');
-        todos.href = `${formulario.action}?q=${encodeURIComponent(texto)}`;
-        todos.id = `${lista.id}-todos`;
-        todos.className = 'mm-sugerencia-todos';
-        todos.setAttribute('role', 'option');
-        todos.textContent = `Ver todos los resultados de «${texto}»`;
-        fila.appendChild(todos);
-        lista.appendChild(fila);
+    const fila = (hijo, clase = '') => {
+      const item = document.createElement('li');
+      item.setAttribute('role', clase ? 'presentation' : 'none');
+      if (clase) item.className = clase;
+      item.appendChild(hijo);
+      return item;
+    };
+    const aviso = (texto, clase) => {
+      const nodo = document.createElement('span');
+      nodo.textContent = texto;
+      return fila(nodo, clase);
+    };
+    const opcion = (resultado, indice, detalleTexto, esTienda) => {
+      const enlace = document.createElement('a');
+      enlace.href = resultado.url;
+      enlace.id = `${lista.id}-${indice}`;
+      enlace.setAttribute('role', 'option');
+      if (resultado.foto) {
+        const foto = document.createElement('img');
+        foto.src = resultado.foto;
+        foto.alt = '';
+        foto.width = 44;
+        foto.height = 44;
+        enlace.appendChild(foto);
+      } else if (esTienda) {
+        const inicial = document.createElement('span');
+        inicial.className = 'mm-sugerencia-inicial';
+        inicial.setAttribute('aria-hidden', 'true');
+        inicial.textContent = resultado.nombre.slice(0, 1).toUpperCase();
+        enlace.appendChild(inicial);
       }
+      const cuerpo = document.createElement('span');
+      cuerpo.className = 'mm-sugerencia-cuerpo';
+      const nombre = document.createElement('span');
+      nombre.className = 'mm-sugerencia-nombre';
+      nombre.textContent = resultado.nombre;
+      const detalle = document.createElement('span');
+      detalle.className = 'mm-sugerencia-detalle';
+      detalle.textContent = detalleTexto;
+      cuerpo.append(nombre, detalle);
+      enlace.appendChild(cuerpo);
+      return fila(enlace);
+    };
+    const todos = (texto, etiqueta) => {
+      const enlace = document.createElement('a');
+      enlace.href = `${formulario.action}?q=${encodeURIComponent(texto)}`;
+      enlace.id = `${lista.id}-todos`;
+      enlace.className = 'mm-sugerencia-todos';
+      enlace.setAttribute('role', 'option');
+      enlace.textContent = etiqueta;
+      return fila(enlace);
+    };
+    const abrir = () => {
       activa = -1;
-      lista.hidden = !resultados.length;
-      campo.setAttribute('aria-expanded', String(!!resultados.length));
+      lista.hidden = false;
+      campo.setAttribute('aria-expanded', 'true');
+    };
+
+    // Mientras llega la respuesta: "Buscando...". Se ve solo si tarda (no parpadea en las respuestas rapidas).
+    let avisoDeCarga = null;
+    function mostrarCargando(texto) {
+      clearTimeout(avisoDeCarga);
+      avisoDeCarga = setTimeout(() => {
+        lista.replaceChildren(aviso(`Buscando «${texto}»…`, 'mm-sugerencia-estado'));
+        abrir();
+      }, 250);
+    }
+
+    function pintar(resultados, texto, tiendas = []) {
+      clearTimeout(avisoDeCarga);
+      lista.replaceChildren();
+      if (tiendas.length) {
+        lista.appendChild(aviso('Tiendas', 'mm-sugerencia-grupo'));
+        tiendas.forEach((resultado, i) => lista.appendChild(opcion(resultado, `t${i}`, resultado.detalle, true)));
+      }
+      if (resultados.length) {
+        if (tiendas.length) lista.appendChild(aviso('Productos', 'mm-sugerencia-grupo'));
+        resultados.forEach((resultado, i) => {
+          lista.appendChild(opcion(resultado, i, resultado.tienda ? `${resultado.precio} · ${resultado.tienda}` : resultado.precio));
+        });
+      }
+      if (resultados.length || tiendas.length) {
+        lista.appendChild(todos(texto, `Ver todos los resultados de «${texto}»`));
+      } else {
+        // Sin resultados: se dice y se ofrece buscar igual (la pagina de resultados sugiere otros productos).
+        lista.appendChild(aviso(`No encontramos nada para «${texto}».`, 'mm-sugerencia-estado'));
+        lista.appendChild(todos(texto, 'Buscar de todos modos'));
+      }
+      abrir();
     }
 
     async function buscar() {
       const texto = campo.value.trim();
-      if (texto.length < 2) { cerrar(); return; }
+      // Vacio o una sola letra: no se busca nada.
+      if (texto.length < 2) { clearTimeout(avisoDeCarga); cerrar(); return; }
       const turno = ++pedido;
+      mostrarCargando(texto);
       try {
         const respuesta = await fetch(`${origen}?q=${encodeURIComponent(texto)}`, { credentials: 'same-origin' });
         if (!respuesta.ok) throw new Error('sin sugerencias');
         const datos = await respuesta.json();
         // Solo se pinta la respuesta de lo ultimo que se escribio.
-        if (turno === pedido) pintar(datos.resultados || [], texto);
+        if (turno === pedido) pintar(datos.resultados || [], texto, datos.tiendas || []);
       } catch (error) {
-        cerrar();
+        if (turno === pedido) { clearTimeout(avisoDeCarga); cerrar(); }
       }
     }
 

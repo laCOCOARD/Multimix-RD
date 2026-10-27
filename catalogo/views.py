@@ -18,10 +18,10 @@ from core.templatetags.moneda import formatear_monto
 from opiniones import services as opiniones
 
 from pedidos import entregas
-from pedidos.services import zonas_activas
+from pedidos.services import formas_de_pago, zonas_activas
 from pedidos.whatsapp import construir_enlace
 from tiendas.decoradores import de_tienda
-from tiendas.services import banners_de
+from tiendas.services import banners_de, directorio
 
 from . import avisos, services
 from .forms import ORDENES, FiltroCatalogoForm
@@ -81,6 +81,10 @@ def lista(request, slug=None):
 
 def respuesta_de_sugerencias(productos, con_tienda=False):
     """JSON del desplegable del buscador. `con_tienda` agrega de que tienda es cada producto."""
+    return JsonResponse({'resultados': sugerencias_de_productos(productos, con_tienda)})
+
+
+def sugerencias_de_productos(productos, con_tienda=False):
     resultados = []
     for item in productos:
         foto = item.foto_principal
@@ -91,7 +95,7 @@ def respuesta_de_sugerencias(productos, con_tienda=False):
             'foto': foto.imagen.url if foto else '',
             'tienda': item.tienda.nombre if con_tienda else '',
         })
-    return JsonResponse({'resultados': resultados})
+    return resultados
 
 
 @require_GET
@@ -111,6 +115,7 @@ def producto(request, slug):
     consulta = f'Hola, me interesa este producto: {item.nombre} (SKU {item.sku})\n{url_absoluta}'
     vistos_antes = services.vistos(request.session, tienda, excluir=item.pk)
     services.recordar_visto(request.session, item)
+    zonas = zonas_activas(tienda)
     return render(request, 'catalogo/producto.html', {
         'producto': item,
         'fotos': item.fotos_ordenadas,
@@ -138,7 +143,12 @@ def producto(request, slug):
         'opciones_estrellas': OPCIONES_ESTRELLAS,
         'cantidad_maxima': item.limite_compra,
         'plazo_recoger': entregas.estimar(tienda, True, bajo_pedido=item.bajo_pedido),
-        'plazo_envio': entregas.estimar_envio(tienda, zonas_activas(tienda), item.bajo_pedido),
+        'plazo_envio': entregas.estimar_envio(tienda, zonas, item.bajo_pedido),
+        # Lo que la tienda ofrece de verdad (el checkout ofrece lo mismo): sin zonas no hay envio y sin cuentas activas
+        # no hay transferencia.
+        'hay_envio': bool(zonas),
+        'formas_de_pago': formas_de_pago(tienda, hay_envio=bool(zonas)),
+        'datos_tienda': directorio().filter(pk=tienda.pk).first(),
         'url_absoluta': url_absoluta,
         'og_imagen': request.build_absolute_uri(foto.imagen.url) if foto else '',
         'enlace_consulta': construir_enlace(tienda.whatsapp, consulta) if tienda.whatsapp else '',

@@ -131,7 +131,9 @@ class CatalogoVistasTests(TestCase):
         self.assertEqual(respuesta.status_code, 200)
         self.assertContains(respuesta, 'property="og:title" content="Taza térmica · RD$ 450.00"')
         self.assertContains(respuesta, 'property="product:price:currency" content="DOP"')
-        self.assertContains(respuesta, 'Pregunta por WhatsApp')
+        # WhatsApp es un contacto secundario, dentro del bloque de la tienda que lo vende.
+        self.assertContains(respuesta, 'Vendido por')
+        self.assertContains(respuesta, 'Preguntar</a>')
         self.assertContains(respuesta, 'https://wa.me/18095550000?text=')
         self.assertEqual(respuesta.context['relacionados'], [self.lampara])
 
@@ -140,7 +142,8 @@ class CatalogoVistasTests(TestCase):
         self.assertNotContains(self.client.get(self.audifonos.get_absolute_url()), 'Agregar al carrito')
         Producto.objects.filter(pk=self.lampara.pk).update(stock_almacen=3)
         respuesta = self.client.get(self.lampara.get_absolute_url())
-        self.assertContains(respuesta, '¡Quedan 3!')
+        # Sin mensajes de urgencia (Fase 3, 2026-10-27): el tope si respeta lo que queda.
+        self.assertNotContains(respuesta, 'Quedan')
         self.assertContains(respuesta, 'max="3"')
 
     def test_producto_inactivo_da_404_propio(self):
