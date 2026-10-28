@@ -109,3 +109,53 @@
     });
   });
 })();
+
+// Panel del vendedor: los numeritos del menu y "Para hacer ahora" se actualizan solos cada minuto, sin recargar.
+// La pestaña muestra cuantas cosas urgentes esperan, por ejemplo "(2) Inicio | Panel Multimix RD".
+(() => {
+  const meta = document.querySelector('meta[name="pv-pendientes"]');
+  if (!meta) return;
+  const tituloBase = document.title.replace(/^\(\d+\)\s*/, '');
+  let ocupado = false;
+
+  const actualizar = async () => {
+    if (document.hidden || ocupado) return;
+    ocupado = true;
+    try {
+      const respuesta = await fetch(meta.content, { credentials: 'same-origin', headers: { Accept: 'application/json' } });
+      if (!respuesta.ok) return;
+      const datos = await respuesta.json();
+      document.querySelectorAll('[data-pendientes]').forEach((insignia) => {
+        const cantidad = datos.pendientes[insignia.dataset.pendientes] || 0;
+        insignia.firstChild.nodeValue = String(cantidad);
+        insignia.hidden = !cantidad;
+      });
+      document.title = datos.total ? `(${datos.total}) ${tituloBase}` : tituloBase;
+      const caja = document.getElementById('pv-tareas');
+      if (caja && typeof datos.tareas === 'string' && caja.innerHTML.trim() !== datos.tareas.trim()) {
+        caja.innerHTML = datos.tareas;  // HTML del propio panel (plantilla de Django, ya escapada)
+      }
+    } catch (error) {
+      // Sin conexion: se intenta de nuevo en el proximo minuto.
+    } finally {
+      ocupado = false;
+    }
+  };
+
+  setInterval(actualizar, 60000);
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) actualizar(); });
+})();
+
+// Listas del vendedor: cada celda lleva el nombre de su columna, para leerla como tarjeta en el telefono
+// (static/css/panel.css). En la computadora no cambia nada.
+(() => {
+  if (!document.querySelector('meta[name="pv-pendientes"]')) return;
+  const tabla = document.getElementById('result_list');
+  if (!tabla || !tabla.tHead) return;
+  const nombres = Array.from(tabla.tHead.rows[0].cells).map((celda) => celda.textContent.trim());
+  Array.from(tabla.tBodies[0].rows).forEach((fila) => {
+    Array.from(fila.cells).forEach((celda, indice) => {
+      if (nombres[indice] && indice > 0) celda.dataset.columna = nombres[indice];
+    });
+  });
+})();

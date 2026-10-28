@@ -41,6 +41,24 @@ class PagoAdmin(AdminDeTienda, admin.ModelAdmin):
     ]
     campos_editables = ['nota']
 
+    def get_list_filter(self, request):
+        filtros = super().get_list_filter(request)
+        if ve_todas(request.user):
+            return filtros
+        return [f for f in filtros if f != 'pedido__cobra_el_sitio']
+
+    def get_list_display(self, request):
+        columnas = super().get_list_display(request)
+        if ve_todas(request.user):
+            return columnas
+        return [c for c in columnas if c != 'quien_confirma']
+
+    def get_fieldsets(self, request, obj=None):
+        if ve_todas(request.user):
+            return self.fieldsets
+        return [(titulo, {**opciones, 'fields': [c for c in opciones['fields'] if c != 'quien_confirma']})
+                for titulo, opciones in self.fieldsets if titulo != 'Pasarela']
+
     def get_readonly_fields(self, request, obj=None):
         campos = [campo for _, opciones in self.fieldsets for campo in opciones['fields']]
         return [campo for campo in campos if campo not in self.campos_editables]

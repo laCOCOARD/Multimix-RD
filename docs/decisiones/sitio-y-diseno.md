@@ -148,3 +148,10 @@ Decisiones tomadas en Multimix RD (movidas desde CLAUDE.md el 2026-10-28). Leela
   pedidos, lo mas vendido, por reponer, actividad plegada, plan en una linea y "Todo tu panel". El menu del vendedor se
   agrupa en `core.admin_site.MENU_DEL_VENDEDOR` (solo cambia nombres y orden, no permisos); el superusuario conserva el
   menu y el inicio de siempre. Titulos simples para todos: "Productos", "Agregar producto", "Editar producto".
+- Panel del dueño de tienda, separado del administrador (2026-10-28): el vendedor no ve lo del reparto viejo
+  (filtros "lo cobra el sitio" y "liquidación", "Reparto a la tienda", "Lo confirma", la pasarela) ni Liquidaciones si
+  su tienda no tiene. Su ruta de arriba es "Inicio › Productos › X" (plantillas admin/change_list.html y
+  change_form.html). Numeritos de pendientes en el menu (`core.panel.pendientes_del_menu`,
+  `admin_site.PANTALLAS_CON_PENDIENTES`, plantilla admin/app_list.html copiada de Django) que, junto con "Para hacer
+  ahora" y el titulo de la pestaña, se actualizan solos cada minuto (`admin:pendientes`, static/js/panel.js). En el
+  telefono sus listas se ven como tarjetas con el nombre de cada columna (CSS con `html:has(meta[name=pv-pendientes])`).

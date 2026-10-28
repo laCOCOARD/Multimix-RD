@@ -4,7 +4,8 @@
 {% block title %}{% if subtitle %}{{ subtitle }} | {% endif %}{{ title }} | {{ site_title }}{% endblock %}
 
 {% block extrastyle %}{{ block.super }}<link rel="stylesheet" href="{% static 'css/panel.css' %}">{% endblock %}
-{% block extrahead %}{{ block.super }}<script src="{% static 'js/panel.js' %}" defer></script>{% endblock %}
+{% block extrahead %}{{ block.super }}<script src="{% static 'js/panel.js' %}" defer></script>
+{% if user.is_authenticated and user.is_staff and not user.is_superuser %}<meta name="pv-pendientes" content="{% url 'admin:pendientes' %}">{% endif %}{% endblock %}
 
 {% block branding %}
 <div id="site-name"><a href="{% url 'admin:index' %}">{{ site_header }} <span class="panel-marca-sub">Panel</span></a></div>

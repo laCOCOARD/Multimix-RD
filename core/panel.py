@@ -90,37 +90,64 @@ def tareas_de_la_tienda(tiendas):
     pedidos = Pedido.objects.filter(tienda__in=tiendas)
     E = Pedido.Estado
     pendientes = pedidos.filter(estado=E.PENDIENTE)
+    PEDIDO, DEVOLUCION = ('pedidos', 'pedido'), ('pedidos', 'solicituddevolucion')
+    PREGUNTA, AVISO = ('opiniones', 'pregunta'), ('catalogo', 'avisodisponible')
     filas = [
-        (pendientes.filter(transferencia_realizada=True).count(), 'transferencia por confirmar',
+        (PEDIDO, pendientes.filter(transferencia_realizada=True).count(), 'transferencia por confirmar',
          'transferencias por confirmar', 'Mira el comprobante y, si el dinero llegó, márcalo como pagado.',
          _enlace('pedidos_pedido_changelist', 'estado__exact=pendiente&transferencia_realizada__exact=1'), True),
-        (pendientes.filter(metodo_pago=Pedido.Pago.CONTRA_ENTREGA).count(), 'pedido contra entrega',
+        (PEDIDO, pendientes.filter(metodo_pago=Pedido.Pago.CONTRA_ENTREGA).count(), 'pedido contra entrega',
          'pedidos contra entrega', 'Prepáralo y cóbralo al entregarlo.',
          _enlace('pedidos_pedido_changelist', 'estado__exact=pendiente&metodo_pago__exact=contra_entrega'), True),
-        (pedidos.filter(estado=E.PAGADO).count(), 'pedido pagado por preparar', 'pedidos pagados por preparar',
+        (PEDIDO, pedidos.filter(estado=E.PAGADO).count(), 'pedido pagado por preparar', 'pedidos pagados por preparar',
          'Ya están cobrados: prepáralos y cambia su estado.',
          _enlace('pedidos_pedido_changelist', 'estado__exact=pagado'), True),
-        (pedidos.filter(estado=E.PREPARANDO).count(), 'pedido en preparación', 'pedidos en preparación',
+        (PEDIDO, pedidos.filter(estado=E.PREPARANDO).count(), 'pedido en preparación', 'pedidos en preparación',
          'Cuando esté listo, márcalo como listo para recoger o enviado.',
          _enlace('pedidos_pedido_changelist', 'estado__exact=preparando'), False),
-        (pedidos.filter(estado__in=[E.LISTO, E.ENVIADO, E.EN_REPARTO]).count(), 'pedido por entregar',
+        (PEDIDO, pedidos.filter(estado__in=[E.LISTO, E.ENVIADO, E.EN_REPARTO]).count(), 'pedido por entregar',
          'pedidos por entregar', 'Márcalo como entregado cuando el cliente lo reciba.',
          _enlace('pedidos_pedido_changelist', 'estado__in=listo,enviado,en_reparto'), False),
-        (SolicitudDevolucion.objects.filter(tienda__in=tiendas, estado=SolicitudDevolucion.Estado.PENDIENTE).count(),
+        (DEVOLUCION, SolicitudDevolucion.objects.filter(tienda__in=tiendas, estado=SolicitudDevolucion.Estado.PENDIENTE).count(),
          'devolución por revisar', 'devoluciones por revisar', 'Acéptala o recházala y explica por qué.',
          _enlace('pedidos_solicituddevolucion_changelist', 'estado__exact=pendiente'), True),
-        (Pregunta.objects.filter(tienda__in=tiendas, estado=Pregunta.Estado.PENDIENTE).count(),
+        (PREGUNTA, Pregunta.objects.filter(tienda__in=tiendas, estado=Pregunta.Estado.PENDIENTE).count(),
          'pregunta sin responder', 'preguntas sin responder', 'Respóndela: se publica en el producto.',
          _enlace('opiniones_pregunta_changelist', 'estado__exact=pendiente'), False),
-        (AvisoDisponible.objects.filter(tienda__in=tiendas, avisado__isnull=True).count(),
+        (AVISO, AvisoDisponible.objects.filter(tienda__in=tiendas, avisado__isnull=True).count(),
          'cliente esperando un producto', 'clientes esperando un producto',
          'Cuando lo vuelvas a tener, márcalo como disponible: les llega un correo.',
          _enlace('catalogo_avisodisponible_changelist', 'avisado__isempty=1'), False),
     ]
     return [
-        {'cantidad': n, 'texto': uno if n == 1 else varios, 'ayuda': ayuda, 'url': url, 'urgente': urgente}
-        for n, uno, varios, ayuda, url, urgente in filas if n
+        {'cantidad': n, 'texto': uno if n == 1 else varios, 'ayuda': ayuda, 'url': url, 'urgente': urgente,
+         'pantalla': pantalla}
+        for pantalla, n, uno, varios, ayuda, url, urgente in filas if n
     ]
+
+
+def tareas_del_panel(request):
+    """Las tareas del vendedor, calculadas una sola vez por peticion (las usan el inicio y el menu)."""
+    if not hasattr(request, '_tareas_del_panel'):
+        from tiendas.panel import tiendas_del_panel
+
+        request._tareas_del_panel = tareas_de_la_tienda(tiendas_del_panel(request))
+    return request._tareas_del_panel
+
+
+def pendientes_del_menu(request):
+    """Cuantas cosas esperan en cada pantalla del menu del vendedor: {(app, modelo): cantidad}."""
+    from planes.models import Cargo
+    from tiendas.panel import tiendas_del_panel
+
+    cuentas = {}
+    for tarea in tareas_del_panel(request):
+        cuentas[tarea['pantalla']] = cuentas.get(tarea['pantalla'], 0) + tarea['cantidad']
+    # Mi plan: mensualidades y depositos sin pagar.
+    por_pagar = Cargo.objects.filter(tienda__in=tiendas_del_panel(request), estado=Cargo.Estado.PENDIENTE).count()
+    if por_pagar:
+        cuentas[('planes', 'cargo')] = por_pagar
+    return cuentas
 
 
 def primeros_pasos(tienda):

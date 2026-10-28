@@ -130,6 +130,28 @@ class PedidoAdmin(AdminDeTienda, admin.ModelAdmin):
         campos = [campo for _, opciones in self.fieldsets for campo in opciones['fields']]
         return [campo for campo in campos if campo not in self.campos_editables]
 
+    # Lo del reparto viejo (el sitio cobraba y le liquidaba a la tienda) es solo del administrador principal.
+    SOLO_DEL_ADMINISTRADOR = {'cobra_el_sitio', 'liquidado', 'tienda'}
+
+    def get_list_filter(self, request):
+        filtros = super().get_list_filter(request)
+        if ve_todas(request.user):
+            return filtros
+        return [f for f in filtros if (f[0] if isinstance(f, tuple) else f) not in {'cobra_el_sitio', 'liquidacion'}]
+
+    def get_list_display(self, request):
+        columnas = super().get_list_display(request)
+        if ve_todas(request.user):
+            return columnas
+        # El vendedor: lo que necesita para atender el pedido, sin columnas de mas.
+        return [c for c in columnas if c != 'metodo_pago']
+
+    def get_fieldsets(self, request, obj=None):
+        if ve_todas(request.user):
+            return self.fieldsets
+        return [(titulo, {**opciones, 'fields': [c for c in opciones['fields'] if c not in self.SOLO_DEL_ADMINISTRADOR]})
+                for titulo, opciones in self.fieldsets]
+
     def has_add_permission(self, request):
         return False
 

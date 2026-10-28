@@ -234,3 +234,37 @@ html[data-theme="dark"] .pv-al-dia { background: #14352a; color: #bbf7d0; }
 .pv-titulo-seccion { margin: 26px 0 6px; font-size: 1.2rem; font-weight: 800; color: var(--body-fg); }
 .pv-tabla-cargos { overflow-x: auto; }
 .pv-tabla-cargos table { width: 100%; }
+
+/* Numerito de pendientes en el menu del vendedor */
+.pv-insignia { display: inline-block; min-width: 1.5em; margin-left: 6px; padding: .05em .45em; border-radius: 999px; background: var(--accent); color: #111827; font-size: .75rem; font-weight: 800; line-height: 1.5; text-align: center; vertical-align: middle; }
+.pv-insignia[hidden] { display: none; }
+
+/* Listas del vendedor en el telefono: cada fila es una tarjeta (pedidos, productos, preguntas...). Solo en su
+   panel: la pagina lleva <meta name="pv-pendientes"> (templates/admin/base_site.html). */
+@media (max-width: 767px) {
+  html:has(meta[name="pv-pendientes"]) #changelist .results { overflow: visible; }
+  html:has(meta[name="pv-pendientes"]) #result_list,
+  html:has(meta[name="pv-pendientes"]) #result_list tbody,
+  html:has(meta[name="pv-pendientes"]) #result_list tr,
+  html:has(meta[name="pv-pendientes"]) #result_list th,
+  html:has(meta[name="pv-pendientes"]) #result_list td { display: block; width: auto; }
+  html:has(meta[name="pv-pendientes"]) #result_list thead { display: none; }
+  html:has(meta[name="pv-pendientes"]) #result_list tr {
+    position: relative; margin: 0 0 10px; padding: 12px 14px 12px 44px; border: 1px solid var(--hairline-color);
+    border-radius: 12px; background: var(--body-bg);
+  }
+  html:has(meta[name="pv-pendientes"]) #result_list td,
+  html:has(meta[name="pv-pendientes"]) #result_list th { border: 0; padding: 2px 0; white-space: normal; }
+  html:has(meta[name="pv-pendientes"]) #result_list td.action-checkbox { position: absolute; left: 14px; top: 14px; padding: 0; }
+  html:has(meta[name="pv-pendientes"]) #result_list th.field-numero a,
+  html:has(meta[name="pv-pendientes"]) #result_list th:first-of-type a { font-size: 1.05rem; font-weight: 800; }
+  html:has(meta[name="pv-pendientes"]) #result_list td select,
+  html:has(meta[name="pv-pendientes"]) #result_list td input[type="number"] { max-width: 100%; margin-top: 4px; }
+  html:has(meta[name="pv-pendientes"]) #result_list img { max-width: 72px; height: auto; border-radius: 8px; }
+}
+@media (max-width: 767px) {
+  html:has(meta[name="pv-pendientes"]) #result_list td[data-columna]::before {
+    content: attr(data-columna) ": "; color: var(--body-quiet-color); font-size: .8rem; font-weight: 600;
+  }
+  html:has(meta[name="pv-pendientes"]) #result_list td[data-columna] { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; }
+}

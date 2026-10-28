@@ -50,21 +50,8 @@
   {# Que hacer ahora #}
   <section class="pv-bloque" aria-labelledby="titulo-tareas">
     <h2 id="titulo-tareas">Para hacer ahora</h2>
-    {% if tareas %}
-      <ul class="pv-tareas">
-        {% for tarea in tareas %}
-          <li>
-            <a class="pv-tarea{% if tarea.urgente %} pv-tarea-urgente{% endif %}" href="{{ tarea.url }}">
-              <span class="pv-tarea-numero">{{ tarea.cantidad }}</span>
-              <span class="pv-tarea-texto"><strong>{{ tarea.texto|capfirst }}</strong><small>{{ tarea.ayuda }}</small></span>
-              <span class="pv-tarea-ir" aria-hidden="true">›</span>
-            </a>
-          </li>
-        {% endfor %}
-      </ul>
-    {% else %}
-      <p class="pv-al-dia"><span aria-hidden="true">✓</span> Todo al día: no tienes pedidos ni preguntas esperando.</p>
-    {% endif %}
+    {# Se actualiza solo cada minuto (static/js/panel.js, admin:pendientes). #}
+    <div id="pv-tareas" aria-live="polite">{% include 'admin/_tareas_vendedor.html' %}</div>
   </section>
 
   {# Lo que mas se usa, a un toque #}
@@ -194,7 +181,7 @@
           <h3>{{ grupo.name }}</h3>
           <ul>
             {% for modelo in grupo.models %}
-              {% if modelo.admin_url %}<li><a href="{{ modelo.admin_url }}">{{ modelo.name }}</a></li>{% endif %}
+              {% if modelo.admin_url %}<li><a href="{{ modelo.admin_url }}">{{ modelo.name }}</a>{% if modelo.clave %} <span class="pv-insignia" data-pendientes="{{ modelo.clave }}"{% if not modelo.pendientes %} hidden{% endif %}>{{ modelo.pendientes|default:0 }}</span>{% endif %}</li>{% endif %}
             {% endfor %}
           </ul>
         </div>

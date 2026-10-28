@@ -1,0 +1,16 @@
+{# "Para hacer ahora" del inicio del vendedor. Tambien lo devuelve admin:pendientes para actualizarlo sin recargar. #}
+{% if tareas %}
+  <ul class="pv-tareas">
+    {% for tarea in tareas %}
+      <li>
+        <a class="pv-tarea{% if tarea.urgente %} pv-tarea-urgente{% endif %}" href="{{ tarea.url }}">
+          <span class="pv-tarea-numero">{{ tarea.cantidad }}</span>
+          <span class="pv-tarea-texto"><strong>{{ tarea.texto|capfirst }}</strong><small>{{ tarea.ayuda }}</small></span>
+          <span class="pv-tarea-ir" aria-hidden="true">›</span>
+        </a>
+      </li>
+    {% endfor %}
+  </ul>
+{% else %}
+  <p class="pv-al-dia"><span aria-hidden="true">✓</span> Todo al día: no tienes pedidos ni preguntas esperando.</p>
+{% endif %}

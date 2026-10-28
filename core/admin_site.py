@@ -35,17 +35,36 @@ MENU_DEL_VENDEDOR = [
         ('pagos', 'liquidacion', 'Liquidaciones'),
     ]),
 ]
+# Pantallas con numerito de pendientes (se actualiza solo cada minuto, static/js/panel.js).
+PANTALLAS_CON_PENDIENTES = [
+    ('pedidos', 'pedido'), ('pedidos', 'solicituddevolucion'), ('opiniones', 'pregunta'),
+    ('catalogo', 'avisodisponible'), ('planes', 'cargo'),
+]
 # Estos no salen en el menu del vendedor: estan dentro de "Mi plan y mensualidades".
 FUERA_DEL_MENU_DEL_VENDEDOR = {('planes', 'plan')}
 
 
-def agrupar_para_el_vendedor(app_list):
-    """Reordena el menu de Django en los grupos de MENU_DEL_VENDEDOR. Solo cambia nombres y orden, no permisos."""
+def agrupar_para_el_vendedor(app_list, request=None):
+    """Reordena el menu de Django en los grupos de MENU_DEL_VENDEDOR. Solo cambia nombres y orden, no permisos.
+    Con `request`, cada entrada lleva cuantas cosas esperan en ella (`pendientes`) y Liquidaciones sale solo si la
+    tienda tiene alguna (es del reparto viejo, cuando el sitio cobraba por ella)."""
     from django.urls import reverse
 
     modelos = {(app['app_label'], m['object_name'].lower()): m for app in app_list for m in app['models']}
     for clave in FUERA_DEL_MENU_DEL_VENDEDOR:
         modelos.pop(clave, None)
+    if request is not None:
+        from pagos.models import Liquidacion
+        from tiendas.panel import tiendas_del_panel
+
+        from .panel import pendientes_del_menu
+
+        if not Liquidacion.objects.filter(tienda__in=tiendas_del_panel(request)).exists():
+            modelos.pop(('pagos', 'liquidacion'), None)
+        cuentas = pendientes_del_menu(request)
+        for clave in PANTALLAS_CON_PENDIENTES:
+            if clave in modelos:
+                modelos[clave] = {**modelos[clave], 'pendientes': cuentas.get(clave, 0), 'clave': '.'.join(clave)}
     if ('planes', 'cargo') in modelos:
         # Lleva a la pagina del plan (con sus mensualidades), no a la lista suelta de cargos.
         modelos[('planes', 'cargo')] = {**modelos[('planes', 'cargo')], 'add_url': None,
@@ -75,10 +94,34 @@ class PanelAdminSite(admin.AdminSite):
     # Con limite de intentos: la pantalla de Django no lo trae.
     login_form = EntrarAlPanelForm
 
+    def get_urls(self):
+        from django.urls import path
+
+        return [path('pendientes/', self.admin_view(self.pendientes_view), name='pendientes'), *super().get_urls()]
+
+    def pendientes_view(self, request):
+        """Para el panel del vendedor: los numeritos del menu y "Para hacer ahora", sin recargar la pagina."""
+        from django.http import JsonResponse
+        from django.template.loader import render_to_string
+
+        from .panel import pendientes_del_menu, tareas_del_panel
+
+        if request.user.is_superuser:
+            return JsonResponse({'pendientes': {}, 'total': 0, 'tareas': None})
+        cuentas = {'.'.join(clave): n for clave, n in pendientes_del_menu(request).items()}
+        tareas = tareas_del_panel(request)
+        respuesta = JsonResponse({
+            'pendientes': cuentas,
+            'total': sum(tarea['cantidad'] for tarea in tareas if tarea['urgente']),
+            'tareas': render_to_string('admin/_tareas_vendedor.html', {'tareas': tareas}, request=request),
+        })
+        respuesta['Cache-Control'] = 'no-store'
+        return respuesta
+
     def get_app_list(self, request, app_label=None):
         app_list = super().get_app_list(request, app_label)
         if app_label is None and not request.user.is_superuser:
-            return agrupar_para_el_vendedor(app_list)
+            return agrupar_para_el_vendedor(app_list, request)
         return app_list
 
     def index(self, request, extra_context=None):
@@ -87,7 +130,7 @@ class PanelAdminSite(admin.AdminSite):
         from tiendas.services import solicitudes_pendientes, ve_todas
 
         from . import metricas
-        from .panel import primeros_pasos, resumen_panel, tareas_de_la_tienda, ventas_por_tienda
+        from .panel import primeros_pasos, resumen_panel, tareas_del_panel, ventas_por_tienda
 
         from planes.services import cambios_de_plan_pendientes, estado_de_cuenta, resumen_para_el_administrador
 
@@ -119,7 +162,7 @@ class PanelAdminSite(admin.AdminSite):
                     # Inicio del dueño de tienda: que hacer ahora y lo que le falta para empezar a vender.
                     'es_vendedor': True,
                     'tiendas': tiendas,
-                    'tareas': tareas_de_la_tienda(tiendas),
+                    'tareas': tareas_del_panel(request),
                     'primeros_pasos': [
                         (tienda, pasos) for tienda, pasos in ((t, primeros_pasos(t)) for t in tiendas)
                         if not all(paso['hecho'] for paso in pasos)
