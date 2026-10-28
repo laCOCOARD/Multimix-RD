@@ -1,5 +1,6 @@
 from django.contrib.auth.decorators import login_not_required
 from django.core.paginator import Paginator
+from django.db.models import Case, IntegerField, Q, Value, When
 from django.http import Http404, JsonResponse
 from django.shortcuts import redirect, render
 from django.templatetags.static import static
@@ -10,10 +11,11 @@ from django.views.decorators.http import require_GET
 from catalogo.forms import ORDENES, FiltroCatalogoForm
 from catalogo.models import Categoria
 from catalogo.services import (
-    categorias_del_sitio, en_oferta, filtrar_catalogo, nuevos, ofertas_del_sitio, patrocinados_del_sitio,
+    categorias_del_sitio, en_oferta, filtrar_catalogo, nuevos, ofertas_del_sitio, recordar_busqueda,
     sugerencias as sugerencias_de_productos, vitrina_del_sitio,
 )
 from catalogo.views import sugerencias_de_productos as datos_de_sugerencias
+from clientes.gustos import de as gustos_del_cliente
 from core import metricas
 from core.models import ConfiguracionTienda
 from core.seo import sitio_json_ld
@@ -22,9 +24,15 @@ from . import services
 
 RESULTADOS_POR_PAGINA = 12
 TIENDAS_EN_PORTADA = 8
-PRODUCTOS_EN_PORTADA = 12
-PATROCINADOS_EN_PORTADA = 4
 TIENDAS_POR_PAGINA = 24
+
+
+def _preferidas_primero(categorias, usuario):
+    """Las categorias que el cliente dijo que le gustan van primero (orden estable para las demas)."""
+    from clientes.gustos import de
+
+    preferidas = set(de(usuario).get('categorias', []))
+    return sorted(categorias, key=lambda categoria: categoria.pk not in preferidas) if preferidas else categorias
 
 
 @require_GET
@@ -32,28 +40,24 @@ def portada(request):
     """Portada del sitio: productos de todas las tiendas y las tiendas mismas, para comprar sin conocer al vendedor
     o para entrar a la tienda de un emprendedor. Cada producto se sigue comprando dentro de su tienda."""
     from core.models import PreguntaFrecuente
-    from planes.services import anuncios_para_la_portada, historias_para_la_portada
+    from planes.services import historias_para_la_portada, promociones_para
 
     tiendas = list(services.directorio()[:TIENDAS_EN_PORTADA + 1])
-    # Los productos que las tiendas anuncian segun su plan van primero, marcados como "Patrocinado".
-    patrocinados = patrocinados_del_sitio(PATROCINADOS_EN_PORTADA)
-    ofertas = ofertas_del_sitio(excluir=[producto.pk for producto in patrocinados])
-    # Lo que ya sale en ofertas no se repite en la seleccion.
-    productos = patrocinados + vitrina_del_sitio(
-        PRODUCTOS_EN_PORTADA - len(patrocinados), excluir=[producto.pk for producto in (*ofertas, *patrocinados)],
-    )
+    # Promociones (anuncios, patrocinados y ofertas), primero lo que se parece a lo que el visitante busco o miro.
+    promociones, personalizadas = promociones_para(request.session, usuario=request.user)
+    # Fotos reales para la bienvenida: productos de distintas tiendas, cada uno con la suya.
+    vitrina = [producto for producto in vitrina_del_sitio(8) if producto.foto_principal][:4]
     plataforma = ConfiguracionTienda.obtener()
     return render(request, 'tiendas/portada.html', {
         'tiendas': services.para_el_directorio(tiendas[:TIENDAS_EN_PORTADA]),
         'hay_mas_tiendas': len(tiendas) > TIENDAS_EN_PORTADA,
-        'categorias': categorias_del_sitio(),
-        'anuncios': anuncios_para_la_portada(),
+        'categorias': _preferidas_primero(categorias_del_sitio(), request.user),
+        'promociones': promociones,
+        'promociones_personalizadas': personalizadas,
         # Videos de las tiendas (plan Premium): un circulo por tienda, en otro orden en cada visita.
         'historias': historias_para_la_portada(),
-        'productos': productos,
-        'ofertas': ofertas,
-        # Fotos reales para el bloque de bienvenida (en pantallas anchas): los ultimos de la seleccion con foto.
-        'vitrina': [producto for producto in productos if producto.foto_principal][-4:],
+        'ofertas': ofertas_del_sitio(),
+        'vitrina': vitrina,
         'preguntas': PreguntaFrecuente.objects.filter(activa=True)[:6],
         'sitio_json_ld': sitio_json_ld(
             plataforma.nombre, request.build_absolute_uri('/'),
@@ -88,10 +92,18 @@ def buscar(request):
     slug_tienda = request.GET.get('tienda', '')[:100]
     tienda = next((item for item in tiendas_activas if item.slug == slug_tienda), None) if slug_tienda else None
     productos = filtrar_catalogo(filtros, categoria)
+    preferidas = set(gustos_del_cliente(request.user).get('categorias', []))
+    if preferidas and not filtros.get('orden'):
+        # Sin un orden elegido, lo de las categorias que le gustan va primero; dentro, lo mas nuevo.
+        productos = productos.annotate(preferido=Case(
+            When(Q(categoria_id__in=preferidas) | Q(categoria__padre_id__in=preferidas), then=Value(1)),
+            default=Value(0), output_field=IntegerField(),
+        )).order_by('-preferido', '-creado', '-id')
     if tienda is not None:
         productos = productos.filter(tienda=tienda)
     pagina = Paginator(productos, RESULTADOS_POR_PAGINA).get_page(request.GET.get('pagina'))
     if filtros.get('q') and pagina.number == 1:
+        recordar_busqueda(request.session, filtros['q'])
         metricas.anotar(request, metricas.Evento.BUSQUEDA)
         if not pagina.object_list:
             metricas.anotar(request, metricas.Evento.BUSQUEDA_SIN_RESULTADOS)
@@ -126,7 +138,7 @@ def sugerencias(request):
         'resultados': datos_de_sugerencias(sugerencias_de_productos(texto), con_tienda=True),
         'tiendas': [
             {'nombre': item.nombre, 'url': item.get_absolute_url(), 'foto': item.logo.url if item.logo else '',
-             'detalle': f'Tienda · {item.total_productos} producto{"s" if item.total_productos != 1 else ""}'}
+             'detalle': 'Tienda'}
             for item in services.buscar_tiendas(texto, limite=3)
         ],
     })

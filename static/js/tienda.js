@@ -62,6 +62,14 @@
 
   window.Multimix = { enviar, avisar, actualizarContador };
 
+  // Promociones de la portada: rotan solas (se detienen al pasar el raton o con "reducir movimiento").
+  document.querySelectorAll('.js-promos').forEach((carrusel) => {
+    if (!window.bootstrap) return;
+    new bootstrap.Carousel(carrusel, {
+      interval: sinMovimiento ? false : 5500, ride: sinMovimiento ? false : 'carousel', pause: 'hover', touch: true,
+    });
+  });
+
   // Un formulario que vuelve con errores lleva el foco a su resumen (se lee primero y enlaza a cada campo).
   const resumenDeErrores = document.querySelector('.mm-errores[tabindex]');
   if (resumenDeErrores) resumenDeErrores.focus();

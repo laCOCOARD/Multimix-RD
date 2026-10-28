@@ -21,8 +21,7 @@
     <div>
       <h1 class="h3 mb-1">{% if categoria %}{{ categoria.nombre }}{% else %}Catálogo{% endif %}</h1>
       <p class="text-muted mb-0">
-        {{ pagina.paginator.count }} producto{{ pagina.paginator.count|pluralize }}
-        {% if filtros.q %} para «{{ filtros.q }}»{% endif %}
+        {% if filtros.q %}Resultados para «{{ filtros.q }}»{% else %}Productos de {{ tienda.nombre }}{% endif %}
       </p>
     </div>
     <button class="btn btn-outline-primary d-lg-none" type="button" data-bs-toggle="collapse" data-bs-target="#filtros"

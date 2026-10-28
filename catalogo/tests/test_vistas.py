@@ -2,6 +2,7 @@ import tempfile
 from datetime import timedelta
 from decimal import Decimal
 
+from django.conf import settings
 from django.test import TestCase
 from django.utils import timezone
 
@@ -144,7 +145,9 @@ class CatalogoVistasTests(TestCase):
         respuesta = self.client.get(self.lampara.get_absolute_url())
         # Sin mensajes de urgencia (Fase 3, 2026-10-27): el tope si respeta lo que queda.
         self.assertNotContains(respuesta, 'Quedan')
-        self.assertContains(respuesta, 'max="3"')
+        # El campo de cantidad no revela las existencias: ofrece el tope por pedido y el carrito ajusta.
+        self.assertNotContains(respuesta, 'max="3"')
+        self.assertContains(respuesta, f'max="{settings.CARRITO_MAX_POR_PRODUCTO}"')
 
     def test_producto_inactivo_da_404_propio(self):
         respuesta = self.client.get(self.oculto.get_absolute_url())

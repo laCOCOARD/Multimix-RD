@@ -214,17 +214,17 @@ class SolicitudTiendaAdmin(admin.ModelAdmin):
     traen datos personales. Aprobar no crea nada solo: desde aqui se crea la tienda con los datos de la solicitud y se
     le da acceso a sus vendedores en la pantalla de la tienda, como siempre."""
 
-    list_display = ['nombre_comercial', 'nombre_responsable', 'categoria', 'estado_legible', 'creada']
-    list_filter = ['estado', 'categoria']
+    list_display = ['nombre_comercial', 'nombre_responsable', 'rubro', 'estado_legible', 'creada']
+    list_filter = ['estado', 'rubro']
     search_fields = ['nombre_comercial', 'nombre_responsable', 'correo', 'telefono']
     date_hierarchy = 'creada'
     actions = ['marcar_en_revision', 'rechazar']
     readonly_fields = [
-        'nombre_responsable', 'nombre_comercial', 'contacto', 'categoria', 'descripcion', 'redes', 'creada',
+        'nombre_responsable', 'nombre_comercial', 'contacto', 'rubro', 'descripcion', 'redes', 'creada',
         'revisada_por', 'revisada_el', 'crear_tienda',
     ]
     fieldsets = [
-        ('Quién la envía', {'fields': ['nombre_responsable', 'nombre_comercial', 'contacto', 'categoria', 'redes', 'creada']}),
+        ('Quién la envía', {'fields': ['nombre_responsable', 'nombre_comercial', 'contacto', 'rubro', 'redes', 'creada']}),
         ('Qué vende', {'fields': ['descripcion']}),
         ('Revisión', {'fields': ['estado', 'notas', 'tienda', 'crear_tienda', 'revisada_por', 'revisada_el']}),
     ]

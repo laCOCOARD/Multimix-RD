@@ -25,7 +25,7 @@
     <div>
       <h1 class="h3 mb-1">{% if filtros.q %}Resultados para «{{ filtros.q }}»{% elif categoria %}{{ categoria.nombre }}{% else %}Todos los productos{% endif %}</h1>
       <p class="text-muted mb-0" role="status">
-        {{ pagina.paginator.count }} producto{{ pagina.paginator.count|pluralize }}{% if filtros.q and categoria %} en {{ categoria.nombre }}{% endif %}{% if tienda_filtro %} de {{ tienda_filtro.nombre }}{% else %} entre todas las tiendas{% endif %}{% if tiendas_encontradas %} y {{ tiendas_encontradas|length }} tienda{{ tiendas_encontradas|length|pluralize }}{% endif %}.
+        Productos{% if filtros.q and categoria %} en {{ categoria.nombre }}{% endif %}{% if tienda_filtro %} de {{ tienda_filtro.nombre }}{% else %} de todas las tiendas{% endif %}.
         <span class="d-none d-md-inline">Cada producto se compra dentro de su tienda.</span>
       </p>
     </div>

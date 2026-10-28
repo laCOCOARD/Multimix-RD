@@ -19,13 +19,23 @@ def perfil_de(usuario):
     return Perfil.objects.get_or_create(usuario=usuario)[0]
 
 
+def guardar_gustos(usuario, gustos):
+    """Guarda las respuestas (None = no contesto: se dejan como estaban) y no se le vuelve a preguntar."""
+    perfil = perfil_de(usuario)
+    if gustos is not None:
+        perfil.gustos = gustos
+    perfil.preguntar_gustos = False
+    perfil.save(update_fields=['gustos', 'preguntar_gustos'])
+
+
 @transaction.atomic
 def registrar_cliente(nombre, correo, clave, telefono=''):
     """Crea la cuenta. El correo es tambien el nombre de usuario; nunca tiene acceso al panel."""
     usuario = get_user_model().objects.create_user(
         username=correo, email=correo, password=clave, first_name=nombre[:150],
     )
-    Perfil.objects.create(usuario=usuario, telefono=telefono)
+    # Al terminar de crear la cuenta se le pregunta una sola vez por sus gustos (clientes:gustos).
+    Perfil.objects.create(usuario=usuario, telefono=telefono, preguntar_gustos=True)
     return usuario
 
 

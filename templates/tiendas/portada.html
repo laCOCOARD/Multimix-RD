@@ -1,5 +1,5 @@
 {% extends 'base.html' %}
-{% load static %}
+{% load moneda static %}
 
 {# Portada del sitio (pedido del dueño el 2026-10-25): un sitio de muchas tiendas. Se puede comprar sin conocer al #}
 {# vendedor (categorias y productos de todas las tiendas, cada uno con su tienda a la vista) o entrar a una tienda. #}
@@ -78,6 +78,50 @@
 {% include 'includes/visor_historias.html' with etiqueta='Anuncio' %}
 {% endif %}
 
+{% if promociones %}
+{# Promociones (pedido del dueño el 2026-10-27): un carrusel que rota solo con anuncios, patrocinados y ofertas reales, #}
+{# primero lo que se parece a lo que el visitante busco o miro (solo de su sesion). Cada una dice que es. #}
+<section class="container mm-seccion mm-promos" aria-labelledby="titulo-promos">
+  <h2 class="{% if promociones_personalizadas %}mm-promos-titulo{% else %}visually-hidden{% endif %}" id="titulo-promos">{% if promociones_personalizadas %}<i class="bi bi-stars" aria-hidden="true"></i>Elegidas para ti{% else %}Promociones{% endif %}</h2>
+  <div class="carousel slide mm-promos-carrusel js-promos" id="promos" aria-roledescription="carrusel">
+    {% if promociones|length > 1 %}
+      <div class="carousel-indicators">
+        {% for promocion in promociones %}
+          <button type="button" data-bs-target="#promos" data-bs-slide-to="{{ forloop.counter0 }}"{% if forloop.first %} class="active" aria-current="true"{% endif %} aria-label="Promoción {{ forloop.counter }} de {{ promociones|length }}"></button>
+        {% endfor %}
+      </div>
+    {% endif %}
+    <div class="carousel-inner">
+      {% for promocion in promociones %}
+        <div class="carousel-item{% if forloop.first %} active{% endif %}" aria-roledescription="diapositiva" aria-label="{{ forloop.counter }} de {{ promociones|length }}">
+          <a class="mm-promo" href="{{ promocion.url }}">
+            <span class="mm-promo-texto">
+              <span class="mm-promo-etiquetas">
+                <span class="mm-promo-etiqueta{% if promocion.etiqueta != 'Anuncio' %} es-oferta{% endif %}">{{ promocion.etiqueta }}</span>
+                <span class="mm-promo-tienda"><i class="bi bi-shop" aria-hidden="true"></i>{{ promocion.tienda }}</span>
+              </span>
+              <span class="mm-promo-titulo">{{ promocion.titulo }}</span>
+              {% if promocion.texto %}<span class="mm-promo-descripcion">{{ promocion.texto }}</span>{% endif %}
+              {% if promocion.precio %}
+                <span class="mm-promo-precio">{{ promocion.precio|moneda }}{% if promocion.precio_anterior %} <s>{{ promocion.precio_anterior|moneda }}</s>{% endif %}</span>
+              {% endif %}
+              <span class="btn btn-acento mm-promo-boton" aria-hidden="true">Ver {% if promocion.es_foto_de_producto %}producto{% else %}promoción{% endif %} <i class="bi bi-arrow-right"></i></span>
+            </span>
+            <span class="mm-promo-imagen{% if promocion.es_foto_de_producto %} es-producto{% endif %}">
+              {% if promocion.imagen %}<img src="{{ promocion.imagen }}" alt="" {% if not forloop.first %}loading="lazy" {% endif %}decoding="async" width="600" height="400">{% else %}<i class="bi bi-image" aria-hidden="true"></i>{% endif %}
+            </span>
+          </a>
+        </div>
+      {% endfor %}
+    </div>
+    {% if promociones|length > 1 %}
+      <button class="carousel-control-prev mm-promos-flecha" type="button" data-bs-target="#promos" data-bs-slide="prev"><span class="bi bi-chevron-left" aria-hidden="true"></span><span class="visually-hidden">Anterior</span></button>
+      <button class="carousel-control-next mm-promos-flecha" type="button" data-bs-target="#promos" data-bs-slide="next"><span class="bi bi-chevron-right" aria-hidden="true"></span><span class="visually-hidden">Siguiente</span></button>
+    {% endif %}
+  </div>
+</section>
+{% endif %}
+
 {% if categorias %}
 <section class="container mm-seccion" aria-labelledby="titulo-categorias">
   <div class="mm-seccion-cabecera">
@@ -100,7 +144,6 @@
             </span>
             <span class="mm-categoria-texto">
               <span class="mm-categoria-nombre">{{ categoria.nombre }}</span>
-              <span class="mm-categoria-total">{{ categoria.total_productos }} producto{{ categoria.total_productos|pluralize }}</span>
               <span class="mm-categoria-ir" aria-hidden="true">Ver productos <i class="bi bi-arrow-right"></i></span>
             </span>
           </a>
@@ -111,58 +154,6 @@
   </div>
 </section>
 {% endif %}
-
-{% if anuncios %}
-{# Anuncios de las tiendas segun su plan, aprobados por el administrador. Siempre dicen que son anuncios. #}
-<section class="container mm-seccion" aria-labelledby="titulo-anuncios">
-  <div class="mm-seccion-cabecera">
-    <h2 id="titulo-anuncios">Promociones de nuestras tiendas</h2>
-  </div>
-  <div class="mm-fila" data-fila>
-    <button class="mm-fila-flecha mm-fila-anterior" type="button" data-mover="-1" aria-label="Ver anuncios anteriores" hidden><i class="bi bi-chevron-left"></i></button>
-    <div class="mm-fila-pista mm-fila-anuncios" tabindex="0">
-      {% for anuncio in anuncios %}
-        <div class="mm-fila-item">
-          <a class="mm-anuncio" href="{{ anuncio.get_url }}">
-            <span class="mm-anuncio-foto"><img src="{{ anuncio.imagen.url }}" alt="" loading="lazy" decoding="async" width="600" height="300"></span>
-            <span class="mm-anuncio-cuerpo">
-              <span class="mm-anuncio-etiqueta">Anuncio · {{ anuncio.tienda.nombre }}</span>
-              <span class="mm-anuncio-titulo">{{ anuncio.titulo }}</span>
-              {% if anuncio.texto %}<span class="mm-anuncio-texto">{{ anuncio.texto }}</span>{% endif %}
-            </span>
-          </a>
-        </div>
-      {% endfor %}
-    </div>
-    <button class="mm-fila-flecha mm-fila-siguiente" type="button" data-mover="1" aria-label="Ver más anuncios" hidden><i class="bi bi-chevron-right"></i></button>
-  </div>
-</section>
-{% endif %}
-
-<section class="container mm-seccion" id="productos" aria-labelledby="titulo-productos">
-  <div class="mm-seccion-cabecera">
-    <div>
-      <h2 id="titulo-productos">Descubre productos</h2>
-      <p class="mm-seccion-texto">De todas nuestras tiendas. Cada producto se compra en el carrito de su tienda.</p>
-    </div>
-    {% if productos %}<a href="{% url 'tiendas:buscar' %}">Ver todos <i class="bi bi-arrow-right" aria-hidden="true"></i></a>{% endif %}
-  </div>
-  {% if productos %}
-    <div class="mm-rejilla mm-rejilla-recortada">
-      {% for producto in productos %}
-        {% include 'includes/tarjeta_producto.html' %}
-      {% endfor %}
-    </div>
-    <div class="mm-seccion-pie">
-      <a class="btn btn-outline-primary btn-lg" href="{% url 'tiendas:buscar' %}">Ver todos los productos</a>
-    </div>
-  {% else %}
-    <div class="mm-vacio">
-      <i class="bi bi-bag" aria-hidden="true"></i>
-      <p class="lead mb-0">Pronto verás aquí los productos de nuestras tiendas.</p>
-    </div>
-  {% endif %}
-</section>
 
 <div class="mm-banda">
 <section class="container mm-seccion" id="tiendas" aria-labelledby="titulo-tiendas">
@@ -223,13 +214,6 @@
       <li><i class="bi bi-receipt" aria-hidden="true"></i><span><strong>Tus pedidos</strong> llegan a tu panel y desde ahí les das seguimiento.</span></li>
     </ul>
   </div>
-</section>
-
-<section class="container mm-seccion" aria-labelledby="titulo-confianza">
-  <div class="mm-seccion-cabecera">
-    <h2 id="titulo-confianza">Compra con confianza</h2>
-  </div>
-  <ul class="mm-confianza">{% include 'includes/confianza.html' %}</ul>
 </section>
 
 {% if preguntas %}

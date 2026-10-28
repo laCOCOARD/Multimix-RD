@@ -1,115 +1,116 @@
-{# Menu de las 3 barras: navegacion, lo que respalda cada compra, ayuda y contacto. Sin sesion solo ofrece entrar y la informacion. #}
+{# Menu de las 3 barras (pedido del dueño el 2026-10-27): pocos botones que se despliegan al tocarlos (Comprar, Mi #}
+{# cuenta, Ayuda), uno abierto a la vez, con el collapse de Bootstrap. Sin sesion con la cuenta obligatoria solo #}
+{# ofrece entrar y la ayuda. #}
 <div class="offcanvas offcanvas-start mm-menu" id="menu-lateral" tabindex="-1" aria-labelledby="menu-lateral-titulo">
   <div class="offcanvas-header">
     <p class="offcanvas-title mm-logo-texto" id="menu-lateral-titulo">{{ marca.nombre }}</p>
     <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Cerrar menú"></button>
   </div>
   <div class="offcanvas-body">
-    {% if puede_navegar %}
-      {# El buscador ya esta a la vista en la cabecera, tambien en el celular. #}
-      <nav class="mm-menu-grupo" aria-label="{% if tienda %}{{ tienda.nombre }}{% else %}Comprar{% endif %}">
-        {% if tienda %}
-          <h2>{{ tienda.nombre }}</h2>
-          <a href="{{ tienda.get_absolute_url }}"><i class="bi bi-house"></i>Inicio de la tienda</a>
-          <a href="{% url 'catalogo:lista' tienda.slug %}"><i class="bi bi-grid"></i>Catálogo</a>
-          {% if categorias_menu %}
-            <button class="mm-menu-desplegar collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#menu-categorias"
-                    aria-expanded="false" aria-controls="menu-categorias">
-              <i class="bi bi-tags"></i>Categorías<i class="bi bi-chevron-down ms-auto"></i>
+    <div class="mm-menu-secciones" id="menu-secciones">
+      {% if puede_navegar %}
+        <section class="mm-menu-seccion">
+          <h2 class="mm-menu-titulo">
+            <button class="mm-menu-boton collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#menu-comprar"
+                    aria-expanded="false" aria-controls="menu-comprar">
+              <i class="bi {% if tienda %}bi-shop{% else %}bi-bag{% endif %}" aria-hidden="true"></i>
+              <span>{% if tienda %}{{ tienda.nombre }}{% else %}Comprar{% endif %}</span>
+              <i class="bi bi-chevron-down mm-menu-flecha" aria-hidden="true"></i>
             </button>
-            <div class="collapse mm-menu-sub" id="menu-categorias">
+          </h2>
+          <div class="collapse mm-menu-contenido" id="menu-comprar" data-bs-parent="#menu-secciones">
+            {% if tienda %}
+              <a href="{{ tienda.get_absolute_url }}"><i class="bi bi-house"></i>Inicio de la tienda</a>
+              <a href="{% url 'catalogo:lista' tienda.slug %}"><i class="bi bi-grid"></i>Catálogo</a>
               {% for categoria in categorias_menu %}
-                <a href="{% url 'catalogo:categoria' tienda.slug categoria.slug %}">{{ categoria.nombre }}</a>
+                <a class="mm-menu-categoria" href="{% url 'catalogo:categoria' tienda.slug categoria.slug %}">{{ categoria.nombre }}</a>
               {% endfor %}
-            </div>
-          {% endif %}
-          <a href="{% url 'catalogo:lista' tienda.slug %}?oferta=on"><i class="bi bi-percent"></i>Ofertas</a>
-          <a href="{% url 'core:envios' tienda.slug %}"><i class="bi bi-truck"></i>Envíos y retiros</a>
-          <a href="{% url 'carrito:detalle' tienda.slug %}"><i class="bi bi-bag"></i>Mi carrito</a>
-          <a href="{% url 'tiendas:portada' %}"><i class="bi bi-arrow-left-circle"></i>Todas las tiendas</a>
-        {% else %}
-          <h2>Comprar</h2>
-          <a href="{% url 'tiendas:directorio' %}"><i class="bi bi-shop"></i>Tiendas</a>
-          <a href="{% url 'tiendas:buscar' %}"><i class="bi bi-grid"></i>Todos los productos</a>
-          {% if categorias_menu %}
-            <button class="mm-menu-desplegar collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#menu-categorias"
-                    aria-expanded="false" aria-controls="menu-categorias">
-              <i class="bi bi-tags"></i>Categorías<i class="bi bi-chevron-down ms-auto"></i>
-            </button>
-            <div class="collapse mm-menu-sub" id="menu-categorias">
+              <a href="{% url 'catalogo:lista' tienda.slug %}?oferta=on"><i class="bi bi-percent"></i>Ofertas</a>
+              <a href="{% url 'core:envios' tienda.slug %}"><i class="bi bi-truck"></i>Envíos y retiros</a>
+              <a href="{% url 'carrito:detalle' tienda.slug %}"><i class="bi bi-bag"></i>Mi carrito</a>
+              <a href="{% url 'tiendas:portada' %}"><i class="bi bi-arrow-left-circle"></i>Todas las tiendas</a>
+            {% else %}
+              <a href="{% url 'tiendas:directorio' %}"><i class="bi bi-shop"></i>Tiendas</a>
+              <a href="{% url 'tiendas:buscar' %}"><i class="bi bi-grid"></i>Todos los productos</a>
+              <a href="{% url 'tiendas:buscar' %}?oferta=on"><i class="bi bi-percent"></i>Ofertas</a>
               {% for categoria in categorias_menu %}
-                <a href="{% url 'tiendas:buscar' %}?categoria={{ categoria.slug }}">{{ categoria.nombre }}</a>
+                <a class="mm-menu-categoria" href="{% url 'tiendas:buscar' %}?categoria={{ categoria.slug }}">{{ categoria.nombre }}</a>
               {% endfor %}
-            </div>
+            {% endif %}
+          </div>
+        </section>
+      {% endif %}
+
+      <section class="mm-menu-seccion">
+        <h2 class="mm-menu-titulo">
+          <button class="mm-menu-boton collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#menu-cuenta"
+                  aria-expanded="false" aria-controls="menu-cuenta">
+            <i class="bi {% if user.is_authenticated %}bi-person-check{% else %}bi-person{% endif %}" aria-hidden="true"></i>
+            <span>Mi cuenta</span>
+            <i class="bi bi-chevron-down mm-menu-flecha" aria-hidden="true"></i>
+          </button>
+        </h2>
+        <div class="collapse mm-menu-contenido" id="menu-cuenta" data-bs-parent="#menu-secciones">
+          {% if user.is_authenticated %}
+            <a href="{% url 'clientes:cuenta' %}"><i class="bi bi-receipt"></i>Mis pedidos</a>
+            <a href="{% url 'clientes:favoritos' %}"><i class="bi bi-heart"></i>Mis favoritos</a>
+            <a href="{% url 'clientes:direcciones' %}"><i class="bi bi-geo-alt"></i>Mis direcciones</a>
+            <a href="{% url 'clientes:perfil' %}"><i class="bi bi-person"></i>Mis datos</a>
+            <form method="post" action="{% url 'clientes:salir' %}">
+              {% csrf_token %}
+              <button type="submit"><i class="bi bi-box-arrow-right"></i>Cerrar sesión</button>
+            </form>
+          {% else %}
+            <a href="{% url 'clientes:entrar' %}"><i class="bi bi-box-arrow-in-right"></i>Iniciar sesión</a>
+            <a href="{% url 'clientes:registro' %}"><i class="bi bi-person-plus"></i>Crear cuenta</a>
+            {% if puede_navegar %}
+              <a href="{% url 'clientes:cuenta' %}"><i class="bi bi-receipt"></i>Mis pedidos</a>
+              <a href="{% url 'clientes:favoritos' %}"><i class="bi bi-heart"></i>Mis favoritos</a>
+            {% endif %}
           {% endif %}
-          <a href="{% url 'tiendas:buscar' %}?oferta=on"><i class="bi bi-percent"></i>Ofertas</a>
-        {% endif %}
-        {% if user.is_staff %}
-          <a href="{% url 'admin:index' %}"><i class="bi bi-speedometer2"></i>Mi panel</a>
-        {% elif not tienda %}
-          <a href="{% url 'tiendas:vender' %}"><i class="bi bi-shop-window"></i>Vende en {{ plataforma.nombre }}</a>
-        {% endif %}
-      </nav>
+        </div>
+      </section>
 
-      <nav class="mm-menu-grupo" aria-label="Mi cuenta">
-        <h2>Mi cuenta</h2>
-        {% if user.is_authenticated %}
-          <a href="{% url 'clientes:cuenta' %}"><i class="bi bi-receipt"></i>Mis pedidos</a>
-          <a href="{% url 'clientes:favoritos' %}"><i class="bi bi-heart"></i>Mis favoritos</a>
-          <a href="{% url 'clientes:direcciones' %}"><i class="bi bi-geo-alt"></i>Mis direcciones</a>
-          <a href="{% url 'clientes:perfil' %}"><i class="bi bi-person"></i>Mis datos</a>
-          <form method="post" action="{% url 'clientes:salir' %}">
-            {% csrf_token %}
-            <button type="submit"><i class="bi bi-box-arrow-right"></i>Cerrar sesión</button>
-          </form>
-        {% else %}
-          <a href="{% url 'clientes:entrar' %}"><i class="bi bi-box-arrow-in-right"></i>Iniciar sesión</a>
-          <a href="{% url 'clientes:registro' %}"><i class="bi bi-person-plus"></i>Crear cuenta</a>
-          <a href="{% url 'clientes:cuenta' %}"><i class="bi bi-receipt"></i>Mis pedidos</a>
-          <a href="{% url 'clientes:favoritos' %}"><i class="bi bi-heart"></i>Mis favoritos</a>
-        {% endif %}
-      </nav>
-    {% else %}
-      <nav class="mm-menu-grupo" aria-label="Mi cuenta">
-        <a href="{% url 'clientes:entrar' %}"><i class="bi bi-box-arrow-in-right"></i>Iniciar sesión</a>
-        <a href="{% url 'clientes:registro' %}"><i class="bi bi-person-plus"></i>Crear cuenta</a>
-      </nav>
-    {% endif %}
+      <section class="mm-menu-seccion">
+        <h2 class="mm-menu-titulo">
+          <button class="mm-menu-boton collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#menu-ayuda"
+                  aria-expanded="false" aria-controls="menu-ayuda">
+            <i class="bi bi-question-circle" aria-hidden="true"></i>
+            <span>Ayuda</span>
+            <i class="bi bi-chevron-down mm-menu-flecha" aria-hidden="true"></i>
+          </button>
+        </h2>
+        <div class="collapse mm-menu-contenido" id="menu-ayuda" data-bs-parent="#menu-secciones">
+          {% if contenido_pie.hay_preguntas %}<a href="{% url 'core:preguntas' %}"><i class="bi bi-chat-square-text"></i>Preguntas frecuentes</a>{% endif %}
+          {% if enlace_whatsapp_tienda %}<a href="{{ enlace_whatsapp_tienda }}" target="_blank" rel="noopener"><i class="bi bi-whatsapp"></i>Escríbenos por WhatsApp</a>{% endif %}
+          {% if marca.telefono %}<a href="tel:{{ marca.telefono }}"><i class="bi bi-telephone"></i>{{ marca.telefono }}</a>{% endif %}
+          {% if marca.correo %}<a href="mailto:{{ marca.correo }}"><i class="bi bi-envelope"></i>{{ marca.correo }}</a>{% endif %}
+          {% for pagina in paginas_ayuda %}
+            <a href="{% url 'core:pagina' pagina.slug %}"><i class="bi bi-file-earmark-text"></i>{{ pagina.titulo }}</a>
+          {% endfor %}
+          <a href="{% url 'core:terminos' %}"><i class="bi bi-file-earmark-check"></i>Términos del sitio</a>
+          {% for pagina in paginas_legales %}
+            <a href="{% url 'core:pagina' pagina.slug %}"><i class="bi bi-file-earmark-lock"></i>{{ pagina.titulo }}</a>
+          {% endfor %}
+        </div>
+      </section>
+    </div>
 
-    <section class="mm-menu-grupo mm-menu-confianza">
-      <h2>Tu compra, protegida</h2>
-      <ul>{% include 'includes/confianza.html' %}</ul>
-    </section>
-
-    <nav class="mm-menu-grupo" aria-label="Ayuda">
-      <h2>Ayuda</h2>
-      {% if contenido_pie.hay_preguntas %}<a href="{% url 'core:preguntas' %}"><i class="bi bi-question-circle"></i>Preguntas frecuentes</a>{% endif %}
-      {% for pagina in paginas_ayuda %}
-        <a href="{% url 'core:pagina' pagina.slug %}"><i class="bi bi-file-earmark-text"></i>{{ pagina.titulo }}</a>
-      {% endfor %}
-      <a href="{% url 'core:terminos' %}"><i class="bi bi-file-earmark-check"></i>Términos del sitio</a>
-      {% for pagina in paginas_legales %}
-        <a href="{% url 'core:pagina' pagina.slug %}"><i class="bi bi-file-earmark-lock"></i>{{ pagina.titulo }}</a>
-      {% endfor %}
-    </nav>
-
-    {# Instalar la app: el boton aparece solo si el navegador lo permite (tienda.js); en iPhone se explica como. #}
-    <section class="mm-menu-grupo mm-instalar" hidden>
-      <h2>App</h2>
-      <button class="js-instalar" type="button" hidden><i class="bi bi-phone"></i>Instalar la app en este teléfono</button>
-      <p class="js-instalar-ios small mb-0" hidden>
-        <i class="bi bi-phone me-1"></i>Para instalarla en tu iPhone toca <i class="bi bi-box-arrow-up" aria-label="Compartir"></i>
-        y luego "Agregar a inicio".
-      </p>
-    </section>
-
-    {% if enlace_whatsapp_tienda or marca.correo or marca.telefono %}
-      <nav class="mm-menu-grupo" aria-label="Contacto">
-        <h2>Contacto</h2>
-        {% if enlace_whatsapp_tienda %}<a href="{{ enlace_whatsapp_tienda }}" target="_blank" rel="noopener"><i class="bi bi-whatsapp"></i>Escríbenos por WhatsApp</a>{% endif %}
-        {% if marca.telefono %}<a href="tel:{{ marca.telefono }}"><i class="bi bi-telephone"></i>{{ marca.telefono }}</a>{% endif %}
-        {% if marca.correo %}<a href="mailto:{{ marca.correo }}"><i class="bi bi-envelope"></i>{{ marca.correo }}</a>{% endif %}
-      </nav>
-    {% endif %}
+    {# Accesos directos, fuera de los botones. #}
+    <div class="mm-menu-directos">
+      {% if user.is_staff %}
+        <a href="{% url 'admin:index' %}"><i class="bi bi-speedometer2"></i>Mi panel</a>
+      {% elif not tienda and puede_navegar %}
+        <a class="mm-menu-vender" href="{% url 'tiendas:vender' %}"><i class="bi bi-shop-window"></i>Vende en {{ plataforma.nombre }}</a>
+      {% endif %}
+      {# Instalar la app: el boton aparece solo si el navegador lo permite (tienda.js); en iPhone se explica como. #}
+      <div class="mm-instalar" hidden>
+        <button class="js-instalar" type="button" hidden><i class="bi bi-phone"></i>Instalar la app en este teléfono</button>
+        <p class="js-instalar-ios small mb-0" hidden>
+          <i class="bi bi-phone me-1"></i>Para instalarla en tu iPhone toca <i class="bi bi-box-arrow-up" aria-label="Compartir"></i>
+          y luego "Agregar a inicio".
+        </p>
+      </div>
+    </div>
   </div>
 </div>

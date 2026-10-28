@@ -77,7 +77,7 @@
         if (Number.isNaN(cantidad) || cantidad < 1) cantidad = 1;
         if (cantidad > maximo) {
           cantidad = maximo;
-          avisar(`Solo hay ${maximo} disponibles.`, 'aviso');
+          avisar(`Puedes llevar hasta ${maximo} por pedido.`, 'aviso');
         }
         campo.value = cantidad;
         mandar(fila, formulario);

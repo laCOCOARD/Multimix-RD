@@ -19,7 +19,7 @@ CLAVE = 'clave-segura-123'
 def datos(**cambios):
     valores = {
         'nombre_responsable': '  María   Gómez ', 'nombre_comercial': 'Dulces de María', 'correo': 'Maria@Example.com',
-        'telefono': '(829) 555-1234', 'categoria': '', 'descripcion': 'Dulces criollos hechos en casa: habichuelas '
+        'telefono': '(829) 555-1234', 'rubro': 'alimentos', 'descripcion': 'Dulces criollos hechos en casa: habichuelas '
         'con dulce, majarete y dulce de leche.', 'redes': '@dulcesdemaria', 'acepta': 'on', 'sitio_web': '',
     }
     valores.update(cambios)
@@ -76,18 +76,20 @@ class SolicitudTests(TestCase):
         self.assertContains(formulario, 'pattern="[\\d\\s\\(\\)\\+\\.\\-]{10,16}"', html=False)
         self.assertContains(formulario, 'minlength="20"')
         self.assertContains(formulario, 'type="email"')
-        # Solo las categorias principales y activas.
-        Categoria.objects.create(nombre='Labiales', padre=self.belleza)
-        self.assertEqual(list(self.client.get(self.url).context['formulario'].fields['categoria'].queryset), [self.belleza])
+        # Rubros generales, no las categorias de los productos del sitio (pedido del dueño el 2026-10-27).
+        self.assertContains(formulario, 'Detergentes y limpieza')
+        self.assertContains(formulario, 'Barbería y peluquería')
+        self.assertContains(formulario, 'Música e instrumentos')
+        self.assertNotContains(formulario, '>Belleza<')
 
     def test_una_solicitud_valida_queda_pendiente_y_avisa(self):
         usuarios, tiendas = get_user_model().objects.count(), Tienda.objects.count()
-        respuesta = self.enviar(categoria=self.belleza.pk)
+        respuesta = self.enviar(rubro='cocina')
         self.assertRedirects(respuesta, reverse('tiendas:solicitud_enviada'))
         solicitud = SolicitudTienda.objects.get()
         self.assertEqual(
-            (solicitud.estado, solicitud.nombre_responsable, solicitud.correo, solicitud.telefono, solicitud.categoria),
-            (SolicitudTienda.Estado.PENDIENTE, 'María Gómez', 'maria@example.com', '8295551234', self.belleza),
+            (solicitud.estado, solicitud.nombre_responsable, solicitud.correo, solicitud.telefono, solicitud.rubro),
+            (SolicitudTienda.Estado.PENDIENTE, 'María Gómez', 'maria@example.com', '8295551234', 'cocina'),
         )
         # No crea cuentas ni tiendas: eso lo decide el administrador.
         self.assertEqual((get_user_model().objects.count(), Tienda.objects.count()), (usuarios, tiendas))

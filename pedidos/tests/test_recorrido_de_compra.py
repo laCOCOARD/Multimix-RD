@@ -94,11 +94,13 @@ class FichaDelProductoTests(TestCase):
         ficha = self.client.get(self.producto.get_absolute_url())
         self.assertNotContains(ficha, 'Quedan')
         self.assertContains(ficha, 'Disponible')
-        # Solo si el sitio decide mostrar la cantidad exacta, y en tono neutro.
+        # Nunca la cantidad de unidades (pedido del dueño el 2026-10-27), ni con la opcion vieja encendida.
         config = ConfiguracionTienda.obtener()
         config.mostrar_cantidad_exacta = True
         config.save()
-        self.assertContains(self.client.get(self.producto.get_absolute_url()), 'Disponible: 2 unidades')
+        ficha = self.client.get(self.producto.get_absolute_url())
+        self.assertNotContains(ficha, 'unidades')
+        self.assertNotContains(ficha, 'max="2"')
 
 
 class BuscadorDelSitioTests(TestCase):
@@ -142,7 +144,7 @@ class BuscadorDelSitioTests(TestCase):
     def test_sugerencias_con_tiendas_y_productos(self):
         datos = self.client.get(reverse('tiendas:sugerencias'), {'q': 'fitness'}).json()
         self.assertEqual([tienda['nombre'] for tienda in datos['tiendas']], ['Rincón Fitness'])
-        self.assertEqual(datos['tiendas'][0]['detalle'], 'Tienda · 1 producto')
+        self.assertEqual(datos['tiendas'][0]['detalle'], 'Tienda')
         datos = self.client.get(reverse('tiendas:sugerencias'), {'q': 'pesas'}).json()
         self.assertEqual([producto['nombre'] for producto in datos['resultados']], ['Pesas de 5 libras'])
         self.assertEqual(datos['resultados'][0]['tienda'], 'Rincón Fitness')

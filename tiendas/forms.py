@@ -1,9 +1,8 @@
 from django import forms
 
-from catalogo.models import Categoria
 from clientes.forms import ConEstilo, limpiar_telefono
 
-from .models import SolicitudTienda
+from .models import RUBROS, SolicitudTienda
 
 MINIMO_DESCRIPCION = 20
 MAXIMO_DESCRIPCION = 600
@@ -32,18 +31,18 @@ class SolicitudTiendaForm(ConEstilo, forms.ModelForm):
 
     class Meta:
         model = SolicitudTienda
-        fields = ['nombre_responsable', 'nombre_comercial', 'correo', 'telefono', 'categoria', 'descripcion', 'redes']
+        fields = ['nombre_responsable', 'nombre_comercial', 'correo', 'telefono', 'rubro', 'descripcion', 'redes']
         labels = {
             'nombre_responsable': 'Tu nombre completo',
             'nombre_comercial': 'Nombre de tu negocio',
             'correo': 'Correo electrónico',
-            'categoria': 'Categoría principal',
+            'rubro': '¿A qué se dedica tu negocio?',
             'descripcion': '¿Qué vendes?',
             'redes': 'Instagram, Facebook o sitio web (opcional)',
         }
         help_texts = {
             'nombre_comercial': 'Como quieres que se llame tu tienda.',
-            'categoria': 'La que más se parezca a lo que vendes.',
+            'rubro': 'El que más se parezca. Si no está, elige "Otro" y cuéntalo abajo.',
             'descripcion': f'Cuéntanos en pocas líneas qué productos ofreces ({MINIMO_DESCRIPCION} a '
                            f'{MAXIMO_DESCRIPCION} caracteres).',
             'redes': 'Nos ayuda a conocer tu negocio.',
@@ -60,11 +59,12 @@ class SolicitudTiendaForm(ConEstilo, forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        categoria = self.fields['categoria']
-        # Solo las principales y activas: las subcategorias no dicen mucho de un negocio entero.
-        categoria.queryset = Categoria.objects.filter(activa=True, padre__isnull=True).order_by('nombre')
-        categoria.empty_label = 'Otra o varias'
-        categoria.widget.attrs['class'] = 'form-select'
+        rubro = self.fields['rubro']
+        rubro.choices = [('', 'Elige el rubro'), *RUBROS]
+        # Que lo elija: sin marcar "Otro" de entrada (el valor por defecto del modelo).
+        if not self.instance.pk:
+            self.initial.pop('rubro', None)
+        rubro.widget.attrs['class'] = 'form-select'
         self.fields['acepta'].widget.attrs['class'] = 'form-check-input'
         self.fields['telefono'].widget.attrs['title'] = 'Escribe un teléfono dominicano: 809, 829 u 849.'
 

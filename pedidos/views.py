@@ -75,6 +75,15 @@ def _contexto_checkout(request, carrito, formulario):
     }
 
 
+def _entrega_preferida(cliente, tienda):
+    """La que el cliente dijo que prefiere en sus gustos; a domicilio solo si la tienda tiene zonas de envio."""
+    from clientes.gustos import de
+
+    if de(cliente).get('entrega') == 'envio' and services.zonas_activas(tienda):
+        return Pedido.Entrega.ENVIO
+    return Pedido.Entrega.RECOGER
+
+
 @de_tienda
 @login_required
 def checkout(request):
@@ -97,7 +106,7 @@ def checkout(request):
         formulario = CheckoutForm(carrito=carrito, initial={
             # El cliente no vuelve a escribir los datos que ya tiene su cuenta.
             **clientes.datos_para_el_checkout(cliente),
-            'metodo_entrega': Pedido.Entrega.RECOGER,
+            'metodo_entrega': _entrega_preferida(cliente, tienda),
             'metodo_pago': Pedido.Pago.TRANSFERENCIA,
             'cupon': carrito.codigo_cupon,
         })

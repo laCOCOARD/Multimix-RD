@@ -102,7 +102,7 @@ def agregar(request):
     if ajustada and not producto.controla_stock:
         mensaje = f'Puedes llevar hasta {final} de "{producto.nombre}" por pedido; dejamos esa cantidad en tu carrito.'
     elif ajustada:
-        mensaje = f'Solo hay {final} disponibles de "{producto.nombre}"; dejamos esa cantidad en tu carrito.'
+        mensaje = f'No tenemos más unidades de "{producto.nombre}" por ahora; dejamos en tu carrito las que hay.'
     else:
         mensaje = f'"{producto.nombre}" se agregó al carrito.'
     metricas.anotar(request, metricas.Evento.AGREGADO_CARRITO, request.tienda)

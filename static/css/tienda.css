@@ -569,16 +569,16 @@ html:not(.js) .solo-con-js { display: none !important; }
 .mm-hero-vender:hover { color: #fff; }
 /* Cuatro productos reales. En el telefono, una fila de cuatro debajo del texto; en pantallas anchas, un mosaico. */
 .mm-hero-vitrina { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: .6rem; }
+@media (min-width: 576px) { .mm-hero-vitrina { gap: .9rem; } }
 .mm-vitrina-item { position: relative; display: block; overflow: hidden; aspect-ratio: 1; border-radius: var(--mm-radio); background: #fff; box-shadow: 0 10px 30px rgba(0, 0, 0, .3); transition: transform .35s ease, box-shadow .35s ease; }
 .mm-vitrina-item:hover { transform: translateY(-4px); box-shadow: 0 18px 40px rgba(0, 0, 0, .4); text-decoration: none; }
 .mm-vitrina-item img { width: 100%; height: 100%; padding: .5rem; object-fit: contain; }
 .mm-vitrina-tienda { position: absolute; left: .45rem; right: .45rem; bottom: .45rem; display: none; align-items: center; gap: .3rem; padding: .25rem .55rem; overflow: hidden; border-radius: 999px; background: rgba(var(--mm-oscuro-rgb), .82); color: #fff; font-size: .72rem; font-weight: 600; white-space: nowrap; text-overflow: ellipsis; backdrop-filter: blur(4px); }
 .mm-vitrina-tienda i { flex: none; color: var(--mm-calido); }
-@media (min-width: 576px) { .mm-hero-vitrina { gap: .9rem; } }
 @media (min-width: 992px) {
   .mm-hero { padding: 4rem 0 4.25rem; }
   .mm-hero-contenido.con-vitrina { grid-template-columns: minmax(0, 1.05fr) minmax(0, .95fr); gap: 3.5rem; }
-  .mm-hero-vitrina { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; justify-self: end; width: 100%; max-width: 30rem; }
+  .mm-hero-vitrina { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; justify-self: end; width: 100%; max-width: 30rem; }
   .mm-vitrina-item:nth-child(even) { transform: translateY(1.5rem); }
   .mm-vitrina-item:nth-child(even):hover { transform: translateY(calc(1.5rem - 4px)); }
   .mm-vitrina-item img { padding: 1rem 1rem 2.4rem; }
@@ -601,7 +601,6 @@ html:not(.js) .solo-con-js { display: none !important; }
 .mm-categoria:hover .mm-categoria-foto img { transform: scale(1.06); }
 .mm-categoria-texto { display: flex; flex: 1; flex-direction: column; gap: .15rem; padding: .7rem .8rem .8rem; }
 .mm-categoria-nombre { display: -webkit-box; overflow: hidden; font-size: .92rem; font-weight: 700; line-height: 1.25; color: var(--mm-oscuro); overflow-wrap: anywhere; hyphens: auto; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; }
-.mm-categoria-total { font-size: .78rem; color: var(--mm-texto-suave); }
 .mm-categoria-ir { display: inline-flex; align-items: center; gap: .3rem; margin-top: auto; padding-top: .45rem; font-size: .82rem; font-weight: 700; color: var(--mm-oscuro); }
 .mm-categoria-ir i { transition: transform var(--mm-transicion); }
 .mm-categoria:hover .mm-categoria-ir { color: var(--mm-calido-texto); }
@@ -759,15 +758,6 @@ html.mm-visor-abierto { overflow: hidden; }
 .mm-banda + .mm-seccion { padding-top: var(--mm-espacio-seccion); }
 @media (min-width: 992px) { :root { --mm-espacio-seccion: 3.5rem; } }
 
-/* --- Compra con confianza ------------------------------------------------- */
-/* Lo mismo que "Tu compra, protegida" del menu (includes/confianza.html): solo lo que el sitio hace de verdad. */
-.mm-confianza { display: grid; gap: .9rem; margin: 0; padding: 0; list-style: none; }
-@media (min-width: 576px) { .mm-confianza { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-@media (min-width: 992px) { .mm-confianza { grid-template-columns: repeat(auto-fit, minmax(0, 1fr)); gap: 1.1rem; } }
-.mm-confianza li { display: flex; gap: .8rem; padding: 1.1rem; border: 1px solid var(--mm-borde); border-radius: var(--mm-radio); background: var(--mm-superficie); font-size: .9rem; line-height: 1.5; color: var(--mm-texto-suave); }
-.mm-confianza i { display: grid; flex: none; place-items: center; width: 2.6rem; height: 2.6rem; border-radius: .75rem; background: var(--mm-calido-suave); color: var(--mm-calido-texto); font-size: 1.2rem; }
-.mm-confianza strong { display: block; margin-bottom: .1rem; color: var(--mm-oscuro); font-weight: 700; }
-
 /* --- Para emprendedores -------------------------------------------------- */
 .mm-vender { position: relative; isolation: isolate; display: grid; gap: 1.75rem; overflow: hidden; padding: clamp(1.6rem, 4vw, 3rem); border-radius: var(--mm-radio-grande); background: linear-gradient(135deg, var(--mm-oscuro) 0%, var(--mm-oscuro-2) 70%, #374151 100%); color: var(--mm-sobre-oscuro); }
 .mm-vender::after { content: ""; position: absolute; z-index: -1; top: -8rem; right: -6rem; width: 22rem; height: 22rem; border-radius: 50%; background: radial-gradient(circle, rgba(var(--mm-calido-rgb), .35), transparent 65%); pointer-events: none; }
@@ -836,28 +826,28 @@ html.mm-visor-abierto { overflow: hidden; }
 .mm-menu { --bs-offcanvas-width: min(23rem, 88vw); border-right: 0 !important; }
 .mm-menu .offcanvas-header { border-bottom: 1px solid var(--mm-borde); }
 .mm-menu .offcanvas-title { margin: 0; font-size: 1.25rem; }
-.mm-menu .offcanvas-body { display: grid; align-content: start; gap: 1.4rem; }
-.mm-menu-grupo h2 { margin: 0 0 .4rem; padding: 0 .65rem; font-size: .72rem; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--mm-texto-suave); }
-.mm-menu-grupo > a, .mm-menu-grupo button, .mm-menu-sub a { display: flex; align-items: center; gap: .75rem; width: 100%; min-height: 2.75rem; padding: .55rem .65rem; border: 0; border-radius: .6rem; background: none; color: var(--mm-texto); font-size: .95rem; font-weight: 500; text-align: left; transition: background-color var(--mm-transicion), color var(--mm-transicion), transform var(--mm-transicion); }
-.mm-menu-grupo > a:hover, .mm-menu-grupo button:hover, .mm-menu-sub a:hover { background: var(--mm-primario-suave); color: var(--mm-primario); text-decoration: none; transform: translateX(3px); }
-.mm-menu-grupo > a > i:first-child, .mm-menu-grupo button > i:first-child { width: 1.2rem; font-size: 1.05rem; color: var(--mm-primario); }
-.mm-menu-desplegar .bi-chevron-down { transition: transform var(--mm-transicion); }
-.mm-menu-desplegar:not(.collapsed) .bi-chevron-down { transform: rotate(180deg); }
-.mm-menu-sub { margin: .1rem 0 .3rem 2.6rem; border-left: 2px solid var(--mm-borde); }
-.mm-menu-sub a { min-height: 2.5rem; padding: .4rem .7rem; font-size: .9rem; border-radius: 0 .6rem .6rem 0; }
-.mm-menu-confianza { padding: 1rem; border-radius: var(--mm-radio); background: linear-gradient(160deg, var(--mm-oscuro), var(--mm-oscuro-2)); color: var(--mm-sobre-oscuro); }
-.mm-menu-confianza h2 { padding: 0; color: #fff; }
-.mm-menu-confianza ul { display: grid; gap: .75rem; margin: .6rem 0 0; padding: 0; list-style: none; font-size: .86rem; line-height: 1.45; }
-.mm-menu-confianza li { display: flex; gap: .65rem; }
-.mm-menu-confianza i { color: var(--mm-calido); font-size: 1rem; }
-.mm-menu-confianza strong { color: #fff; font-weight: 600; }
-/* Los enlaces del menu entran uno tras otro al abrirlo. */
-.mm-menu.showing .mm-menu-grupo, .mm-menu.show .mm-menu-grupo { animation: mm-aparecer .45s ease both; }
-.mm-menu .mm-menu-grupo:nth-child(2) { animation-delay: .05s; }
-.mm-menu .mm-menu-grupo:nth-child(3) { animation-delay: .1s; }
-.mm-menu .mm-menu-grupo:nth-child(4) { animation-delay: .15s; }
-.mm-menu .mm-menu-grupo:nth-child(5) { animation-delay: .2s; }
-.mm-menu .mm-menu-grupo:nth-child(6) { animation-delay: .25s; }
+.mm-menu .offcanvas-body { display: flex; flex-direction: column; gap: 1rem; }
+/* Menu de las 3 barras (2026-10-27): botones que se despliegan al tocarlos, uno abierto a la vez. */
+.mm-menu-secciones { display: grid; gap: .5rem; }
+.mm-menu-seccion { overflow: hidden; border: 1px solid var(--mm-borde); border-radius: var(--mm-radio); background: var(--mm-superficie); }
+.mm-menu-titulo { margin: 0; font-size: inherit; }
+.mm-menu-boton { display: flex; align-items: center; gap: .8rem; width: 100%; min-height: 3.4rem; padding: .7rem 1rem; border: 0; background: none; color: var(--mm-oscuro); font-size: 1rem; font-weight: 700; text-align: left; }
+.mm-menu-boton > .bi:first-child { display: grid; place-items: center; width: 2.2rem; height: 2.2rem; border-radius: .7rem; background: var(--mm-calido-suave); color: var(--mm-calido-texto); font-size: 1.1rem; }
+.mm-menu-boton:hover { background: var(--mm-fondo); }
+.mm-menu-boton:not(.collapsed) { background: var(--mm-oscuro); color: #fff; }
+.mm-menu-boton:not(.collapsed) > .bi:first-child { background: var(--mm-calido); color: var(--mm-oscuro); }
+.mm-menu-flecha { margin-left: auto; transition: transform var(--mm-transicion); }
+.mm-menu-boton:not(.collapsed) .mm-menu-flecha { transform: rotate(180deg); }
+.mm-menu-contenido > a, .mm-menu-contenido button { display: flex; align-items: center; gap: .75rem; width: 100%; min-height: 2.75rem; padding: .5rem 1rem; border: 0; border-top: 1px solid var(--mm-borde); background: none; color: var(--mm-texto); font-size: .95rem; text-align: left; overflow-wrap: anywhere; }
+.mm-menu-contenido form { margin: 0; }
+.mm-menu-contenido > a:hover, .mm-menu-contenido button:hover { background: var(--mm-fondo); color: var(--mm-oscuro); text-decoration: none; }
+.mm-menu-contenido > a > .bi, .mm-menu-contenido button > .bi { width: 1.2rem; color: var(--mm-texto-suave); }
+.mm-menu-contenido .mm-menu-categoria { padding-left: 3rem; font-size: .9rem; color: var(--mm-texto-suave); }
+.mm-menu-directos { display: grid; gap: .5rem; margin-top: auto; }
+.mm-menu-directos > a, .mm-menu-directos button { display: flex; align-items: center; gap: .75rem; min-height: 3rem; padding: .6rem 1rem; border: 1px solid var(--mm-borde); border-radius: var(--mm-radio); background: var(--mm-superficie); color: var(--mm-oscuro); font-weight: 600; text-align: left; }
+.mm-menu-directos > a:hover { border-color: var(--mm-calido); text-decoration: none; }
+.mm-menu-directos .bi { color: var(--mm-calido-texto); }
+.mm-menu-vender { border-color: var(--mm-calido) !important; background: var(--mm-calido-suave) !important; }
 
 /* --- Fila que se desliza (productos) ------------------------------------ */
 .mm-fila { position: relative; }
@@ -1126,3 +1116,53 @@ html.mm-visor-abierto { overflow: hidden; }
 .mm-detalles > div:last-child { border-bottom: 0; }
 .mm-detalles dt { font-weight: 600; color: var(--mm-texto-suave); }
 .mm-detalles dd { margin: 0; overflow-wrap: anywhere; color: var(--mm-texto); }
+
+/* ==========================================================================
+   Promociones de la portada (2026-10-27): carrusel que rota solo
+   ========================================================================== */
+.mm-promos-titulo { display: flex; align-items: center; gap: .5rem; margin: 0 0 .9rem; font-size: clamp(1.25rem, 1.1rem + .6vw, 1.6rem); font-weight: 800; letter-spacing: -.03em; }
+.mm-promos-titulo .bi { color: var(--mm-calido-texto); }
+.mm-promos-carrusel { overflow: hidden; border-radius: var(--mm-radio-grande); background: var(--mm-oscuro); box-shadow: var(--mm-sombra-alta); }
+.mm-promo { position: relative; isolation: isolate; display: grid; grid-template-rows: auto 1fr; min-height: 26rem; color: #fff; text-decoration: none; background: radial-gradient(28rem 18rem at 100% 0%, rgba(var(--mm-calido-rgb), .28), transparent 70%), var(--mm-oscuro); }
+.mm-promo:hover { color: #fff; text-decoration: none; }
+.mm-promo-imagen { order: -1; display: grid; place-items: center; height: 12rem; overflow: hidden; background: #1f2937; color: #6b7280; font-size: 2.5rem; }
+.mm-promo-imagen img { width: 100%; height: 100%; object-fit: cover; transition: transform .8s ease; }
+.mm-promo-imagen.es-producto { background: #fff; }
+.mm-promo-imagen.es-producto img { object-fit: contain; padding: 1rem; }
+.mm-promo:hover .mm-promo-imagen img { transform: scale(1.04); }
+.mm-promo-texto { display: flex; flex-direction: column; align-items: flex-start; gap: .55rem; padding: 1.25rem 1.25rem 3.5rem; }
+.mm-promo-etiquetas { display: flex; flex-wrap: wrap; align-items: center; gap: .4rem .75rem; }
+.mm-promo-etiqueta { padding: .2rem .6rem; border-radius: 999px; background: rgba(255, 255, 255, .12); font-size: .72rem; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; }
+.mm-promo-etiqueta.es-oferta { background: var(--mm-calido); color: var(--mm-oscuro); }
+.mm-promo-tienda { display: inline-flex; align-items: center; gap: .35rem; font-size: .85rem; color: var(--mm-sobre-oscuro); }
+.mm-promo-tienda .bi { color: var(--mm-calido); }
+.mm-promo-titulo { display: -webkit-box; overflow: hidden; font-size: clamp(1.35rem, 1.1rem + 1.2vw, 2.1rem); font-weight: 800; line-height: 1.12; letter-spacing: -.03em; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; }
+.mm-promo-descripcion { display: -webkit-box; overflow: hidden; max-width: 32rem; font-size: .95rem; line-height: 1.5; color: var(--mm-sobre-oscuro); -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; }
+.mm-promo-precio { font-size: 1.4rem; font-weight: 800; }
+.mm-promo-precio s { margin-left: .4rem; font-size: .95rem; font-weight: 500; color: var(--mm-sobre-oscuro-suave); }
+.mm-promo-boton { display: inline-flex; align-items: center; gap: .45rem; margin-top: auto; }
+.mm-promos-carrusel .carousel-indicators { justify-content: flex-start; margin: 0 1.25rem 1.2rem; }
+.mm-promos-carrusel .carousel-indicators [data-bs-target] { width: 1.6rem; height: .3rem; border: 0; border-radius: 999px; background-color: #fff; }
+.mm-promos-carrusel .carousel-indicators .active { background-color: var(--mm-calido); }
+.mm-promos-flecha { top: auto; bottom: .7rem; width: 2.6rem; height: 2.6rem; border-radius: 50%; background: rgba(255, 255, 255, .12); opacity: 1; font-size: 1.1rem; }
+.mm-promos-flecha:hover { background: rgba(255, 255, 255, .24); }
+.carousel-control-prev.mm-promos-flecha { left: auto; right: 3.8rem; }
+.carousel-control-next.mm-promos-flecha { right: .8rem; }
+@media (min-width: 768px) {
+  .mm-promo { grid-template-rows: none; grid-template-columns: minmax(0, 1.1fr) minmax(0, .9fr); min-height: 21rem; }
+  .mm-promo-imagen { order: 0; height: auto; }
+  .mm-promo-texto { justify-content: center; padding: 2.25rem 2.5rem 3.75rem; }
+  .mm-promos-carrusel .carousel-indicators { margin-left: 2.5rem; margin-bottom: 1.4rem; }
+}
+@media (hover: none) { .mm-promos-flecha { display: none; } }
+
+/* --- Gustos del cliente (2026-10-27): cuatro preguntas con opciones que se tocan --------- */
+.mm-gustos { max-width: 44rem; margin: 0 auto; padding: clamp(1.4rem, 4vw, 2.5rem); }
+.mm-pregunta-gusto { margin: 0 0 1.6rem; padding: 0; border: 0; }
+.mm-pregunta-gusto legend { margin-bottom: .6rem; font-size: 1.05rem; font-weight: 700; color: var(--mm-oscuro); }
+.mm-opciones-gusto { display: flex; flex-wrap: wrap; gap: .5rem; }
+.mm-opcion-gusto { display: inline-flex; align-items: center; min-height: 2.75rem; padding: .5rem 1rem; border: 1.5px solid var(--mm-borde); border-radius: 999px; background: var(--mm-superficie); color: var(--mm-texto); font-weight: 600; cursor: pointer; transition: border-color var(--mm-transicion), background-color var(--mm-transicion); }
+.mm-opcion-gusto:hover { border-color: var(--mm-borde-fuerte); }
+.btn-check:checked + .mm-opcion-gusto { border-color: var(--mm-oscuro); background: var(--mm-oscuro); color: #fff; }
+.btn-check:focus-visible + .mm-opcion-gusto { outline: 3px solid var(--mm-foco); outline-offset: 2px; }
+.mm-gustos-acciones { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem 1rem; }

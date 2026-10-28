@@ -64,8 +64,13 @@ class DirectorioTests(DosTiendas):
 
     def test_la_portada_muestra_productos_de_todas_las_tiendas_con_su_vendedor(self):
         # Pedido del dueño el 2026-10-25: se compra sin conocer al vendedor, pero cada producto dice de que tienda es.
+        # Desde el 2026-10-27 no hay "Descubre productos": salen en ofertas y en las promociones.
+        for producto in (self.lampara, self.pesas):
+            producto.precio_oferta = producto.precio * Decimal('0.8')
+            producto.save()
         portada = self.client.get('/')
-        self.assertEqual({p.nombre for p in portada.context['productos']}, {'Lámpara', 'Pesas rusas'})
+        self.assertNotContains(portada, 'Descubre productos')
+        self.assertEqual({p.nombre for p in portada.context['ofertas']}, {'Lámpara', 'Pesas rusas'})
         self.assertContains(portada, 'Vendido por')
         self.assertContains(portada, f'<a href="{self.fitnes.get_absolute_url()}">Fitnes RD</a>', html=True)
         # Cada tarjeta compra en el carrito de su propia tienda.
@@ -82,8 +87,11 @@ class DirectorioTests(DosTiendas):
         crear_producto(nombre='Producto de categoría apagada', sku='X2', categoria=oculta)
         crear_producto(nombre='Producto inactivo', sku='X3', activo=False)
         crear_producto(nombre='Producto agotado', sku='X4', disponibilidad=Producto.Disponibilidad.AGOTADO)
+        # Todos en oferta: si alguno se colara, saldria en ofertas o en las promociones.
+        Producto.objects.update(precio_oferta=Decimal('500'))
         portada = self.client.get('/')
-        self.assertEqual({p.nombre for p in portada.context['productos']}, {'Lámpara', 'Pesas rusas'})
+        self.assertEqual({p.nombre for p in portada.context['ofertas']}, {'Lámpara', 'Pesas rusas'})
+        self.assertEqual({p.titulo for p in portada.context['promociones']}, {'Lámpara', 'Pesas rusas'})
         for nombre in ('tienda apagada', 'categoría apagada', 'Producto inactivo', 'Producto agotado', 'Oculta'):
             self.assertNotContains(portada, nombre)
 
@@ -159,7 +167,6 @@ class DirectorioTests(DosTiendas):
         self.pesas.save()
         portada = self.client.get('/')
         self.assertEqual(portada.context['ofertas'], [self.pesas])
-        self.assertEqual(portada.context['productos'], [self.lampara])
         self.assertContains(portada, 'Ver todas las ofertas')
         self.assertContains(portada, 'Oferta -20%')
         # Sin ofertas vigentes no hay seccion de ofertas, y el enlace "Ofertas" lo dice en vez de "no encontramos".
@@ -183,7 +190,8 @@ class DirectorioTests(DosTiendas):
         self.assertEqual(set(tiendas), {'Fitnes RD', 'Multimix RD'})
         self.assertEqual(tiendas['Fitnes RD'].total_productos, 2)
         self.assertCountEqual(tiendas['Fitnes RD'].categorias_principales, ['General', 'Ropa'])
-        self.assertContains(respuesta, '2 productos')
+        # El cliente no ve cuantos productos tiene cada tienda (pedido del dueño el 2026-10-27).
+        self.assertNotContains(respuesta, '2 productos')
         self.assertContains(respuesta, 'href="/tienda/fitnes-rd/"')
         self.assertNotContains(respuesta, 'En preparación')
         self.assertContains(self.client.get('/sitemap.xml'), reverse('tiendas:directorio'))

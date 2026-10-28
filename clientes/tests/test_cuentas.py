@@ -5,6 +5,7 @@ from django.contrib.auth import get_user_model
 from django.core import mail
 from django.test import TestCase, override_settings
 from django.urls import reverse
+from django.utils.http import urlencode
 
 from catalogo.tests.test_modelos import crear_producto
 from clientes import services
@@ -33,7 +34,8 @@ class RegistroTests(TestCase):
 
     def test_crea_la_cuenta_e_inicia_sesion(self):
         respuesta = self.client.post(reverse('clientes:registro'), self.datos())
-        self.assertRedirects(respuesta, reverse('clientes:cuenta'))
+        # Primero, una sola vez, las preguntas de gustos; despues a su cuenta.
+        self.assertRedirects(respuesta, f"{reverse('clientes:gustos')}?next=%2Fcuenta%2F")
         usuario = Usuario.objects.get()
         self.assertEqual((usuario.username, usuario.email, usuario.first_name), ('ana@example.com', 'ana@example.com', 'Ana Pérez'))
         self.assertEqual(usuario.perfil.telefono, '8095551234')
@@ -46,10 +48,16 @@ class RegistroTests(TestCase):
     def test_vuelve_a_la_pagina_de_donde_venia_pero_no_a_otro_sitio(self):
         checkout = ruta('pedidos:checkout')
         respuesta = self.client.post(reverse('clientes:registro'), self.datos(next=checkout))
-        self.assertRedirects(respuesta, checkout, fetch_redirect_response=False)
+        # Pasa por las preguntas de gustos, que llevan a donde iba ("Ahora no" o "Guardar").
+        gustos = f"{reverse('clientes:gustos')}?{urlencode({'next': checkout})}"
+        self.assertRedirects(respuesta, gustos, fetch_redirect_response=False)
+        self.assertRedirects(self.client.post(gustos, {'omitir': '1'}), checkout, fetch_redirect_response=False)
         self.client.post(reverse('clientes:salir'))
         respuesta = self.client.post(reverse('clientes:registro'), self.datos(correo='otra@example.com', next='https://malo.example/'))
-        self.assertRedirects(respuesta, reverse('clientes:cuenta'), fetch_redirect_response=False)
+        self.assertRedirects(respuesta, f"{reverse('clientes:gustos')}?next=%2Fcuenta%2F", fetch_redirect_response=False)
+        # Tampoco las preguntas llevan a otro sitio.
+        afuera = self.client.post(f"{reverse('clientes:gustos')}?next=https://malo.example/", {'omitir': '1'})
+        self.assertRedirects(afuera, reverse('clientes:cuenta'), fetch_redirect_response=False)
 
     def test_validaciones(self):
         cliente('ana@example.com')

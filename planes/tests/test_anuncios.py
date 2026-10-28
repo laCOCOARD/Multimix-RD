@@ -98,10 +98,12 @@ class PortadaTests(ConAnuncios):
         self.anuncio(titulo='Lámparas al 2x1', producto=self.lampara)
         self.anuncio(titulo='Sin aprobar', aprobado=False, activo=False)
         portada = self.client.get('/')
-        self.assertEqual([a.titulo for a in portada.context['anuncios']], ['Lámparas al 2x1'])
-        self.assertContains(portada, 'Anuncio · Multimix RD')
+        anuncios = [p for p in portada.context['promociones'] if p.etiqueta == 'Anuncio']
+        self.assertEqual([(p.titulo, p.tienda) for p in anuncios], [('Lámparas al 2x1', 'Multimix RD')])
+        self.assertContains(portada, '<span class="mm-promo-etiqueta">Anuncio</span>', html=True)
         self.assertContains(portada, f'href="{self.lampara.get_absolute_url()}"')
         self.assertNotContains(portada, 'Sin aprobar')
+        self.assertNotContains(portada, 'Promociones de nuestras tiendas')
 
     def test_respeta_el_limite_del_plan_y_las_tiendas_activas(self):
         self.con_plan(self.tienda)
@@ -113,18 +115,14 @@ class PortadaTests(ConAnuncios):
         Tienda.objects.filter(pk=self.tienda.pk).update(activa=False)
         self.assertEqual(services.anuncios_para_la_portada(), [])
 
-    def test_los_productos_anunciados_van_primero_con_su_etiqueta(self):
+    def test_los_productos_anunciados_salen_en_las_promociones_como_anuncio(self):
         self.con_plan(self.tienda)
         Producto.objects.filter(pk=self.lampara.pk).update(patrocinado=True)
-        # La tienda sin plan marco un producto, pero no sale como patrocinado.
+        # La tienda sin plan marco un producto, pero no sale como anuncio.
         Producto.objects.filter(pk=self.pesas.pk).update(patrocinado=True)
         crear_producto(nombre='Mesa nueva', sku='M1')
-        portada = self.client.get('/')
-        productos = portada.context['productos']
-        self.assertEqual(productos[0], self.lampara)
-        self.assertTrue(productos[0].es_patrocinado)
-        self.assertEqual([p for p in productos if getattr(p, 'es_patrocinado', False)], [self.lampara])
-        self.assertContains(portada, 'Patrocinado', count=1)
+        promociones = self.client.get('/').context['promociones']
+        self.assertEqual([(p.titulo, p.etiqueta) for p in promociones], [('Lámpara', 'Anuncio')])
 
 
 class PanelDeAnunciosTests(ConAnuncios):

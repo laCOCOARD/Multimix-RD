@@ -252,6 +252,39 @@ class Banner(models.Model):
             raise ValidationError({'vigente_hasta': 'La vigencia debe terminar después de su inicio.'})
 
 
+# Rubros generales para quien pide una tienda (pedido del dueño el 2026-10-27): no las categorias de los productos
+# del sitio, que hoy son las de una sola tienda.
+RUBROS = [
+    ('alimentos', 'Alimentos y bebidas'),
+    ('belleza', 'Belleza y cuidado personal'),
+    ('barberia', 'Barbería y peluquería'),
+    ('salud', 'Salud y bienestar'),
+    ('moda', 'Ropa, calzado y accesorios'),
+    ('joyeria', 'Joyería y relojes'),
+    ('hogar', 'Hogar y decoración'),
+    ('cocina', 'Cocina y utensilios'),
+    ('limpieza', 'Detergentes y limpieza'),
+    ('electronica', 'Electrónica y tecnología'),
+    ('celulares', 'Celulares y accesorios'),
+    ('electrodomesticos', 'Electrodomésticos'),
+    ('musica', 'Música e instrumentos'),
+    ('deportes', 'Deportes y fitness'),
+    ('bebes', 'Bebés y niños'),
+    ('juguetes', 'Juguetes y juegos'),
+    ('mascotas', 'Mascotas'),
+    ('ferreteria', 'Ferretería y construcción'),
+    ('vehiculos', 'Vehículos, repuestos y accesorios'),
+    ('papeleria', 'Papelería, oficina y escolar'),
+    ('libros', 'Libros'),
+    ('arte', 'Arte y manualidades'),
+    ('regalos', 'Regalos, flores y detalles'),
+    ('fiestas', 'Fiestas y eventos'),
+    ('agricultura', 'Jardín y agricultura'),
+    ('servicios', 'Servicios'),
+    ('otro', 'Otro'),
+]
+
+
 class SolicitudTienda(models.Model):
     """Un negocio que pide abrir su tienda en el sitio (Fase 2 del rediseño, 2026-10-27).
 
@@ -270,10 +303,7 @@ class SolicitudTienda(models.Model):
     nombre_comercial = models.CharField('nombre comercial', max_length=80)
     correo = models.EmailField(max_length=150)
     telefono = models.CharField('teléfono', max_length=10, help_text='10 dígitos, sin guiones.')
-    categoria = models.ForeignKey(
-        'catalogo.Categoria', on_delete=models.SET_NULL, null=True, blank=True, related_name='+',
-        verbose_name='categoría principal',
-    )
+    rubro = models.CharField('rubro del negocio', max_length=20, choices=RUBROS, default='otro')
     descripcion = models.TextField('qué vende')
     redes = models.CharField('redes o sitio web', max_length=200, blank=True)
     estado = models.CharField(max_length=12, choices=Estado.choices, default=Estado.PENDIENTE)

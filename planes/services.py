@@ -571,6 +571,100 @@ def anuncios_para_la_portada(limite=8):
     return _repartir(por_tienda, limite)
 
 
+
+# --- Promociones de la portada (pedido del dueño el 2026-10-27) ------------------------------
+# Un carrusel que rota solo con los anuncios aprobados, los productos patrocinados y las ofertas reales. Va primero lo
+# que se parece a lo que el visitante busco o miro hace poco (catalogo.services.intereses, solo de su sesion).
+
+OFERTAS_EN_PROMOCIONES = 4
+
+
+@dataclass
+class Promocion:
+    titulo: str
+    url: str
+    imagen: str
+    tienda: str
+    etiqueta: str  # siempre dice que es: "Anuncio" o "Oferta -20%"
+    texto: str = ''
+    precio: object = None
+    precio_anterior: object = None
+    es_foto_de_producto: bool = False
+    puntos: int = 0
+
+
+def _puntos(texto, categorias, tienda_id, intereses):
+    from core.texto import normalizar
+
+    texto = normalizar(texto)
+    puntos = 3 * sum(1 for palabra in intereses['palabras'] if palabra in texto)
+    if categorias & intereses['categorias']:
+        puntos += 2
+    if tienda_id in intereses['tiendas']:
+        puntos += 1
+    return puntos
+
+
+def _puntos_por_gustos(producto, intereses):
+    from clientes.gustos import en_su_presupuesto
+
+    gustos = intereses.get('gustos', {})
+    puntos = 0
+    if gustos.get('busca') == 'ofertas' and producto.en_oferta:
+        puntos += 1
+    if gustos.get('busca') == 'nuevos' and producto.es_nuevo:
+        puntos += 1
+    if en_su_presupuesto(gustos, producto.precio_final):
+        puntos += 1
+    return puntos
+
+
+def _promocion_de_producto(producto, etiqueta, intereses):
+    foto = producto.foto_principal
+    categorias = {producto.categoria_id, producto.categoria.padre_id} - {None}
+    return Promocion(
+        titulo=producto.nombre, url=producto.get_absolute_url(), imagen=foto.url_tarjeta if foto else '',
+        tienda=producto.tienda.nombre, etiqueta=etiqueta, precio=producto.precio_final,
+        precio_anterior=producto.precio if producto.en_oferta else None, es_foto_de_producto=True,
+        puntos=_puntos(f'{producto.texto_busqueda} {producto.categoria.nombre}', categorias, producto.tienda_id, intereses)
+        + _puntos_por_gustos(producto, intereses),
+    )
+
+
+def promociones_para(sesion, limite=8, usuario=None):
+    """Las promociones de la portada, primero las que mas se parecen a lo que el visitante busco, miro o dijo que le
+    gusta (si tiene cuenta y contesto sus gustos).
+
+    Devuelve (promociones, personalizadas): personalizadas dice si alguna coincidio con sus intereses.
+    """
+    from catalogo.services import intereses as intereses_de, ofertas_del_sitio, patrocinados_del_sitio
+
+    intereses = intereses_de(sesion, usuario)
+    promociones = []
+    for anuncio in anuncios_para_la_portada():
+        producto = anuncio.producto
+        categorias = {producto.categoria_id, producto.categoria.padre_id} - {None} if producto else set()
+        texto = ' '.join([anuncio.titulo, anuncio.texto, producto.nombre if producto else '',
+                          producto.categoria.nombre if producto else '', anuncio.tienda.nombre])
+        promociones.append(Promocion(
+            titulo=anuncio.titulo, texto=anuncio.texto, url=anuncio.get_url(), imagen=anuncio.imagen.url,
+            tienda=anuncio.tienda.nombre, etiqueta='Anuncio',
+            puntos=_puntos(texto, categorias, anuncio.tienda_id, intereses),
+        ))
+    patrocinados = patrocinados_del_sitio()
+    promociones += [_promocion_de_producto(producto, 'Anuncio', intereses) for producto in patrocinados]
+    ofertas = [
+        _promocion_de_producto(producto, f'Oferta -{producto.porcentaje_descuento}%', intereses)
+        for producto in ofertas_del_sitio(limite=12, excluir=[producto.pk for producto in patrocinados])
+    ]
+    # De las ofertas entran las que mas coinciden (a igualdad, el orden repartido entre tiendas).
+    ofertas.sort(key=lambda promocion: -promocion.puntos)
+    promociones += ofertas[:OFERTAS_EN_PROMOCIONES]
+    # Orden estable: a igualdad de puntos quedan anuncios, patrocinados y ofertas, en ese orden.
+    promociones.sort(key=lambda promocion: -promocion.puntos)
+    promociones = promociones[:limite]
+    return promociones, any(promocion.puntos for promocion in promociones)
+
 def avisar_anuncio_por_revisar(anuncio):
     """Al administrador: una tienda creo o cambio un anuncio y espera su aprobacion para salir en la portada."""
     def enviar_aviso():

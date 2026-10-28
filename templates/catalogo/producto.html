@@ -116,15 +116,12 @@
         <p class="small text-muted mt-n2">Precio sin ITBIS ({{ tienda.itbis_porcentaje|floatformat:'-2' }}%): se suma al confirmar tu pedido.</p>
       {% endif %}
 
-      {# Disponibilidad: la que pone la tienda. Sin mensajes de urgencia; la cantidad solo sale si la tienda lleva #}
-      {# inventario de este producto y el sitio muestra la cantidad exacta (Configuracion general). #}
+      {# Disponibilidad: la que pone la tienda. Nunca la cantidad de unidades (pedido del dueño el 2026-10-27). #}
       <p class="mm-disponibilidad">
         {% if producto.agotado %}
           <span class="text-danger"><i class="bi bi-x-circle-fill me-1"></i>{{ producto.estado_venta.label }}</span>
         {% elif producto.bajo_pedido %}
           <span class="text-primary-emphasis"><i class="bi bi-clock-history me-1"></i>Bajo pedido: la tienda lo consigue después de tu compra.</span>
-        {% elif producto.controla_stock and plataforma.mostrar_cantidad_exacta %}
-          <span class="text-success"><i class="bi bi-check-circle-fill me-1"></i>Disponible: {{ producto.stock_disponible }} unidad{{ producto.stock_disponible|pluralize:"es" }}</span>
         {% else %}
           <span class="text-success"><i class="bi bi-check-circle-fill me-1"></i>Disponible</span>
         {% endif %}
@@ -203,7 +200,7 @@
         <div class="mm-vendedor-datos">
           <p class="mm-vendedor-etiqueta mb-0">Vendido por</p>
           <h2 class="mm-vendedor-nombre" id="titulo-vendedor"><a href="{{ tienda.get_absolute_url }}">{{ tienda.nombre }}</a></h2>
-          {% if datos_tienda %}<p class="mm-vendedor-detalle mb-0">{{ datos_tienda.total_productos }} producto{{ datos_tienda.total_productos|pluralize }}{% if tienda.horario %} · {{ tienda.horario }}{% endif %}</p>{% endif %}
+          {% if tienda.horario %}<p class="mm-vendedor-detalle mb-0">{{ tienda.horario }}</p>{% endif %}
         </div>
         <div class="mm-vendedor-acciones">
           <a class="btn btn-sm btn-primary" href="{{ tienda.get_absolute_url }}">Ver la tienda</a>

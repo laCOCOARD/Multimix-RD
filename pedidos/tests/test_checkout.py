@@ -235,7 +235,7 @@ class CheckoutTests(TestCase):
         Producto.objects.filter(pk=self.producto.pk).update(stock_almacen=1)
         respuesta = self.client.post(self.url, self.datos(), follow=True)
         self.assertRedirects(respuesta, ruta('carrito:detalle'))
-        self.assertContains(respuesta, 'Solo quedan 1')
+        self.assertContains(respuesta, 'No tenemos más unidades')
         self.assertEqual(Pedido.objects.count(), 0)
         self.assertEqual(respuesta.context['lineas'][0].cantidad, 1)
 

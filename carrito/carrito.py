@@ -33,7 +33,7 @@ def aviso_no_comprable(producto):
 def aviso_de_limite(producto, limite):
     """La cantidad pedida no cabe: por el stock si lleva inventario, o por el tope de unidades por pedido."""
     if producto.controla_stock and limite == producto.stock_disponible:
-        return f'Solo quedan {limite} de "{producto.nombre}"; ajustamos la cantidad.'
+        return f'No tenemos más unidades de "{producto.nombre}" por ahora; ajustamos la cantidad.'
     return f'Puedes llevar hasta {limite} de "{producto.nombre}" por pedido; ajustamos la cantidad.'
 
 

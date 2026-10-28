@@ -22,7 +22,7 @@ from pedidos import entregas
 from pedidos.services import formas_de_pago, zonas_activas
 from pedidos.whatsapp import construir_enlace
 from tiendas.decoradores import de_tienda
-from tiendas.services import banners_de, directorio
+from tiendas.services import banners_de
 
 from . import avisos, services
 from .forms import ORDENES, FiltroCatalogoForm
@@ -68,6 +68,7 @@ def lista(request, slug=None):
     productos = services.filtrar_catalogo(filtros, categoria, request.tienda)
     pagina = Paginator(productos, PRODUCTOS_POR_PAGINA).get_page(request.GET.get('pagina'))
     if filtros.get('q') and pagina.number == 1:
+        services.recordar_busqueda(request.session, filtros['q'])
         metricas.anotar(request, metricas.Evento.BUSQUEDA, request.tienda)
         if not pagina.object_list:
             metricas.anotar(request, metricas.Evento.BUSQUEDA_SIN_RESULTADOS, request.tienda)
@@ -148,14 +149,13 @@ def producto(request, slug):
             or (request.user.is_authenticated and avisos.esperando(item, request.user.email))
         ),
         'opciones_estrellas': OPCIONES_ESTRELLAS,
-        'cantidad_maxima': item.limite_compra,
+        'cantidad_maxima': item.tope_a_la_vista,
         'plazo_recoger': entregas.estimar(tienda, True, bajo_pedido=item.bajo_pedido),
         'plazo_envio': entregas.estimar_envio(tienda, zonas, item.bajo_pedido),
         # Lo que la tienda ofrece de verdad (el checkout ofrece lo mismo): sin zonas no hay envio y sin cuentas activas
         # no hay transferencia.
         'hay_envio': bool(zonas),
         'formas_de_pago': formas_de_pago(tienda, hay_envio=bool(zonas)),
-        'datos_tienda': directorio().filter(pk=tienda.pk).first(),
         'url_absoluta': url_absoluta,
         'og_imagen': request.build_absolute_uri(foto.imagen.url) if foto else '',
         'enlace_consulta': construir_enlace(tienda.whatsapp, consulta) if tienda.whatsapp else '',

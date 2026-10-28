@@ -1,0 +1,44 @@
+{% extends 'base.html' %}
+
+{# Cuatro preguntas de gustos (clientes/gustos.py). Se ve una sola vez al crear la cuenta; despues, desde "Mi cuenta". #}
+{% block titulo %}Tus gustos · {{ plataforma.nombre }}{% endblock %}
+{% block meta %}<meta name="robots" content="noindex">{% endblock %}
+
+{% block contenido %}
+<div class="container py-4 py-lg-5">
+  <div class="mm-panel mm-gustos">
+    <p class="mm-eyebrow"><i class="bi bi-stars" aria-hidden="true"></i>{% if primera_vez %}Un último paso, opcional{% else %}Tus gustos{% endif %}</p>
+    <h1 class="h2 mb-2">{% if primera_vez %}¡Bienvenido! Cuéntanos qué te gusta{% else %}Lo que te gusta{% endif %}</h1>
+    <p class="text-muted mb-4">Cuatro preguntas rápidas para mostrarte primero los productos y las promociones que te interesan. Solo las usamos para eso y puedes cambiarlas cuando quieras.</p>
+
+    <form method="post" action="{% url 'clientes:gustos' %}">
+      {% csrf_token %}
+      <input type="hidden" name="next" value="{{ siguiente }}">
+      {% for campo in formulario %}
+        <fieldset class="mm-pregunta-gusto">
+          <legend>{{ forloop.counter }}. {{ campo.label }}</legend>
+          {% if campo.help_text %}<p class="small text-muted mb-2">{{ campo.help_text }}</p>{% endif %}
+          <div class="mm-opciones-gusto">
+            {% for opcion in campo %}
+              <input class="btn-check" type="{% if campo.name == 'categorias' %}checkbox{% else %}radio{% endif %}" name="{{ campo.html_name }}" id="{{ opcion.id_for_label }}" value="{{ opcion.data.value }}"{% if opcion.data.selected %} checked{% endif %}>
+              <label class="mm-opcion-gusto" for="{{ opcion.id_for_label }}">{{ opcion.choice_label }}</label>
+            {% empty %}
+              <p class="small text-muted mb-0">Todavía no hay categorías para elegir.</p>
+            {% endfor %}
+          </div>
+        </fieldset>
+      {% endfor %}
+
+      <div class="mm-gustos-acciones">
+        <button class="btn btn-acento btn-lg" type="submit"><i class="bi bi-check2 me-1" aria-hidden="true"></i>Guardar</button>
+        {% if primera_vez %}
+          <button class="btn btn-link" type="submit" name="omitir" value="1" formnovalidate>Ahora no</button>
+        {% else %}
+          <a class="btn btn-link" href="{{ siguiente }}">Volver</a>
+          {% if tiene_respuestas %}<button class="btn btn-link text-danger" type="submit" name="borrar" value="1" formnovalidate>Borrar mis respuestas</button>{% endif %}
+        {% endif %}
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

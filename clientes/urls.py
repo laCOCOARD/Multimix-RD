@@ -10,6 +10,7 @@ urlpatterns = [
     path('entrar/', views.Entrar.as_view(), name='entrar'),
     path('salir/', views.Salir.as_view(), name='salir'),
     path('datos/', views.perfil, name='perfil'),
+    path('gustos/', views.gustos, name='gustos'),
     path('direcciones/', views.direcciones, name='direcciones'),
     path('direcciones/<int:pk>/', views.editar_direccion, name='editar_direccion'),
     path('direcciones/<int:pk>/principal/', views.principal_direccion, name='principal_direccion'),

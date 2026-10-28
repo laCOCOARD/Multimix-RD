@@ -18,6 +18,11 @@ class Perfil(models.Model):
         'recibir recordatorios del carrito', default=True,
         help_text='Un correo si deja productos en el carrito sin comprar.',
     )
+    # Lo que contesto al crear su cuenta (pedido del dueño el 2026-10-27; ver clientes/gustos.py): ordena las promociones,
+    # el buscador y las categorias, y elige la entrega del checkout. Las cambia o las borra en "Mi cuenta".
+    gustos = models.JSONField('gustos', default=dict, blank=True)
+    # Se le preguntan una sola vez, justo despues de crear la cuenta.
+    preguntar_gustos = models.BooleanField(default=False, editable=False)
 
     class Meta:
         verbose_name = 'perfil de cliente'

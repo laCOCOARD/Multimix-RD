@@ -240,8 +240,8 @@ def ofertas_del_sitio(limite=10, excluir=()):
 
 
 def patrocinados_del_sitio(limite=4):
-    """Productos que las tiendas anuncian en la portada (planes, 2026-10-26): van primero en "Descubre productos"
-    con la etiqueta "Patrocinado". Cada tienda, hasta lo que permite su plan; una de cada tienda por vuelta."""
+    """Productos que las tiendas anuncian en la portada (planes, 2026-10-26): salen en el carrusel de promociones,
+    marcados como anuncio. Cada tienda, hasta lo que permite su plan; una de cada tienda por vuelta."""
     productos = (
         _base().filter(q_comprable(), patrocinado=True, tienda__plan__productos_patrocinados__gt=0)
         .select_related('tienda__plan').order_by('-actualizado', '-id')[:200]
@@ -264,6 +264,41 @@ def patrocinados_del_sitio(limite=4):
 # Vistos recientemente (como en las grandes tiendas): ids en la sesion, el mas reciente primero.
 CLAVE_VISTOS = 'vistos'
 MAXIMO_VISTOS = 12
+
+
+CLAVE_INTERESES = 'intereses'
+MAXIMO_INTERESES = 12
+# Palabras que no dicen nada de lo que alguien busca.
+PALABRAS_VACIAS = {'para', 'con', 'sin', 'los', 'las', 'del', 'una', 'uno', 'por', 'que', 'mas', 'muy'}
+
+
+def recordar_busqueda(sesion, texto):
+    """Guarda en la sesion las palabras de lo que el visitante busco (para ordenar las promociones de la portada).
+    Solo en su sesion: no se guarda en la base ni se relaciona con su cuenta."""
+    palabras = [p for p in normalizar(texto or '').split() if len(p) >= 3 and p not in PALABRAS_VACIAS]
+    if not palabras:
+        return
+    anteriores = [p for p in sesion.get(CLAVE_INTERESES, []) if p not in palabras]
+    sesion[CLAVE_INTERESES] = [*palabras, *anteriores][:MAXIMO_INTERESES]
+
+
+def intereses(sesion, usuario=None):
+    """Lo que el visitante busco, las categorias y tiendas de lo que miro hace poco y, si tiene cuenta, los gustos que
+    contesto (clientes/gustos.py). Sirve para ordenar promociones, categorias y resultados."""
+    from clientes import gustos as gustos_del_cliente
+
+    gustos = gustos_del_cliente.de(usuario)
+    ids = sesion.get(CLAVE_VISTOS, [])[:MAXIMO_VISTOS]
+    vistos = Producto.objects.filter(pk__in=ids).values_list('categoria_id', 'categoria__padre_id', 'tienda_id')
+    categorias, tiendas = set(), set()
+    for categoria, padre, tienda in vistos:
+        categorias.update(c for c in (categoria, padre) if c)
+        tiendas.add(tienda)
+    categorias.update(gustos.get('categorias', []))
+    return {
+        'palabras': list(sesion.get(CLAVE_INTERESES, [])), 'categorias': categorias, 'tiendas': tiendas,
+        'gustos': gustos, 'categorias_preferidas': set(gustos.get('categorias', [])),
+    }
 
 
 def recordar_visto(sesion, producto):

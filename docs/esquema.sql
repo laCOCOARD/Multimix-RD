@@ -1626,3 +1626,76 @@ BEGIN;
 --
 -- THIS OPERATION CANNOT BE WRITTEN AS SQL
 COMMIT;
+
+-- ============================================================
+-- tiendas 0018
+-- ============================================================
+BEGIN;
+--
+-- Add field rubro to solicitudtienda
+--
+CREATE TABLE "new__tiendas_solicitudtienda" ("id" integer NOT NULL PRIMARY KEY AUTOINCREMENT, "rubro" varchar(20) NOT NULL, "nombre_responsable" varchar(120) NOT NULL, "nombre_comercial" varchar(80) NOT NULL, "correo" varchar(150) NOT NULL, "telefono" varchar(10) NOT NULL, "descripcion" text NOT NULL, "redes" varchar(200) NOT NULL, "estado" varchar(12) NOT NULL, "notas" text NOT NULL, "revisada_el" datetime NULL, "creada" datetime NOT NULL, "actualizada" datetime NOT NULL, "categoria_id" bigint NULL REFERENCES "catalogo_categoria" ("id") DEFERRABLE INITIALLY DEFERRED, "revisada_por_id" integer NULL REFERENCES "auth_user" ("id") DEFERRABLE INITIALLY DEFERRED, "tienda_id" bigint NULL REFERENCES "tiendas_tienda" ("id") DEFERRABLE INITIALLY DEFERRED);
+INSERT INTO "new__tiendas_solicitudtienda" ("id", "nombre_responsable", "nombre_comercial", "correo", "telefono", "descripcion", "redes", "estado", "notas", "revisada_el", "creada", "actualizada", "categoria_id", "revisada_por_id", "tienda_id", "rubro") SELECT "id", "nombre_responsable", "nombre_comercial", "correo", "telefono", "descripcion", "redes", "estado", "notas", "revisada_el", "creada", "actualizada", "categoria_id", "revisada_por_id", "tienda_id", 'otro' FROM "tiendas_solicitudtienda";
+DROP TABLE "tiendas_solicitudtienda";
+ALTER TABLE "new__tiendas_solicitudtienda" RENAME TO "tiendas_solicitudtienda";
+CREATE INDEX "tiendas_solicitudtienda_categoria_id_6ccc58ee" ON "tiendas_solicitudtienda" ("categoria_id");
+CREATE INDEX "tiendas_solicitudtienda_revisada_por_id_2f13825d" ON "tiendas_solicitudtienda" ("revisada_por_id");
+CREATE INDEX "tiendas_solicitudtienda_tienda_id_00fa117b" ON "tiendas_solicitudtienda" ("tienda_id");
+CREATE INDEX "solicitud_estado_idx" ON "tiendas_solicitudtienda" ("estado", "creada" DESC);
+COMMIT;
+
+-- ============================================================
+-- tiendas 0019
+-- ============================================================
+BEGIN;
+--
+-- Raw Python operation
+--
+-- THIS OPERATION CANNOT BE WRITTEN AS SQL
+COMMIT;
+
+-- ============================================================
+-- tiendas 0020
+-- ============================================================
+BEGIN;
+--
+-- Remove field categoria from solicitudtienda
+--
+CREATE TABLE "new__tiendas_solicitudtienda" ("id" integer NOT NULL PRIMARY KEY AUTOINCREMENT, "nombre_responsable" varchar(120) NOT NULL, "nombre_comercial" varchar(80) NOT NULL, "correo" varchar(150) NOT NULL, "telefono" varchar(10) NOT NULL, "descripcion" text NOT NULL, "redes" varchar(200) NOT NULL, "estado" varchar(12) NOT NULL, "notas" text NOT NULL, "revisada_el" datetime NULL, "creada" datetime NOT NULL, "actualizada" datetime NOT NULL, "revisada_por_id" integer NULL REFERENCES "auth_user" ("id") DEFERRABLE INITIALLY DEFERRED, "tienda_id" bigint NULL REFERENCES "tiendas_tienda" ("id") DEFERRABLE INITIALLY DEFERRED, "rubro" varchar(20) NOT NULL);
+INSERT INTO "new__tiendas_solicitudtienda" ("id", "nombre_responsable", "nombre_comercial", "correo", "telefono", "descripcion", "redes", "estado", "notas", "revisada_el", "creada", "actualizada", "revisada_por_id", "tienda_id", "rubro") SELECT "id", "nombre_responsable", "nombre_comercial", "correo", "telefono", "descripcion", "redes", "estado", "notas", "revisada_el", "creada", "actualizada", "revisada_por_id", "tienda_id", "rubro" FROM "tiendas_solicitudtienda";
+DROP TABLE "tiendas_solicitudtienda";
+ALTER TABLE "new__tiendas_solicitudtienda" RENAME TO "tiendas_solicitudtienda";
+CREATE INDEX "tiendas_solicitudtienda_revisada_por_id_2f13825d" ON "tiendas_solicitudtienda" ("revisada_por_id");
+CREATE INDEX "tiendas_solicitudtienda_tienda_id_00fa117b" ON "tiendas_solicitudtienda" ("tienda_id");
+CREATE INDEX "solicitud_estado_idx" ON "tiendas_solicitudtienda" ("estado", "creada" DESC);
+COMMIT;
+
+-- ============================================================
+-- clientes 0008
+-- ============================================================
+BEGIN;
+--
+-- Add field gustos to perfil
+--
+CREATE TABLE "new__clientes_perfil" ("id" integer NOT NULL PRIMARY KEY AUTOINCREMENT, "gustos" text NOT NULL CHECK ((JSON_VALID("gustos") OR "gustos" IS NULL)), "telefono" varchar(10) NOT NULL, "usuario_id" integer NOT NULL UNIQUE REFERENCES "auth_user" ("id") DEFERRABLE INITIALLY DEFERRED, "correo_verificado" bool NOT NULL, "recordatorios" bool NOT NULL);
+INSERT INTO "new__clientes_perfil" ("id", "telefono", "usuario_id", "correo_verificado", "recordatorios", "gustos") SELECT "id", "telefono", "usuario_id", "correo_verificado", "recordatorios", '{}' FROM "clientes_perfil";
+DROP TABLE "clientes_perfil";
+ALTER TABLE "new__clientes_perfil" RENAME TO "clientes_perfil";
+--
+-- Add field preguntar_gustos to perfil
+--
+CREATE TABLE "new__clientes_perfil" ("id" integer NOT NULL PRIMARY KEY AUTOINCREMENT, "telefono" varchar(10) NOT NULL, "usuario_id" integer NOT NULL UNIQUE REFERENCES "auth_user" ("id") DEFERRABLE INITIALLY DEFERRED, "correo_verificado" bool NOT NULL, "recordatorios" bool NOT NULL, "gustos" text NOT NULL CHECK ((JSON_VALID("gustos") OR "gustos" IS NULL)), "preguntar_gustos" bool NOT NULL);
+INSERT INTO "new__clientes_perfil" ("id", "telefono", "usuario_id", "correo_verificado", "recordatorios", "gustos", "preguntar_gustos") SELECT "id", "telefono", "usuario_id", "correo_verificado", "recordatorios", "gustos", 0 FROM "clientes_perfil";
+DROP TABLE "clientes_perfil";
+ALTER TABLE "new__clientes_perfil" RENAME TO "clientes_perfil";
+COMMIT;
+
+-- ============================================================
+-- core 0024
+-- ============================================================
+BEGIN;
+--
+-- Raw Python operation
+--
+-- THIS OPERATION CANNOT BE WRITTEN AS SQL
+COMMIT;

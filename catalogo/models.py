@@ -384,6 +384,12 @@ class Producto(models.Model):
         return min(self.stock_disponible, settings.CARRITO_MAX_POR_PRODUCTO)
 
     @property
+    def tope_a_la_vista(self):
+        """El maximo que ofrecen los campos de cantidad: el tope por pedido, nunca las existencias (el cliente no ve
+        cuantas unidades quedan, pedido del dueño el 2026-10-27). Si no alcanza, el carrito ajusta y lo dice sin cifras."""
+        return settings.CARRITO_MAX_POR_PRODUCTO if self.se_puede_comprar else 0
+
+    @property
     def stock_bajo(self):
         if not self.controla_stock or not self.se_puede_comprar:
             return False

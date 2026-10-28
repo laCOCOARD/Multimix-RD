@@ -42,7 +42,9 @@ class CarritoVistasTests(TestCase):
     def test_agregar_mas_de_lo_disponible_avisa(self):
         datos = self.agregar(9, **FETCH).json()
         self.assertEqual(datos['cantidad_total'], 5)
-        self.assertIn('Solo hay 5', datos['mensaje'])
+        # Sin decir cuantas quedan (pedido del dueño el 2026-10-27).
+        self.assertIn('No tenemos más unidades', datos['mensaje'])
+        self.assertNotIn('5', datos['mensaje'])
 
     def test_agregar_agotado_falla(self):
         Producto.objects.filter(pk=self.producto.pk).update(stock_almacen=0)
@@ -70,7 +72,8 @@ class CarritoVistasTests(TestCase):
         self.agregar(4)
         Producto.objects.filter(pk=self.producto.pk).update(stock_almacen=2)
         pagina = self.client.get(ruta('carrito:detalle'))
-        self.assertContains(pagina, 'Solo quedan 2')
+        self.assertContains(pagina, 'No tenemos más unidades')
+        self.assertNotContains(pagina, 'quedan 2')
         self.assertEqual(pagina.context['lineas'][0].cantidad, 2)
 
     def test_cupon_aplicar_y_quitar(self):

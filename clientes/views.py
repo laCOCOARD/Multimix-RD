@@ -5,7 +5,7 @@ from django.contrib.auth.decorators import login_not_required, login_required
 from django.core.paginator import Paginator
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
-from django.urls import reverse_lazy
+from django.urls import reverse, reverse_lazy
 from django.utils.http import url_has_allowed_host_and_scheme, urlencode
 from django.views.decorators.cache import never_cache
 from django.views.decorators.debug import sensitive_post_parameters
@@ -20,6 +20,7 @@ from . import services
 from .forms import (
     CambiarClaveForm, DireccionForm, EntrarForm, NuevaClaveForm, PerfilForm, RecuperarClaveForm, RegistroForm,
 )
+from .gustos import GustosForm
 from .models import Direccion
 
 PLANTILLA = 'clientes/formulario.html'
@@ -57,7 +58,9 @@ def registro(request):
                     request, f'¡Bienvenido, {usuario.first_name}! Te enviamos un enlace a {usuario.email} para '
                              'confirmar tu correo antes de tu primera compra.',
                 )
-            return redirect(_destino(request))
+            # Una sola vez: cuatro preguntas cortas sobre sus gustos; "Ahora no" lo lleva a donde iba.
+            destino = _destino(request, reverse('clientes:cuenta'))
+            return redirect(f"{reverse('clientes:gustos')}?{urlencode({'next': destino})}")
     return render(request, PLANTILLA, {
         'formulario': formulario,
         'titulo': 'Crear cuenta',
@@ -143,6 +146,35 @@ def cuenta(request):
         'perfil': services.perfil_de(request.user),
         'direccion': services.direcciones_de(request.user).first(),
         'correo_confirmado': services.correo_confirmado(request.user),
+    })
+
+
+@login_required
+def gustos(request):
+    """Las cuatro preguntas de gustos (clientes/gustos.py). Llega aqui una sola vez al crear la cuenta; despues, desde
+    "Mi cuenta" para cambiarlas o borrarlas."""
+    perfil_actual = services.perfil_de(request.user)
+    destino = _destino(request, reverse('clientes:cuenta'))
+    actuales = perfil_actual.gustos or {}
+    inicial = {**actuales, 'categorias': [str(pk) for pk in actuales.get('categorias', [])]}
+    formulario = GustosForm(request.POST or None, initial=inicial)
+    if request.method == 'POST':
+        if 'omitir' in request.POST:
+            services.guardar_gustos(request.user, None)
+            return redirect(destino)
+        if 'borrar' in request.POST:
+            services.guardar_gustos(request.user, {})
+            messages.info(request, 'Borramos tus respuestas. Ya no las usamos para ordenar lo que te mostramos.')
+            return redirect(destino)
+        if formulario.is_valid():
+            services.guardar_gustos(request.user, formulario.gustos())
+            messages.success(request, '¡Gracias! Usaremos tus respuestas para mostrarte primero lo que te interesa.')
+            return redirect(destino)
+    return render(request, 'clientes/gustos.html', {
+        'formulario': formulario,
+        'siguiente': destino,
+        'primera_vez': perfil_actual.preguntar_gustos,
+        'tiene_respuestas': bool(actuales),
     })
 
 

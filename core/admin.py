@@ -20,7 +20,7 @@ class ConfiguracionTiendaAdmin(AvisaImagenesSinGuardar, admin.ModelAdmin):
         ('Sitio', {'fields': ['nombre', 'logo', 'descripcion', 'correo', 'telefono', 'horario']}),
         ('WhatsApp y redes', {'fields': ['whatsapp', 'facebook', 'instagram', 'tiktok']}),
         ('Catálogo y stock (todas las tiendas)', {
-            'fields': ['dias_producto_nuevo', 'umbral_stock_bajo', 'mostrar_cantidad_exacta'],
+            'fields': ['dias_producto_nuevo', 'umbral_stock_bajo'],
         }),
         ('Pedidos (todas las tiendas)', {'fields': ['horas_vencimiento_pedido', 'dias_devolucion']}),
         ('Cobro a las tiendas (planes)', {
