@@ -141,3 +141,10 @@ Decisiones tomadas en Multimix RD (movidas desde CLAUDE.md el 2026-10-28). Leela
   - El cliente no ve cantidades: ni existencias (el campo de cantidad ofrece `Producto.tope_a_la_vista`, el tope por
     pedido, y el carrito ajusta sin cifras) ni cuantos productos hay por categoria, tienda o busqueda. La opcion
     `mostrar_cantidad_exacta` ya no se usa (quedo fuera del panel).
+- Panel del dueño de tienda, fase 1 (2026-10-28, pedido del dueño: "mas facil, puntos claros y menos pasos"): el inicio
+  del vendedor (`templates/admin/_inicio_vendedor.html`) va en este orden: lo que debe al sitio (si debe), "Deja lista
+  tu tienda" (WhatsApp, cuenta de banco, producto con foto, forma de entrega; desaparece cuando esta todo), "Para hacer
+  ahora" (`core.panel.tareas_de_la_tienda`: cada fila lleva a la lista ya filtrada), accesos rapidos, ventas, ultimos
+  pedidos, lo mas vendido, por reponer, actividad plegada, plan en una linea y "Todo tu panel". El menu del vendedor se
+  agrupa en `core.admin_site.MENU_DEL_VENDEDOR` (solo cambia nombres y orden, no permisos); el superusuario conserva el
+  menu y el inicio de siempre. Titulos simples para todos: "Productos", "Agregar producto", "Editar producto".

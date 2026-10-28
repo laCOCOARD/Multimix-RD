@@ -2,6 +2,9 @@
 {% load moneda %}
 
 {% block content %}
+{% if es_vendedor %}
+{% include 'admin/_inicio_vendedor.html' %}
+{% else %}
 {% for estado in estados_de_cuenta %}
   {% with tienda=estado.tienda %}
   <section class="panel-aviso-cobro{% if estado.vencido or tienda.cerrada_por_falta_de_pago and not tienda.activa %} panel-aviso-urgente{% endif %}" aria-label="Tu plan y tus pagos al sitio">
@@ -175,4 +178,9 @@
 </section>
 {% endif %}
 {{ block.super }}
+{% endif %}
 {% endblock %}
+
+{# El vendedor no usa "Acciones recientes". #}
+{% block sidebar %}{% if not es_vendedor %}{{ block.super }}{% endif %}{% endblock %}
+{% block content_title %}{% if not es_vendedor %}{{ block.super }}{% endif %}{% endblock %}

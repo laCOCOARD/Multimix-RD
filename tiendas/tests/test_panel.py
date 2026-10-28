@@ -299,7 +299,7 @@ class VentasYClientesTests(PanelDeVendedores):
         self.assertEqual(list(resumen['ultimos_pedidos']), [self.pedido_propio])
         self.assertEqual([fila['producto__nombre'] for fila in resumen['mas_vendidos']], ['Lámpara'])
         self.assertNotIn('ventas_por_tienda', respuesta.context)
-        self.assertContains(respuesta, 'Resumen de Multimix RD')
+        self.assertContains(respuesta, '<h1 class="pv-saludo-tienda">Multimix RD</h1>', html=False)
         self.assertNotContains(respuesta, 'Fitnes RD')
         self.assertNotContains(respuesta, 'Pesas rusas')
 

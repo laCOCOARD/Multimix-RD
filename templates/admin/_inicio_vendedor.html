@@ -1,0 +1,202 @@
+{% load moneda %}
+{# Inicio del panel para el dueño de la tienda (2026-10-28): primero que hacer, luego accesos y numeros. #}
+<div class="pv-inicio">
+
+  <header class="pv-saludo">
+    <div>
+      <p class="pv-saludo-hola">Hola{% if user.first_name %}, {{ user.first_name }}{% endif %}</p>
+      <h1 class="pv-saludo-tienda">{% for tienda in tiendas %}{{ tienda.nombre }}{% if not forloop.last %} · {% endif %}{% empty %}Tu tienda{% endfor %}</h1>
+    </div>
+    {% if tiendas|length == 1 %}
+      <a class="pv-boton pv-boton-claro" href="{{ tiendas.0.get_absolute_url }}" target="_blank" rel="noopener">Ver mi tienda en el sitio</a>
+    {% endif %}
+  </header>
+
+  {# Plan y pagos al sitio: solo cuando hay algo que avisar o la tienda no tiene plan. #}
+  {% for estado in estados_de_cuenta %}
+    {% with tienda=estado.tienda %}
+    {% if estado.pendientes or tienda.cerrada_por_falta_de_pago and not tienda.activa %}
+      <section class="panel-aviso-cobro panel-aviso-urgente" aria-label="Pagos al sitio">
+        {% if tienda.cerrada_por_falta_de_pago and not tienda.activa %}
+          <h2>{{ tienda.nombre }} está cerrada por falta de pago</h2>
+          <p>Tus clientes no la ven. Paga lo pendiente y sube el comprobante: cuando lo confirmemos la volvemos a abrir.</p>
+        {% endif %}
+        <p><strong>Debes {{ estado.total_pendiente|moneda }}</strong>{% if estado.proximo_vencimiento %}: vence el {{ estado.proximo_vencimiento|date:"j \d\e F" }} y, si no se paga, la tienda se cierra el {{ estado.cierre|date:"j \d\e F" }}{% endif %}.{% if estado.en_revision %} Tienes {{ estado.en_revision }} comprobante(s) en revisión.{% endif %}</p>
+        <p><a class="pv-boton" href="{% url 'admin:planes_cargo_changelist' %}">Pagar y subir el comprobante</a></p>
+      </section>
+    {% endif %}
+    {% endwith %}
+  {% endfor %}
+
+  {# Lo minimo para vender: se ve mientras falte algo. #}
+  {% for tienda, pasos in primeros_pasos %}
+    <section class="pv-bloque pv-pasos" aria-labelledby="pasos-{{ tienda.pk }}">
+      <h2 id="pasos-{{ tienda.pk }}">Deja lista {% if tiendas|length > 1 %}{{ tienda.nombre }}{% else %}tu tienda{% endif %}</h2>
+      <ol class="pv-lista-pasos">
+        {% for paso in pasos %}
+          <li class="{% if paso.hecho %}pv-hecho{% endif %}">
+            <span class="pv-marca" aria-hidden="true">{% if paso.hecho %}✓{% else %}{{ forloop.counter }}{% endif %}</span>
+            {% if paso.hecho %}
+              <span>{{ paso.texto }}</span><span class="visually-hidden"> (hecho)</span>
+            {% else %}
+              <a href="{{ paso.url }}">{{ paso.texto }}</a>
+            {% endif %}
+          </li>
+        {% endfor %}
+      </ol>
+    </section>
+  {% endfor %}
+
+  {# Que hacer ahora #}
+  <section class="pv-bloque" aria-labelledby="titulo-tareas">
+    <h2 id="titulo-tareas">Para hacer ahora</h2>
+    {% if tareas %}
+      <ul class="pv-tareas">
+        {% for tarea in tareas %}
+          <li>
+            <a class="pv-tarea{% if tarea.urgente %} pv-tarea-urgente{% endif %}" href="{{ tarea.url }}">
+              <span class="pv-tarea-numero">{{ tarea.cantidad }}</span>
+              <span class="pv-tarea-texto"><strong>{{ tarea.texto|capfirst }}</strong><small>{{ tarea.ayuda }}</small></span>
+              <span class="pv-tarea-ir" aria-hidden="true">›</span>
+            </a>
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p class="pv-al-dia"><span aria-hidden="true">✓</span> Todo al día: no tienes pedidos ni preguntas esperando.</p>
+    {% endif %}
+  </section>
+
+  {# Lo que mas se usa, a un toque #}
+  <nav class="pv-bloque" aria-labelledby="titulo-accesos">
+    <h2 id="titulo-accesos">Accesos rápidos</h2>
+    <div class="pv-accesos">
+      {% if perms.catalogo.add_producto %}<a class="pv-acceso pv-acceso-principal" href="{% url 'admin:catalogo_producto_add' %}"><span aria-hidden="true">＋</span>Agregar producto</a>{% endif %}
+      <a class="pv-acceso" href="{% url 'admin:pedidos_pedido_changelist' %}"><span aria-hidden="true">🧾</span>Pedidos</a>
+      <a class="pv-acceso" href="{% url 'admin:catalogo_producto_changelist' %}"><span aria-hidden="true">📦</span>Mis productos</a>
+      <a class="pv-acceso" href="{% url 'admin:pedidos_pedido_clientes' %}"><span aria-hidden="true">👥</span>Mis clientes</a>
+      {% if perms.promociones.add_cupon %}<a class="pv-acceso" href="{% url 'admin:promociones_cupon_add' %}"><span aria-hidden="true">🏷️</span>Crear cupón</a>{% endif %}
+      {% if tiendas|length == 1 %}<a class="pv-acceso" href="{% url 'admin:tiendas_tienda_change' tiendas.0.pk %}"><span aria-hidden="true">🏪</span>Datos de la tienda</a>{% endif %}
+    </div>
+  </nav>
+
+  {# Numeros #}
+  <section class="pv-bloque" aria-labelledby="titulo-ventas">
+    <h2 id="titulo-ventas">Tus ventas</h2>
+    <div class="panel-tarjetas">
+      <div class="panel-tarjeta">
+        <span class="panel-tarjeta-titulo">Hoy</span>
+        <strong class="panel-tarjeta-valor">{{ resumen.ventas_dia|moneda }}</strong>
+        <span class="panel-tarjeta-nota">Pedidos cobrados hoy</span>
+      </div>
+      <a class="panel-tarjeta" href="{% url 'admin:pedidos_pedido_reporte' %}">
+        <span class="panel-tarjeta-titulo">Este mes</span>
+        <strong class="panel-tarjeta-valor">{{ resumen.ventas_mes|moneda }}</strong>
+        <span class="panel-tarjeta-nota">Ver el reporte de ventas ›</span>
+      </a>
+      {% if resumen.total_stock_bajo %}
+      <a class="panel-tarjeta panel-tarjeta-bajo" href="{% url 'admin:catalogo_producto_changelist' %}?stock=bajo">
+        <span class="panel-tarjeta-titulo">Quedan pocos</span>
+        <strong class="panel-tarjeta-valor">{{ resumen.total_stock_bajo }}</strong>
+        <span class="panel-tarjeta-nota">Con {{ resumen.umbral_stock_bajo }} unidades o menos</span>
+      </a>
+      {% endif %}
+      {% if resumen.total_agotados %}
+      <a class="panel-tarjeta panel-tarjeta-agotado" href="{% url 'admin:catalogo_producto_changelist' %}?stock=agotado">
+        <span class="panel-tarjeta-titulo">Agotados</span>
+        <strong class="panel-tarjeta-valor">{{ resumen.total_agotados }}</strong>
+        <span class="panel-tarjeta-nota">No se pueden comprar</span>
+      </a>
+      {% endif %}
+    </div>
+  </section>
+
+  <div class="panel-columnas">
+    <div class="module">
+      <table>
+        <caption>Últimos pedidos · <a href="{% url 'admin:pedidos_pedido_changelist' %}" class="pv-caption-enlace">ver todos</a></caption>
+        <thead><tr><th scope="col">Pedido</th><th scope="col">Total</th><th scope="col">Estado</th></tr></thead>
+        <tbody>
+          {% for pedido in resumen.ultimos_pedidos %}
+            <tr>
+              <th scope="row"><a href="{% url 'admin:pedidos_pedido_change' pedido.pk %}">{{ pedido.numero }}</a><br><small>{{ pedido.nombre }} · {{ pedido.creado|date:"j M, g:i a" }}</small></th>
+              <td>{{ pedido.total|moneda }}</td>
+              <td><span class="panel-estado panel-estado-{{ pedido.estado }}">{{ pedido.get_estado_display }}</span></td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="3">Todavía no hay pedidos.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <div class="module">
+      <table>
+        <caption>Lo más vendido</caption>
+        <thead><tr><th scope="col">Producto</th><th scope="col">Unidades</th><th scope="col">Ingresos</th></tr></thead>
+        <tbody>
+          {% for fila in resumen.mas_vendidos %}
+            <tr>
+              <th scope="row"><a href="{% url 'admin:catalogo_producto_change' fila.producto_id %}">{{ fila.producto__nombre }}</a></th>
+              <td>{{ fila.unidades }}</td>
+              <td>{{ fila.ingresos|moneda }}</td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="3">Aún no hay ventas confirmadas.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    {% if resumen.agotados or resumen.stock_bajo %}
+    <div class="module">
+      <table>
+        <caption>Por reponer</caption>
+        <thead><tr><th scope="col">Producto</th><th scope="col">Disponible</th></tr></thead>
+        <tbody>
+          {% for producto in resumen.agotados %}
+            <tr><th scope="row"><a href="{% url 'admin:catalogo_producto_change' producto.pk %}">{{ producto.nombre }}</a></th><td><span class="panel-etiqueta panel-agotado">Agotado</span></td></tr>
+          {% endfor %}
+          {% for producto in resumen.stock_bajo %}
+            <tr><th scope="row"><a href="{% url 'admin:catalogo_producto_change' producto.pk %}">{{ producto.nombre }}</a></th><td><span class="panel-etiqueta panel-bajo">{{ producto.disponible }}</span></td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% endif %}
+  </div>
+
+  {# Actividad: util pero no urgente, plegada. #}
+  {% if actividad %}
+  <details class="pv-bloque pv-plegable">
+    <summary>Cómo te encuentran los clientes (últimos {{ actividad.dias }} días)</summary>
+    {% include 'admin/_indicadores.html' %}
+  </details>
+  {% endif %}
+
+  {# Plan: una linea; lo que debe sale arriba, en rojo. #}
+  {% for estado in estados_de_cuenta %}
+      <p class="pv-plan">
+        {% if estado.plan %}Tu plan: {{ estado.plan.nombre }}{% if estados_de_cuenta|length > 1 %} ({{ estado.tienda.nombre }}){% endif %}{% if estado.uso.incluidos is not None %} · este mes llevas {{ estado.uso.pedidos }} de {{ estado.uso.incluidos }} pedidos incluidos{% endif %}.
+        {% else %}{% if estados_de_cuenta|length > 1 %}{{ estado.tienda.nombre }}{% else %}Tu tienda{% endif %} todavía no tiene plan.{% endif %}
+        <a href="{% url 'admin:tiendas_tienda_change' estado.tienda.pk %}">Ver mi plan</a>
+      </p>
+  {% endfor %}
+
+  {# Todo el panel, agrupado como en el menu #}
+  <section class="pv-bloque" aria-labelledby="titulo-menu">
+    <h2 id="titulo-menu">Todo tu panel</h2>
+    <div class="pv-menu">
+      {% for grupo in app_list %}
+        <div class="pv-menu-grupo">
+          <h3>{{ grupo.name }}</h3>
+          <ul>
+            {% for modelo in grupo.models %}
+              {% if modelo.admin_url %}<li><a href="{{ modelo.admin_url }}">{{ modelo.name }}</a></li>{% endif %}
+            {% endfor %}
+          </ul>
+        </div>
+      {% endfor %}
+    </div>
+  </section>
+</div>

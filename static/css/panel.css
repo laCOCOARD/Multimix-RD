@@ -151,3 +151,70 @@ a.panel-tarjeta:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba
 /* Aviso al cliente por WhatsApp desde el detalle del pedido. */
 .panel-boton-whatsapp { background: #1da851 !important; color: #fff !important; border-radius: 8px; font-weight: 700; padding: 9px 16px !important; }
 .panel-ayuda { color: var(--body-quiet-color); font-size: .85rem; }
+
+/* --- Inicio del dueño de tienda (2026-10-28) -------------------------------------------------------------- */
+/* El inicio de Django deja el contenido en una columna angosta para "Acciones recientes"; el vendedor no la usa. */
+.dashboard #content:has(.pv-inicio) { width: auto; max-width: 1100px; }
+.pv-inicio li { list-style: none; }
+.pv-saludo { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; margin: 4px 0 18px; }
+.pv-saludo-hola { margin: 0; color: var(--body-quiet-color); font-size: 1rem; }
+.pv-saludo-tienda { margin: 0; font-size: 1.6rem; font-weight: 800; color: var(--body-fg); }
+.pv-bloque { margin: 0 0 24px; }
+.pv-bloque > h2, .pv-plegable > summary { margin: 0 0 10px; font-size: 1.1rem; font-weight: 700; color: var(--body-fg); background: none; padding: 0; text-transform: none; letter-spacing: 0; }
+.pv-boton { display: inline-block; padding: 10px 16px; border-radius: 10px; background: var(--secondary); color: #fff !important; font-weight: 700; text-decoration: none; }
+.pv-boton:hover { background: #000; }
+.pv-boton-claro { background: var(--body-bg); color: var(--body-fg) !important; border: 1px solid var(--hairline-color); }
+.pv-boton-claro:hover { background: var(--darkened-bg); }
+
+/* Primeros pasos */
+.pv-pasos { padding: 16px 18px; border: 2px solid var(--accent); border-radius: 12px; background: var(--body-bg); }
+.pv-lista-pasos { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.pv-lista-pasos li { display: flex; align-items: center; gap: 10px; font-size: .95rem; padding: 0; }
+.pv-lista-pasos a { font-weight: 700; }
+.pv-marca { flex: none; width: 26px; height: 26px; border-radius: 50%; display: inline-grid; place-items: center; font-weight: 800; font-size: .85rem; background: var(--accent); color: #111827; }
+.pv-hecho { color: var(--body-quiet-color); text-decoration: line-through; }
+.pv-hecho .pv-marca { background: #1a8f5a; color: #fff; }
+
+/* Para hacer ahora */
+.pv-tareas { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.pv-tareas li { padding: 0; }
+.pv-tarea { display: flex; align-items: center; gap: 14px; padding: 14px 16px; border-radius: 12px; border: 1px solid var(--hairline-color); border-left: 5px solid #7b8794; background: var(--body-bg); color: var(--body-fg) !important; text-decoration: none; }
+.pv-tarea:hover { background: var(--darkened-bg); }
+.pv-tarea-urgente { border-left-color: var(--accent); }
+.pv-tarea-numero { flex: none; min-width: 44px; font-size: 1.6rem; font-weight: 800; text-align: center; }
+.pv-tarea-texto { flex: 1; display: flex; flex-direction: column; gap: 2px; }
+.pv-tarea-texto strong { font-size: 1rem; }
+.pv-tarea-texto small { color: var(--body-quiet-color); font-size: .85rem; }
+.pv-tarea-ir { font-size: 1.6rem; color: var(--body-quiet-color); }
+.pv-al-dia { margin: 0; padding: 14px 16px; border-radius: 12px; background: #e7f6ee; color: #14532d; font-weight: 600; }
+
+/* Accesos rapidos */
+.pv-accesos { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+.pv-acceso { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; min-height: 84px; padding: 12px; border-radius: 12px; border: 1px solid var(--hairline-color); background: var(--body-bg); color: var(--body-fg) !important; font-weight: 700; text-align: center; text-decoration: none; }
+.pv-acceso span { font-size: 1.5rem; line-height: 1; }
+.pv-acceso:hover { border-color: var(--accent); background: var(--darkened-bg); }
+.pv-acceso-principal { background: var(--accent); border-color: var(--accent); color: #111827 !important; }
+.pv-acceso-principal:hover { background: #fbbf24; }
+
+.pv-caption-enlace { color: inherit !important; text-decoration: underline; text-transform: none; }
+.pv-plegable { padding: 14px 16px; border: 1px solid var(--hairline-color); border-radius: 12px; }
+.pv-plegable > summary { cursor: pointer; margin: 0; }
+.pv-plegable[open] > summary { margin-bottom: 12px; }
+.pv-plan { margin: 0 0 24px; color: var(--body-quiet-color); }
+
+/* Todo el panel */
+.pv-menu { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; }
+.pv-menu-grupo { padding: 12px 14px; border: 1px solid var(--hairline-color); border-radius: 12px; }
+.pv-menu-grupo h3 { margin: 0 0 6px; font-size: .8rem; text-transform: uppercase; letter-spacing: .05em; color: var(--body-quiet-color); }
+.pv-menu-grupo ul { list-style: none; margin: 0; padding: 0; }
+.pv-menu-grupo li { padding: 4px 0; font-size: .95rem; }
+
+html[data-theme="dark"] .pv-al-dia { background: #14352a; color: #bbf7d0; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .pv-al-dia { background: #14352a; color: #bbf7d0; } }
+
+@media (max-width: 767px) {
+  .pv-saludo-tienda { font-size: 1.3rem; }
+  .pv-accesos { grid-template-columns: repeat(2, 1fr); }
+  .pv-tarea { padding: 12px; gap: 10px; }
+  .pv-tarea-numero { min-width: 34px; font-size: 1.35rem; }
+}

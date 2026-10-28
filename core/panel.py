@@ -71,3 +71,72 @@ def ventas_por_tienda():
         pedidos_mes=Count('pedidos', filter=cobrado),
         pendientes=Count('pedidos', filter=Q(pedidos__estado=Pedido.Estado.PENDIENTE)),
     ).order_by(F('ventas_mes').desc(nulls_last=True), 'nombre')
+
+
+# --- Inicio del panel para el dueño de la tienda ----------------------------------------------------------------
+
+def _enlace(nombre, filtros=''):
+    from django.urls import reverse
+
+    return reverse(f'admin:{nombre}') + (f'?{filtros}' if filtros else '')
+
+
+def tareas_de_la_tienda(tiendas):
+    """Lo que el vendedor tiene que hacer ahora, en el orden en que conviene hacerlo. Solo lo que tiene algo."""
+    from catalogo.models import AvisoDisponible
+    from opiniones.models import Pregunta
+    from pedidos.models import SolicitudDevolucion
+
+    pedidos = Pedido.objects.filter(tienda__in=tiendas)
+    E = Pedido.Estado
+    pendientes = pedidos.filter(estado=E.PENDIENTE)
+    filas = [
+        (pendientes.filter(transferencia_realizada=True).count(), 'transferencia por confirmar',
+         'transferencias por confirmar', 'Mira el comprobante y, si el dinero llegó, márcalo como pagado.',
+         _enlace('pedidos_pedido_changelist', 'estado__exact=pendiente&transferencia_realizada__exact=1'), True),
+        (pendientes.filter(metodo_pago=Pedido.Pago.CONTRA_ENTREGA).count(), 'pedido contra entrega',
+         'pedidos contra entrega', 'Prepáralo y cóbralo al entregarlo.',
+         _enlace('pedidos_pedido_changelist', 'estado__exact=pendiente&metodo_pago__exact=contra_entrega'), True),
+        (pedidos.filter(estado=E.PAGADO).count(), 'pedido pagado por preparar', 'pedidos pagados por preparar',
+         'Ya están cobrados: prepáralos y cambia su estado.',
+         _enlace('pedidos_pedido_changelist', 'estado__exact=pagado'), True),
+        (pedidos.filter(estado=E.PREPARANDO).count(), 'pedido en preparación', 'pedidos en preparación',
+         'Cuando esté listo, márcalo como listo para recoger o enviado.',
+         _enlace('pedidos_pedido_changelist', 'estado__exact=preparando'), False),
+        (pedidos.filter(estado__in=[E.LISTO, E.ENVIADO, E.EN_REPARTO]).count(), 'pedido por entregar',
+         'pedidos por entregar', 'Márcalo como entregado cuando el cliente lo reciba.',
+         _enlace('pedidos_pedido_changelist', 'estado__in=listo,enviado,en_reparto'), False),
+        (SolicitudDevolucion.objects.filter(tienda__in=tiendas, estado=SolicitudDevolucion.Estado.PENDIENTE).count(),
+         'devolución por revisar', 'devoluciones por revisar', 'Acéptala o recházala y explica por qué.',
+         _enlace('pedidos_solicituddevolucion_changelist', 'estado__exact=pendiente'), True),
+        (Pregunta.objects.filter(tienda__in=tiendas, estado=Pregunta.Estado.PENDIENTE).count(),
+         'pregunta sin responder', 'preguntas sin responder', 'Respóndela: se publica en el producto.',
+         _enlace('opiniones_pregunta_changelist', 'estado__exact=pendiente'), False),
+        (AvisoDisponible.objects.filter(tienda__in=tiendas, avisado__isnull=True).count(),
+         'cliente esperando un producto', 'clientes esperando un producto',
+         'Cuando lo vuelvas a tener, márcalo como disponible: les llega un correo.',
+         _enlace('catalogo_avisodisponible_changelist', 'avisado__isempty=1'), False),
+    ]
+    return [
+        {'cantidad': n, 'texto': uno if n == 1 else varios, 'ayuda': ayuda, 'url': url, 'urgente': urgente}
+        for n, uno, varios, ayuda, url, urgente in filas if n
+    ]
+
+
+def primeros_pasos(tienda):
+    """Lo minimo para que la tienda venda. Devuelve los pasos con `hecho`; la portada los muestra mientras falte alguno."""
+    from catalogo.models import FotoProducto
+
+    con_foto = FotoProducto.objects.filter(producto__tienda=tienda, producto__activo=True).exists()
+    from django.urls import reverse
+
+    datos = reverse('admin:tiendas_tienda_change', args=[tienda.pk])
+    entrega = bool(tienda.direccion_tienda) or tienda.zonas_envio.filter(activa=True).exists()
+    return [
+        {'texto': 'Pon tu número de WhatsApp', 'hecho': bool(tienda.whatsapp), 'url': datos},
+        {'texto': 'Agrega una cuenta de banco para recibir transferencias',
+         'hecho': tienda.cuentas.filter(activa=True).exists(), 'url': _enlace('tiendas_cuentabancaria_add')},
+        {'texto': 'Publica tu primer producto con foto', 'hecho': con_foto, 'url': _enlace('catalogo_producto_add')},
+        {'texto': 'Di cómo entregas: dirección para recoger o zonas de envío', 'hecho': entrega,
+         'url': _enlace('pedidos_zonaenvio_changelist')},
+    ]
