@@ -234,7 +234,9 @@ class EstadoDeCuenta:
 def estado_de_cuenta(tienda, hoy=None):
     """Lo que la tienda ve en su panel: su plan, lo que lleva del mes y lo que debe."""
     hoy = hoy or _hoy()
-    pendientes = list(tienda.cargos.filter(estado__in=Cargo.POR_PAGAR).order_by('vence', 'id'))
+    pendientes = list(
+        tienda.cargos.filter(estado__in=Cargo.POR_PAGAR).exclude(tipo__in=Cargo.PAGOS_POR_ADELANTADO).order_by('vence', 'id')
+    )
     sin_pagar = [cargo for cargo in pendientes if cargo.estado == Estado.PENDIENTE]
     proximo = min((cargo.vence for cargo in sin_pagar), default=None)
     return EstadoDeCuenta(
@@ -250,7 +252,8 @@ def resumen_para_el_administrador():
     """Para la portada del panel del administrador principal."""
     return {
         'comprobantes_por_revisar': Cargo.objects.filter(estado=Estado.EN_REVISION).count(),
-        'cargos_vencidos': Cargo.objects.filter(estado=Estado.PENDIENTE, vence__lte=_hoy()).count(),
+        'cargos_vencidos': Cargo.objects.filter(estado=Estado.PENDIENTE, vence__lte=_hoy()).exclude(
+            tipo__in=Cargo.PAGOS_POR_ADELANTADO).count(),
         'tiendas_cerradas': Tienda.objects.filter(cerrada_por_falta_de_pago=True, activa=False).count(),
         'tiendas_sin_plan': Tienda.objects.activas().filter(plan__isnull=True).count(),
     }
@@ -305,7 +308,10 @@ def enviar_recordatorios(hoy=None):
     antes = ConfiguracionTienda.obtener().dias_aviso_mensualidad
     gracia = dias_de_gracia()
     grupos = {}
-    pendientes = Cargo.objects.filter(estado=Estado.PENDIENTE, tienda__activa=True).select_related('tienda')
+    pendientes = (
+        Cargo.objects.filter(estado=Estado.PENDIENTE, tienda__activa=True).exclude(tipo__in=Cargo.PAGOS_POR_ADELANTADO)
+        .select_related('tienda')
+    )
     for cargo in pendientes.order_by('vence', 'id'):
         grupos.setdefault((cargo.tienda_id, cargo.vence), []).append(cargo)
     enviados = 0
@@ -334,7 +340,8 @@ def enviar_recordatorios(hoy=None):
 # --- Cierre y habilitacion -------------------------------------------------------------
 
 def _vencidos_sin_gracia(hoy):
-    return Cargo.objects.filter(estado=Estado.PENDIENTE, vence__lte=hoy - timedelta(days=dias_de_gracia()))
+    return Cargo.objects.filter(estado=Estado.PENDIENTE, vence__lte=hoy - timedelta(days=dias_de_gracia())).exclude(
+        tipo__in=Cargo.PAGOS_POR_ADELANTADO)
 
 
 def cerrar_tiendas_morosas(hoy=None):
@@ -467,6 +474,10 @@ def aprobar_cargo(cargo, usuario=None):
     cargo.revisado_el = timezone.now()
     cargo.revisado_por = usuario
     cargo.save(update_fields=['estado', 'revisado_el', 'revisado_por'])
+    # El deposito de un cambio de plan era lo que faltaba: el plan cambia ya (con su propio correo).
+    if cargo.tipo == Tipo.CAMBIO_DE_PLAN and cargo.plan_id and cargo.tienda.plan_pedido_id == cargo.plan_id:
+        aprobar_cambio_de_plan(cargo.tienda, usuario)
+        return cargo
 
     def enviar_aviso():
         enviar(f'Recibimos tu pago: {cargo.concepto}', 'tienda_cargo_pagado', _contexto(cargo.tienda, cargo=cargo),
@@ -795,8 +806,11 @@ def planes_disponibles():
 
 
 # --- Cambio de plan que pide la tienda (pedido del dueño el 2026-10-28) -------------------------------------
-# La tienda elige otro plan en su panel; el administrador principal lo aprueba o lo rechaza. Al aprobarlo el plan
-# cambia en el momento (anuncios, videos y pedidos incluidos) y la mensualidad nueva se cobra desde el proximo dia 1.
+# La tienda elige otro plan en su panel. Si cuesta mas, primero deposita la diferencia de este mes (un cargo
+# "Cambio de plan"): cuando el administrador aprueba ese pago, el plan cambia solo. Si cuesta igual o menos, el
+# administrador lo aprueba o lo rechaza sin deposito. Una tienda con pagos pendientes no puede pedir un cambio.
+# El plan cambia en el momento (anuncios, videos y pedidos incluidos) y la mensualidad nueva se cobra desde el
+# proximo dia 1.
 
 class CambioDePlanError(Exception):
     pass
@@ -806,14 +820,68 @@ def planes_para_elegir():
     return Plan.objects.filter(activo=True)
 
 
+def tiene_pagos_vencidos(tienda):
+    """Cargos ya vencidos sin confirmar (la mensualidad del mes que viene, creada antes, no cuenta todavia)."""
+    return tienda.cargos.filter(estado__in=Cargo.POR_PAGAR, vence__lte=_hoy()).exclude(
+        tipo__in=Cargo.PAGOS_POR_ADELANTADO).exists()
+
+
+def diferencia_del_cambio(tienda, plan):
+    """Lo que la tienda deposita antes de pasar a `plan`: lo que cuesta de mas este mes (0 si cuesta igual o menos)."""
+    actual = tienda.plan.mensualidad if tienda.plan_id else CERO
+    return max(plan.mensualidad - actual, CERO)
+
+
+def deposito_del_cambio(tienda):
+    """El cargo del cambio de plan que la tienda tiene pedido (o None si no lleva deposito)."""
+    if not tienda.plan_pedido_id:
+        return None
+    return (
+        Cargo.objects.filter(tienda=tienda, tipo=Tipo.CAMBIO_DE_PLAN, plan_id=tienda.plan_pedido_id)
+        .exclude(estado=Estado.ANULADO).order_by('-creado', '-id').first()
+    )
+
+
+def _anular_deposito(tienda, usuario, nota):
+    """Anula el deposito del cambio si nadie lo ha pagado. Si ya lo pagaron, no se puede retirar asi."""
+    cargo = deposito_del_cambio(tienda)
+    if cargo is None or cargo.estado == Estado.PENDIENTE:
+        if cargo is not None:
+            anular_cargo(cargo, None, nota)
+        return
+    if cargo.estado == Estado.PAGADO:
+        raise CambioDePlanError(f'{tienda.nombre} ya pagó la diferencia: apruébalo, o devuélvele el dinero y anula '
+                                'ese cargo primero.')
+    if usuario is None:
+        raise CambioDePlanError('Ya enviaste el comprobante del depósito: escríbenos si quieres retirar el pedido.')
+    anular_cargo(cargo, usuario, nota)
+
+
 @transaction.atomic
 def pedir_cambio_de_plan(tienda, plan, usuario=None):
-    """La tienda pide pasar a `plan`. Reemplaza un pedido anterior que siguiera esperando."""
-    tienda = Tienda.objects.select_for_update().get(pk=tienda.pk)
+    """La tienda pide pasar a `plan`. Si cuesta mas, se crea el cargo de la diferencia, que paga antes."""
+    tienda = Tienda.objects.select_for_update().select_related('plan').get(pk=tienda.pk)
     if not plan.activo:
         raise CambioDePlanError('Ese plan ya no se ofrece.')
     if plan.pk == tienda.plan_id:
         raise CambioDePlanError(f'Tu tienda ya tiene el plan {plan.nombre}.')
+    if tienda.plan_pedido_id:
+        raise CambioDePlanError(f'Ya pediste el plan {tienda.plan_pedido.nombre}: retira ese pedido antes de pedir otro.')
+    if tiene_pagos_vencidos(tienda):
+        raise CambioDePlanError('Primero paga lo que tienes pendiente (Mi plan > Mensualidades y pagos). Cuando lo '
+                                'confirmemos podrás cambiar de plan.')
+    hoy = _hoy()
+    diferencia = diferencia_del_cambio(tienda, plan)
+    if diferencia > 0:
+        actual = tienda.plan
+        Cargo.objects.create(
+            tienda=tienda, tipo=Tipo.CAMBIO_DE_PLAN, plan=plan, periodo=primer_dia(hoy), monto=diferencia, vence=hoy,
+            concepto=f'Cambio al plan {plan.nombre} · diferencia de {nombre_del_mes(hoy)}',
+            detalle=(f'Mensualidad del plan {plan.nombre}: {formatear_monto(plan.mensualidad)}. '
+                     + (f'Ya pagas la del {actual.nombre}: {formatear_monto(actual.mensualidad)}. ' if actual else '')
+                     + 'El plan cambia cuando confirmemos este depósito; desde el próximo día 1 pagas la mensualidad '
+                     'completa del plan nuevo.'),
+        )
     tienda.plan_pedido = plan
     tienda.plan_pedido_el = timezone.now()
     tienda.save(update_fields=['plan_pedido', 'plan_pedido_el'])
@@ -822,7 +890,7 @@ def pedir_cambio_de_plan(tienda, plan, usuario=None):
         from pedidos.avisos import correos_del_sitio
 
         contexto = _contexto(
-            tienda, plan=plan, plan_actual=tienda.plan, usuario=usuario,
+            tienda, plan=plan, plan_actual=tienda.plan, usuario=usuario, diferencia=formatear_monto(diferencia) if diferencia else '',
             enlace_tiendas=url_absoluta(reverse('admin:tiendas_tienda_changelist') + '?plan_pedido__isnull=False'),
         )
         enviar(f'Cambio de plan pedido: {tienda.nombre}', 'sitio_cambio_de_plan', contexto, correos_del_sitio())
@@ -832,7 +900,9 @@ def pedir_cambio_de_plan(tienda, plan, usuario=None):
 
 @transaction.atomic
 def cancelar_pedido_de_plan(tienda):
-    """La tienda retira su pedido antes de que lo revisen."""
+    """La tienda retira su pedido mientras no haya mandado el comprobante del deposito."""
+    tienda = Tienda.objects.select_for_update().get(pk=tienda.pk)
+    _anular_deposito(tienda, None, 'La tienda retiró su pedido de cambio de plan.')
     Tienda.objects.filter(pk=tienda.pk).update(plan_pedido=None, plan_pedido_el=None)
 
 
@@ -863,6 +933,10 @@ def aprobar_cambio_de_plan(tienda, usuario=None):
     nuevo = tienda.plan_pedido
     if nuevo is None:
         raise CambioDePlanError(f'{tienda.nombre} no tiene un cambio de plan pedido.')
+    deposito = deposito_del_cambio(tienda)
+    if deposito is not None and deposito.estado != Estado.PAGADO:
+        raise CambioDePlanError(f'{tienda.nombre} todavía no ha pagado la diferencia ({formatear_monto(deposito.monto)}). '
+                                'Aprueba su comprobante en "Mensualidades y cargos": el plan cambia solo.')
     anterior = tienda.plan
     tienda.plan = nuevo
     tienda.plan_pedido = None
@@ -887,6 +961,7 @@ def rechazar_cambio_de_plan(tienda, usuario=None):
     pedido = tienda.plan_pedido
     if pedido is None:
         raise CambioDePlanError(f'{tienda.nombre} no tiene un cambio de plan pedido.')
+    _anular_deposito(tienda, usuario, 'Cambio de plan rechazado.')
     tienda.plan_pedido = None
     tienda.plan_pedido_el = None
     tienda.save(update_fields=['plan_pedido', 'plan_pedido_el'])

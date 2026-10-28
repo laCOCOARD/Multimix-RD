@@ -89,29 +89,53 @@ class TiendaAdmin(AvisaImagenesSinGuardar, admin.ModelAdmin):
                 else:
                     plan = get_object_or_404(planes.planes_para_elegir(), pk=request.POST.get('plan') or 0)
                     planes.pedir_cambio_de_plan(tienda, plan, request.user)
-                    self.message_user(request, f'Pediste el plan {plan.nombre}. Te avisamos por correo cuando lo '
-                                               'aprobemos; la mensualidad nueva se cobra desde el próximo día 1.',
-                                      messages.SUCCESS)
+                    tienda.refresh_from_db()
+                    deposito = planes.deposito_del_cambio(tienda)
+                    if deposito:
+                        texto = (f'Pediste el plan {plan.nombre}. Para que el cambio se haga, deposita '
+                                 f'{formatear_monto(deposito.monto)} y sube el comprobante: cuando lo confirmemos, '
+                                 'tu plan cambia solo.')
+                    else:
+                        texto = f'Pediste el plan {plan.nombre}. Te avisamos por correo cuando lo aprobemos.'
+                    self.message_user(request, texto, messages.SUCCESS)
             except planes.CambioDePlanError as error:
                 self.message_user(request, str(error), messages.ERROR)
             return redirect(reverse('admin:tiendas_tienda_plan', args=[tienda.pk]))
         contexto = {
             **self.admin_site.each_context(request),
             'title': 'Cambiar de plan', 'opts': self.model._meta, 'tienda': tienda,
-            'planes': list(planes.planes_para_elegir()),
+            # Cada plan con lo que habria que depositar hoy para pasar a el.
+            'planes': [(plan, planes.diferencia_del_cambio(tienda, plan)) for plan in planes.planes_para_elegir()],
+            'deposito': planes.deposito_del_cambio(tienda),
+            'tiene_deudas': planes.tiene_pagos_vencidos(tienda),
         }
         return TemplateResponse(request, 'admin/tiendas/tienda/cambiar_plan.html', contexto)
 
     @admin.display(description='Pide cambiar a')
     def pide_plan(self, tienda):
-        return tienda.plan_pedido.nombre if tienda.plan_pedido_id else '—'
+        if not tienda.plan_pedido_id:
+            return '—'
+        from planes.services import deposito_del_cambio
+
+        deposito = deposito_del_cambio(tienda)
+        if deposito is None:
+            return tienda.plan_pedido.nombre
+        return f'{tienda.plan_pedido.nombre} (depósito: {deposito.get_estado_display().lower()})'
 
     @admin.display(description='Cambio de plan pedido')
     def cambio_pedido(self, tienda):
         if not tienda.plan_pedido_id:
             return 'Ninguno.'
-        return (f'Pidió el plan {tienda.plan_pedido.nombre} el {timezone.localtime(tienda.plan_pedido_el):%d/%m/%Y}. '
-                'Apruébalo o recházalo desde la lista de tiendas (acciones).')
+        from planes.services import deposito_del_cambio
+
+        texto = f'Pidió el plan {tienda.plan_pedido.nombre} el {timezone.localtime(tienda.plan_pedido_el):%d/%m/%Y}. '
+        deposito = deposito_del_cambio(tienda)
+        if deposito is None:
+            return texto + 'No lleva depósito: apruébalo o recházalo desde la lista de tiendas (acciones).'
+        return format_html(
+            '{}Debe depositar {} antes: <a href="{}">{}</a>. Al aprobar ese pago, el plan cambia solo.', texto,
+            formatear_monto(deposito.monto), reverse('admin:planes_cargo_change', args=[deposito.pk]),
+            deposito.get_estado_display())
 
     @admin.action(description='Aprobar el cambio de plan pedido')
     def aprobar_cambio_de_plan(self, request, queryset):
@@ -128,12 +152,16 @@ class TiendaAdmin(AvisaImagenesSinGuardar, admin.ModelAdmin):
             return
         hechas = 0
         for tienda in queryset.filter(plan_pedido__isnull=False):
-            (planes.aprobar_cambio_de_plan if aprobar else planes.rechazar_cambio_de_plan)(tienda, request.user)
+            try:
+                (planes.aprobar_cambio_de_plan if aprobar else planes.rechazar_cambio_de_plan)(tienda, request.user)
+            except planes.CambioDePlanError as error:
+                self.message_user(request, str(error), messages.ERROR)
+                continue
             hechas += 1
         if hechas:
             resultado = 'aprobado(s)' if aprobar else 'rechazado(s)'
             self.message_user(request, f'{hechas} cambio(s) de plan {resultado}.', messages.SUCCESS)
-        else:
+        elif not queryset.filter(plan_pedido__isnull=False).exists():
             self.message_user(request, 'Ninguna de las tiendas elegidas pidió cambiar de plan.', messages.WARNING)
 
     @admin.display(description='Pagos al sitio')
@@ -211,8 +239,8 @@ class TiendaAdmin(AvisaImagenesSinGuardar, admin.ModelAdmin):
     def tu_plan(self, tienda):
         plan = tienda.plan
         cambiar = reverse('admin:tiendas_tienda_plan', args=[tienda.pk]) if tienda.pk else ''
-        pedido = (format_html('<p><strong>Pediste el plan {}</strong>: esperando aprobación.</p>',
-                              tienda.plan_pedido.nombre) if tienda.plan_pedido_id else '')
+        pedido = (format_html('<p><strong>Pediste el plan {}</strong>: <a href="{}">ver cómo va</a>.</p>',
+                              tienda.plan_pedido.nombre, cambiar) if tienda.plan_pedido_id else '')
         if plan is None:
             return format_html(
                 'Tu tienda todavía no tiene un plan: no pagas mensualidad ni puedes poner anuncios en la portada.{} '

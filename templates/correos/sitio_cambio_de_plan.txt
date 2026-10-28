@@ -3,8 +3,8 @@
 Plan actual: {% if plan_actual %}{{ plan_actual.nombre }}{% else %}sin plan{% endif %}
 Plan que pide: {{ plan.nombre }}
 
-Apruébalo o recházalo en el panel (Tiendas > elige la tienda > acción "Aprobar el cambio de plan"):
+{% if diferencia %}Antes del cambio debe depositar la diferencia de este mes: {{ diferencia }} (ya tiene el cargo "Cambio de plan" en Mensualidades y cargos). Cuando apruebes ese pago, el plan cambia solo.{% else %}No lleva depósito (el plan nuevo no cuesta más). Apruébalo o recházalo en el panel (Tiendas > elige la tienda > acción "Aprobar el cambio de plan pedido").{% endif %}
 {{ enlace_tiendas }}
 
-Si lo apruebas, el plan cambia en el momento y la mensualidad nueva se cobra desde el próximo día 1.
+La mensualidad nueva se cobra desde el próximo día 1.
 {% endautoescape %}

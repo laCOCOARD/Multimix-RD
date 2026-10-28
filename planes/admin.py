@@ -255,6 +255,8 @@ class CargoAdmin(AdminDeTienda, admin.ModelAdmin):
     def cierre(self, cargo):
         if cargo.estado != Estado.PENDIENTE:
             return '—'
+        if cargo.tipo in Cargo.PAGOS_POR_ADELANTADO:
+            return 'No cierra tu tienda: es el depósito para cambiar de plan. El plan cambia cuando lo confirmemos.'
         return services.fecha_larga(services.fecha_de_cierre(cargo.vence))
 
     @admin.display(description='Cómo pagar')

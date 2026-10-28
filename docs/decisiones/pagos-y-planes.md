@@ -87,3 +87,11 @@ Decisiones tomadas en Multimix RD (movidas desde CLAUDE.md el 2026-10-28). Leela
   (`Tienda.plan_pedido`); el administrador lo aprueba o rechaza con las acciones de la lista de tiendas. Al aprobar
   el plan cambia ya (`plan_desde` = hoy) y la mensualidad nueva se cobra desde el proximo dia 1: si la del mes que
   viene ya estaba creada y pendiente, pasa al monto del plan nuevo (o se anula si el nuevo no cobra).
+- Cambio de plan pagado antes (pedido del dueño el 2026-10-28, "que no me engañen con los pagos"): una tienda con
+  cargos vencidos sin confirmar no puede pedir un cambio (`tiene_pagos_vencidos`; la mensualidad del mes que viene,
+  creada antes de vencer, no cuenta). Si el plan nuevo cuesta mas, al pedirlo se crea un cargo `cambio_plan` por la
+  diferencia de este mes (`diferencia_del_cambio`; sin plan, la mensualidad completa) con `Cargo.plan`. Ese cargo no
+  manda recordatorios, no cierra la tienda ni sale en "Debes" (`Cargo.PAGOS_POR_ADELANTADO`). Cuando el administrador
+  aprueba ese pago (`aprobar_cargo`), el plan cambia solo; sin pagarlo, "Aprobar el cambio" da error. Bajar de plan no
+  lleva deposito y lo aprueba el administrador. Retirar o rechazar anula el deposito pendiente; con el comprobante ya
+  enviado la tienda no lo retira, y si ya esta pagado no se rechaza sin devolver el dinero y anular el cargo.

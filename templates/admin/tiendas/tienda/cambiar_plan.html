@@ -1,6 +1,7 @@
 {% extends "admin/base_site.html" %}
 {% load moneda %}
-{# La tienda elige otro plan (pedido del dueño el 2026-10-28). Lo aprueba el administrador principal. #}
+{# La tienda elige otro plan (pedido del dueño el 2026-10-28). Si cuesta mas, deposita la diferencia antes: al #}
+{# aprobar ese pago el plan cambia solo. Si cuesta igual o menos, lo aprueba el administrador principal. #}
 
 {% block breadcrumbs %}
 <div class="breadcrumbs">
@@ -13,22 +14,41 @@
 <div class="pv-inicio">
   <p class="pv-plan">
     {% if tienda.plan %}Tu plan ahora: <strong>{{ tienda.plan.nombre }}</strong>.{% else %}Tu tienda todavía no tiene plan.{% endif %}
-    Elige el que quieres: lo revisamos y te avisamos por correo. Al aprobarlo, el cambio es inmediato y la
-    mensualidad nueva se cobra desde el próximo día 1.
+    Para subir a un plan que cuesta más, primero depositas la diferencia de este mes; cuando confirmemos el depósito,
+    tu plan cambia solo. Bajar de plan no lleva depósito. Desde el próximo día 1 pagas la mensualidad del plan nuevo.
   </p>
 
+  {% if tiene_deudas and not tienda.plan_pedido %}
+    <section class="panel-aviso-cobro panel-aviso-urgente" aria-label="Pagos pendientes">
+      <h2>Primero paga lo pendiente</h2>
+      <p>Tienes pagos al sitio sin confirmar. Cuando los confirmemos podrás cambiar de plan.</p>
+      <p><a class="pv-boton" href="{% url 'admin:planes_cargo_changelist' %}">Ver mis pagos</a></p>
+    </section>
+  {% endif %}
+
   {% if tienda.plan_pedido %}
-    <section class="panel-aviso-cobro" aria-label="Pedido de cambio de plan">
+    <section class="panel-aviso-cobro{% if deposito and deposito.estado == 'pendiente' %} panel-aviso-urgente{% endif %}" aria-label="Pedido de cambio de plan">
       <h2>Pediste el plan {{ tienda.plan_pedido.nombre }}</h2>
-      <p>Lo pediste el {{ tienda.plan_pedido_el|date:"j \d\e F, g:i a" }}. Está esperando nuestra aprobación.</p>
-      <form method="post">{% csrf_token %}
-        <button type="submit" name="cancelar" value="1" class="button">Retirar mi pedido</button>
-      </form>
+      {% if deposito %}
+        {% if deposito.estado == 'pendiente' %}
+          <p><strong>Falta tu depósito de {{ deposito.monto|moneda }}</strong> (la diferencia de este mes). Transfiérelo a las cuentas del sitio y sube el comprobante: cuando lo confirmemos, tu plan cambia solo.</p>
+          <p><a class="pv-boton" href="{% url 'admin:planes_cargo_change' deposito.pk %}">Pagar y subir el comprobante</a></p>
+        {% elif deposito.estado == 'en_revision' %}
+          <p>Recibimos tu comprobante de {{ deposito.monto|moneda }}: lo estamos revisando. Cuando lo confirmemos, tu plan cambia solo.</p>
+        {% endif %}
+      {% else %}
+        <p>Lo pediste el {{ tienda.plan_pedido_el|date:"j \d\e F, g:i a" }}. No lleva depósito: está esperando nuestra aprobación.</p>
+      {% endif %}
+      {% if not deposito or deposito.estado == 'pendiente' %}
+        <form method="post">{% csrf_token %}
+          <button type="submit" name="cancelar" value="1" class="button">Retirar mi pedido</button>
+        </form>
+      {% endif %}
     </section>
   {% endif %}
 
   <div class="pv-planes">
-    {% for plan in planes %}
+    {% for plan, diferencia in planes %}
       <article class="pv-plan-tarjeta{% if plan.pk == tienda.plan_id %} pv-plan-actual{% endif %}">
         <h2>{{ plan.nombre }}
           {% if plan.pk == tienda.plan_id %}<span class="panel-etiqueta panel-ok">Tu plan</span>{% endif %}
@@ -42,9 +62,10 @@
           <li>{% if plan.videos_portada %}{{ plan.videos_portada }} video{{ plan.videos_portada|pluralize }}{% else %}Sin videos{% endif %}</li>
           <li>{% if plan.productos_patrocinados %}{{ plan.productos_patrocinados }} producto{{ plan.productos_patrocinados|pluralize }} anunciado{{ plan.productos_patrocinados|pluralize }}{% else %}Sin productos anunciados{% endif %}</li>
         </ul>
-        {% if plan.pk != tienda.plan_id and plan.pk != tienda.plan_pedido_id %}
+        {% if plan.pk != tienda.plan_id and not tienda.plan_pedido and not tiene_deudas %}
+          <p class="pv-plan-desc">{% if diferencia %}Para cambiar hoy depositas <strong>{{ diferencia|moneda }}</strong>.{% else %}Sin depósito.{% endif %}</p>
           <form method="post">{% csrf_token %}
-            <button type="submit" name="plan" value="{{ plan.pk }}" class="pv-boton" data-confirmar="¿Pedir el plan {{ plan.nombre }}? La mensualidad nueva se cobra desde el próximo día 1, cuando lo aprobemos.">Pedir este plan</button>
+            <button type="submit" name="plan" value="{{ plan.pk }}" class="pv-boton" data-confirmar="¿Pedir el plan {{ plan.nombre }}?{% if diferencia %} Tendrás que depositar {{ diferencia|moneda }} antes del cambio.{% endif %} Desde el próximo día 1 pagas su mensualidad.">Pedir este plan</button>
           </form>
         {% endif %}
       </article>

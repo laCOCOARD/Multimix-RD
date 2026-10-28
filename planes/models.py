@@ -77,6 +77,7 @@ class Cargo(models.Model):
     class Tipo(models.TextChoices):
         MENSUALIDAD = 'mensualidad', 'Mensualidad'
         EXCEDENTE = 'excedente', 'Pedidos de más'
+        CAMBIO_DE_PLAN = 'cambio_plan', 'Cambio de plan'
         OTRO = 'otro', 'Otro cargo'
 
     class Estado(models.TextChoices):
@@ -86,6 +87,8 @@ class Cargo(models.Model):
         ANULADO = 'anulado', 'Anulado'
 
     POR_PAGAR = (Estado.PENDIENTE, Estado.EN_REVISION)
+    # Lo que se paga antes de recibir algo (subir de plan): no cierra la tienda ni manda recordatorios.
+    PAGOS_POR_ADELANTADO = (Tipo.CAMBIO_DE_PLAN,)
 
     tienda = models.ForeignKey('tiendas.Tienda', on_delete=models.PROTECT, related_name='cargos')
     tipo = models.CharField(max_length=12, choices=Tipo.choices, default=Tipo.MENSUALIDAD)
@@ -93,6 +96,10 @@ class Cargo(models.Model):
     concepto = models.CharField(max_length=160)
     detalle = models.TextField(blank=True)
     monto = models.DecimalField(max_digits=12, decimal_places=2, validators=[MinValueValidator(Decimal('0.01'))])
+    plan = models.ForeignKey(
+        Plan, on_delete=models.PROTECT, null=True, blank=True, related_name='+', editable=False,
+        help_text='En un cambio de plan: el plan que la tienda paga por adelantado.',
+    )
     vence = models.DateField('vence el')
     estado = models.CharField(max_length=12, choices=Estado.choices, default=Estado.PENDIENTE)
     comprobante = models.ImageField(
@@ -119,9 +126,11 @@ class Cargo(models.Model):
         ordering = ['-vence', '-id']
         constraints = [
             models.CheckConstraint(condition=Q(monto__gt=0), name='cargo_monto_positivo'),
-            # Una sola mensualidad y un solo excedente por tienda y mes; los cargos "otro" pueden repetirse.
+            # Una sola mensualidad y un solo excedente por tienda y mes; los cargos "otro" y los cambios de plan
+            # pueden repetirse.
             models.UniqueConstraint(
-                fields=['tienda', 'tipo', 'periodo'], condition=~Q(tipo='otro'), name='un_cargo_por_tipo_y_mes',
+                fields=['tienda', 'tipo', 'periodo'], condition=~Q(tipo__in=['otro', 'cambio_plan']),
+                name='un_cargo_por_tipo_y_mes',
             ),
         ]
         indexes = [models.Index(fields=['estado', 'vence'], name='cargo_estado_vence_idx')]
