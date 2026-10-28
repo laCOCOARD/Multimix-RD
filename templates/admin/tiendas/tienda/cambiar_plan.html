@@ -1,22 +1,32 @@
 {% extends "admin/base_site.html" %}
 {% load moneda %}
-{# La tienda elige otro plan (pedido del dueño el 2026-10-28). Si cuesta mas, deposita la diferencia antes: al #}
-{# aprobar ese pago el plan cambia solo. Si cuesta igual o menos, lo aprueba el administrador principal. #}
+{# "Mi plan y mensualidades" (pedido del dueño el 2026-10-28: el plan y las mensualidades son lo mismo): su plan, #}
+{# lo que debe, el cambio de plan y sus mensualidades. Subir de plan pide depositar la diferencia antes: al aprobar #}
+{# ese pago el plan cambia solo. Si cuesta igual o menos, lo aprueba el administrador principal. #}
 
 {% block breadcrumbs %}
 <div class="breadcrumbs">
   <a href="{% url 'admin:index' %}">Inicio</a> ›
-  <a href="{% url 'admin:tiendas_tienda_change' tienda.pk %}">{{ tienda.nombre }}</a> › Cambiar de plan
+  <a href="{% url 'admin:tiendas_tienda_change' tienda.pk %}">{{ tienda.nombre }}</a> › Mi plan y mensualidades
 </div>
 {% endblock %}
 
 {% block content %}
 <div class="pv-inicio">
   <p class="pv-plan">
-    {% if tienda.plan %}Tu plan ahora: <strong>{{ tienda.plan.nombre }}</strong>.{% else %}Tu tienda todavía no tiene plan.{% endif %}
-    Para subir a un plan que cuesta más, primero depositas la diferencia de este mes; cuando confirmemos el depósito,
-    tu plan cambia solo. Bajar de plan no lleva depósito. Desde el próximo día 1 pagas la mensualidad del plan nuevo.
+    {% if tienda.plan %}Tu plan ahora: <strong>{{ tienda.plan.nombre }}</strong> · {{ tienda.plan.mensualidad|moneda }} al mes, vence el día 1.{% if estado_de_cuenta.uso.incluidos is not None %} Este mes llevas {{ estado_de_cuenta.uso.pedidos }} de {{ estado_de_cuenta.uso.incluidos }} pedidos incluidos.{% endif %}{% else %}Tu tienda todavía no tiene plan.{% endif %}
   </p>
+
+  {% if estado_de_cuenta.pendientes %}
+    <section class="panel-aviso-cobro panel-aviso-urgente" aria-label="Lo que debes">
+      <h2>Debes {{ estado_de_cuenta.total_pendiente|moneda }}</h2>
+      {% if estado_de_cuenta.proximo_vencimiento %}<p>Vence el {{ estado_de_cuenta.proximo_vencimiento|date:"j \d\e F" }}; si no se paga, la tienda se cierra el {{ estado_de_cuenta.cierre|date:"j \d\e F" }}.</p>{% endif %}
+      {% for cargo in estado_de_cuenta.pendientes %}
+        <p>{{ cargo.concepto }}: {{ cargo.monto|moneda }} ·
+          {% if cargo.estado == 'pendiente' %}<a class="pv-boton" href="{% url 'admin:planes_cargo_change' cargo.pk %}">Pagar y subir el comprobante</a>{% else %}comprobante en revisión{% endif %}</p>
+      {% endfor %}
+    </section>
+  {% endif %}
 
   {% if tiene_deudas and not tienda.plan_pedido %}
     <section class="panel-aviso-cobro panel-aviso-urgente" aria-label="Pagos pendientes">
@@ -47,6 +57,10 @@
     </section>
   {% endif %}
 
+  <h2 class="pv-titulo-seccion">Cambiar de plan</h2>
+  <p class="pv-plan">Para subir a un plan que cuesta más, primero depositas la diferencia de este mes; cuando confirmemos
+    el depósito, tu plan cambia solo. Bajar de plan no lleva depósito. Desde el próximo día 1 pagas la mensualidad del
+    plan nuevo.</p>
   <div class="pv-planes">
     {% for plan, diferencia in planes %}
       <article class="pv-plan-tarjeta{% if plan.pk == tienda.plan_id %} pv-plan-actual{% endif %}">
@@ -74,6 +88,24 @@
     {% endfor %}
   </div>
 
-  <p><a href="{% url 'admin:tiendas_tienda_change' tienda.pk %}">Volver a los datos de la tienda</a></p>
+  <h2 class="pv-titulo-seccion">Tus mensualidades y pagos</h2>
+  <div class="module pv-tabla-cargos">
+    <table>
+      <thead><tr><th scope="col">Concepto</th><th scope="col">Monto</th><th scope="col">Vence</th><th scope="col">Estado</th></tr></thead>
+      <tbody>
+        {% for cargo in cargos %}
+          <tr>
+            <th scope="row">{% if cargo.estado == 'pendiente' %}<a href="{% url 'admin:planes_cargo_change' cargo.pk %}">{{ cargo.concepto }}</a>{% else %}{{ cargo.concepto }}{% endif %}</th>
+            <td>{{ cargo.monto|moneda }}</td>
+            <td>{{ cargo.vence|date:"j M Y" }}</td>
+            <td><span class="panel-estado panel-cargo-{{ cargo.estado }}">{{ cargo.get_estado_display }}</span></td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="4">Todavía no tienes mensualidades{% if not tienda.plan %}: empiezan cuando tengas un plan{% endif %}.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <p><a href="{% url 'admin:planes_cargo_changelist' %}">Ver todos tus pagos</a> · <a href="{% url 'admin:tiendas_tienda_change' tienda.pk %}">Datos de la tienda</a></p>
 </div>
 {% endblock %}

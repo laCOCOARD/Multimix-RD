@@ -5,6 +5,7 @@ from django.contrib.admin.utils import unquote
 from django.core.exceptions import ValidationError
 from django.db.models import Count
 from django.http import FileResponse, Http404
+from django.shortcuts import redirect
 from django.urls import path, reverse
 from django.utils import timezone
 from django.utils.formats import date_format
@@ -44,6 +45,12 @@ class PlanAdmin(admin.ModelAdmin):
 
     def get_queryset(self, request):
         return super().get_queryset(request).annotate(total_tiendas=Count('tiendas'))
+
+    def changelist_view(self, request, extra_context=None):
+        # El vendedor compara y cambia su plan en "Mi plan y mensualidades".
+        if not ve_todas(request.user):
+            return redirect(reverse('admin:tiendas_tienda_mi_plan'))
+        return super().changelist_view(request, extra_context)
 
     def get_list_display(self, request):
         columnas = list(super().get_list_display(request))

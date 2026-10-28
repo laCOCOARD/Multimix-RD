@@ -31,16 +31,25 @@ MENU_DEL_VENDEDOR = [
         ('planes', 'video', 'Videos'),
     ]),
     ('Mi plan', [
-        ('planes', 'cargo', 'Mensualidades y pagos'),
-        ('planes', 'plan', 'Planes'),
+        ('planes', 'cargo', 'Mi plan y mensualidades'),
         ('pagos', 'liquidacion', 'Liquidaciones'),
     ]),
 ]
+# Estos no salen en el menu del vendedor: estan dentro de "Mi plan y mensualidades".
+FUERA_DEL_MENU_DEL_VENDEDOR = {('planes', 'plan')}
 
 
 def agrupar_para_el_vendedor(app_list):
     """Reordena el menu de Django en los grupos de MENU_DEL_VENDEDOR. Solo cambia nombres y orden, no permisos."""
+    from django.urls import reverse
+
     modelos = {(app['app_label'], m['object_name'].lower()): m for app in app_list for m in app['models']}
+    for clave in FUERA_DEL_MENU_DEL_VENDEDOR:
+        modelos.pop(clave, None)
+    if ('planes', 'cargo') in modelos:
+        # Lleva a la pagina del plan (con sus mensualidades), no a la lista suelta de cargos.
+        modelos[('planes', 'cargo')] = {**modelos[('planes', 'cargo')], 'add_url': None,
+                                        'admin_url': reverse('admin:tiendas_tienda_mi_plan')}
     grupos = []
     for numero, (nombre, entradas) in enumerate(MENU_DEL_VENDEDOR):
         lista = []

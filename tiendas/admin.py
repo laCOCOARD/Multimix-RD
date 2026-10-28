@@ -70,9 +70,19 @@ class TiendaAdmin(AvisaImagenesSinGuardar, admin.ModelAdmin):
     # --- Cambio de plan (pedido del dueño el 2026-10-28) ---------------------------------------------------------
 
     def get_urls(self):
-        propias = [path('<path:object_id>/plan/', self.admin_site.admin_view(self.cambiar_plan_view),
-                        name='tiendas_tienda_plan')]
+        propias = [
+            path('mi-plan/', self.admin_site.admin_view(self.mi_plan_view), name='tiendas_tienda_mi_plan'),
+            path('<path:object_id>/plan/', self.admin_site.admin_view(self.cambiar_plan_view),
+                 name='tiendas_tienda_plan'),
+        ]
         return propias + super().get_urls()
+
+    def mi_plan_view(self, request):
+        """El enlace "Mi plan y mensualidades" del menu: lleva a la pagina del plan de su tienda."""
+        tiendas = tiendas_del_panel(request)
+        if len(tiendas) == 1 and not ve_todas(request.user):
+            return redirect(reverse('admin:tiendas_tienda_plan', args=[tiendas[0].pk]))
+        return redirect(reverse('admin:tiendas_tienda_changelist'))
 
     def cambiar_plan_view(self, request, object_id):
         """La tienda elige otro plan; lo aprueba el administrador principal."""
@@ -103,11 +113,14 @@ class TiendaAdmin(AvisaImagenesSinGuardar, admin.ModelAdmin):
             return redirect(reverse('admin:tiendas_tienda_plan', args=[tienda.pk]))
         contexto = {
             **self.admin_site.each_context(request),
-            'title': 'Cambiar de plan', 'opts': self.model._meta, 'tienda': tienda,
+            'title': 'Mi plan y mensualidades', 'opts': self.model._meta, 'tienda': tienda,
             # Cada plan con lo que habria que depositar hoy para pasar a el.
             'planes': [(plan, planes.diferencia_del_cambio(tienda, plan)) for plan in planes.planes_para_elegir()],
             'deposito': planes.deposito_del_cambio(tienda),
             'tiene_deudas': planes.tiene_pagos_vencidos(tienda),
+            # Las mensualidades y demas cargos, en la misma pagina: plan y mensualidades son lo mismo.
+            'cargos': list(tienda.cargos.order_by('-vence', '-id')[:12]),
+            'estado_de_cuenta': planes.estado_de_cuenta(tienda),
         }
         return TemplateResponse(request, 'admin/tiendas/tienda/cambiar_plan.html', contexto)
 

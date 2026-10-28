@@ -209,3 +209,38 @@ class CambioDePlanTests(ConAnuncios):
         self.tienda.refresh_from_db()
         self.assertEqual(self.tienda.plan_pedido, self.premium)
         self.assertEqual(self.deposito().monto, self.premium.mensualidad)
+
+
+class MiPlanYMensualidadesTests(ConAnuncios):
+    """El plan y las mensualidades en una sola pagina, a la que lleva el menu "Mi plan" (pedido del dueño)."""
+
+    def setUp(self):
+        super().setUp()
+        self.con_plan(self.tienda)
+        self.client.force_login(self.vendedor)
+
+    def test_el_menu_y_la_lista_de_planes_llevan_a_mi_plan(self):
+        inicio = self.client.get(reverse('admin:index'))
+        mi_plan = reverse('admin:tiendas_tienda_mi_plan')
+        grupo = next(g for g in inicio.context['app_list'] if g['name'] == 'Mi plan')
+        self.assertEqual([(m['name'], m['admin_url']) for m in grupo['models']][0], ('Mi plan y mensualidades', mi_plan))
+        self.assertNotIn('Planes', [m['name'] for g in inicio.context['app_list'] for m in g['models']])
+        self.assertContains(inicio, f'href="{mi_plan}"')
+        pagina = reverse('admin:tiendas_tienda_plan', args=[self.tienda.pk])
+        self.assertRedirects(self.client.get(mi_plan), pagina)
+        self.assertRedirects(self.client.get(reverse('admin:planes_plan_changelist')), mi_plan,
+                             fetch_redirect_response=False)
+        # El administrador sigue viendo la lista de planes.
+        self.client.force_login(self.admin)
+        self.assertEqual(self.client.get(reverse('admin:planes_plan_changelist')).status_code, 200)
+
+    def test_la_pagina_muestra_lo_que_debe_sus_mensualidades_y_los_planes(self):
+        cargo = Cargo.objects.create(tienda=self.tienda, tipo=Cargo.Tipo.MENSUALIDAD, periodo=date(2026, 11, 1),
+                                     concepto='Mensualidad de noviembre · Plan Estándar', monto=Decimal('1200'),
+                                     vence=date(2026, 11, 1))
+        pagina = self.client.get(reverse('admin:tiendas_tienda_plan', args=[self.tienda.pk]))
+        self.assertContains(pagina, '<h1>Mi plan y mensualidades</h1>', html=True)
+        self.assertContains(pagina, 'Debes RD$ 1,200.00')
+        self.assertContains(pagina, reverse('admin:planes_cargo_change', args=[cargo.pk]))
+        self.assertContains(pagina, 'Tus mensualidades y pagos')
+        self.assertContains(pagina, 'Pedir este plan')

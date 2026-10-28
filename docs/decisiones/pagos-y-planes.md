@@ -95,3 +95,6 @@ Decisiones tomadas en Multimix RD (movidas desde CLAUDE.md el 2026-10-28). Leela
   aprueba ese pago (`aprobar_cargo`), el plan cambia solo; sin pagarlo, "Aprobar el cambio" da error. Bajar de plan no
   lleva deposito y lo aprueba el administrador. Retirar o rechazar anula el deposito pendiente; con el comprobante ya
   enviado la tienda no lo retira, y si ya esta pagado no se rechaza sin devolver el dinero y anular el cargo.
+- Plan y mensualidades son lo mismo para la tienda (dueño, 2026-10-28): una sola pagina "Mi plan y mensualidades"
+  (`tiendas_tienda_plan`; `tiendas_tienda_mi_plan` la abre desde el menu) con su plan, lo que debe, los planes para
+  cambiar y sus ultimas mensualidades. La lista de Planes del vendedor redirige ahi; el administrador la sigue viendo.

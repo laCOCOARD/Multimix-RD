@@ -22,7 +22,7 @@
           <p>Tus clientes no la ven. Paga lo pendiente y sube el comprobante: cuando lo confirmemos la volvemos a abrir.</p>
         {% endif %}
         <p><strong>Debes {{ estado.total_pendiente|moneda }}</strong>{% if estado.proximo_vencimiento %}: vence el {{ estado.proximo_vencimiento|date:"j \d\e F" }} y, si no se paga, la tienda se cierra el {{ estado.cierre|date:"j \d\e F" }}{% endif %}.{% if estado.en_revision %} Tienes {{ estado.en_revision }} comprobante(s) en revisión.{% endif %}</p>
-        <p><a class="pv-boton" href="{% url 'admin:planes_cargo_changelist' %}">Pagar y subir el comprobante</a></p>
+        <p><a class="pv-boton" href="{% url 'admin:tiendas_tienda_plan' tienda.pk %}">Pagar y subir el comprobante</a></p>
       </section>
     {% endif %}
     {% endwith %}
@@ -77,6 +77,7 @@
       <a class="pv-acceso" href="{% url 'admin:pedidos_pedido_clientes' %}"><span aria-hidden="true">👥</span>Mis clientes</a>
       {% if perms.promociones.add_cupon %}<a class="pv-acceso" href="{% url 'admin:promociones_cupon_add' %}"><span aria-hidden="true">🏷️</span>Crear cupón</a>{% endif %}
       {% if tiendas|length == 1 %}<a class="pv-acceso" href="{% url 'admin:tiendas_tienda_change' tiendas.0.pk %}"><span aria-hidden="true">🏪</span>Datos de la tienda</a>{% endif %}
+      <a class="pv-acceso" href="{% url 'admin:tiendas_tienda_mi_plan' %}"><span aria-hidden="true">⭐</span>Mi plan y mensualidades</a>
     </div>
   </nav>
 

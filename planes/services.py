@@ -868,7 +868,7 @@ def pedir_cambio_de_plan(tienda, plan, usuario=None):
     if tienda.plan_pedido_id:
         raise CambioDePlanError(f'Ya pediste el plan {tienda.plan_pedido.nombre}: retira ese pedido antes de pedir otro.')
     if tiene_pagos_vencidos(tienda):
-        raise CambioDePlanError('Primero paga lo que tienes pendiente (Mi plan > Mensualidades y pagos). Cuando lo '
+        raise CambioDePlanError('Primero paga lo que tienes pendiente (Mi plan y mensualidades). Cuando lo '
                                 'confirmemos podrás cambiar de plan.')
     hoy = _hoy()
     diferencia = diferencia_del_cambio(tienda, plan)
