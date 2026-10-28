@@ -218,3 +218,16 @@ html[data-theme="dark"] .pv-al-dia { background: #14352a; color: #bbf7d0; }
   .pv-tarea { padding: 12px; gap: 10px; }
   .pv-tarea-numero { min-width: 34px; font-size: 1.35rem; }
 }
+
+/* Cambiar de plan (2026-10-28) */
+.pv-planes { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 14px; margin: 16px 0 20px; }
+.pv-plan-tarjeta { display: flex; flex-direction: column; gap: 8px; padding: 16px 18px; border: 1px solid var(--hairline-color); border-radius: 12px; background: var(--body-bg); }
+.pv-plan-tarjeta h2 { margin: 0; font-size: 1.2rem; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; background: none; color: var(--body-fg); padding: 0; text-transform: none; letter-spacing: 0; }
+.pv-plan-actual { border: 2px solid #1a8f5a; }
+.pv-plan-desc { margin: 0; color: var(--body-quiet-color); }
+.pv-plan-precio { margin: 0; font-size: 1.4rem; font-weight: 800; }
+.pv-plan-precio small { font-size: .85rem; font-weight: 400; color: var(--body-quiet-color); }
+.pv-plan-tarjeta ul { margin: 0 0 6px; padding-left: 18px; }
+.pv-plan-tarjeta li { list-style: disc; padding: 2px 0; }
+.pv-plan-tarjeta form { margin-top: auto; }
+.pv-plan-tarjeta .pv-boton { border: 0; cursor: pointer; font-size: .95rem; }

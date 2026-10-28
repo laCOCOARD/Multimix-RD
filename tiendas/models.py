@@ -114,6 +114,12 @@ class Tienda(models.Model):
         help_text='Mensualidad, pedidos incluidos al mes y anuncios. Sin plan no se le cobra nada ni puede anunciarse.',
     )
     plan_desde = models.DateField('con este plan desde', null=True, blank=True, editable=False)
+    # Cambio de plan que pidio la tienda desde su panel y espera la aprobacion del administrador (2026-10-28).
+    plan_pedido = models.ForeignKey(
+        'planes.Plan', on_delete=models.SET_NULL, null=True, blank=True, related_name='+', editable=False,
+        verbose_name='plan que pidió',
+    )
+    plan_pedido_el = models.DateTimeField('lo pidió el', null=True, blank=True, editable=False)
     cerrada_por_falta_de_pago = models.BooleanField(default=False, editable=False)
     cerrada_el = models.DateTimeField('cerrada el', null=True, blank=True, editable=False)
     habilitada_el = models.DateTimeField('habilitada otra vez el', null=True, blank=True, editable=False)

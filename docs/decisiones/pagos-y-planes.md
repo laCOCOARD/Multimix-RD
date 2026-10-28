@@ -79,3 +79,11 @@ Decisiones tomadas en Multimix RD (movidas desde CLAUDE.md el 2026-10-28). Leela
 - Envio gratis (`Tienda.envio_gratis_desde`, lo pone el vendedor): desde ese monto en productos, despues del
   cupon, el envio a domicilio cuesta 0 (`pedidos.services.costo_de_envio`, que usan los totales y `crear_pedido`).
   El carrito muestra cuanto falta (`progreso_envio_gratis`).
+- Anuncios de 7 dias y cambio de plan (pedido del dueño el 2026-10-28). Cada anuncio con foto sale
+  `planes.models.DIAS_DEL_ANUNCIO` (7) dias desde que el administrador lo aprueba (`Anuncio.abrir_semana`); la tienda no
+  elige fechas. Vencido no sale ni ocupa cupo (`Anuncio.objects.que_ocupan_cupo`): la tienda lo borra y sube otro.
+  Volver a aprobarlo tras un cambio no alarga la semana. Estandar: 1 con foto; Premium: 2 con foto + 1 video (el video
+  no vence, decision del dueño). Cambio de plan: la tienda lo pide en Datos de la tienda > "Cambiar de plan"
+  (`Tienda.plan_pedido`); el administrador lo aprueba o rechaza con las acciones de la lista de tiendas. Al aprobar
+  el plan cambia ya (`plan_desde` = hoy) y la mensualidad nueva se cobra desde el proximo dia 1: si la del mes que
+  viene ya estaba creada y pendiente, pasa al monto del plan nuevo (o se anula si el nuevo no cobra).

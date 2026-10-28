@@ -1,7 +1,11 @@
 from django.contrib import admin, messages
 from django.db.models import Count, Q
-from django.shortcuts import redirect
-from django.urls import reverse
+from django.contrib.admin.utils import unquote
+from django.core.exceptions import PermissionDenied
+from django.shortcuts import get_object_or_404, redirect
+from django.template.response import TemplateResponse
+from django.urls import path, reverse
+from django.utils import timezone
 from django.utils.html import format_html, format_html_join
 
 from core.admin_avisos import AvisaImagenesSinGuardar
@@ -21,7 +25,7 @@ class TiendaAdmin(AvisaImagenesSinGuardar, admin.ModelAdmin):
     list_filter = ['activa', 'cerrada_por_falta_de_pago', 'plan']
     search_fields = ['nombre', 'slug', 'prefijo']
     filter_horizontal = ['usuarios']
-    actions = ['habilitar']
+    actions = ['habilitar', 'aprobar_cambio_de_plan', 'rechazar_cambio_de_plan']
 
     # El primer bloque completo es solo para el administrador principal; el vendedor cambia el nombre.
     fieldsets = [
@@ -33,7 +37,7 @@ class TiendaAdmin(AvisaImagenesSinGuardar, admin.ModelAdmin):
             'permitir_contra_entrega', 'envio_gratis_desde', 'dias_para_recoger', 'dias_bajo_pedido',
         ]}),
         ('Plan y cobros (solo lo ve el administrador principal)', {
-            'fields': ['plan', 'estado_de_cobro', 'comision_porcentaje', 'itbis_porcentaje'],
+            'fields': ['plan', 'cambio_pedido', 'estado_de_cobro', 'comision_porcentaje', 'itbis_porcentaje'],
         }),
     ]
 
@@ -53,14 +57,84 @@ class TiendaAdmin(AvisaImagenesSinGuardar, admin.ModelAdmin):
         columnas = list(super().get_list_display(request))
         if ve_todas(request.user):
             # El plan y como va con sus pagos, a la vista; se cambian entrando a la tienda.
-            columnas[4:4] = ['plan', 'cobro']
+            columnas[4:4] = ['plan', 'pide_plan', 'cobro']
         return columnas
 
     def get_actions(self, request):
         acciones = super().get_actions(request)
         if not ve_todas(request.user):
-            acciones.pop('habilitar', None)
+            for accion in ('habilitar', 'aprobar_cambio_de_plan', 'rechazar_cambio_de_plan'):
+                acciones.pop(accion, None)
         return acciones
+
+    # --- Cambio de plan (pedido del dueño el 2026-10-28) ---------------------------------------------------------
+
+    def get_urls(self):
+        propias = [path('<path:object_id>/plan/', self.admin_site.admin_view(self.cambiar_plan_view),
+                        name='tiendas_tienda_plan')]
+        return propias + super().get_urls()
+
+    def cambiar_plan_view(self, request, object_id):
+        """La tienda elige otro plan; lo aprueba el administrador principal."""
+        from planes import services as planes
+
+        tienda = get_object_or_404(self.get_queryset(request), pk=unquote(object_id))
+        if not self.has_change_permission(request, tienda):
+            raise PermissionDenied
+        if request.method == 'POST':
+            try:
+                if 'cancelar' in request.POST:
+                    planes.cancelar_pedido_de_plan(tienda)
+                    self.message_user(request, 'Retiraste tu pedido de cambio de plan.', messages.SUCCESS)
+                else:
+                    plan = get_object_or_404(planes.planes_para_elegir(), pk=request.POST.get('plan') or 0)
+                    planes.pedir_cambio_de_plan(tienda, plan, request.user)
+                    self.message_user(request, f'Pediste el plan {plan.nombre}. Te avisamos por correo cuando lo '
+                                               'aprobemos; la mensualidad nueva se cobra desde el próximo día 1.',
+                                      messages.SUCCESS)
+            except planes.CambioDePlanError as error:
+                self.message_user(request, str(error), messages.ERROR)
+            return redirect(reverse('admin:tiendas_tienda_plan', args=[tienda.pk]))
+        contexto = {
+            **self.admin_site.each_context(request),
+            'title': 'Cambiar de plan', 'opts': self.model._meta, 'tienda': tienda,
+            'planes': list(planes.planes_para_elegir()),
+        }
+        return TemplateResponse(request, 'admin/tiendas/tienda/cambiar_plan.html', contexto)
+
+    @admin.display(description='Pide cambiar a')
+    def pide_plan(self, tienda):
+        return tienda.plan_pedido.nombre if tienda.plan_pedido_id else '—'
+
+    @admin.display(description='Cambio de plan pedido')
+    def cambio_pedido(self, tienda):
+        if not tienda.plan_pedido_id:
+            return 'Ninguno.'
+        return (f'Pidió el plan {tienda.plan_pedido.nombre} el {timezone.localtime(tienda.plan_pedido_el):%d/%m/%Y}. '
+                'Apruébalo o recházalo desde la lista de tiendas (acciones).')
+
+    @admin.action(description='Aprobar el cambio de plan pedido')
+    def aprobar_cambio_de_plan(self, request, queryset):
+        self._resolver_cambios(request, queryset, aprobar=True)
+
+    @admin.action(description='Rechazar el cambio de plan pedido')
+    def rechazar_cambio_de_plan(self, request, queryset):
+        self._resolver_cambios(request, queryset, aprobar=False)
+
+    def _resolver_cambios(self, request, queryset, aprobar):
+        from planes import services as planes
+
+        if not ve_todas(request.user):
+            return
+        hechas = 0
+        for tienda in queryset.filter(plan_pedido__isnull=False):
+            (planes.aprobar_cambio_de_plan if aprobar else planes.rechazar_cambio_de_plan)(tienda, request.user)
+            hechas += 1
+        if hechas:
+            resultado = 'aprobado(s)' if aprobar else 'rechazado(s)'
+            self.message_user(request, f'{hechas} cambio(s) de plan {resultado}.', messages.SUCCESS)
+        else:
+            self.message_user(request, 'Ninguna de las tiendas elegidas pidió cambiar de plan.', messages.WARNING)
 
     @admin.display(description='Pagos al sitio')
     def cobro(self, tienda):
@@ -83,7 +157,7 @@ class TiendaAdmin(AvisaImagenesSinGuardar, admin.ModelAdmin):
         if not ve_todas(request.user):
             return ['enlace_publico', 'tu_plan']
         # El prefijo ya esta en los numeros de pedido emitidos: no cambia despues de crear la tienda.
-        return ['prefijo', 'estado_de_cobro'] if obj else ['estado_de_cobro']
+        return ['prefijo', 'estado_de_cobro', 'cambio_pedido'] if obj else ['estado_de_cobro', 'cambio_pedido']
 
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
         if db_field.name == 'plan':
@@ -136,20 +210,26 @@ class TiendaAdmin(AvisaImagenesSinGuardar, admin.ModelAdmin):
     @admin.display(description='Tu plan')
     def tu_plan(self, tienda):
         plan = tienda.plan
+        cambiar = reverse('admin:tiendas_tienda_plan', args=[tienda.pk]) if tienda.pk else ''
+        pedido = (format_html('<p><strong>Pediste el plan {}</strong>: esperando aprobación.</p>',
+                              tienda.plan_pedido.nombre) if tienda.plan_pedido_id else '')
         if plan is None:
-            return 'Tu tienda todavía no tiene un plan: no pagas mensualidad ni puedes poner anuncios en la portada.'
+            return format_html(
+                'Tu tienda todavía no tiene un plan: no pagas mensualidad ni puedes poner anuncios en la portada.{} '
+                '<a class="button" href="{}">Elegir un plan</a>', pedido, cambiar)
         detalles = [
             f'Mensualidad: {formatear_monto(plan.mensualidad)}, vence el día 1 de cada mes.',
             (f'Incluye {plan.pedidos_incluidos} pedidos cobrados al mes; por cada pedido de más se cobra el '
              f'{plan.porcentaje_excedente.normalize():f} % de lo vendido en él (productos, sin el envío).')
             if plan.pedidos_incluidos is not None else 'Pedidos al mes sin límite.',
-            f'Anuncios en la portada: {plan.anuncios_portada}. Productos anunciados: {plan.productos_patrocinados}. '
-            f'Videos: {plan.videos_portada}.',
+            f'Anuncios con foto en la portada: {plan.anuncios_portada} (7 días cada uno). Videos: '
+            f'{plan.videos_portada}. Productos anunciados: {plan.productos_patrocinados}.',
         ]
         return format_html(
-            '<strong>Plan {}</strong><ul>{}</ul><a href="{}">Ver tus pagos al sitio</a> · <a href="{}">Ver los planes</a>',
-            plan.nombre, format_html_join('', '<li>{}</li>', ((detalle,) for detalle in detalles)),
-            reverse('admin:planes_cargo_changelist'), reverse('admin:planes_plan_changelist'),
+            '<strong>Plan {}</strong><ul>{}</ul>{}<a class="button" href="{}">Cambiar de plan</a> '
+            '<a href="{}">Ver tus pagos al sitio</a>',
+            plan.nombre, format_html_join('', '<li>{}</li>', ((detalle,) for detalle in detalles)), pedido, cambiar,
+            reverse('admin:planes_cargo_changelist'),
         )
 
     def save_related(self, request, form, formsets, change):

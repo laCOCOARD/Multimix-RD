@@ -80,7 +80,7 @@ class PanelAdminSite(admin.AdminSite):
         from . import metricas
         from .panel import primeros_pasos, resumen_panel, tareas_de_la_tienda, ventas_por_tienda
 
-        from planes.services import estado_de_cuenta, resumen_para_el_administrador
+        from planes.services import cambios_de_plan_pendientes, estado_de_cuenta, resumen_para_el_administrador
 
         contexto = {}
         if request.user.has_perm('pedidos.view_pedido'):
@@ -91,6 +91,8 @@ class PanelAdminSite(admin.AdminSite):
                     'cobros': resumen_para_el_administrador(),
                     # Negocios que pidieron abrir su tienda desde /vender/solicitar/.
                     'solicitudes_pendientes': solicitudes_pendientes(),
+                    # Tiendas que pidieron otro plan desde su panel.
+                    'cambios_de_plan': cambios_de_plan_pendientes(),
                     # Indicadores del sitio y actividad de todas las tiendas (core.metricas).
                     'indicadores': metricas.indicadores_del_sitio(),
                     'actividad': metricas.resumen(),

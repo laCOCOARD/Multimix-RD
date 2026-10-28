@@ -1,0 +1,11 @@
+{% autoescape off %}Hola, equipo de {{ tienda.nombre }}:
+{% if aprobado %}
+Aprobamos tu cambio de plan: desde hoy tu tienda tiene el plan {{ plan.nombre }}{% if plan_anterior %} (antes {{ plan_anterior.nombre }}){% endif %}.
+
+Ya puedes usar lo que incluye (anuncios, videos y pedidos del mes). La mensualidad del plan nuevo se cobra desde el 1 de {{ desde|date:"F" }}.
+{% else %}
+Por ahora no aprobamos tu pedido de pasar al plan {{ plan.nombre }}. Tu tienda sigue con su plan de siempre. Si tienes dudas, respóndenos este correo.
+{% endif %}
+Puedes ver tu plan en el panel:
+{{ enlace_panel }}
+{% endautoescape %}

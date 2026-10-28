@@ -1,0 +1,58 @@
+{% extends "admin/base_site.html" %}
+{% load moneda %}
+{# La tienda elige otro plan (pedido del dueño el 2026-10-28). Lo aprueba el administrador principal. #}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+  <a href="{% url 'admin:index' %}">Inicio</a> ›
+  <a href="{% url 'admin:tiendas_tienda_change' tienda.pk %}">{{ tienda.nombre }}</a> › Cambiar de plan
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="pv-inicio">
+  <p class="pv-plan">
+    {% if tienda.plan %}Tu plan ahora: <strong>{{ tienda.plan.nombre }}</strong>.{% else %}Tu tienda todavía no tiene plan.{% endif %}
+    Elige el que quieres: lo revisamos y te avisamos por correo. Al aprobarlo, el cambio es inmediato y la
+    mensualidad nueva se cobra desde el próximo día 1.
+  </p>
+
+  {% if tienda.plan_pedido %}
+    <section class="panel-aviso-cobro" aria-label="Pedido de cambio de plan">
+      <h2>Pediste el plan {{ tienda.plan_pedido.nombre }}</h2>
+      <p>Lo pediste el {{ tienda.plan_pedido_el|date:"j \d\e F, g:i a" }}. Está esperando nuestra aprobación.</p>
+      <form method="post">{% csrf_token %}
+        <button type="submit" name="cancelar" value="1" class="button">Retirar mi pedido</button>
+      </form>
+    </section>
+  {% endif %}
+
+  <div class="pv-planes">
+    {% for plan in planes %}
+      <article class="pv-plan-tarjeta{% if plan.pk == tienda.plan_id %} pv-plan-actual{% endif %}">
+        <h2>{{ plan.nombre }}
+          {% if plan.pk == tienda.plan_id %}<span class="panel-etiqueta panel-ok">Tu plan</span>{% endif %}
+          {% if plan.pk == tienda.plan_pedido_id %}<span class="panel-etiqueta panel-bajo">Pedido</span>{% endif %}
+        </h2>
+        {% if plan.descripcion %}<p class="pv-plan-desc">{{ plan.descripcion }}</p>{% endif %}
+        <p class="pv-plan-precio">{% if plan.mensualidad %}{{ plan.mensualidad|moneda }} <small>al mes</small>{% else %}Sin mensualidad{% endif %}</p>
+        <ul>
+          <li>{% if plan.pedidos_incluidos is None %}Pedidos sin límite{% else %}{{ plan.pedidos_incluidos }} pedidos cobrados al mes{% if plan.porcentaje_excedente %}; los de más pagan el {{ plan.porcentaje_excedente|floatformat:"-2" }} %{% endif %}{% endif %}</li>
+          <li>{% if plan.anuncios_portada %}{{ plan.anuncios_portada }} anuncio{{ plan.anuncios_portada|pluralize }} con foto en la portada, 7 días cada uno{% else %}Sin anuncios en la portada{% endif %}</li>
+          <li>{% if plan.videos_portada %}{{ plan.videos_portada }} video{{ plan.videos_portada|pluralize }}{% else %}Sin videos{% endif %}</li>
+          <li>{% if plan.productos_patrocinados %}{{ plan.productos_patrocinados }} producto{{ plan.productos_patrocinados|pluralize }} anunciado{{ plan.productos_patrocinados|pluralize }}{% else %}Sin productos anunciados{% endif %}</li>
+        </ul>
+        {% if plan.pk != tienda.plan_id and plan.pk != tienda.plan_pedido_id %}
+          <form method="post">{% csrf_token %}
+            <button type="submit" name="plan" value="{{ plan.pk }}" class="pv-boton" data-confirmar="¿Pedir el plan {{ plan.nombre }}? La mensualidad nueva se cobra desde el próximo día 1, cuando lo aprobemos.">Pedir este plan</button>
+          </form>
+        {% endif %}
+      </article>
+    {% empty %}
+      <p>Todavía no hay planes para elegir.</p>
+    {% endfor %}
+  </div>
+
+  <p><a href="{% url 'admin:tiendas_tienda_change' tienda.pk %}">Volver a los datos de la tienda</a></p>
+</div>
+{% endblock %}

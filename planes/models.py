@@ -4,6 +4,7 @@ Cada tienda paga una mensualidad segun su plan, que tambien fija cuantos pedidos
 porcentaje que se cobra sobre lo vendido en los pedidos de mas y cuantos anuncios puede tener en la portada. El
 sitio ya no cobra a los clientes ni se queda con un porcentaje de cada venta: cada tienda cobra lo suyo.
 """
+from datetime import timedelta
 from decimal import Decimal
 
 from django.conf import settings
@@ -43,7 +44,8 @@ class Plan(models.Model):
     )
     anuncios_portada = models.PositiveSmallIntegerField(
         'anuncios en la portada', default=0,
-        help_text='Banners que la tienda puede tener a la vez en la portada del sitio (los apruebas tú).',
+        help_text='Anuncios con foto que la tienda puede tener a la vez en la portada (los apruebas tú). Cada uno '
+                  'sale 7 días desde que lo apruebas; cuando vence, la tienda puede poner otro.',
     )
     productos_patrocinados = models.PositiveSmallIntegerField(
         'productos anunciados', default=0,
@@ -138,9 +140,21 @@ def borrar_comprobante_del_cargo(sender, instance, **kwargs):
         almacenamiento_privado().delete(instance.comprobante.name)
 
 
+# Lo que dura un anuncio en la portada desde que se aprueba (pedido del dueño el 2026-10-28).
+DIAS_DEL_ANUNCIO = 7
+
+
+class AnuncioQuerySet(models.QuerySet):
+    def que_ocupan_cupo(self, tienda_id):
+        """Los activos que no han vencido: los que cuentan para el limite del plan."""
+        return self.filter(tienda_id=tienda_id, activo=True).filter(
+            Q(vigente_hasta__isnull=True) | Q(vigente_hasta__gte=timezone.now()))
+
+
 class Anuncio(models.Model):
-    """Banner de una tienda en la portada del sitio. Cuantos puede tener a la vez lo dice su plan, y sale solo
-    cuando el administrador lo aprueba (cambiar el texto o la imagen pide aprobarlo otra vez)."""
+    """Anuncio con foto de una tienda en la portada del sitio. Cuantos puede tener a la vez lo dice su plan, y sale
+    solo cuando el administrador lo aprueba (cambiar el texto o la imagen pide aprobarlo otra vez). Dura
+    DIAS_DEL_ANUNCIO dias desde la aprobacion; vencido ya no ocupa cupo y la tienda puede poner otro."""
 
     tienda = models.ForeignKey('tiendas.Tienda', on_delete=models.CASCADE, related_name='anuncios')
     titulo = models.CharField('título', max_length=70)
@@ -167,6 +181,8 @@ class Anuncio(models.Model):
     # Si la tienda cambia alguno de estos, el anuncio vuelve a revision.
     CAMPOS_DEL_CONTENIDO = ('titulo', 'texto', 'imagen', 'producto')
 
+    objects = AnuncioQuerySet.as_manager()
+
     class Meta:
         verbose_name = 'anuncio en la portada'
         verbose_name_plural = 'anuncios en la portada'
@@ -181,14 +197,14 @@ class Anuncio(models.Model):
             errores['producto'] = 'Elige un producto de tu tienda.'
         if self.vigente_desde and self.vigente_hasta and self.vigente_hasta <= self.vigente_desde:
             errores['vigente_hasta'] = 'La vigencia debe terminar después de su inicio.'
-        if self.activo and self.tienda_id:
+        if self.activo and self.tienda_id and not self.vencido:
             limite = self.tienda.plan.anuncios_portada if self.tienda.plan_id else 0
-            activos = Anuncio.objects.filter(tienda_id=self.tienda_id, activo=True).exclude(pk=self.pk).count()
+            activos = Anuncio.objects.que_ocupan_cupo(self.tienda_id).exclude(pk=self.pk).count()
             if activos >= limite:
                 errores['activo'] = (
-                    f'Tu plan permite {limite} anuncio{"s" if limite != 1 else ""} activo{"s" if limite != 1 else ""} '
-                    'a la vez. Apaga otro o pide un plan con más anuncios.'
-                    if limite else 'Tu plan no incluye anuncios en la portada. Pide un plan que los incluya.'
+                    f'Tu plan permite {limite} anuncio{"s" if limite != 1 else ""} a la vez. Borra o apaga uno, o '
+                    'espera a que venza (duran ' f'{DIAS_DEL_ANUNCIO} días), o cambia a un plan con más anuncios.'
+                    if limite else 'Tu plan no incluye anuncios en la portada. Cambia a un plan que los incluya.'
                 )
         if errores:
             raise ValidationError(errores)
@@ -197,6 +213,21 @@ class Anuncio(models.Model):
     def vigente(self):
         ahora = timezone.now()
         return (not self.vigente_desde or self.vigente_desde <= ahora) and (not self.vigente_hasta or self.vigente_hasta >= ahora)
+
+    @property
+    def vencido(self):
+        """Ya cumplio su tiempo en la portada: no sale ni ocupa cupo."""
+        return bool(self.vigente_hasta and self.vigente_hasta < timezone.now())
+
+    def abrir_semana(self, ahora=None):
+        """Al aprobarlo: sale desde ahora y por DIAS_DEL_ANUNCIO dias, salvo que ya tenga fechas (el administrador las
+        puso, o ya corrio y se volvio a aprobar tras un cambio: no se alarga)."""
+        if self.vigente_hasta:
+            return False
+        ahora = ahora or timezone.now()
+        self.vigente_desde = self.vigente_desde or ahora
+        self.vigente_hasta = max(self.vigente_desde, ahora) + timedelta(days=DIAS_DEL_ANUNCIO)
+        return True
 
     def get_url(self):
         """El producto si sigue a la venta en una tienda activa; si no, la tienda."""

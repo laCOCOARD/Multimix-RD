@@ -680,12 +680,17 @@ def avisar_anuncio_por_revisar(anuncio):
 
 
 def aprobar_anuncio(anuncio, usuario=None):
-    """El anuncio sale en la portada (si su tienda esta activa y su plan lo permite). La tienda recibe un correo."""
+    """El anuncio sale en la portada por DIAS_DEL_ANUNCIO dias desde ahora (si su tienda esta activa y su plan lo
+    permite). La tienda recibe un correo."""
     if usuario is not None and not ve_todas(usuario):
         raise CargoError('Solo el administrador principal aprueba anuncios.')
     if anuncio.aprobado:
         return anuncio
-    Anuncio.objects.filter(pk=anuncio.pk).update(aprobado=True, revisado_el=timezone.now())
+    ahora = timezone.now()
+    anuncio.abrir_semana(ahora)
+    Anuncio.objects.filter(pk=anuncio.pk).update(
+        aprobado=True, revisado_el=ahora, vigente_desde=anuncio.vigente_desde, vigente_hasta=anuncio.vigente_hasta,
+    )
     anuncio.refresh_from_db()
 
     def enviar_aviso():
@@ -787,3 +792,111 @@ def aprobar_video(video, usuario=None):
 
 def planes_disponibles():
     return Plan.objects.filter(activo=True)
+
+
+# --- Cambio de plan que pide la tienda (pedido del dueño el 2026-10-28) -------------------------------------
+# La tienda elige otro plan en su panel; el administrador principal lo aprueba o lo rechaza. Al aprobarlo el plan
+# cambia en el momento (anuncios, videos y pedidos incluidos) y la mensualidad nueva se cobra desde el proximo dia 1.
+
+class CambioDePlanError(Exception):
+    pass
+
+
+def planes_para_elegir():
+    return Plan.objects.filter(activo=True)
+
+
+@transaction.atomic
+def pedir_cambio_de_plan(tienda, plan, usuario=None):
+    """La tienda pide pasar a `plan`. Reemplaza un pedido anterior que siguiera esperando."""
+    tienda = Tienda.objects.select_for_update().get(pk=tienda.pk)
+    if not plan.activo:
+        raise CambioDePlanError('Ese plan ya no se ofrece.')
+    if plan.pk == tienda.plan_id:
+        raise CambioDePlanError(f'Tu tienda ya tiene el plan {plan.nombre}.')
+    tienda.plan_pedido = plan
+    tienda.plan_pedido_el = timezone.now()
+    tienda.save(update_fields=['plan_pedido', 'plan_pedido_el'])
+
+    def enviar_aviso():
+        from pedidos.avisos import correos_del_sitio
+
+        contexto = _contexto(
+            tienda, plan=plan, plan_actual=tienda.plan, usuario=usuario,
+            enlace_tiendas=url_absoluta(reverse('admin:tiendas_tienda_changelist') + '?plan_pedido__isnull=False'),
+        )
+        enviar(f'Cambio de plan pedido: {tienda.nombre}', 'sitio_cambio_de_plan', contexto, correos_del_sitio())
+    _al_confirmar(enviar_aviso)
+    return tienda
+
+
+@transaction.atomic
+def cancelar_pedido_de_plan(tienda):
+    """La tienda retira su pedido antes de que lo revisen."""
+    Tienda.objects.filter(pk=tienda.pk).update(plan_pedido=None, plan_pedido_el=None)
+
+
+def _ajustar_mensualidad_por_cobrar(tienda, hoy, usuario=None):
+    """Si la mensualidad del mes que viene ya se creo con el plan anterior y nadie la ha pagado ni avisado, pasa a
+    la del plan nuevo. Devuelve el cargo ajustado o None."""
+    proximo = mes_siguiente(hoy)
+    cargo = Cargo.objects.select_for_update().filter(
+        tienda=tienda, tipo=Tipo.MENSUALIDAD, periodo=proximo, estado=Estado.PENDIENTE,
+    ).first()
+    if cargo is None:
+        return None
+    plan = tienda.plan
+    if plan is None or plan.mensualidad <= 0:
+        return anular_cargo(cargo, usuario, f'La tienda cambió al plan {plan.nombre if plan else "sin plan"}, sin mensualidad.')
+    cargo.monto = plan.mensualidad
+    cargo.concepto = f'Mensualidad de {nombre_del_mes(proximo)} · Plan {plan.nombre}'
+    cargo.save(update_fields=['monto', 'concepto'])
+    return cargo
+
+
+@transaction.atomic
+def aprobar_cambio_de_plan(tienda, usuario=None):
+    """El plan cambia ya. La mensualidad nueva se cobra desde el proximo dia 1 (la de este mes no se toca)."""
+    if usuario is not None and not ve_todas(usuario):
+        raise CambioDePlanError('Solo el administrador principal aprueba cambios de plan.')
+    tienda = Tienda.objects.select_for_update().select_related('plan_pedido').get(pk=tienda.pk)
+    nuevo = tienda.plan_pedido
+    if nuevo is None:
+        raise CambioDePlanError(f'{tienda.nombre} no tiene un cambio de plan pedido.')
+    anterior = tienda.plan
+    tienda.plan = nuevo
+    tienda.plan_pedido = None
+    tienda.plan_pedido_el = None
+    tienda.save(update_fields=['plan', 'plan_pedido', 'plan_pedido_el'])
+    _ajustar_mensualidad_por_cobrar(tienda, _hoy(), usuario)
+
+    def enviar_aviso():
+        enviar(f'Tu tienda ya tiene el plan {nuevo.nombre}', 'tienda_cambio_de_plan',
+               _contexto(tienda, aprobado=True, plan=nuevo, plan_anterior=anterior,
+                         desde=mes_siguiente(_hoy())),
+               correos_de_los_duenos(tienda))
+    _al_confirmar(enviar_aviso)
+    return tienda
+
+
+@transaction.atomic
+def rechazar_cambio_de_plan(tienda, usuario=None):
+    if usuario is not None and not ve_todas(usuario):
+        raise CambioDePlanError('Solo el administrador principal rechaza cambios de plan.')
+    tienda = Tienda.objects.select_for_update().select_related('plan_pedido').get(pk=tienda.pk)
+    pedido = tienda.plan_pedido
+    if pedido is None:
+        raise CambioDePlanError(f'{tienda.nombre} no tiene un cambio de plan pedido.')
+    tienda.plan_pedido = None
+    tienda.plan_pedido_el = None
+    tienda.save(update_fields=['plan_pedido', 'plan_pedido_el'])
+
+    def enviar_aviso():
+        enviar(f'Tu pedido de cambio de plan en {ConfiguracionTienda.obtener().nombre}', 'tienda_cambio_de_plan',
+               _contexto(tienda, aprobado=False, plan=pedido), correos_de_los_duenos(tienda))
+    _al_confirmar(enviar_aviso)
+    return tienda
+
+
+def cambios_de_plan_pendientes():
+    return Tienda.objects.filter(plan_pedido__isnull=False).count()

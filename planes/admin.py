@@ -7,6 +7,7 @@ from django.db.models import Count
 from django.http import FileResponse, Http404
 from django.urls import path, reverse
 from django.utils import timezone
+from django.utils.formats import date_format
 from django.utils.html import format_html, format_html_join
 
 from catalogo.models import Producto
@@ -20,7 +21,7 @@ from tiendas.panel import AdminDeTienda, tiendas_del_panel
 from tiendas.services import ve_todas
 
 from . import services
-from .models import Anuncio, Cargo, Plan, Video, limite_de_videos
+from .models import DIAS_DEL_ANUNCIO, Anuncio, Cargo, Plan, Video, limite_de_videos
 
 Estado = Cargo.Estado
 
@@ -303,7 +304,39 @@ class AnuncioAdmin(AvisaImagenesSinGuardar, AdminDeTienda, admin.ModelAdmin):
     ]
 
     def get_readonly_fields(self, request, obj=None):
-        return ['revisado_el'] if ve_todas(request.user) else ['aprobado', 'revisado_el']
+        if ve_todas(request.user):
+            return ['revisado_el']
+        # La tienda no elige las fechas: el anuncio sale DIAS_DEL_ANUNCIO dias desde que se aprueba.
+        return ['aprobado', 'revisado_el', 'vigente_desde', 'vigente_hasta']
+
+    def get_list_display(self, request):
+        if ve_todas(request.user):
+            return self.list_display
+        return ['titulo', 'miniatura', 'en_la_portada', 'activo', 'orden']
+
+    def get_fieldsets(self, request, obj=None):
+        if ve_todas(request.user):
+            return self.fieldsets
+        return [
+            (None, {'fields': ['tienda', 'titulo', 'texto', 'imagen', 'producto'],
+                    'description': f'Cada anuncio sale {DIAS_DEL_ANUNCIO} días en la portada desde que lo aprobamos. '
+                                   'Cuando vence, bórralo y sube otro.'}),
+            ('En la portada', {'fields': ['activo', 'aprobado', 'vigente_desde', 'vigente_hasta']}),
+        ]
+
+    @admin.display(description='En la portada')
+    def en_la_portada(self, anuncio):
+        if anuncio.vencido:
+            return format_html('<span class="panel-estado panel-cargo-anulado">Venció el {}</span>',
+                               date_format(timezone.localtime(anuncio.vigente_hasta), r'j \d\e F'))
+        if not anuncio.aprobado:
+            return format_html('<span class="panel-estado panel-cargo-en_revision">Por revisar</span>')
+        if not anuncio.activo:
+            return format_html('<span class="panel-estado panel-cargo-anulado">Apagado</span>')
+        if anuncio.vigente_hasta:
+            return format_html('<span class="panel-estado panel-cargo-pagado">Hasta el {}</span>',
+                               date_format(timezone.localtime(anuncio.vigente_hasta), r'j \d\e F, g:i a'))
+        return format_html('<span class="panel-estado panel-cargo-pagado">En la portada</span>')
 
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
         if db_field.name == 'producto':
@@ -323,7 +356,7 @@ class AnuncioAdmin(AvisaImagenesSinGuardar, AdminDeTienda, admin.ModelAdmin):
             plan = tiendas[0].plan
             limite = plan.anuncios_portada if plan else 0
             formulario.base_fields['activo'].help_text = (
-                f'Tu plan {plan.nombre} permite {limite} anuncio(s) activo(s) a la vez.' if plan
+                f'Tu plan {plan.nombre} permite {limite} anuncio(s) a la vez; los vencidos no cuentan.' if plan
                 else 'Tu tienda no tiene un plan con anuncios todavía.'
             )
         return formulario
@@ -333,6 +366,7 @@ class AnuncioAdmin(AvisaImagenesSinGuardar, AdminDeTienda, admin.ModelAdmin):
         if ve_todas(request.user):
             if 'aprobado' in form.changed_data and obj.aprobado:
                 obj.revisado_el = timezone.now()
+                obj.abrir_semana(obj.revisado_el)
         elif not change or set(form.changed_data) & set(Anuncio.CAMPOS_DEL_CONTENIDO):
             # Algo nuevo para la portada: lo revisa el administrador antes de publicarlo.
             obj.aprobado = False

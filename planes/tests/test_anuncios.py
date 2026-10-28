@@ -64,7 +64,7 @@ class LimitesDelPlanTests(ConAnuncios):
         borrador.full_clean()
         borrador.save()
         segundo = Anuncio(tienda=self.tienda, titulo='Otro', imagen=imagen_de_prueba())
-        with self.assertRaisesMessage(ValidationError, 'Tu plan permite 1 anuncio activo'):
+        with self.assertRaisesMessage(ValidationError, 'Tu plan permite 1 anuncio a la vez'):
             segundo.full_clean()
         segundo.activo = False
         segundo.full_clean()

@@ -179,7 +179,8 @@
       <p class="pv-plan">
         {% if estado.plan %}Tu plan: {{ estado.plan.nombre }}{% if estados_de_cuenta|length > 1 %} ({{ estado.tienda.nombre }}){% endif %}{% if estado.uso.incluidos is not None %} · este mes llevas {{ estado.uso.pedidos }} de {{ estado.uso.incluidos }} pedidos incluidos{% endif %}.
         {% else %}{% if estados_de_cuenta|length > 1 %}{{ estado.tienda.nombre }}{% else %}Tu tienda{% endif %} todavía no tiene plan.{% endif %}
-        <a href="{% url 'admin:tiendas_tienda_change' estado.tienda.pk %}">Ver mi plan</a>
+        {% if estado.tienda.plan_pedido %}Pediste el plan {{ estado.tienda.plan_pedido.nombre }}: esperando aprobación.{% endif %}
+        <a href="{% url 'admin:tiendas_tienda_plan' estado.tienda.pk %}">Cambiar de plan</a>
       </p>
   {% endfor %}
 

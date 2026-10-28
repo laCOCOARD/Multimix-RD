@@ -40,6 +40,12 @@
     <p><a href="{% url 'admin:tiendas_solicitudtienda_changelist' %}?estado__exact=pendiente">{{ solicitudes_pendientes }} solicitud{{ solicitudes_pendientes|pluralize:"es" }} de tienda pendiente{{ solicitudes_pendientes|pluralize }}</a>: revísalas y contacta a cada negocio.</p>
   </section>
 {% endif %}
+{% if cambios_de_plan %}
+  <section class="panel-aviso-cobro panel-aviso-urgente" aria-label="Cambios de plan">
+    <h2>Cambios de plan pedidos</h2>
+    <p><a href="{% url 'admin:tiendas_tienda_changelist' %}?plan_pedido__isnull=False">{{ cambios_de_plan }} tienda{{ cambios_de_plan|pluralize }} pidi{{ cambios_de_plan|pluralize:"ó,eron" }} cambiar de plan</a>: elígelas y usa la acción "Aprobar el cambio de plan pedido" o "Rechazar".</p>
+  </section>
+{% endif %}
 {% if cobros %}
   <section class="panel-aviso-cobro{% if cobros.comprobantes_por_revisar or cobros.cargos_vencidos %} panel-aviso-urgente{% endif %}" aria-label="Pagos de las tiendas al sitio">
     <h2>Pagos de las tiendas</h2>

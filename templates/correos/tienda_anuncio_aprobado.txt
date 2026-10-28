@@ -1,4 +1,4 @@
 {% autoescape off %}Hola, equipo de {{ tienda.nombre }}:
 
-Aprobamos tu anuncio "{{ anuncio.titulo }}": ya sale en la portada de {{ sitio }} mientras esté activo y dentro de sus fechas.
+Aprobamos tu anuncio "{{ anuncio.titulo }}": ya sale en la portada de {{ sitio }}{% if anuncio.vigente_hasta %} hasta el {{ anuncio.vigente_hasta|date:"j \d\e F, g:i a" }}. Cuando venza puedes borrarlo y subir otro{% endif %}.
 {% endautoescape %}
