@@ -590,3 +590,164 @@ def completar_clientes(filas, pedidos):
         fila.update(recientes.get((fila['tienda_id'], fila['telefono']), {}))
         fila['comprado'] = fila['comprado'] or CERO
     return filas
+
+
+# --- Panel de la tienda: pestañas de la lista y lo que sigue en cada pedido ----------------------
+
+def _bandejas():
+    transferencia = Q(estado=Estado.PENDIENTE, metodo_pago=Pago.TRANSFERENCIA)
+    return [
+        ('por_confirmar', 'Pago por confirmar', transferencia & Q(transferencia_realizada=True), True),
+        ('esperando_pago', 'Esperando pago', transferencia & Q(transferencia_realizada=False), False),
+        ('por_preparar', 'Por preparar',
+         Q(estado=Estado.PAGADO) | (Q(estado=Estado.PENDIENTE) & ~Q(metodo_pago=Pago.TRANSFERENCIA)), True),
+        ('preparando', 'Preparando', Q(estado=Estado.PREPARANDO), False),
+        ('por_entregar', 'Por entregar', Q(estado__in=[Estado.LISTO, Estado.ENVIADO, Estado.EN_REPARTO]), False),
+        ('entregados', 'Entregados', Q(estado=Estado.ENTREGADO), False),
+        ('cancelados', 'Cancelados', Q(estado__in=Pedido.ESTADOS_SIN_VENTA), False),
+    ]
+
+
+def filtro_de_bandeja(clave):
+    """El filtro (Q) de una pestaña de la lista de pedidos; None si la clave no existe."""
+    return next((q for c, _, q, _ in _bandejas() if c == clave), None)
+
+
+def opciones_de_bandeja():
+    return [(clave, titulo) for clave, titulo, _, _ in _bandejas()]
+
+
+def bandejas_de_pedidos(pedidos):
+    """Las pestañas de la lista con cuantos pedidos hay en cada una, en una sola consulta.
+
+    Cada pedido cae en una sola pestaña. `urgente` marca las que esperan algo de la tienda.
+    """
+    bandejas = _bandejas()
+    cuentas = pedidos.order_by().aggregate(**{clave: Count('id', filter=q) for clave, _, q, _ in bandejas})
+    return [
+        {'clave': clave, 'titulo': titulo, 'cantidad': cuentas[clave], 'urgente': urgente}
+        for clave, titulo, _, urgente in bandejas
+    ]
+
+
+# Lo que dice cada boton: la accion, no el nombre del estado.
+VERBOS = {
+    Estado.PAGADO: 'Marcar como pagado',
+    Estado.PREPARANDO: 'Empezar a prepararlo',
+    Estado.LISTO: 'Está listo para recoger',
+    Estado.ENVIADO: 'Marcar como enviado',
+    Estado.EN_REPARTO: 'Salió a repartir',
+    Estado.ENTREGADO: 'Marcar como entregado',
+    Estado.CANCELADO: 'Cancelar el pedido',
+    Estado.REEMBOLSADO: 'Marcar como reembolsado',
+}
+
+# El paso que normalmente toca en cada estado, si esta permitido.
+_PASO_PRINCIPAL = {
+    Estado.PENDIENTE: [Estado.PREPARANDO],
+    Estado.PAGADO: [Estado.PREPARANDO],
+    Estado.PREPARANDO: [Estado.LISTO, Estado.ENVIADO],
+    Estado.LISTO: [Estado.ENTREGADO],
+    Estado.ENVIADO: [Estado.ENTREGADO],
+    Estado.EN_REPARTO: [Estado.ENTREGADO],
+}
+
+
+@dataclass
+class SiguientePaso:
+    titulo: str
+    texto: str
+    corto: str                 # para la columna "Qué sigue" de la lista
+    principal: str | None      # estado del boton grande
+    otros: list                # estados de los demas botones
+    revisar_pago: bool = False         # hay un comprobante esperando
+    confirma_el_sitio: bool = False    # ... pero lo confirma el administrador principal
+
+
+def siguiente_paso(pedido, usuario=None):
+    """Que tiene que hacer la tienda con el pedido ahora y con que botones. Solo ofrece cambios que
+    `cambiar_estado` acepta para ese usuario. No consulta la base."""
+    E = Estado
+    permitidas = transiciones_permitidas(pedido, usuario)
+    principal = next((e for e in _PASO_PRINCIPAL.get(pedido.estado, []) if e in permitidas), None)
+    otros = [e for e in permitidas if e != principal]
+    cobro = '' if pedido.fecha_pago else ' y pague'
+
+    if pedido.estado == E.PENDIENTE and pedido.paga_por_transferencia:
+        if not pedido.transferencia_realizada:
+            return SiguientePaso(
+                'Esperando la transferencia',
+                'El cliente todavía no ha enviado su comprobante. Cuando lo envíe te llega un correo y aquí verás '
+                'la foto. Si no paga a tiempo, el pedido se cancela solo.',
+                'Esperando el pago', None, otros,
+            )
+        # Confirmar el pago ya lo pasa a Pagado: sobra el boton de "Marcar como pagado".
+        otros = [e for e in otros if e != E.PAGADO]
+        if pedido.cobra_el_sitio and usuario is not None and not ve_todas(usuario):
+            return SiguientePaso(
+                'El sitio está revisando el pago',
+                'El cliente transfirió a las cuentas del sitio. El administrador lo comprueba en su banco y te '
+                'llega un correo cuando lo confirme; prepáralo después de eso.',
+                'Lo confirma el sitio', None, otros, revisar_pago=True, confirma_el_sitio=True,
+            )
+        return SiguientePaso(
+            'Revisa el comprobante',
+            'El cliente dice que ya transfirió. Mira tu banco: si el dinero llegó, confirma el pago; si no, '
+            'rechaza el comprobante y el cliente podrá enviar otro.',
+            'Revisar el pago', None, otros, revisar_pago=True,
+        )
+    if pedido.estado == E.PENDIENTE:
+        cuando = 'al recogerlo' if pedido.recoge_en_tienda else 'al entregarlo'
+        return SiguientePaso(
+            'Prepara el pedido', f'Se paga en efectivo {cuando}: cóbralo y márcalo como entregado.',
+            'Preparar (se cobra al entregar)', principal, otros,
+        )
+    if pedido.estado == E.PAGADO:
+        return SiguientePaso(
+            'Prepara el pedido', 'Ya está pagado. Cuando empieces a prepararlo, márcalo: al cliente le llega el aviso.',
+            'Preparar', principal, otros,
+        )
+    if pedido.estado == E.PREPARANDO and pedido.recoge_en_tienda:
+        return SiguientePaso(
+            'Avisa cuando esté listo',
+            'Cuando lo tengas listo, márcalo: al cliente le llega el aviso para que pase a recogerlo.',
+            'Avisar que está listo', principal, otros,
+        )
+    if pedido.estado == E.PREPARANDO:
+        return SiguientePaso(
+            'Despacha el pedido',
+            'Cuando salga, márcalo como enviado. Puedes anotar quién lo lleva y el número de seguimiento: el cliente '
+            'los ve en su pedido.', 'Enviar', principal, otros,
+        )
+    if pedido.estado == E.LISTO:
+        return SiguientePaso(
+            'Esperando que lo recoja', f'Cuando el cliente lo recoja{cobro}, márcalo como entregado.',
+            'Entregar', principal, otros,
+        )
+    if pedido.estado in (E.ENVIADO, E.EN_REPARTO):
+        return SiguientePaso(
+            'En camino', f'Cuando el cliente lo reciba{cobro}, márcalo como entregado.', 'Entregar', principal, otros,
+        )
+    if pedido.estado == E.ENTREGADO:
+        return SiguientePaso('Pedido completado', 'El cliente ya lo recibió.', '', None, otros)
+    if pedido.estado == E.CANCELADO:
+        return SiguientePaso('Pedido cancelado', 'Este pedido no sigue.', '', None, otros)
+    return SiguientePaso('Pedido reembolsado', 'Se le devolvió el dinero al cliente.', '', None, otros)
+
+
+@transaction.atomic
+def avanzar_pedido(pedido, nuevo_estado, usuario=None, nota='', transportista='', numero_seguimiento=''):
+    """Cambia el estado desde el panel. Al enviarlo se pueden anotar el transportista y el numero de seguimiento:
+    quedan guardados antes del aviso al cliente (los correos salen al confirmar la transaccion)."""
+    datos = {
+        campo: valor for campo, valor in (
+            ('transportista', (transportista or '').strip()[:60]),
+            ('numero_seguimiento', (numero_seguimiento or '').strip()[:60]),
+        ) if valor
+    }
+    pedido = cambiar_estado(pedido, nuevo_estado, usuario=usuario, nota=nota)
+    if datos and nuevo_estado in (Estado.ENVIADO, Estado.EN_REPARTO):
+        Pedido.objects.filter(pk=pedido.pk).update(**datos)
+        for campo, valor in datos.items():
+            setattr(pedido, campo, valor)
+    return pedido

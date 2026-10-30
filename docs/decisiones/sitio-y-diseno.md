@@ -155,3 +155,16 @@ Decisiones tomadas en Multimix RD (movidas desde CLAUDE.md el 2026-10-28). Leela
   `admin_site.PANTALLAS_CON_PENDIENTES`, plantilla admin/app_list.html copiada de Django) que, junto con "Para hacer
   ahora" y el titulo de la pestaña, se actualizan solos cada minuto (`admin:pendientes`, static/js/panel.js). En el
   telefono sus listas se ven como tarjetas con el nombre de cada columna (CSS con `html:has(meta[name=pv-pendientes])`).
+- Panel del dueño de tienda, fase 2: pedidos (2026-10-29). La lista lleva pestañas arriba (`BandejaFilter`, parametro
+  `bandeja`; `pedidos.services.bandejas_de_pedidos` las cuenta en una consulta): Pago por confirmar, Esperando pago,
+  Por preparar (pagados y los de efectivo pendientes), Preparando, Por entregar, Entregados y Cancelados; cada pedido
+  cae en una sola. La columna "Qué sigue" reemplaza a "Aviso". La pagina del pedido abre con un recuadro de
+  `services.siguiente_paso` (titulo, explicacion, un boton grande con el paso normal y los demas permitidos, con
+  verbos: "Empezar a prepararlo", "Marcar como entregado"); los botones salen de `transiciones_permitidas`, nunca
+  ofrecen algo que `cambiar_estado` rechace. Con el comprobante enviado (pago "en revision") se ve la foto y se
+  confirma o rechaza ahi mismo (`admin:pedidos_pedido_pago` -> `pagos.services.aprobar_pago` / `rechazar_pago`, con
+  motivo que le llega al cliente); si lo cobra el sitio, el vendedor solo lo ve. Al cambiar de estado se puede dejar un
+  mensaje para el cliente (nota del seguimiento) y, al enviarlo, quien lo lleva y el numero de seguimiento
+  (`services.avanzar_pedido`, guardados antes del aviso). Debajo: cliente (WhatsApp y llamar), entrega y productos;
+  luego "Todos los datos del pedido" como antes. El correo "Transferencia por revisar" lleva al pedido, no al pago.
+  "Para hacer ahora" cuenta tambien el efectivo al recoger ("pedidos para cobrar al entregar").

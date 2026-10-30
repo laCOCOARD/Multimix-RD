@@ -34,7 +34,7 @@ class InicioDelVendedorTests(PanelDeVendedores):
         Pregunta.objects.create(tienda=self.propia, producto=self.lampara, usuario=self.vendedor, texto='¿Tienen azul?')
         Pregunta.objects.create(tienda=self.ajena, producto=self.pesas, usuario=self.vendedor, texto='¿Y de 10 kg?')
         self.assertEqual(self.tareas(), {
-            'pedido contra entrega': 1, 'pedido por entregar': 1, 'pregunta sin responder': 1,
+            'pedido para cobrar al entregar': 1, 'pedido por entregar': 1, 'pregunta sin responder': 1,
         })
 
     def test_cada_tarea_lleva_a_su_lista_filtrada(self):

@@ -89,7 +89,8 @@ class AvisosPorCorreoTests(TestCase):
         # La transferencia llego a las cuentas de la tienda: el aviso es para ella, no para el sitio.
         self.assertEqual(correo.to, ['ventas@tienda.example'])
         self.assertIn('Referencia: REF-77', correo.body)
-        self.assertIn(f'/panel/pagos/pago/{pago.pk}/change/', correo.body)
+        # Lleva al pedido, donde se ve el comprobante y se confirma o rechaza.
+        self.assertIn(f'/panel/pedidos/pedido/{pedido.pk}/change/', correo.body)
 
         with self.captureOnCommitCallbacks(execute=True):
             pagos.rechazar_pago(pago, nota='No aparece en el banco')

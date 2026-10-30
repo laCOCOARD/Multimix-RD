@@ -103,7 +103,7 @@ class CobroDeCadaTiendaTests(TestCase):
             cambiar_estado(pedido, Estado.PAGADO, usuario=self.vendedor)
         self.assertEqual(transiciones_permitidas(pedido, self.vendedor), [])
         self.client.force_login(self.vendedor)
-        self.assertContains(self.client.get(reverse('admin:pedidos_pedido_changelist')), 'El sitio verifica el pago')
+        self.assertContains(self.client.get(reverse('admin:pedidos_pedido_changelist')), 'Lo confirma el sitio')
         # El dueño lo aprueba y la tienda recibe "Pago confirmado" para prepararlo.
         mail.outbox.clear()
         with self.captureOnCommitCallbacks(execute=True):

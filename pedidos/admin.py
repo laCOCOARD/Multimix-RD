@@ -11,6 +11,7 @@ from django.utils.html import format_html
 from django.views.decorators.http import require_POST
 
 from core.telefonos import formatear_telefono, telefono_internacional
+from pagos.services import PagoError, aprobar_pago, rechazar_pago
 from core.templatetags.moneda import formatear_monto
 from tiendas.panel import AdminDeTienda, maneja_varias_tiendas, tiendas_del_panel
 from tiendas.services import ve_todas
@@ -21,6 +22,13 @@ from .whatsapp import construir_enlace, enlace_al_cliente, enlace_aviso_de_estad
 
 Estado = Pedido.Estado
 CLIENTES_POR_PAGINA = 50
+
+
+def _pago_por_revisar(pedido):
+    """El pago con comprobante que espera que alguien lo confirme o lo rechace; None si no hay."""
+    from pagos.models import Pago
+
+    return pedido.pagos.filter(estado=Pago.Estado.EN_REVISION).order_by('-id').first()
 
 
 @admin.register(ZonaEnvio)
@@ -72,6 +80,20 @@ class EventoPedidoInline(admin.TabularInline):
         return request.user.has_perm('pedidos.view_pedido')
 
 
+class BandejaFilter(admin.SimpleListFilter):
+    """Las pestañas de arriba de la lista ("Pago por confirmar", "Por preparar"...): cada pedido cae en una."""
+
+    title = 'situación'
+    parameter_name = 'bandeja'
+
+    def lookups(self, request, model_admin):
+        return services.opciones_de_bandeja()
+
+    def queryset(self, request, queryset):
+        filtro = services.filtro_de_bandeja(self.value()) if self.value() else None
+        return queryset.filter(filtro) if filtro is not None else queryset
+
+
 def _accion_de_estado(estado, descripcion):
     @admin.action(description=descripcion)
     def accion(modeladmin, request, queryset):
@@ -87,11 +109,11 @@ class PedidoAdmin(AdminDeTienda, admin.ModelAdmin):
     date_hierarchy = 'creado'
     list_display = [
         'numero', 'creado', 'nombre', 'whatsapp_cliente', 'metodo_entrega', 'metodo_pago',
-        'total_formateado', 'estado_con_color', 'aviso_transferencia',
+        'total_formateado', 'estado_con_color', 'que_sigue',
     ]
     # La zona se filtra solo entre las que aparecen en los pedidos que el usuario puede ver.
     list_filter = [
-        'estado', 'metodo_entrega', 'metodo_pago', 'transferencia_realizada', 'cobra_el_sitio',
+        BandejaFilter, 'estado', 'metodo_entrega', 'metodo_pago', 'transferencia_realizada', 'cobra_el_sitio',
         ('zona', admin.RelatedOnlyFieldListFilter), ('liquidacion', admin.EmptyFieldListFilter), 'creado',
     ]
     search_fields = ['numero', 'nombre', 'telefono', 'correo', 'referencia_transferencia']
@@ -140,11 +162,24 @@ class PedidoAdmin(AdminDeTienda, admin.ModelAdmin):
         return [f for f in filtros if (f[0] if isinstance(f, tuple) else f) not in {'cobra_el_sitio', 'liquidacion'}]
 
     def get_list_display(self, request):
-        columnas = super().get_list_display(request)
+        # "Qué sigue" depende de quien mira (un pago que confirma el sitio no lo revisa la tienda).
+        @admin.display(description='Qué sigue')
+        def que_sigue(pedido):
+            return self._que_sigue(pedido, request.user)
+
+        columnas = [que_sigue if c == 'que_sigue' else c for c in super().get_list_display(request)]
         if ve_todas(request.user):
             return columnas
         # El vendedor: lo que necesita para atender el pedido, sin columnas de mas.
         return [c for c in columnas if c != 'metodo_pago']
+
+    def changelist_view(self, request, extra_context=None):
+        contexto = {
+            'bandejas': services.bandejas_de_pedidos(self.get_queryset(request)),
+            'bandeja_actual': request.GET.get('bandeja', ''),
+            **(extra_context or {}),
+        }
+        return super().changelist_view(request, contexto)
 
     def get_fieldsets(self, request, obj=None):
         if ve_todas(request.user):
@@ -177,6 +212,10 @@ class PedidoAdmin(AdminDeTienda, admin.ModelAdmin):
             path(
                 '<path:object_id>/estado/', self.admin_site.admin_view(require_POST(self.cambiar_estado_vista)),
                 name='pedidos_pedido_estado',
+            ),
+            path(
+                '<path:object_id>/pago/', self.admin_site.admin_view(require_POST(self.revisar_pago_vista)),
+                name='pedidos_pedido_pago',
             ),
             path('clientes/', self.admin_site.admin_view(self.clientes_vista), name='pedidos_pedido_clientes'),
             path('reporte/', self.admin_site.admin_view(self.reporte_vista), name='pedidos_pedido_reporte'),
@@ -264,13 +303,47 @@ class PedidoAdmin(AdminDeTienda, admin.ModelAdmin):
         if pedido is None:
             raise Http404
         try:
-            pedido = services.cambiar_estado(pedido, request.POST.get('estado', ''), usuario=request.user)
+            pedido = services.avanzar_pedido(
+                pedido, request.POST.get('estado', ''), usuario=request.user, nota=request.POST.get('nota', ''),
+                transportista=request.POST.get('transportista', ''),
+                numero_seguimiento=request.POST.get('numero_seguimiento', ''),
+            )
         except services.PedidoError as error:
             self.message_user(request, error.mensaje, messages.ERROR)
         else:
             self.message_user(
-                request, f'El pedido {pedido.numero} pasó a "{pedido.get_estado_display()}".', messages.SUCCESS,
+                request, f'El pedido {pedido.numero} pasó a "{pedido.get_estado_display()}". Al cliente le llega el aviso.',
+                messages.SUCCESS,
             )
+        return redirect(reverse('admin:pedidos_pedido_change', args=[pedido.pk]))
+
+    def revisar_pago_vista(self, request, object_id):
+        """Confirmar o rechazar la transferencia desde el propio pedido, viendo el comprobante."""
+        if not (self.has_change_permission(request) and request.user.has_perm('pagos.change_pago')):
+            raise PermissionDenied
+        pedido = self.get_object(request, unquote(object_id))
+        if pedido is None:
+            raise Http404
+        pago = _pago_por_revisar(pedido)
+        try:
+            if pago is None:
+                raise PagoError('Este pedido no tiene un pago esperando revisión.')
+            if request.POST.get('accion') == 'aprobar':
+                aprobar_pago(pago, request.user)
+                self.message_user(
+                    request, f'Pago confirmado: el pedido {pedido.numero} quedó Pagado. Al cliente le llega el aviso.',
+                    messages.SUCCESS,
+                )
+            elif request.POST.get('accion') == 'rechazar':
+                rechazar_pago(pago, request.user, nota=request.POST.get('motivo', '').strip())
+                self.message_user(
+                    request, 'Comprobante rechazado: al cliente le llega un correo para que envíe otro.',
+                    messages.SUCCESS,
+                )
+            else:
+                raise PagoError('Elige confirmar o rechazar el pago.')
+        except (PagoError, services.PedidoError) as error:
+            self.message_user(request, error.mensaje, messages.ERROR)
         return redirect(reverse('admin:pedidos_pedido_change', args=[pedido.pk]))
 
     def change_view(self, request, object_id, form_url='', extra_context=None):
@@ -281,11 +354,45 @@ class PedidoAdmin(AdminDeTienda, admin.ModelAdmin):
                 (estado.value, estado.label) for estado in services.transiciones_permitidas(pedido, request.user)
             ]
             contexto['confirma_el_sitio'] = pedido.cobra_el_sitio and not ve_todas(request.user)
+            contexto['paso'] = self._paso_con_botones(request, pedido)
         if pedido is not None:
             contexto['aviso_whatsapp'] = enlace_aviso_de_estado(
                 pedido, request.build_absolute_uri(pedido.get_absolute_url()),
             )
+            contexto['enlace_whatsapp_cliente'] = enlace_al_cliente(pedido)
+            contexto['telefono_cliente'] = formatear_telefono(pedido.telefono)
+            contexto['llamar_cliente'] = f'tel:+{telefono_internacional(pedido.telefono)}'
+            contexto['productos_del_pedido'] = list(pedido.detalles.all())
         return super().change_view(request, object_id, form_url, contexto)
+
+    def _paso_con_botones(self, request, pedido):
+        """Lo que sigue en el pedido, con sus botones y, si hay, el comprobante por revisar."""
+        paso = services.siguiente_paso(pedido, request.user)
+
+        def boton(estado):
+            confirmar = ''
+            if estado == Estado.CANCELADO:
+                confirmar = f'¿Cancelar el pedido {pedido.numero}? Al cliente le llega el aviso y no se puede deshacer.'
+            elif estado == Estado.REEMBOLSADO:
+                confirmar = f'¿Ya le devolviste el dinero del pedido {pedido.numero}? Esto no se puede deshacer.'
+            return {'valor': estado, 'texto': services.VERBOS[estado], 'confirmar': confirmar}
+
+        pago = _pago_por_revisar(pedido) if paso.revisar_pago else None
+        ver_comprobante = (
+            pago is not None and pago.comprobante and request.user.has_perm('pagos.view_pago')
+        )
+        return {
+            'titulo': paso.titulo,
+            'texto': paso.texto,
+            'principal': boton(paso.principal) if paso.principal else None,
+            'otros': [boton(estado) for estado in paso.otros],
+            'pide_envio': Estado.ENVIADO in [paso.principal, *paso.otros],
+            'pago': pago,
+            'comprobante_url': reverse('admin:pagos_pago_comprobante', args=[pago.pk]) if ver_comprobante else '',
+            'puede_resolver_pago': (
+                pago is not None and not paso.confirma_el_sitio and request.user.has_perm('pagos.change_pago')
+            ),
+        }
 
     # --- Columnas -------------------------------------------------------------------
 
@@ -302,16 +409,19 @@ class PedidoAdmin(AdminDeTienda, admin.ModelAdmin):
             '<span class="panel-estado panel-estado-{}">{}</span>', pedido.estado, pedido.get_estado_display(),
         )
 
-    @admin.display(description='Aviso', boolean=False)
-    def aviso_transferencia(self, pedido):
-        if pedido.estado != Estado.PENDIENTE or not pedido.paga_por_transferencia:
+    @staticmethod
+    def _que_sigue(pedido, usuario):
+        paso = services.siguiente_paso(pedido, usuario)
+        if not paso.corto:
             return ''
-        if pedido.cobra_el_sitio:
-            texto = 'El sitio verifica el pago' if pedido.transferencia_realizada else 'Esperando el pago'
-            return format_html('<span class="panel-etiqueta">{}</span>', texto)
-        if pedido.transferencia_realizada:
-            return format_html('<span class="panel-etiqueta panel-bajo">{}</span>', 'Dice que transfirió')
-        return ''
+        # Resaltado lo que espera a la tienda: un pago por revisar o un pedido por preparar.
+        urgente = (paso.revisar_pago and not paso.confirma_el_sitio) or paso.principal == Estado.PREPARANDO
+        return format_html('<span class="pv-que-sigue{}">{}</span>', ' pv-urgente' if urgente else '', paso.corto)
+
+    @admin.display(description='Qué sigue')
+    def que_sigue(self, pedido):
+        # get_list_display la cambia por una que sabe quien mira.
+        return self._que_sigue(pedido, None)
 
     @admin.display(description='Total', ordering='total')
     def total_formateado(self, pedido):

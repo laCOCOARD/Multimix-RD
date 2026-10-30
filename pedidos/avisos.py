@@ -74,7 +74,8 @@ def comprobante_recibido(pago):
     def enviar_aviso():
         pedido = Pedido.objects.select_related('tienda').get(pk=pago.pedido_id)
         contexto = _contexto(
-            pedido, pago=pago, enlace_pago=url_absoluta(reverse('admin:pagos_pago_change', args=[pago.pk])),
+            # Lleva al pedido: ahi se ve el comprobante y se confirma o rechaza el pago.
+            pedido, pago=pago, enlace_pago=url_absoluta(reverse('admin:pedidos_pedido_change', args=[pedido.pk])),
         )
         # Si el cliente transfirio a las cuentas del sitio, lo comprueba el dueño en su banco, no la tienda.
         destinatarios = correos_del_sitio() if pedido.cobra_el_sitio else correos_de_la_tienda(pedido.tienda)

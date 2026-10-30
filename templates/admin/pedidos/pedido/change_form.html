@@ -1,31 +1,117 @@
 {% extends "admin/change_form.html" %}
+{% load moneda %}
 
 {% block content %}
-{% if confirma_el_sitio %}
+{% if original %}
+<section class="pv-pedido" aria-label="Qué sigue en este pedido">
+  <div class="pv-pedido-cabeza">
+    <span class="panel-estado panel-estado-{{ original.estado }}">{{ original.get_estado_display }}</span>
+    <strong class="pv-pedido-total">{{ original.total|moneda }}</strong>
+    <span class="pv-pedido-dato">{{ original.get_metodo_pago_display }} · {{ original.get_metodo_entrega_display }}</span>
+    <span class="pv-pedido-dato">{{ original.creado|date:"j M Y, g:i a" }}</span>
+  </div>
+
+  {% if paso %}
+  <div class="pv-paso">
+    <h2 class="pv-paso-titulo">{{ paso.titulo }}</h2>
+    <p class="pv-paso-texto">{{ paso.texto }}</p>
+
+    {% if paso.pago %}
+      <div class="pv-comprobante">
+        {% if paso.comprobante_url %}
+          <a href="{{ paso.comprobante_url }}" target="_blank" rel="noopener" title="Ver el comprobante en grande">
+            <img src="{{ paso.comprobante_url }}" alt="Comprobante de la transferencia" class="pv-comprobante-foto">
+          </a>
+        {% endif %}
+        <div class="pv-comprobante-datos">
+          <p><strong>Monto del pedido:</strong> {{ original.total|moneda }}</p>
+          {% if paso.pago.referencia_cliente %}<p><strong>Referencia que dio el cliente:</strong> {{ paso.pago.referencia_cliente }}</p>{% endif %}
+          {% if paso.puede_resolver_pago %}
+            <form method="post" action="{% url 'admin:pedidos_pedido_pago' original.pk %}" class="pv-acciones">
+              {% csrf_token %}
+              <button class="button pv-boton-principal" type="submit" name="accion" value="aprobar">El dinero llegó: confirmar pago</button>
+            </form>
+            <details class="pv-rechazar">
+              <summary>No llegó: rechazar el comprobante</summary>
+              <form method="post" action="{% url 'admin:pedidos_pedido_pago' original.pk %}">
+                {% csrf_token %}
+                <label for="pv-motivo">Motivo (le llega al cliente):</label>
+                <input type="text" name="motivo" id="pv-motivo" maxlength="255" placeholder="Ej.: no aparece en el banco">
+                <button class="button panel-boton-cancelado" type="submit" name="accion" value="rechazar">Rechazar comprobante</button>
+              </form>
+            </details>
+          {% endif %}
+        </div>
+      </div>
+    {% endif %}
+
+    {% if paso.principal or paso.otros %}
+      <form method="post" action="{% url 'admin:pedidos_pedido_estado' original.pk %}" class="pv-cambio">
+        {% csrf_token %}
+        {% if paso.pide_envio %}
+          <div class="pv-envio">
+            <label>Quién lo lleva (opcional) <input type="text" name="transportista" maxlength="60" value="{{ original.transportista }}"></label>
+            <label>Número de seguimiento (opcional) <input type="text" name="numero_seguimiento" maxlength="60" value="{{ original.numero_seguimiento }}"></label>
+          </div>
+        {% endif %}
+        <label class="pv-nota">Mensaje para el cliente (opcional; lo ve en el seguimiento de su pedido)
+          <input type="text" name="nota" maxlength="255">
+        </label>
+        <div class="pv-acciones">
+          {% if paso.principal %}
+            <button class="button pv-boton-principal" type="submit" name="estado" value="{{ paso.principal.valor }}">{{ paso.principal.texto }}</button>
+          {% endif %}
+          {% for boton in paso.otros %}
+            <button class="button pv-boton-secundario{% if boton.valor == 'cancelado' %} pv-boton-peligro{% endif %}" type="submit" name="estado" value="{{ boton.valor }}"
+                    {% if boton.confirmar %}data-confirmar="{{ boton.confirmar }}"{% endif %}>{{ boton.texto }}</button>
+          {% endfor %}
+        </div>
+      </form>
+    {% endif %}
+  </div>
+  {% endif %}
+
+  <div class="pv-pedido-columnas">
+    <div class="pv-pedido-bloque">
+      <h3>Cliente</h3>
+      <p><strong>{{ original.nombre }}</strong></p>
+      <p class="pv-acciones">
+        <a class="button panel-boton-whatsapp" href="{{ enlace_whatsapp_cliente }}" target="_blank" rel="noopener">WhatsApp ↗</a>
+        <a class="button pv-boton-secundario" href="{{ llamar_cliente }}">Llamar {{ telefono_cliente }}</a>
+      </p>
+      {% if aviso_whatsapp %}
+        <p><a href="{{ aviso_whatsapp }}" target="_blank" rel="noopener">Avisar al cliente por WhatsApp ↗</a>
+          <span class="panel-ayuda">con el mensaje de "{{ original.get_estado_display }}" ya escrito.</span></p>
+      {% endif %}
+    </div>
+    <div class="pv-pedido-bloque">
+      <h3>{% if original.recoge_en_tienda %}Lo recoge en la tienda{% else %}Envío a domicilio{% endif %}</h3>
+      {% if not original.recoge_en_tienda %}
+        <p>{{ original.direccion_completa|default:"—" }}{% if original.zona %} · {{ original.zona.nombre }}{% endif %}</p>
+        {% if original.referencia %}<p class="pv-pedido-dato">Referencia: {{ original.referencia }}</p>{% endif %}
+      {% endif %}
+      {% if original.entrega_desde %}
+        <p class="pv-pedido-dato">Se le prometió para el {{ original.entrega_desde|date:"j M" }}{% if original.entrega_hasta != original.entrega_desde %} al {{ original.entrega_hasta|date:"j M" }}{% endif %}.</p>
+      {% endif %}
+      {% if original.notas_cliente %}<p class="pv-pedido-nota"><strong>Nota del cliente:</strong> {{ original.notas_cliente }}</p>{% endif %}
+    </div>
+    <div class="pv-pedido-bloque">
+      <h3>Productos</h3>
+      <ul class="pv-productos">
+        {% for detalle in productos_del_pedido %}
+          <li><span class="pv-cantidad">{{ detalle.cantidad }} ×</span> {{ detalle.nombre_producto }}</li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+</section>
+{% if confirma_el_sitio and not paso.pago %}
   <p class="panel-transiciones">
     El cliente paga este pedido en las cuentas del sitio: el administrador lo comprueba en su banco y lo marca como
     Pagado. Te llega un correo cuando lo confirme; prepáralo después de eso.
   </p>
 {% endif %}
-{% if original and transiciones %}
-  <form class="panel-transiciones" method="post" action="{% url 'admin:pedidos_pedido_estado' original.pk %}">
-    {% csrf_token %}
-    <span class="panel-transiciones-titulo">Cambiar estado:</span>
-    {% for valor, etiqueta in transiciones %}
-      <button class="button panel-boton-estado panel-boton-{{ valor }}" type="submit" name="estado" value="{{ valor }}"
-              {% if valor == 'cancelado' %}data-confirmar="¿Cancelar el pedido {{ original.numero }}? Se liberará el stock reservado."{% endif %}>
-        {{ etiqueta }}
-      </button>
-    {% endfor %}
-  </form>
-{% elif original %}
-  <p class="panel-transiciones panel-transiciones-titulo">Este pedido está en un estado final y ya no cambia.</p>
-{% endif %}
-{% if aviso_whatsapp %}
-  <p class="panel-transiciones">
-    <a class="button panel-boton-whatsapp" href="{{ aviso_whatsapp }}" target="_blank" rel="noopener">Avisar al cliente por WhatsApp ↗</a>
-    <span class="panel-ayuda">Abre WhatsApp con el mensaje de "{{ original.get_estado_display }}" ya escrito; revísalo y envíalo.</span>
-  </p>
+<h2 class="pv-todos-los-datos">Todos los datos del pedido</h2>
 {% endif %}
 {{ block.super }}
 {% endblock %}

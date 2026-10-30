@@ -5,3 +5,19 @@
   <li><a href="{% url 'admin:pedidos_pedido_clientes' %}">Clientes</a></li>
   {{ block.super }}
 {% endblock %}
+
+{% block search %}
+{% if bandejas %}
+<nav class="pv-bandejas" aria-label="Pedidos según lo que falta">
+  <a href="?" class="pv-bandeja{% if not bandeja_actual %} pv-bandeja-activa{% endif %}"{% if not bandeja_actual %} aria-current="page"{% endif %}>Todos</a>
+  {% for bandeja in bandejas %}
+    <a href="?bandeja={{ bandeja.clave }}"
+       class="pv-bandeja{% if bandeja.clave == bandeja_actual %} pv-bandeja-activa{% endif %}{% if bandeja.urgente and bandeja.cantidad %} pv-bandeja-urgente{% endif %}"
+       {% if bandeja.clave == bandeja_actual %}aria-current="page"{% endif %}>
+      {{ bandeja.titulo }}{% if bandeja.cantidad %} <span class="pv-bandeja-numero">{{ bandeja.cantidad }}</span>{% endif %}
+    </a>
+  {% endfor %}
+</nav>
+{% endif %}
+{{ block.super }}
+{% endblock %}

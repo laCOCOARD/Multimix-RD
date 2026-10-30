@@ -268,3 +268,55 @@ html[data-theme="dark"] .pv-al-dia { background: #14352a; color: #bbf7d0; }
   }
   html:has(meta[name="pv-pendientes"]) #result_list td[data-columna] { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; }
 }
+
+/* Pedidos, fase 2 del panel de la tienda (2026-10-29): pestañas, "Qué sigue" y la página del pedido */
+.pv-bandejas { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 14px; }
+.pv-bandeja { display: inline-flex; align-items: center; gap: 6px; padding: 7px 14px; border: 1px solid var(--hairline-color); border-radius: 999px; color: var(--body-fg) !important; font-weight: 600; text-decoration: none; background: var(--body-bg); }
+.pv-bandeja:hover { border-color: var(--accent); }
+.pv-bandeja-activa { background: var(--secondary); border-color: var(--secondary); color: #fff !important; }
+.pv-bandeja-numero { min-width: 1.4em; padding: 0 .4em; border-radius: 999px; background: var(--darkened-bg); color: var(--body-fg); font-size: .78rem; font-weight: 800; text-align: center; }
+.pv-bandeja-urgente .pv-bandeja-numero { background: var(--accent); color: #111827; }
+.pv-que-sigue { font-size: .85rem; color: var(--body-quiet-color); white-space: nowrap; }
+.pv-que-sigue.pv-urgente { color: var(--body-fg); font-weight: 700; }
+.pv-que-sigue.pv-urgente::before { content: "● "; color: var(--accent); }
+
+.pv-pedido { margin: 0 0 22px; }
+.pv-pedido-cabeza { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; margin-bottom: 12px; }
+.pv-pedido-total { font-size: 1.35rem; font-weight: 800; }
+.pv-pedido-dato { color: var(--body-quiet-color); font-size: .9rem; }
+.pv-paso { padding: 16px 18px; border: 2px solid var(--accent); border-radius: 12px; background: var(--body-bg); margin-bottom: 14px; }
+.pv-paso-titulo { margin: 0 0 4px; padding: 0; background: none; color: var(--body-fg); font-size: 1.25rem; text-transform: none; letter-spacing: 0; }
+.pv-paso-texto { margin: 0 0 12px; font-size: .95rem; }
+.pv-acciones { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 8px 0 0; }
+.pv-acciones form { margin: 0; }
+.button.pv-boton-principal { padding: 11px 20px !important; border: 0; border-radius: 8px; background: var(--accent); color: #111827 !important; font-size: 1rem; font-weight: 800; cursor: pointer; }
+.button.pv-boton-principal:hover { background: #fbbf24; }
+.button.pv-boton-secundario { padding: 9px 14px !important; border-radius: 8px; font-weight: 600; cursor: pointer; }
+.button.pv-boton-peligro { background: transparent; border: 1px solid #d23b3b; color: #d23b3b !important; }
+.button.pv-boton-peligro:hover { background: #d23b3b; color: #fff !important; }
+.pv-cambio label { display: block; margin: 0 0 8px; font-size: .88rem; color: var(--body-quiet-color); }
+.pv-cambio input[type="text"] { display: block; width: 100%; max-width: 420px; margin-top: 3px; box-sizing: border-box; }
+.pv-envio { display: flex; flex-wrap: wrap; gap: 0 14px; }
+.pv-envio label { flex: 1 1 200px; }
+.pv-comprobante { display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-start; margin: 0 0 14px; padding: 12px; border-radius: 10px; background: var(--darkened-bg); }
+.pv-comprobante-foto { display: block; max-width: 220px; max-height: 300px; border-radius: 8px; border: 1px solid var(--hairline-color); }
+.pv-comprobante-datos { flex: 1 1 240px; }
+.pv-comprobante-datos p { margin: 0 0 6px; }
+.pv-rechazar { margin-top: 10px; }
+.pv-rechazar summary { cursor: pointer; color: #d23b3b; font-weight: 600; }
+.pv-rechazar form { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 8px; }
+.pv-pedido-columnas { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 12px; }
+.pv-pedido-bloque { padding: 12px 14px; border: 1px solid var(--hairline-color); border-radius: 12px; }
+.pv-pedido-bloque h3 { margin: 0 0 6px; font-size: .8rem; text-transform: uppercase; letter-spacing: .05em; color: var(--body-quiet-color); }
+.pv-pedido-bloque p { margin: 0 0 6px; }
+.pv-pedido-nota { padding: 6px 8px; border-radius: 6px; background: var(--selected-row); }
+.pv-productos { margin: 0; padding: 0; list-style: none; }
+.pv-productos li { padding: 3px 0; list-style: none; }
+.pv-cantidad { font-weight: 800; }
+.pv-todos-los-datos { margin: 8px 0 10px; font-size: 1rem; color: var(--body-quiet-color); }
+@media (max-width: 767px) {
+  .pv-bandejas { flex-wrap: nowrap; overflow-x: auto; padding-bottom: 4px; }
+  .pv-bandeja { flex: 0 0 auto; }
+  .pv-acciones .button { flex: 1 1 100%; text-align: center; }
+  .pv-comprobante-foto { max-width: 100%; }
+}
