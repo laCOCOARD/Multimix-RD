@@ -1,6 +1,6 @@
 from decimal import ROUND_HALF_UP, Decimal
 
-from django.db.models import F
+from django.db.models import F, Q
 from django.utils import timezone
 
 from core import limites
@@ -105,3 +105,28 @@ def registrar_uso(cupon):
 
 def devolver_uso(cupon):
     Cupon.objects.filter(pk=cupon.pk, usos_actuales__gt=0).update(usos_actuales=F('usos_actuales') - 1)
+
+
+def cupon_meta_aplicable(subtotal, tienda, cliente=None):
+    """Devuelve el cupón meta de mayor umbral que aplica al subtotal, o None.
+
+    Los cupones meta se aplican automáticamente: no requieren código del cliente.
+    """
+    ahora = timezone.now()
+    qs = (
+        Cupon.objects
+        .filter(tienda=tienda, activo=True, es_meta=True, compra_minima__lte=subtotal)
+        .filter(Q(vigente_desde__isnull=True) | Q(vigente_desde__lte=ahora))
+        .filter(Q(vigente_hasta__isnull=True) | Q(vigente_hasta__gte=ahora))
+        .filter(Q(usos_maximos__isnull=True) | Q(usos_actuales__lt=F('usos_maximos')))
+        .order_by('-compra_minima')
+    )
+    for cupon in qs:
+        if (
+            cupon.usos_por_cliente is None
+            or cliente is None
+            or not getattr(cliente, 'is_authenticated', False)
+            or usos_del_cliente(cupon, cliente) < cupon.usos_por_cliente
+        ):
+            return cupon
+    return None

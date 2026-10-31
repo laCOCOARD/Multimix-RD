@@ -4,7 +4,7 @@
 
   const carrito = document.getElementById('carrito');
   if (!carrito || !window.Multimix) return;
-  const { enviar, avisar, actualizarContador } = window.Multimix;
+  const { enviar, avisar, actualizarContador, celebrarCupon } = window.Multimix;
 
   function pintar(datos) {
     actualizarContador(datos.cantidad_total);
@@ -56,6 +56,7 @@
     try {
       const datos = await enviar(formulario.action, new FormData(formulario));
       if (datos.mensaje) avisar(datos.mensaje, datos.ok ? 'aviso' : 'error');
+      if (datos.cupon_meta_auto) celebrarCupon(datos.cupon_meta_auto);
       pintar(datos);
     } catch (error) {
       formulario.submit();

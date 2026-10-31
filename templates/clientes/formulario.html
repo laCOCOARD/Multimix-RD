@@ -14,14 +14,20 @@
           {% if plataforma.logo %}<img src="{{ plataforma.logo.url }}" alt="">{% else %}<img src="{% static 'img/logo-simbolo.webp' %}" alt="" width="393" height="300">{% endif %}
           <span>{{ plataforma.nombre }}</span>
         </span>
-        <h2>Tiendas de confianza en un solo lugar</h2>
-        <p>Con tu cuenta compras en todas las tiendas del sitio.</p>
+        <p class="mm-acceso-eyebrow"><i class="bi bi-lightning-charge-fill" aria-hidden="true"></i>Marketplace dominicano</p>
+        <h2>Tu próxima compra empieza aquí.</h2>
+        <p>Tiendas verificadas, miles de productos y pago con transferencia, sin datos de tarjeta.</p>
         <ul>
-          <li><i class="bi bi-check-circle-fill"></i>Tus pedidos y su estado, siempre a mano.</li>
-          <li><i class="bi bi-check-circle-fill"></i>Los avisos de cada pedido llegan a tu correo.</li>
-          <li><i class="bi bi-check-circle-fill"></i>Tus direcciones y tu carrito quedan guardados.</li>
-          <li><i class="bi bi-check-circle-fill"></i>Nunca te pedimos datos de tu tarjeta.</li>
+          <li><i class="bi bi-bag-check-fill" aria-hidden="true"></i>Compra en cualquier tienda con una sola cuenta.</li>
+          <li><i class="bi bi-bell-fill" aria-hidden="true"></i>Avisos de tu pedido directo a tu correo.</li>
+          <li><i class="bi bi-shield-fill-check" aria-hidden="true"></i>Pago seguro con transferencia bancaria.</li>
+          <li><i class="bi bi-heart-fill" aria-hidden="true"></i>Tu carrito y favoritos siempre guardados.</li>
         </ul>
+        <div class="mm-acceso-stats">
+          <div><i class="bi bi-shop" aria-hidden="true"></i><span>Tiendas locales</span></div>
+          <div><i class="bi bi-bank" aria-hidden="true"></i><span>Pago por transferencia</span></div>
+          <div><i class="bi bi-geo-alt-fill" aria-hidden="true"></i><span>Envíos en RD</span></div>
+        </div>
       </aside>
     {% endif %}
       <div class="mm-acceso-formulario">
@@ -53,7 +59,16 @@
               {% else %}
                 <div class="mb-3">
                   <label class="form-label" for="{{ campo.id_for_label }}">{{ campo.label }}</label>
-                  {{ campo }}
+                  {% if campo.widget_type == 'password' %}
+                    <div class="mm-clave-grupo">
+                      {{ campo }}
+                      <button class="mm-clave-ver js-ver-clave" type="button" aria-label="Mostrar contraseña" tabindex="-1">
+                        <i class="bi bi-eye" aria-hidden="true"></i>
+                      </button>
+                    </div>
+                  {% else %}
+                    {{ campo }}
+                  {% endif %}
                   {% if campo.name == 'clave' and campo.help_text %}<div class="form-text">{{ campo.help_text }}</div>{% endif %}
                   {% for error in campo.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
                 </div>
@@ -63,7 +78,7 @@
               <p class="small text-muted">Al crear tu cuenta aceptas los <a href="{% url 'core:terminos' %}" target="_blank">términos del sitio</a>
                 y la <a href="{% url 'core:pagina' 'privacidad' %}" target="_blank">política de privacidad</a>.</p>
             {% endif %}
-            <button class="btn btn-primary btn-lg w-100" type="submit">{{ boton }}</button>
+            <button class="btn btn-acento btn-lg w-100" type="submit">{{ boton }}</button>
           </form>
         {% endif %}
         {% if enlaces %}

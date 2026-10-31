@@ -11,7 +11,9 @@ from catalogo.models import Disponibilidad, Producto
 from core.impuestos import calcular_itbis
 from promociones.models import Cupon
 from core.red import ip_del_cliente
-from promociones.services import CuponInvalido, calcular_descuento, normalizar_codigo, probar_cupon, validar_cupon
+from promociones.services import (
+    CuponInvalido, calcular_descuento, cupon_meta_aplicable, normalizar_codigo, probar_cupon, validar_cupon,
+)
 
 
 CUPON_FALLIDO = 'cupon_fallido'
@@ -58,6 +60,7 @@ class ResumenCarrito:
     descuento: Decimal
     aviso_cupon: str = ''
     impuesto: Decimal = Decimal('0.00')
+    cupon_meta_auto: bool = False
 
     @property
     def total(self):
@@ -309,16 +312,23 @@ class Carrito:
         """Subtotal, descuento e ITBIS calculados en el servidor. Si el cupon dejo de aplicar, lo quita y avisa."""
         subtotal = self.subtotal
         codigo = normalizar_codigo(self.codigo_cupon)
-        cupon, aviso = None, ''
+        cupon, aviso, meta_auto = None, '', False
         if codigo:
             try:
                 cupon = validar_cupon(codigo, subtotal, self.tienda, cliente=self.cliente)
             except CuponInvalido as error:
                 self.quitar_cupon()
                 aviso = f'Quitamos el cupón {codigo}: {error.mensaje}'
+        if cupon is None and not aviso:
+            meta = cupon_meta_aplicable(subtotal, self.tienda, cliente=self.cliente)
+            if meta:
+                self.datos['cupon'] = meta.codigo
+                self._guardar()
+                cupon = meta
+                meta_auto = True
         descuento = calcular_descuento(cupon, subtotal)
         impuesto = calcular_itbis(
             ((linea.subtotal, linea.producto.exento_itbis) for linea in self.lineas()),
             descuento, self.tienda.itbis_porcentaje,
         )
-        return ResumenCarrito(subtotal, cupon, descuento, aviso, impuesto)
+        return ResumenCarrito(subtotal, cupon, descuento, aviso, impuesto, meta_auto)

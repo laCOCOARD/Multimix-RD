@@ -777,19 +777,55 @@ html.mm-visor-abierto { overflow: hidden; }
 
 
 /* --- Cuenta: entrar, crear y recuperar ---------------------------------- */
-.mm-acceso { display: grid; grid-template-columns: minmax(0, 1fr); max-width: 60rem; margin: 0 auto; overflow: hidden; background: var(--mm-superficie); border: 1px solid var(--mm-borde); border-radius: 1.1rem; box-shadow: var(--mm-sombra); }
-.mm-acceso-marca { display: none; padding: 2.5rem; color: var(--mm-sobre-oscuro); background: radial-gradient(600px 300px at 100% 0, rgba(var(--mm-calido-rgb), .2), transparent 60%), linear-gradient(160deg, var(--mm-oscuro), var(--mm-oscuro-2)); }
-.mm-acceso-marca h2 { margin: 1.75rem 0 .5rem; font-size: 1.45rem; color: #fff; }
-.mm-acceso-marca p { margin: 0; line-height: 1.6; }
-.mm-acceso-marca ul { display: grid; gap: .9rem; margin: 1.75rem 0 0; padding: 0; list-style: none; font-size: .92rem; }
-.mm-acceso-marca li { display: flex; gap: .65rem; }
-.mm-acceso-marca li i { color: var(--mm-calido); }
+.mm-acceso { display: grid; grid-template-columns: minmax(0, 1fr); max-width: 60rem; margin: 0 auto; overflow: hidden; background: var(--mm-superficie); border: 1px solid var(--mm-borde); border-radius: 1.1rem; box-shadow: var(--mm-sombra-alta); }
+.mm-acceso-marca {
+  position: relative; display: none; padding: 2.5rem; overflow: hidden;
+  color: var(--mm-sobre-oscuro);
+  background: radial-gradient(700px 400px at 110% -10%, rgba(var(--mm-calido-rgb), .22), transparent 55%),
+              radial-gradient(400px 300px at -10% 110%, rgba(255,255,255,.04), transparent 60%),
+              linear-gradient(160deg, var(--mm-oscuro), var(--mm-oscuro-2));
+}
+/* Manchas decorativas animadas de fondo. */
+.mm-acceso-marca::before {
+  content: ""; position: absolute; top: -5rem; right: -5rem;
+  width: 18rem; height: 18rem; border-radius: 50%; pointer-events: none;
+  background: radial-gradient(circle, rgba(var(--mm-calido-rgb), .12), transparent 70%);
+  animation: mm-flotar-marca 7s ease-in-out infinite;
+}
+.mm-acceso-marca::after {
+  content: ""; position: absolute; bottom: -4rem; left: -4rem;
+  width: 14rem; height: 14rem; border-radius: 50%; pointer-events: none;
+  background: radial-gradient(circle, rgba(255,255,255,.06), transparent 70%);
+  animation: mm-flotar-marca 9s ease-in-out infinite reverse;
+}
+@keyframes mm-flotar-marca {
+  0%, 100% { transform: translateY(0) scale(1); }
+  50%       { transform: translateY(-1.75rem) scale(1.04); }
+}
+/* Texto del panel. */
+.mm-acceso-eyebrow { display: inline-flex; align-items: center; gap: .4rem; margin: 1.5rem 0 .75rem; padding: .3rem .85rem; border-radius: 999px; background: rgba(var(--mm-calido-rgb), .15); color: var(--mm-calido); font-size: .78rem; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; }
+.mm-acceso-marca h2 { margin: 0 0 .6rem; font-size: clamp(1.35rem, 1rem + 1.4vw, 1.7rem); color: #fff; line-height: 1.15; }
+.mm-acceso-marca > p { margin: 0; font-size: .91rem; line-height: 1.6; }
+.mm-acceso-marca ul { display: grid; gap: .85rem; margin: 1.75rem 0 0; padding: 0; list-style: none; font-size: .91rem; }
+.mm-acceso-marca li { display: flex; align-items: flex-start; gap: .65rem; }
+.mm-acceso-marca li i { flex: 0 0 auto; margin-top: .1rem; font-size: 1rem; color: var(--mm-calido); }
+/* Barra de confianza abajo del panel. */
+.mm-acceso-stats { position: relative; z-index: 1; display: flex; gap: 1rem; flex-wrap: wrap; margin-top: 2rem; padding-top: 1.4rem; border-top: 1px solid rgba(255, 255, 255, .1); }
+.mm-acceso-stats > div { display: inline-flex; align-items: center; gap: .45rem; font-size: .8rem; font-weight: 600; color: var(--mm-sobre-oscuro); }
+.mm-acceso-stats i { color: var(--mm-calido); font-size: 1rem; }
+/* Logo. */
 .mm-acceso-logo { display: inline-flex; align-items: center; gap: .6rem; padding: .45rem .85rem .45rem .5rem; border-radius: .8rem; background: #fff; }
 .mm-acceso-logo img { height: 2.1rem; width: auto; }
 .mm-acceso-logo span { font-weight: 800; color: var(--mm-oscuro); letter-spacing: -.02em; }
+/* Formulario. */
 .mm-acceso-angosto { max-width: 34rem; }
-.mm-acceso-formulario { padding: clamp(1.5rem, 4vw, 2.5rem); }
+.mm-acceso-formulario { padding: clamp(1.5rem, 4vw, 2.5rem); animation: mm-aparecer .45s ease both; }
 .mm-acceso-formulario h1 { font-size: 1.6rem; }
+/* Campo de contraseña con ojo para mostrar/ocultar. */
+.mm-clave-grupo { position: relative; display: flex; }
+.mm-clave-grupo .form-control { padding-right: 2.9rem; flex: 1; }
+.mm-clave-ver { position: absolute; right: 0; top: 0; bottom: 0; width: 2.9rem; display: grid; place-items: center; background: none; border: 0; color: var(--mm-texto-suave); font-size: 1.1rem; transition: color var(--mm-transicion); }
+.mm-clave-ver:hover { color: var(--mm-oscuro); }
 @media (min-width: 768px) {
   .mm-acceso.con-marca { grid-template-columns: 5fr 6fr; }
   .mm-acceso.con-marca .mm-acceso-marca { display: block; }
@@ -1166,3 +1202,145 @@ html.mm-visor-abierto { overflow: hidden; }
 .btn-check:checked + .mm-opcion-gusto { border-color: var(--mm-oscuro); background: var(--mm-oscuro); color: #fff; }
 .btn-check:focus-visible + .mm-opcion-gusto { outline: 3px solid var(--mm-foco); outline-offset: 2px; }
 .mm-gustos-acciones { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem 1rem; }
+
+/* --- Interactividad: botones, iconos y estados de carga -------------------- */
+
+/* Lift al pasar el cursor: todos los botones se sienten responsivos. */
+.btn:not(:disabled):not(.btn-link):hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(var(--mm-oscuro-rgb), .13);
+}
+.btn:active, .btn:not(:disabled):active {
+  transform: scale(.97) translateY(0) !important;
+  box-shadow: none !important;
+}
+
+/* El boton de accion principal brilla en ambar al pasar el cursor. */
+.btn-acento:not(:disabled):hover {
+  box-shadow: 0 6px 22px rgba(var(--mm-calido-rgb), .5);
+}
+
+/* WhatsApp: halo verde al pasar. */
+.btn-whatsapp:not(:disabled):hover {
+  box-shadow: 0 5px 18px rgba(37, 211, 102, .45);
+}
+
+/* Iconos de cabecera (favoritos, cuenta, carrito): escala al pasar. */
+.mm-accion {
+  transition: background-color var(--mm-transicion), color var(--mm-transicion), transform var(--mm-transicion);
+}
+.mm-accion:not(:disabled):hover { transform: scale(1.08); }
+
+/* Icono de la lupa en el buscador. */
+.mm-buscador-boton .bi { display: inline-block; transition: transform var(--mm-transicion); }
+.mm-buscador-boton:hover .bi { transform: scale(1.2); }
+
+/* Latido del corazon al guardar en favoritos. */
+@keyframes mm-latido {
+  0%, 100% { transform: scale(1); }
+  25%  { transform: scale(1.45); }
+  55%  { transform: scale(1.15); }
+  75%  { transform: scale(1.32); }
+}
+.mm-favorito.activo .bi { animation: mm-latido .5s ease; color: #e11d48; }
+
+/* El boton de "Agregar" queda verde cuando el producto entra al carrito. */
+.mm-agregado {
+  background-color: var(--mm-verde) !important;
+  border-color: var(--mm-verde-oscuro) !important;
+  color: #fff !important;
+}
+
+/* Spinner de carga: aparece en el boton mientras llega la respuesta del servidor. */
+.mm-spinner {
+  display: inline-block;
+  width: 1em; height: 1em;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: mm-girar .65s linear infinite;
+  vertical-align: -.125em;
+}
+.mm-spinner-texto { margin-left: .4em; }
+@keyframes mm-girar { to { transform: rotate(360deg); } }
+
+/* --- Celebración de cupón meta ------------------------------------------ */
+.mm-celebracion {
+  position: fixed;
+  bottom: 5.5rem;
+  left: 50%;
+  transform: translateX(-50%) translateY(8rem);
+  z-index: 1060;
+  width: min(22rem, calc(100vw - 2rem));
+  padding: 1.1rem 1rem 1.3rem;
+  background: var(--mm-superficie);
+  border: 1.5px solid var(--mm-borde-fuerte);
+  border-radius: var(--mm-radio-grande);
+  box-shadow: 0 20px 50px rgba(var(--mm-oscuro-rgb), .18);
+  opacity: 0;
+  transition: opacity .35s ease, transform .45s cubic-bezier(.34, 1.56, .64, 1);
+  pointer-events: none;
+}
+.mm-celebracion.visible {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+  pointer-events: auto;
+}
+/* Barra de progreso que se consume mientras el aviso está visible. */
+.mm-celebracion-barra {
+  position: absolute;
+  bottom: 0; left: 0;
+  height: .22rem;
+  background: var(--mm-calido);
+  border-radius: 0 0 var(--mm-radio-grande) var(--mm-radio-grande);
+  transform-origin: left;
+  animation: mm-consumir linear forwards;
+}
+@keyframes mm-consumir { from { transform: scaleX(1); } to { transform: scaleX(0); } }
+/* Cabecera: icono + texto. */
+.mm-celebracion-cabecera { display: flex; align-items: center; gap: .75rem; margin-bottom: .7rem; }
+.mm-celebracion-icono {
+  flex: 0 0 auto; display: grid; place-items: center;
+  width: 2.75rem; height: 2.75rem; border-radius: 50%;
+  background: var(--mm-verde-suave); color: var(--mm-verde); font-size: 1.45rem;
+  animation: mm-latido-grande .55s cubic-bezier(.34, 1.56, .64, 1);
+}
+@keyframes mm-latido-grande {
+  0%  { transform: scale(0); }
+  60% { transform: scale(1.25); }
+  100%{ transform: scale(1); }
+}
+.mm-celebracion-titulo { font-size: .95rem; font-weight: 800; color: var(--mm-oscuro); line-height: 1.2; }
+.mm-celebracion-codigo { font-size: .78rem; font-weight: 700; color: var(--mm-verde); margin-top: .1rem; }
+/* Botón cerrar. */
+.mm-celebracion-cerrar {
+  position: absolute; top: .55rem; right: .55rem;
+  display: grid; place-items: center;
+  width: 1.8rem; height: 1.8rem;
+  border: 0; border-radius: .5rem; background: none;
+  color: var(--mm-texto-suave); font-size: 1.1rem;
+  transition: background-color var(--mm-transicion), color var(--mm-transicion);
+}
+.mm-celebracion-cerrar:hover { background: var(--mm-primario-suave); color: var(--mm-oscuro); }
+/* Monto animado: antes → después. */
+.mm-celebracion-monto { display: flex; align-items: center; gap: .4rem; flex-wrap: wrap; }
+.mm-celebracion-antes {
+  font-size: .95rem; color: var(--mm-texto-suave); text-decoration: line-through;
+  animation: mm-aparecer .3s .3s ease both;
+}
+.mm-celebracion-flecha { color: var(--mm-texto-suave); font-size: .9rem; animation: mm-aparecer .3s .4s ease both; }
+.mm-celebracion-despues {
+  font-size: 1.4rem; font-weight: 800; color: var(--mm-verde); letter-spacing: -.02em;
+  animation: mm-aparecer .3s .3s ease both;
+}
+/* Badge de ahorro. */
+.mm-celebracion-ahorro {
+  display: inline-flex; align-items: center; gap: .3rem;
+  margin-top: .55rem; padding: .3rem .7rem;
+  border-radius: 999px; background: var(--mm-calido-suave); color: var(--mm-calido-texto);
+  font-size: .82rem; font-weight: 700;
+  animation: mm-aparecer .4s .5s ease both;
+}
+@media (min-width: 576px) {
+  .mm-celebracion { bottom: 2rem; }
+}

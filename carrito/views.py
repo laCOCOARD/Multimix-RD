@@ -8,6 +8,7 @@ from catalogo.models import Producto
 from catalogo.services import sugerencias_para_el_carrito
 from core import metricas
 from core.templatetags.moneda import formatear_monto
+from decimal import Decimal
 from pedidos.services import progreso_envio_gratis
 from promociones.services import CuponInvalido
 from tiendas.decoradores import de_tienda
@@ -34,6 +35,16 @@ def _envio_gratis_json(progreso):
 
 def _estado_json(carrito):
     resumen = carrito.resumen()
+    cupon_meta_auto = None
+    if resumen.cupon_meta_auto and resumen.cupon:
+        antes = resumen.subtotal
+        despues = resumen.subtotal - resumen.descuento
+        cupon_meta_auto = {
+            'codigo': resumen.cupon.codigo,
+            'antes_raw': float(antes),
+            'despues_raw': float(despues),
+            'descuento_texto': formatear_monto(resumen.descuento),
+        }
     return {
         'envio_gratis': _envio_gratis_json(progreso_envio_gratis(carrito.tienda, resumen.subtotal - resumen.descuento)),
         'cantidad_total': len(carrito),
@@ -50,6 +61,7 @@ def _estado_json(carrito):
         'total': formatear_monto(resumen.total),
         'cupon': resumen.cupon.codigo if resumen.cupon else '',
         'aviso_cupon': resumen.aviso_cupon,
+        'cupon_meta_auto': cupon_meta_auto,
     }
 
 
@@ -78,6 +90,13 @@ def detalle(request):
     resumen = carrito.resumen()
     if resumen.aviso_cupon:
         messages.warning(request, resumen.aviso_cupon)
+    if resumen.cupon_meta_auto and resumen.cupon:
+        messages.success(
+            request,
+            f'¡Llegaste a {formatear_monto(resumen.cupon.compra_minima)}! '
+            f'El cupón {resumen.cupon.codigo} se aplicó automáticamente. '
+            f'Ahorras {formatear_monto(resumen.descuento)}.',
+        )
     lineas = carrito.lineas()
     return render(request, 'carrito/detalle.html', {
         'lineas': lineas,

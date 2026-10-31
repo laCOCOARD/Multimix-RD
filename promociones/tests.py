@@ -8,7 +8,7 @@ from django.utils import timezone
 from tiendas.tests.utiles import tienda_de_prueba
 
 from .models import Cupon
-from .services import CuponInvalido, calcular_descuento, devolver_uso, registrar_uso, validar_cupon
+from .services import CuponInvalido, calcular_descuento, cupon_meta_aplicable, devolver_uso, registrar_uso, validar_cupon
 
 
 class CuponTests(TestCase):
@@ -77,3 +77,43 @@ class CuponTests(TestCase):
         devolver_uso(cupon)
         cupon.refresh_from_db()
         self.assertEqual(cupon.usos_actuales, 0)
+
+    # --- Cupón meta ---
+
+    def test_meta_requiere_compra_minima(self):
+        with self.assertRaises(ValidationError):
+            Cupon(tienda=self.tienda, codigo='M1', tipo=Cupon.Tipo.MONTO_FIJO,
+                  valor=Decimal('200'), es_meta=True).full_clean()
+        with self.assertRaises(ValidationError):
+            Cupon(tienda=self.tienda, codigo='M2', tipo=Cupon.Tipo.MONTO_FIJO,
+                  valor=Decimal('200'), es_meta=True, compra_minima=Decimal('0')).full_clean()
+
+    def test_meta_aplica_cuando_se_alcanza_el_umbral(self):
+        meta = self.crear(codigo='META200', tipo=Cupon.Tipo.MONTO_FIJO,
+                          valor=Decimal('200'), es_meta=True, compra_minima=Decimal('3000'))
+        self.assertEqual(cupon_meta_aplicable(Decimal('3000'), self.tienda), meta)
+        self.assertEqual(cupon_meta_aplicable(Decimal('5000'), self.tienda), meta)
+
+    def test_meta_no_aplica_por_debajo_del_umbral(self):
+        self.crear(codigo='META200', tipo=Cupon.Tipo.MONTO_FIJO,
+                   valor=Decimal('200'), es_meta=True, compra_minima=Decimal('3000'))
+        self.assertIsNone(cupon_meta_aplicable(Decimal('2999.99'), self.tienda))
+
+    def test_meta_no_aplica_si_esta_inactivo(self):
+        self.crear(codigo='META200', tipo=Cupon.Tipo.MONTO_FIJO,
+                   valor=Decimal('200'), es_meta=True, compra_minima=Decimal('1000'), activo=False)
+        self.assertIsNone(cupon_meta_aplicable(Decimal('2000'), self.tienda))
+
+    def test_meta_selecciona_el_mayor_umbral_alcanzado(self):
+        self.crear(codigo='META100', tipo=Cupon.Tipo.MONTO_FIJO,
+                   valor=Decimal('100'), es_meta=True, compra_minima=Decimal('1000'))
+        meta_alta = self.crear(codigo='META500', tipo=Cupon.Tipo.MONTO_FIJO,
+                               valor=Decimal('500'), es_meta=True, compra_minima=Decimal('5000'))
+        resultado = cupon_meta_aplicable(Decimal('6000'), self.tienda)
+        self.assertEqual(resultado, meta_alta)
+
+    def test_meta_no_aplica_a_otra_tienda(self):
+        otra = tienda_de_prueba('Otra tienda')
+        self.crear(codigo='META200', tipo=Cupon.Tipo.MONTO_FIJO,
+                   valor=Decimal('200'), es_meta=True, compra_minima=Decimal('1000'))
+        self.assertIsNone(cupon_meta_aplicable(Decimal('2000'), otra))

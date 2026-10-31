@@ -10,13 +10,13 @@ from .models import Cupon
 
 @admin.register(Cupon)
 class CuponAdmin(AdminDeTienda, admin.ModelAdmin):
-    list_display = ['codigo', 'descuento', 'compra_minima', 'vigente_desde', 'vigente_hasta', 'usos', 'estado', 'activo']
+    list_display = ['codigo', 'descuento', 'compra_minima', 'es_meta', 'vigente_desde', 'vigente_hasta', 'usos', 'estado', 'activo']
     list_editable = ['activo']
-    list_filter = ['activo', 'tipo']
+    list_filter = ['activo', 'tipo', 'es_meta']
     search_fields = ['codigo']
     readonly_fields = ['usos_actuales', 'pedidos_con_cupon']
     fieldsets = [
-        (None, {'fields': ['tienda', 'codigo', 'tipo', 'valor', 'compra_minima', 'activo']}),
+        (None, {'fields': ['tienda', 'codigo', 'tipo', 'valor', 'compra_minima', 'es_meta', 'activo']}),
         ('Vigencia y límite', {'fields': ['vigente_desde', 'vigente_hasta', 'usos_maximos', 'usos_por_cliente']}),
         ('Usos', {'fields': ['usos_actuales', 'pedidos_con_cupon']}),
     ]
@@ -37,6 +37,10 @@ class CuponAdmin(AdminDeTienda, admin.ModelAdmin):
         maximo = '∞' if cupon.usos_maximos is None else cupon.usos_maximos
         return f'{cupon.usos_actuales} / {maximo}'
 
+    @admin.display(description='Meta', boolean=True, ordering='es_meta')
+    def es_meta(self, cupon):
+        return cupon.es_meta
+
     @admin.display(description='Estado')
     def estado(self, cupon):
         if not cupon.activo:
@@ -45,6 +49,8 @@ class CuponAdmin(AdminDeTienda, admin.ModelAdmin):
             clase, texto = 'panel-bajo', 'Fuera de vigencia'
         elif cupon.usos_restantes == 0:
             clase, texto = 'panel-agotado', 'Sin usos'
+        elif cupon.es_meta:
+            clase, texto = 'panel-ok', 'Meta activa'
         else:
             clase, texto = 'panel-ok', 'Disponible'
         return format_html('<span class="panel-etiqueta {}">{}</span>', clase, texto)

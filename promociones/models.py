@@ -32,6 +32,13 @@ class Cupon(models.Model):
     )
     usos_actuales = models.PositiveIntegerField(default=0, editable=False)
     activo = models.BooleanField(default=True)
+    es_meta = models.BooleanField(
+        'es cupón meta', default=False,
+        help_text=(
+            'Se aplica automáticamente cuando el carrito llega a la compra mínima. '
+            'Una vez aplicado a un pedido, no se devuelve aunque el pedido se cancele.'
+        ),
+    )
 
     class Meta:
         verbose_name = 'cupón'
@@ -58,6 +65,8 @@ class Cupon(models.Model):
             errores['valor'] = 'Un cupón de porcentaje no puede superar 100.'
         if self.vigente_desde and self.vigente_hasta and self.vigente_hasta <= self.vigente_desde:
             errores['vigente_hasta'] = 'La vigencia debe terminar después de su inicio.'
+        if self.es_meta and (self.compra_minima is None or self.compra_minima <= 0):
+            errores['compra_minima'] = 'Un cupón meta requiere una compra mínima mayor a cero.'
         if errores:
             raise ValidationError(errores)
 

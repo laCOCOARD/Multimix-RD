@@ -415,7 +415,7 @@ def cambiar_estado(pedido, nuevo_estado, usuario=None, nota=''):
                 pedido.fecha_pago = ahora
     elif nuevo_estado == Estado.CANCELADO:
         _liberar_reserva(pedido)
-        if pedido.cupon_id:
+        if pedido.cupon_id and not pedido.cupon.es_meta:
             devolver_uso(pedido.cupon)
 
     pedido.estado = nuevo_estado

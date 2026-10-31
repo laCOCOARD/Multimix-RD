@@ -282,6 +282,16 @@ class TransicionesTests(BaseServicios):
             cupon.refresh_from_db()
             self.assertEqual(cupon.usos_actuales, 0)
 
+    def test_cancelar_cupon_meta_no_devuelve_uso(self):
+        cupon = cupon_de_prueba('META', tipo=Cupon.Tipo.MONTO_FIJO, valor=Decimal('200'),
+                                es_meta=True, compra_minima=Decimal('500'))
+        pedido = pedido_de_prueba(self.producto, 2, cupon='META')
+        cupon.refresh_from_db()
+        usos_antes = cupon.usos_actuales
+        cambiar_estado(pedido, Estado.CANCELADO)
+        cupon.refresh_from_db()
+        self.assertEqual(cupon.usos_actuales, usos_antes)
+
     def test_no_se_cancela_lo_enviado_ni_lo_entregado(self):
         enviado = cambiar_estado(cambiar_estado(self.envio(), Estado.PAGADO), Estado.ENVIADO)
         with self.assertRaises(TransicionInvalida):

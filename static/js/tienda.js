@@ -60,7 +60,118 @@
     });
   }
 
-  window.Multimix = { enviar, avisar, actualizarContador };
+  /** Celebración cuando un cupón meta se aplica automáticamente al carrito.
+   *  `datos` = { codigo, antes_raw, despues_raw, descuento_texto } */
+  function celebrarCupon(datos) {
+    if (!datos) return;
+    // Sin animación: solo un toast.
+    if (sinMovimiento) {
+      avisar(`¡Cupón ${datos.codigo} aplicado! Ahorras ${datos.descuento_texto}.`, 'exito');
+      return;
+    }
+
+    // Sonido: arpegio ascendente C5 → G5 → C6
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      [523.25, 783.99, 1046.5].forEach((freq, i) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.type = 'sine';
+        osc.frequency.value = freq;
+        const t = ctx.currentTime + i * 0.13;
+        gain.gain.setValueAtTime(0, t);
+        gain.gain.linearRampToValueAtTime(0.16, t + 0.025);
+        gain.gain.exponentialRampToValueAtTime(0.001, t + 0.28);
+        osc.start(t);
+        osc.stop(t + 0.28);
+      });
+    } catch (e) {}
+
+    // Quitar celebración anterior si la hay.
+    document.querySelector('.mm-celebracion')?.remove();
+
+    const DURACION = 5500;
+    const ANIMAR_MS = 900;
+
+    const fmt = (n) => 'RD$ ' + n.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+
+    // Armar la notificación con nodos (sin innerHTML con datos del servidor).
+    const nodo = document.createElement('div');
+    nodo.className = 'mm-celebracion';
+    nodo.setAttribute('role', 'alert');
+    nodo.setAttribute('aria-live', 'polite');
+
+    // Esqueleto estático (sin datos del servidor).
+    nodo.innerHTML = [
+      '<div class="mm-celebracion-cabecera">',
+      '  <div class="mm-celebracion-icono"><i class="bi bi-check-lg" aria-hidden="true"></i></div>',
+      '  <div class="mm-celebracion-info"></div>',
+      '</div>',
+      '<div class="mm-celebracion-monto">',
+      '  <span class="mm-celebracion-antes"></span>',
+      '  <span class="mm-celebracion-flecha"><i class="bi bi-arrow-right-short" aria-hidden="true"></i></span>',
+      '  <span class="mm-celebracion-despues"></span>',
+      '</div>',
+      '<div class="mm-celebracion-ahorro"></div>',
+      '<button class="mm-celebracion-cerrar" type="button" aria-label="Cerrar">',
+      '  <i class="bi bi-x" aria-hidden="true"></i>',
+      '</button>',
+      `<div class="mm-celebracion-barra" style="animation-duration:${DURACION}ms"></div>`,
+    ].join('');
+
+    // Rellenar con datos (textContent: seguro ante XSS).
+    const info = nodo.querySelector('.mm-celebracion-info');
+    const titulo = document.createElement('div');
+    titulo.className = 'mm-celebracion-titulo';
+    titulo.textContent = '¡Felicidades! Descuento aplicado';
+    const codigoEl = document.createElement('div');
+    codigoEl.className = 'mm-celebracion-codigo';
+    codigoEl.textContent = `Cupón ${datos.codigo}`;
+    info.append(titulo, codigoEl);
+
+    const antesEl = nodo.querySelector('.mm-celebracion-antes');
+    antesEl.textContent = fmt(datos.antes_raw);
+
+    const despuesEl = nodo.querySelector('.mm-celebracion-despues');
+    despuesEl.textContent = fmt(datos.antes_raw); // empieza igual; animará hacia abajo
+
+    const ahorroEl = nodo.querySelector('.mm-celebracion-ahorro');
+    const iconoTag = document.createElement('i');
+    iconoTag.className = 'bi bi-tag-fill';
+    iconoTag.setAttribute('aria-hidden', 'true');
+    ahorroEl.append(iconoTag, ` Ahorras ${datos.descuento_texto}`);
+
+    document.body.appendChild(nodo);
+
+    // Mostrar con animación de entrada.
+    requestAnimationFrame(() => requestAnimationFrame(() => nodo.classList.add('visible')));
+
+    // Animar el precio bajando de `antes_raw` a `despues_raw`.
+    setTimeout(() => {
+      const inicio = performance.now();
+      const desde = datos.antes_raw;
+      const hasta = datos.despues_raw;
+      (function tick(ahora) {
+        const p = Math.min((ahora - inicio) / ANIMAR_MS, 1);
+        const ease = 1 - Math.pow(1 - p, 3);
+        despuesEl.textContent = fmt(desde + (hasta - desde) * ease);
+        if (p < 1) requestAnimationFrame(tick);
+      })(performance.now());
+    }, 350);
+
+    // Cerrar.
+    const cerrar = () => {
+      nodo.classList.remove('visible');
+      setTimeout(() => nodo.remove(), 450);
+    };
+    const timer = setTimeout(cerrar, DURACION);
+    const btnCerrar = nodo.querySelector('.mm-celebracion-cerrar');
+    btnCerrar.addEventListener('click', () => { clearTimeout(timer); cerrar(); });
+  }
+
+  window.Multimix = { enviar, avisar, actualizarContador, celebrarCupon };
 
   // Promociones de la portada: rotan solas (se detienen al pasar el raton o con "reducir movimiento").
   document.querySelectorAll('.js-promos').forEach((carrusel) => {
@@ -139,7 +250,12 @@
     if (evento.submitter && evento.submitter.name === 'comprar') return;
     evento.preventDefault();
     const boton = evento.submitter || formulario.querySelector('[type="submit"]');
+    const htmlOriginal = boton.innerHTML;
+    const soloIcono = 'soloIcono' in boton.dataset;
     boton.disabled = true;
+    boton.innerHTML = soloIcono
+      ? '<span class="mm-spinner" aria-hidden="true"></span>'
+      : '<span class="mm-spinner" aria-hidden="true"></span><span class="mm-spinner-texto">Agregando…</span>';
     try {
       const datos = await enviar(formulario.action, new FormData(formulario));
       // En el carrito, lo agregado desde las sugerencias tiene que verse en las lineas y el total.
@@ -148,6 +264,7 @@
         return;
       }
       actualizarContador(datos.cantidad_total);
+      if (datos.cupon_meta_auto) celebrarCupon(datos.cupon_meta_auto);
       // Fuera de una tienda (portada, buscador del sitio, favoritos) no hay carrito en la cabecera: el aviso
       // enlaza al carrito de la tienda del producto, que es la carpeta anterior de /carrito/agregar/.
       const sinCarritoALaVista = !document.querySelector('.js-contador-carrito');
@@ -157,10 +274,11 @@
       avisar(datos.mensaje, datos.ok ? 'exito' : 'error', enlace);
       if (datos.ok && boton) {
         // El boton confirma por un momento que el producto ya esta en el carrito.
-        const original = boton.innerHTML;
-        boton.innerHTML = 'soloIcono' in boton.dataset ? '<i class="bi bi-check-lg"></i>' : '<i class="bi bi-check-lg me-1"></i>Agregado';
+        boton.innerHTML = soloIcono ? '<i class="bi bi-check-lg"></i>' : '<i class="bi bi-check-lg me-1"></i>Agregado';
         boton.classList.add('mm-agregado');
-        setTimeout(() => { boton.innerHTML = original; boton.classList.remove('mm-agregado'); }, 1600);
+        setTimeout(() => { boton.innerHTML = htmlOriginal; boton.classList.remove('mm-agregado'); }, 1600);
+      } else if (boton) {
+        boton.innerHTML = htmlOriginal;
       }
     } catch (error) {
       formulario.classList.remove('js-agregar');
@@ -503,6 +621,19 @@
   document.addEventListener('click', (evento) => {
     const boton = evento.target.closest('[data-confirmar]');
     if (boton && !window.confirm(boton.dataset.confirmar)) evento.preventDefault();
+  });
+
+  // Ojo para mostrar/ocultar la contraseña en los campos de clave.
+  document.querySelectorAll('.js-ver-clave').forEach((boton) => {
+    const grupo = boton.closest('.mm-clave-grupo');
+    const campo = grupo && grupo.querySelector('input');
+    if (!campo) return;
+    boton.addEventListener('click', () => {
+      const mostrar = campo.type === 'password';
+      campo.type = mostrar ? 'text' : 'password';
+      boton.querySelector('i').className = mostrar ? 'bi bi-eye-slash' : 'bi bi-eye';
+      boton.setAttribute('aria-label', mostrar ? 'Ocultar contraseña' : 'Mostrar contraseña');
+    });
   });
 
   // App instalable: el service worker guarda los estaticos y da la pagina "Sin conexion" sin internet.
