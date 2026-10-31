@@ -9,13 +9,24 @@ from core.tareas import ejecutar_si_toca
 
 logger = logging.getLogger('django.request')
 
+# Fragmentos de user-agent de rastreadores legítimos. Se comparan en minúsculas.
+_BOTS_CONOCIDOS = (
+    'googlebot', 'bingbot', 'slurp', 'duckduckbot', 'baiduspider',
+    'yandexbot', 'sogou', 'exabot', 'ia_archiver', 'applebot',
+    'msnbot', 'petalbot', 'ahrefsbot', 'semrushbot',
+)
+
 
 class CuentaObligatoriaMiddleware(LoginRequiredMiddleware):
     """Para entrar al sitio hay que iniciar sesion. Las vistas abiertas llevan `@login_not_required`: entrar,
-    crear cuenta, recuperar la contraseña, las politicas, las paginas por token del pedido y lo tecnico."""
+    crear cuenta, recuperar la contraseña, las politicas, las paginas por token del pedido y lo tecnico.
+    Los rastreadores de buscadores conocidos pasan sin sesion para que Google pueda indexar el catalogo."""
 
     def process_view(self, request, view_func, view_args, view_kwargs):
         if not settings.CUENTA_OBLIGATORIA:
+            return None
+        ua = request.META.get('HTTP_USER_AGENT', '').lower()
+        if any(bot in ua for bot in _BOTS_CONOCIDOS):
             return None
         return super().process_view(request, view_func, view_args, view_kwargs)
 
