@@ -860,7 +860,7 @@ def _anular_deposito(tienda, usuario, nota):
 @transaction.atomic
 def pedir_cambio_de_plan(tienda, plan, usuario=None):
     """La tienda pide pasar a `plan`. Si cuesta mas, se crea el cargo de la diferencia, que paga antes."""
-    tienda = Tienda.objects.select_for_update().select_related('plan').get(pk=tienda.pk)
+    tienda = Tienda.objects.select_for_update(of=('self',)).select_related('plan').get(pk=tienda.pk)
     if not plan.activo:
         raise CambioDePlanError('Ese plan ya no se ofrece.')
     if plan.pk == tienda.plan_id:
@@ -929,7 +929,7 @@ def aprobar_cambio_de_plan(tienda, usuario=None):
     """El plan cambia ya. La mensualidad nueva se cobra desde el proximo dia 1 (la de este mes no se toca)."""
     if usuario is not None and not ve_todas(usuario):
         raise CambioDePlanError('Solo el administrador principal aprueba cambios de plan.')
-    tienda = Tienda.objects.select_for_update().select_related('plan_pedido').get(pk=tienda.pk)
+    tienda = Tienda.objects.select_for_update(of=('self',)).select_related('plan_pedido').get(pk=tienda.pk)
     nuevo = tienda.plan_pedido
     if nuevo is None:
         raise CambioDePlanError(f'{tienda.nombre} no tiene un cambio de plan pedido.')
@@ -957,7 +957,7 @@ def aprobar_cambio_de_plan(tienda, usuario=None):
 def rechazar_cambio_de_plan(tienda, usuario=None):
     if usuario is not None and not ve_todas(usuario):
         raise CambioDePlanError('Solo el administrador principal rechaza cambios de plan.')
-    tienda = Tienda.objects.select_for_update().select_related('plan_pedido').get(pk=tienda.pk)
+    tienda = Tienda.objects.select_for_update(of=('self',)).select_related('plan_pedido').get(pk=tienda.pk)
     pedido = tienda.plan_pedido
     if pedido is None:
         raise CambioDePlanError(f'{tienda.nombre} no tiene un cambio de plan pedido.')
