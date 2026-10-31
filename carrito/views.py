@@ -1,6 +1,7 @@
 from django.contrib import messages
 from django.http import JsonResponse
 from django.shortcuts import redirect, render
+from django.urls import reverse
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.http import require_GET, require_POST
 
@@ -44,6 +45,7 @@ def _estado_json(carrito):
             'antes_raw': float(antes),
             'despues_raw': float(despues),
             'descuento_texto': formatear_monto(resumen.descuento),
+            'url_guardar': reverse('carrito:cupon_meta_guardar', kwargs={'tienda_slug': carrito.tienda.slug}),
         }
     return {
         'envio_gratis': _envio_gratis_json(progreso_envio_gratis(carrito.tienda, resumen.subtotal - resumen.descuento)),
@@ -179,3 +181,11 @@ def cupon_quitar(request):
     carrito = Carrito(request, request.tienda)
     carrito.quitar_cupon()
     return _responder(request, carrito, True, 'Cupón quitado.')
+
+
+@require_POST
+@de_tienda
+def cupon_meta_guardar(request):
+    carrito = Carrito(request, request.tienda)
+    carrito.guardar_meta(request.POST.get('codigo', ''))
+    return _responder(request, carrito, True, '')

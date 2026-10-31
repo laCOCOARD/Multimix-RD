@@ -308,6 +308,21 @@ class Carrito:
             self.datos['cupon'] = ''
             self._guardar()
 
+    def guardar_meta(self, codigo):
+        """El cliente eligió guardar el cupón meta para otra compra: lo quita del activo y bloquea el auto-apply."""
+        from promociones.services import normalizar_codigo as _norm
+        codigo = _norm(codigo)
+        if not codigo:
+            return
+        if self.datos.get('cupon') == codigo:
+            self.datos['cupon'] = ''
+        self.datos['meta_guardado'] = codigo
+        self._guardar()
+
+    @property
+    def meta_guardado(self):
+        return self.datos.get('meta_guardado', '')
+
     def resumen(self):
         """Subtotal, descuento e ITBIS calculados en el servidor. Si el cupon dejo de aplicar, lo quita y avisa."""
         subtotal = self.subtotal
@@ -321,7 +336,7 @@ class Carrito:
                 aviso = f'Quitamos el cupón {codigo}: {error.mensaje}'
         if cupon is None and not aviso:
             meta = cupon_meta_aplicable(subtotal, self.tienda, cliente=self.cliente)
-            if meta:
+            if meta and meta.codigo != self.datos.get('meta_guardado', ''):
                 self.datos['cupon'] = meta.codigo
                 self._guardar()
                 cupon = meta

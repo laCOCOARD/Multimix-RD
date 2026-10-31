@@ -60,95 +60,150 @@
     });
   }
 
+  /** Confetti: rectangulitos de colores que caen desde arriba. */
+  function _confetti() {
+    const canvas = document.createElement('canvas');
+    canvas.className = 'mm-confetti-canvas';
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    document.body.appendChild(canvas);
+    const ctx2 = canvas.getContext('2d');
+    const COLORES = ['#F59E0B','#10B981','#3B82F6','#EF4444','#8B5CF6','#EC4899','#06B6D4','#F97316'];
+    const piezas = Array.from({ length: 130 }, () => ({
+      x: Math.random() * canvas.width,
+      y: -20 - Math.random() * 120,
+      vx: (Math.random() - 0.5) * 4,
+      vy: 2.5 + Math.random() * 3.5,
+      w: 7 + Math.random() * 6,
+      h: 4 + Math.random() * 4,
+      a: Math.random() * Math.PI * 2,
+      va: (Math.random() - 0.5) * 0.18,
+      color: COLORES[Math.floor(Math.random() * COLORES.length)],
+      op: 1,
+    }));
+    let activo = true;
+    let raf;
+    (function tick() {
+      ctx2.clearRect(0, 0, canvas.width, canvas.height);
+      let vivos = 0;
+      piezas.forEach((p) => {
+        if (p.y > canvas.height + 20) return;
+        vivos++;
+        p.x += p.vx; p.y += p.vy; p.vy += 0.06; p.a += p.va;
+        if (p.y > canvas.height * 0.72) p.op = Math.max(0, p.op - 0.025);
+        ctx2.save();
+        ctx2.translate(p.x, p.y);
+        ctx2.rotate(p.a);
+        ctx2.globalAlpha = p.op;
+        ctx2.fillStyle = p.color;
+        ctx2.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
+        ctx2.restore();
+      });
+      if (vivos > 0 && activo) raf = requestAnimationFrame(tick);
+      else canvas.remove();
+    })();
+    return () => { activo = false; cancelAnimationFrame(raf); setTimeout(() => canvas.remove(), 50); };
+  }
+
+  /** Fanfarria de trompeta con Web Audio API. */
+  function _trompeta() {
+    try {
+      const ac = new (window.AudioContext || window.webkitAudioContext)();
+      // G4-G4-G4-E5-C5-E5-G5 (ta-ta-ta-DUM)
+      const notas = [392, 392, 392, 659.25, 523.25, 659.25, 783.99];
+      const dur =   [0.12, 0.12, 0.12,  0.32,    0.18,    0.18,  0.42];
+      const pausas = [0.05, 0.05, 0.08,  0.04,    0.04,    0.04,   0];
+      let t = ac.currentTime + 0.05;
+      notas.forEach((freq, i) => {
+        const d = dur[i];
+        const osc1 = ac.createOscillator();
+        const osc2 = ac.createOscillator();
+        const filtro = ac.createBiquadFilter();
+        const gain = ac.createGain();
+        osc1.type = 'sawtooth'; osc1.frequency.value = freq;
+        osc2.type = 'square';   osc2.frequency.value = freq * 2;
+        filtro.type = 'lowpass';
+        filtro.frequency.setValueAtTime(600, t);
+        filtro.frequency.exponentialRampToValueAtTime(3500, t + 0.04);
+        osc1.connect(filtro); osc2.connect(filtro); filtro.connect(gain); gain.connect(ac.destination);
+        gain.gain.setValueAtTime(0, t);
+        gain.gain.linearRampToValueAtTime(0.1, t + 0.018);
+        gain.gain.setValueAtTime(0.1, t + d - 0.03);
+        gain.gain.linearRampToValueAtTime(0, t + d);
+        osc1.start(t); osc1.stop(t + d);
+        osc2.start(t); osc2.stop(t + d);
+        t += d + pausas[i];
+      });
+    } catch (e) {}
+  }
+
   /** Celebración cuando un cupón meta se aplica automáticamente al carrito.
-   *  `datos` = { codigo, antes_raw, despues_raw, descuento_texto } */
-  function celebrarCupon(datos) {
+   *  `datos` = { codigo, antes_raw, despues_raw, descuento_texto, url_guardar }
+   *  `cb`    = { onAplicar, onGuardar } */
+  function celebrarCupon(datos, cb = {}) {
     if (!datos) return;
-    // Sin animación: solo un toast.
     if (sinMovimiento) {
       avisar(`¡Cupón ${datos.codigo} aplicado! Ahorras ${datos.descuento_texto}.`, 'exito');
+      cb.onAplicar?.();
       return;
     }
 
-    // Sonido: arpegio ascendente C5 → G5 → C6
-    try {
-      const ctx = new (window.AudioContext || window.webkitAudioContext)();
-      [523.25, 783.99, 1046.5].forEach((freq, i) => {
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-        osc.type = 'sine';
-        osc.frequency.value = freq;
-        const t = ctx.currentTime + i * 0.13;
-        gain.gain.setValueAtTime(0, t);
-        gain.gain.linearRampToValueAtTime(0.16, t + 0.025);
-        gain.gain.exponentialRampToValueAtTime(0.001, t + 0.28);
-        osc.start(t);
-        osc.stop(t + 0.28);
-      });
-    } catch (e) {}
-
-    // Quitar celebración anterior si la hay.
+    _trompeta();
     document.querySelector('.mm-celebracion')?.remove();
+    document.querySelector('.mm-confetti-canvas')?.remove();
+    const pararConfetti = _confetti();
 
-    const DURACION = 5500;
-    const ANIMAR_MS = 900;
-
+    const ANIMAR_MS = 1000;
     const fmt = (n) => 'RD$ ' + n.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
 
-    // Armar la notificación con nodos (sin innerHTML con datos del servidor).
+    // Estructura del modal (todo innerHTML es estático sin datos del usuario).
     const nodo = document.createElement('div');
     nodo.className = 'mm-celebracion';
-    nodo.setAttribute('role', 'alert');
-    nodo.setAttribute('aria-live', 'polite');
-
-    // Esqueleto estático (sin datos del servidor).
+    nodo.setAttribute('role', 'dialog');
+    nodo.setAttribute('aria-modal', 'true');
+    nodo.setAttribute('aria-label', '¡Cupón aplicado!');
     nodo.innerHTML = [
-      '<div class="mm-celebracion-cabecera">',
-      '  <div class="mm-celebracion-icono"><i class="bi bi-check-lg" aria-hidden="true"></i></div>',
-      '  <div class="mm-celebracion-info"></div>',
+      '<div class="mm-celebracion-fondo" aria-hidden="true"></div>',
+      '<div class="mm-celebracion-panel">',
+      '  <div class="mm-celebracion-icono"><i class="bi bi-gift-fill" aria-hidden="true"></i></div>',
+      '  <div class="mm-celebracion-titulo"></div>',
+      '  <div class="mm-celebracion-codigo"></div>',
+      '  <div class="mm-celebracion-monto">',
+      '    <span class="mm-celebracion-antes"></span>',
+      '    <span class="mm-celebracion-flecha"><i class="bi bi-arrow-right-short" aria-hidden="true"></i></span>',
+      '    <span class="mm-celebracion-despues"></span>',
+      '  </div>',
+      '  <div class="mm-celebracion-ahorro"></div>',
+      '  <div class="mm-celebracion-botones">',
+      '    <button class="mm-celebracion-aplicar" type="button"></button>',
+      '    <button class="mm-celebracion-guardar" type="button"></button>',
+      '  </div>',
       '</div>',
-      '<div class="mm-celebracion-monto">',
-      '  <span class="mm-celebracion-antes"></span>',
-      '  <span class="mm-celebracion-flecha"><i class="bi bi-arrow-right-short" aria-hidden="true"></i></span>',
-      '  <span class="mm-celebracion-despues"></span>',
-      '</div>',
-      '<div class="mm-celebracion-ahorro"></div>',
-      '<button class="mm-celebracion-cerrar" type="button" aria-label="Cerrar">',
-      '  <i class="bi bi-x" aria-hidden="true"></i>',
-      '</button>',
-      `<div class="mm-celebracion-barra" style="animation-duration:${DURACION}ms"></div>`,
     ].join('');
 
-    // Rellenar con datos (textContent: seguro ante XSS).
-    const info = nodo.querySelector('.mm-celebracion-info');
-    const titulo = document.createElement('div');
-    titulo.className = 'mm-celebracion-titulo';
-    titulo.textContent = '¡Felicidades! Descuento aplicado';
-    const codigoEl = document.createElement('div');
-    codigoEl.className = 'mm-celebracion-codigo';
-    codigoEl.textContent = `Cupón ${datos.codigo}`;
-    info.append(titulo, codigoEl);
+    // Relleno seguro con textContent.
+    nodo.querySelector('.mm-celebracion-titulo').textContent = '¡Felicidades! Descuento aplicado';
+    nodo.querySelector('.mm-celebracion-codigo').textContent = `Cupón ${datos.codigo}`;
 
     const antesEl = nodo.querySelector('.mm-celebracion-antes');
     antesEl.textContent = fmt(datos.antes_raw);
 
     const despuesEl = nodo.querySelector('.mm-celebracion-despues');
-    despuesEl.textContent = fmt(datos.antes_raw); // empieza igual; animará hacia abajo
+    despuesEl.textContent = fmt(datos.antes_raw);
 
     const ahorroEl = nodo.querySelector('.mm-celebracion-ahorro');
-    const iconoTag = document.createElement('i');
-    iconoTag.className = 'bi bi-tag-fill';
-    iconoTag.setAttribute('aria-hidden', 'true');
-    ahorroEl.append(iconoTag, ` Ahorras ${datos.descuento_texto}`);
+    const tagIcon = document.createElement('i');
+    tagIcon.className = 'bi bi-tag-fill me-1';
+    tagIcon.setAttribute('aria-hidden', 'true');
+    ahorroEl.append(tagIcon, `Ahorras ${datos.descuento_texto}`);
+
+    nodo.querySelector('.mm-celebracion-aplicar').textContent = '¡Usar descuento ahora!';
+    nodo.querySelector('.mm-celebracion-guardar').textContent = 'Guardar para otra compra';
 
     document.body.appendChild(nodo);
-
-    // Mostrar con animación de entrada.
     requestAnimationFrame(() => requestAnimationFrame(() => nodo.classList.add('visible')));
 
-    // Animar el precio bajando de `antes_raw` a `despues_raw`.
+    // Animar precio.
     setTimeout(() => {
       const inicio = performance.now();
       const desde = datos.antes_raw;
@@ -159,16 +214,19 @@
         despuesEl.textContent = fmt(desde + (hasta - desde) * ease);
         if (p < 1) requestAnimationFrame(tick);
       })(performance.now());
-    }, 350);
+    }, 300);
 
-    // Cerrar.
-    const cerrar = () => {
+    const cerrar = (accion) => {
       nodo.classList.remove('visible');
-      setTimeout(() => nodo.remove(), 450);
+      pararConfetti();
+      setTimeout(() => nodo.remove(), 400);
+      if (accion === 'aplicar') cb.onAplicar?.();
+      else cb.onGuardar?.();
     };
-    const timer = setTimeout(cerrar, DURACION);
-    const btnCerrar = nodo.querySelector('.mm-celebracion-cerrar');
-    btnCerrar.addEventListener('click', () => { clearTimeout(timer); cerrar(); });
+
+    nodo.querySelector('.mm-celebracion-aplicar').addEventListener('click', () => cerrar('aplicar'));
+    nodo.querySelector('.mm-celebracion-guardar').addEventListener('click', () => cerrar('guardar'));
+    nodo.querySelector('.mm-celebracion-fondo').addEventListener('click', () => cerrar('aplicar'));
   }
 
   window.Multimix = { enviar, avisar, actualizarContador, celebrarCupon };
@@ -264,7 +322,17 @@
         return;
       }
       actualizarContador(datos.cantidad_total);
-      if (datos.cupon_meta_auto) celebrarCupon(datos.cupon_meta_auto);
+      if (datos.cupon_meta_auto) {
+        const meta = datos.cupon_meta_auto;
+        celebrarCupon(meta, {
+          onAplicar: () => {},
+          onGuardar: async () => {
+            const fd = new FormData();
+            fd.append('codigo', meta.codigo);
+            await enviar(meta.url_guardar, fd).catch(() => {});
+          },
+        });
+      }
       // Fuera de una tienda (portada, buscador del sitio, favoritos) no hay carrito en la cabecera: el aviso
       // enlaza al carrito de la tienda del producto, que es la carpeta anterior de /carrito/agregar/.
       const sinCarritoALaVista = !document.querySelector('.js-contador-carrito');

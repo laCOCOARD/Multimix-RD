@@ -72,6 +72,7 @@ def _contexto_checkout(request, carrito, formulario):
         # Sin pasarela conectada la tarjeta se anuncia, pero no se puede elegir ni se piden sus datos.
         'tarjeta_disponible': proveedor_de_tarjeta() is not None,
         'whatsapp_automatico': whatsapp_api.configurado(),
+        'cupon_meta_sugerido': carrito.meta_guardado,
     }
 
 

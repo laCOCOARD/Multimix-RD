@@ -11,4 +11,5 @@ urlpatterns = [
     path('eliminar/', views.eliminar, name='eliminar'),
     path('cupon/aplicar/', views.cupon_aplicar, name='cupon_aplicar'),
     path('cupon/quitar/', views.cupon_quitar, name='cupon_quitar'),
+    path('cupon/meta/guardar/', views.cupon_meta_guardar, name='cupon_meta_guardar'),
 ]

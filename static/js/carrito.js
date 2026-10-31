@@ -56,7 +56,18 @@
     try {
       const datos = await enviar(formulario.action, new FormData(formulario));
       if (datos.mensaje) avisar(datos.mensaje, datos.ok ? 'aviso' : 'error');
-      if (datos.cupon_meta_auto) celebrarCupon(datos.cupon_meta_auto);
+      if (datos.cupon_meta_auto) {
+        const meta = datos.cupon_meta_auto;
+        celebrarCupon(meta, {
+          onAplicar: () => {},
+          onGuardar: async () => {
+            const fd = new FormData();
+            fd.append('codigo', meta.codigo);
+            await enviar(meta.url_guardar, fd).catch(() => {});
+            window.location.reload();
+          },
+        });
+      }
       pintar(datos);
     } catch (error) {
       formulario.submit();

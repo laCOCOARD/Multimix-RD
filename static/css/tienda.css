@@ -1265,44 +1265,43 @@ html.mm-visor-abierto { overflow: hidden; }
 @keyframes mm-girar { to { transform: rotate(360deg); } }
 
 /* --- Celebración de cupón meta ------------------------------------------ */
+/* Canvas de confetti: cubre toda la pantalla, encima de todo, sin bloquear clics. */
+.mm-confetti-canvas {
+  position: fixed; inset: 0; z-index: 1069;
+  pointer-events: none; width: 100%; height: 100%;
+}
+/* Overlay + modal centrado en pantalla. */
 .mm-celebracion {
-  position: fixed;
-  bottom: 5.5rem;
-  left: 50%;
-  transform: translateX(-50%) translateY(8rem);
-  z-index: 1060;
-  width: min(22rem, calc(100vw - 2rem));
-  padding: 1.1rem 1rem 1.3rem;
+  position: fixed; inset: 0;
+  z-index: 1070;
+  display: flex; align-items: center; justify-content: center;
+  opacity: 0; pointer-events: none;
+  transition: opacity .3s ease;
+}
+.mm-celebracion.visible { opacity: 1; pointer-events: auto; }
+.mm-celebracion-fondo {
+  position: absolute; inset: 0;
+  background: rgba(var(--mm-oscuro-rgb), .6);
+  backdrop-filter: blur(3px);
+}
+/* Panel central. */
+.mm-celebracion-panel {
+  position: relative; z-index: 1;
+  width: min(26rem, calc(100vw - 2rem));
+  padding: 2rem 1.75rem 1.5rem;
   background: var(--mm-superficie);
-  border: 1.5px solid var(--mm-borde-fuerte);
   border-radius: var(--mm-radio-grande);
-  box-shadow: 0 20px 50px rgba(var(--mm-oscuro-rgb), .18);
-  opacity: 0;
-  transition: opacity .35s ease, transform .45s cubic-bezier(.34, 1.56, .64, 1);
-  pointer-events: none;
+  box-shadow: 0 30px 70px rgba(var(--mm-oscuro-rgb), .28);
+  text-align: center;
+  transform: scale(.82) translateY(2rem);
+  transition: transform .45s cubic-bezier(.34, 1.56, .64, 1) .05s;
 }
-.mm-celebracion.visible {
-  opacity: 1;
-  transform: translateX(-50%) translateY(0);
-  pointer-events: auto;
-}
-/* Barra de progreso que se consume mientras el aviso está visible. */
-.mm-celebracion-barra {
-  position: absolute;
-  bottom: 0; left: 0;
-  height: .22rem;
-  background: var(--mm-calido);
-  border-radius: 0 0 var(--mm-radio-grande) var(--mm-radio-grande);
-  transform-origin: left;
-  animation: mm-consumir linear forwards;
-}
-@keyframes mm-consumir { from { transform: scaleX(1); } to { transform: scaleX(0); } }
-/* Cabecera: icono + texto. */
-.mm-celebracion-cabecera { display: flex; align-items: center; gap: .75rem; margin-bottom: .7rem; }
+.mm-celebracion.visible .mm-celebracion-panel { transform: scale(1) translateY(0); }
+/* Icono grande animado. */
 .mm-celebracion-icono {
-  flex: 0 0 auto; display: grid; place-items: center;
-  width: 2.75rem; height: 2.75rem; border-radius: 50%;
-  background: var(--mm-verde-suave); color: var(--mm-verde); font-size: 1.45rem;
+  display: grid; place-items: center; margin: 0 auto .9rem;
+  width: 4rem; height: 4rem; border-radius: 50%;
+  background: var(--mm-verde-suave); color: var(--mm-verde); font-size: 2rem;
   animation: mm-latido-grande .55s cubic-bezier(.34, 1.56, .64, 1);
 }
 @keyframes mm-latido-grande {
@@ -1310,37 +1309,53 @@ html.mm-visor-abierto { overflow: hidden; }
   60% { transform: scale(1.25); }
   100%{ transform: scale(1); }
 }
-.mm-celebracion-titulo { font-size: .95rem; font-weight: 800; color: var(--mm-oscuro); line-height: 1.2; }
-.mm-celebracion-codigo { font-size: .78rem; font-weight: 700; color: var(--mm-verde); margin-top: .1rem; }
-/* Botón cerrar. */
-.mm-celebracion-cerrar {
-  position: absolute; top: .55rem; right: .55rem;
-  display: grid; place-items: center;
-  width: 1.8rem; height: 1.8rem;
-  border: 0; border-radius: .5rem; background: none;
-  color: var(--mm-texto-suave); font-size: 1.1rem;
-  transition: background-color var(--mm-transicion), color var(--mm-transicion);
+.mm-celebracion-titulo {
+  font-size: 1.25rem; font-weight: 800; color: var(--mm-oscuro); line-height: 1.2;
+  animation: mm-aparecer .3s .25s ease both;
 }
-.mm-celebracion-cerrar:hover { background: var(--mm-primario-suave); color: var(--mm-oscuro); }
-/* Monto animado: antes → después. */
-.mm-celebracion-monto { display: flex; align-items: center; gap: .4rem; flex-wrap: wrap; }
-.mm-celebracion-antes {
-  font-size: .95rem; color: var(--mm-texto-suave); text-decoration: line-through;
-  animation: mm-aparecer .3s .3s ease both;
+.mm-celebracion-codigo {
+  font-size: .85rem; font-weight: 700; color: var(--mm-verde); margin: .25rem 0 1rem;
+  animation: mm-aparecer .3s .35s ease both;
 }
-.mm-celebracion-flecha { color: var(--mm-texto-suave); font-size: .9rem; animation: mm-aparecer .3s .4s ease both; }
+/* Monto animado: antes → después (centrado). */
+.mm-celebracion-monto {
+  display: flex; align-items: center; justify-content: center;
+  gap: .5rem; flex-wrap: wrap; margin-bottom: .6rem;
+  animation: mm-aparecer .35s .3s ease both;
+}
+.mm-celebracion-antes { font-size: 1rem; color: var(--mm-texto-suave); text-decoration: line-through; }
+.mm-celebracion-flecha { color: var(--mm-texto-suave); font-size: 1.1rem; }
 .mm-celebracion-despues {
-  font-size: 1.4rem; font-weight: 800; color: var(--mm-verde); letter-spacing: -.02em;
-  animation: mm-aparecer .3s .3s ease both;
+  font-size: 1.75rem; font-weight: 800; color: var(--mm-verde); letter-spacing: -.02em;
 }
 /* Badge de ahorro. */
 .mm-celebracion-ahorro {
   display: inline-flex; align-items: center; gap: .3rem;
-  margin-top: .55rem; padding: .3rem .7rem;
-  border-radius: 999px; background: var(--mm-calido-suave); color: var(--mm-calido-texto);
-  font-size: .82rem; font-weight: 700;
+  padding: .3rem .85rem; border-radius: 999px;
+  background: var(--mm-calido-suave); color: var(--mm-calido-texto);
+  font-size: .85rem; font-weight: 700;
   animation: mm-aparecer .4s .5s ease both;
 }
-@media (min-width: 576px) {
-  .mm-celebracion { bottom: 2rem; }
+/* Botones de acción. */
+.mm-celebracion-botones {
+  display: flex; flex-direction: column; gap: .6rem;
+  margin-top: 1.25rem;
+  animation: mm-aparecer .4s .55s ease both;
 }
+.mm-celebracion-aplicar {
+  padding: .65rem 1.25rem;
+  border: 0; border-radius: var(--mm-radio);
+  background: var(--mm-verde); color: #fff;
+  font-weight: 700; font-size: .95rem;
+  cursor: pointer;
+  transition: filter var(--mm-transicion), transform var(--mm-transicion);
+}
+.mm-celebracion-aplicar:hover { filter: brightness(1.1); transform: translateY(-1px); }
+.mm-celebracion-guardar {
+  padding: .55rem 1.25rem;
+  border: 1.5px solid var(--mm-borde-fuerte); border-radius: var(--mm-radio);
+  background: none; color: var(--mm-texto-suave);
+  font-size: .88rem; cursor: pointer;
+  transition: border-color var(--mm-transicion), color var(--mm-transicion);
+}
+.mm-celebracion-guardar:hover { border-color: var(--mm-oscuro); color: var(--mm-oscuro); }

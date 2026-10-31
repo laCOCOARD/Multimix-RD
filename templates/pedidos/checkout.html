@@ -212,6 +212,12 @@
             {% endfor %}
           </ul>
 
+          {% if cupon_meta_sugerido and not totales.cupon %}
+          <div class="alert alert-warning py-2 px-3 mb-2 small d-flex align-items-center gap-2" role="note">
+            <i class="bi bi-gift-fill flex-shrink-0"></i>
+            <span>Tienes el cupón <strong>{{ cupon_meta_sugerido }}</strong> guardado. Escríbelo aquí para aplicarlo.</span>
+          </div>
+          {% endif %}
           <label class="form-label small" for="id_cupon">{{ formulario.cupon.label }}</label>
           <div class="input-group mb-1">
             <input class="form-control text-uppercase{% if formulario.cupon.errors %} is-invalid{% endif %}" type="text" id="id_cupon" name="cupon"
