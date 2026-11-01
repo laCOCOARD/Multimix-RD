@@ -78,6 +78,7 @@ class Cargo(models.Model):
         MENSUALIDAD = 'mensualidad', 'Mensualidad'
         EXCEDENTE = 'excedente', 'Pedidos de más'
         CAMBIO_DE_PLAN = 'cambio_plan', 'Cambio de plan'
+        COMISION = 'comision', 'Comisión de ventas'
         OTRO = 'otro', 'Otro cargo'
 
     class Estado(models.TextChoices):
@@ -88,7 +89,8 @@ class Cargo(models.Model):
 
     POR_PAGAR = (Estado.PENDIENTE, Estado.EN_REVISION)
     # Lo que se paga antes de recibir algo (subir de plan): no cierra la tienda ni manda recordatorios.
-    PAGOS_POR_ADELANTADO = (Tipo.CAMBIO_DE_PLAN,)
+    # Las comisiones de ventas no tienen comprobante ni cierran tiendas: se descuentan en la liquidacion.
+    PAGOS_POR_ADELANTADO = (Tipo.CAMBIO_DE_PLAN, Tipo.COMISION)
 
     tienda = models.ForeignKey('tiendas.Tienda', on_delete=models.PROTECT, related_name='cargos')
     tipo = models.CharField(max_length=12, choices=Tipo.choices, default=Tipo.MENSUALIDAD)

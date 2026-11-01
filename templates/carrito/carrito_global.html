@@ -1,0 +1,83 @@
+{% extends 'base.html' %}
+{% load moneda static %}
+
+{% block titulo %}Mi carrito{% endblock %}
+{% block meta %}<meta name="robots" content="noindex">{% endblock %}
+
+{% block contenido %}
+<div class="container py-4">
+  <h1 class="h3 mb-4">Mi carrito</h1>
+
+  {% if carritos %}
+  <div class="row g-4">
+    <div class="col-lg-8">
+      {% for tienda, carrito in carritos.items %}
+        {% with lineas=carrito.lineas resumen=carrito.resumen %}
+        <div class="mm-panel p-0 mb-3">
+          <div class="px-3 pt-3 pb-2 border-bottom d-flex align-items-center gap-2">
+            {% if tienda.logo %}<img src="{{ tienda.logo.url }}" alt="" width="28" height="28" class="rounded-circle object-fit-cover">{% endif %}
+            <strong>{{ tienda.nombre }}</strong>
+          </div>
+          {% for linea in lineas %}
+          <div class="mm-linea">
+            <a class="mm-linea-foto" href="{{ linea.producto.get_absolute_url }}">
+              {% with foto=linea.producto.foto_principal %}
+                {% if foto %}<img src="{{ foto.url_tarjeta }}" alt="" loading="lazy" decoding="async" width="96" height="96">
+                {% else %}<span class="mm-sin-foto"><i class="bi bi-image"></i></span>{% endif %}
+              {% endwith %}
+            </a>
+            <div class="mm-linea-datos">
+              <a class="mm-linea-nombre" href="{{ linea.producto.get_absolute_url }}">{{ linea.producto.nombre }}</a>
+              <p class="small text-muted mb-1">{{ linea.precio_unitario|moneda }} c/u · {{ linea.cantidad }} ud.</p>
+            </div>
+            <p class="mm-linea-subtotal">{{ linea.subtotal|moneda }}</p>
+          </div>
+          {% endfor %}
+          <div class="px-3 py-2 d-flex justify-content-between align-items-center border-top small">
+            <span class="text-muted">
+              {% if resumen.cupon %}<i class="bi bi-tag-fill text-success me-1"></i>Cupón {{ resumen.cupon.codigo }} aplicado{% endif %}
+            </span>
+            <span>
+              {% if resumen.descuento %}<s class="text-muted me-2">{{ resumen.subtotal|moneda }}</s>{% endif %}
+              <strong>{{ resumen.total|moneda }}</strong>
+            </span>
+          </div>
+        </div>
+        {% endwith %}
+      {% endfor %}
+    </div>
+
+    <div class="col-lg-4">
+      <div class="mm-panel p-4">
+        <h2 class="h6 mb-3">Resumen</h2>
+        <dl class="row small mb-0">
+          {% for tienda, carrito in carritos.items %}
+          <dt class="col-8 fw-normal text-muted">{{ tienda.nombre }}</dt>
+          <dd class="col-4 text-end mb-1">{{ carrito.resumen.total|moneda }}</dd>
+          {% endfor %}
+        </dl>
+        <hr>
+        <div class="d-flex justify-content-between fw-semibold">
+          <span>Total</span>
+          <span>{{ total_global|moneda }}</span>
+        </div>
+        <p class="text-muted small mt-2 mb-3">
+          <i class="bi bi-shield-check me-1"></i>Una sola transferencia para todas tus compras.
+        </p>
+        <a class="btn btn-primary w-100" href="{% url 'carrito_global:checkout_global' %}">
+          Confirmar pedido <i class="bi bi-arrow-right ms-1"></i>
+        </a>
+      </div>
+    </div>
+  </div>
+
+  {% else %}
+  <div class="text-center py-5">
+    <i class="bi bi-bag display-4 text-muted d-block mb-3"></i>
+    <p class="lead">Tu carrito está vacío.</p>
+    <a class="btn btn-primary" href="{% url 'tiendas:directorio' %}">Ver tiendas</a>
+  </div>
+  {% endif %}
+</div>
+
+{% endblock %}

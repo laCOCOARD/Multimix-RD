@@ -178,7 +178,7 @@ def _validar_entrega_y_pago(datos, tienda):
 
 
 @transaction.atomic
-def crear_pedido(carrito, datos, ip=None, cliente=None):
+def crear_pedido(carrito, datos, ip=None, cliente=None, grupo_pago=None):
     """Crea el pedido de la tienda del carrito con los precios actuales, reserva el stock y cuenta el cupon.
 
     `datos` trae los campos ya validados del checkout. Ningun monto viene del cliente. Productos,
@@ -187,6 +187,8 @@ def crear_pedido(carrito, datos, ip=None, cliente=None):
 
     Si el cliente ya transfirio, `datos['comprobante']` trae la foto: sin ella el pedido no queda como transferido
     (pedido del dueño el 2026-10-19). Se guarda en la misma transaccion: si falla, no queda el pedido a medias.
+
+    `grupo_pago` vincula este pedido a un PagoGlobal (checkout del carrito global).
     """
     tienda = carrito.tienda
     cantidades = {int(pk): cantidad for pk, cantidad in carrito.items.items() if cantidad > 0}
@@ -258,8 +260,9 @@ def crear_pedido(carrito, datos, ip=None, cliente=None):
         # Lo marca registrar_comprobante, y solo con el comprobante.
         transferencia_realizada=False,
         referencia_transferencia='',
-        # Cada tienda cobra lo suyo desde el 2026-10-26: el sitio ya no recibe el dinero de los clientes.
-        cobra_el_sitio=False,
+        # cobra_el_sitio=True en pedidos del carrito global: el cliente paga al sitio.
+        cobra_el_sitio=grupo_pago is not None,
+        grupo_pago=grupo_pago,
         cupon=cupon,
         codigo_cupon=cupon.codigo if cupon else '',
         subtotal=subtotal,
@@ -300,6 +303,49 @@ def crear_pedido(carrito, datos, ip=None, cliente=None):
 
     logger.info('Pedido %s creado por RD$ %s (%s productos)', pedido.numero, pedido.total, len(lineas))
     return pedido
+
+
+@transaction.atomic
+def crear_pedidos_global(carrito_global, datos, ip=None, cliente=None):
+    """Crea un pedido por tienda del carrito global, ligados a un PagoGlobal.
+
+    El metodo de pago es siempre transferencia al sitio (cobra_el_sitio=True). Si la tienda no tiene
+    zonas activas y el cliente pidio envio, ese pedido se crea como recoger-en-tienda.
+    """
+    from pagos.models import PagoGlobal
+
+    carritos = carrito_global.carritos()
+    if not carritos:
+        raise PedidoError('Tu carrito está vacío.')
+
+    pago_global = PagoGlobal.objects.create(monto_total=CERO)
+    pedidos_creados = []
+    monto_total = CERO
+
+    for tienda, carrito in carritos.items():
+        metodo_entrega = datos['metodo_entrega']
+        zona = None
+        if metodo_entrega == Entrega.ENVIO:
+            zona = zonas_activas(tienda).order_by('tarifa').first()
+            if zona is None:
+                metodo_entrega = Entrega.RECOGER
+
+        datos_tienda = {
+            **datos,
+            'metodo_entrega': metodo_entrega,
+            'zona': zona,
+            'metodo_pago': Pago.TRANSFERENCIA,
+            'comprobante': None,
+        }
+        pedido = crear_pedido(carrito, datos_tienda, ip=ip, cliente=cliente, grupo_pago=pago_global)
+        pedidos_creados.append(pedido)
+        monto_total += pedido.total
+
+    PagoGlobal.objects.filter(pk=pago_global.pk).update(monto_total=monto_total)
+    pago_global.monto_total = monto_total
+    carrito_global.vaciar()
+    logger.info('PagoGlobal %s creado: %s pedidos por RD$ %s', pago_global.grupo, len(pedidos_creados), monto_total)
+    return pago_global, pedidos_creados
 
 
 def marcar_transferencia(pedido, referencia=''):

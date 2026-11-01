@@ -89,6 +89,15 @@ def cantidad_en_sesion(session, tienda):
     return sum(datos['items'].values()) if datos else 0
 
 
+def cantidad_global_en_sesion(session):
+    """Total de unidades en todos los carritos de la sesion, sin consultar la base."""
+    return sum(
+        sum(datos['items'].values())
+        for datos in _carritos(session).values()
+        if isinstance(datos.get('items'), dict)
+    )
+
+
 def _cuenta_de(request):
     usuario = getattr(request, 'user', None)
     return usuario if usuario is not None and usuario.is_authenticated and not usuario.is_staff else None
@@ -347,3 +356,40 @@ class Carrito:
             descuento, self.tienda.itbis_porcentaje,
         )
         return ResumenCarrito(subtotal, cupon, descuento, aviso, impuesto, meta_auto)
+
+
+class CarritoGlobal:
+    """Vista agregada de todos los carritos de la sesion (productos de varias tiendas).
+
+    No modifica items; solo lee. Las operaciones de agregar/quitar van a Carrito(request, tienda).
+    """
+
+    def __init__(self, request):
+        self.request = request
+        self.session = request.session
+
+    def carritos(self):
+        """Dict {tienda: Carrito} con las tiendas que tienen items en la sesion."""
+        from tiendas.models import Tienda
+
+        todos = _carritos(self.session)
+        ids_con_items = [int(pk) for pk, datos in todos.items() if isinstance(datos.get('items'), dict) and datos['items']]
+        if not ids_con_items:
+            return {}
+        tiendas = {t.pk: t for t in Tienda.objects.filter(pk__in=ids_con_items, activa=True)}
+        return {
+            tiendas[int(pk)]: Carrito(self.request, tiendas[int(pk)])
+            for pk in todos
+            if int(pk) in tiendas and todos[pk].get('items')
+        }
+
+    def __bool__(self):
+        return bool(cantidad_global_en_sesion(self.session))
+
+    def __len__(self):
+        return cantidad_global_en_sesion(self.session)
+
+    def vaciar(self):
+        """Vacia todos los carritos de la sesion."""
+        self.session[settings.CARRITO_SESSION_ID] = {}
+        self.session.modified = True

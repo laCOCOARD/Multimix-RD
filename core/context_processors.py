@@ -1,7 +1,7 @@
 from django.conf import settings
 from django.utils.functional import SimpleLazyObject
 
-from carrito.carrito import cantidad_en_sesion
+from carrito.carrito import cantidad_en_sesion, cantidad_global_en_sesion
 from catalogo.services import categorias_de, categorias_del_menu
 from pedidos.whatsapp import construir_enlace
 from tiendas.services import como_vender
@@ -31,6 +31,7 @@ def tienda(request):
         'marca': marca,
         'categorias_menu': (),
         'carrito_cantidad': 0,
+        'carrito_cantidad_global': 0,
         'enlace_whatsapp_tienda': '',
         'vender': None,
         'contenido_pie': pie,
@@ -49,11 +50,14 @@ def tienda(request):
         contexto['categorias_menu'] = categorias_de(actual)
         if hasattr(request, 'session'):
             contexto['carrito_cantidad'] = cantidad_en_sesion(request.session, actual)
+            contexto['carrito_cantidad_global'] = cantidad_global_en_sesion(request.session)
     else:
         # En las paginas del sitio: las categorias de todas las tiendas (llevan al buscador del sitio) y a donde
         # escribe quien quiere vender aqui.
         contexto['categorias_menu'] = categorias_del_menu()
         contexto['vender'] = como_vender(plataforma, contexto['paginas_publicadas'])
+        if hasattr(request, 'session'):
+            contexto['carrito_cantidad_global'] = cantidad_global_en_sesion(request.session)
     return contexto
 
 

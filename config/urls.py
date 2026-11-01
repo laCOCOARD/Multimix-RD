@@ -13,7 +13,9 @@ urlpatterns = [
     path(f'{settings.ADMIN_URL}/', admin.site.urls),
     path('cuenta/', include('clientes.urls')),
     path('sitemap.xml', login_not_required(sitemap), {'sitemaps': SITEMAPS}, name='sitemap'),
-    # Dentro de una tienda: su catalogo y su carrito.
+    # Carrito global del sitio (un solo carrito para todas las tiendas).
+    path('carrito/', include('carrito.urls_global')),
+    # Dentro de una tienda: su catalogo y su carrito especifico.
     path(RUTA_DE_TIENDA + 'carrito/', include('carrito.urls')),
     path(RUTA_DE_TIENDA, include('catalogo.urls')),
     # Estas apps mezclan rutas de tienda y del sitio; cada una declara las suyas completas.

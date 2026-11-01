@@ -237,7 +237,7 @@ class MiPlanYMensualidadesTests(ConAnuncios):
     def test_la_pagina_muestra_lo_que_debe_sus_mensualidades_y_los_planes(self):
         cargo = Cargo.objects.create(tienda=self.tienda, tipo=Cargo.Tipo.MENSUALIDAD, periodo=date(2026, 11, 1),
                                      concepto='Mensualidad de noviembre · Plan Estándar', monto=Decimal('1200'),
-                                     vence=date(2026, 11, 1))
+                                     vence=date(2026, 12, 1))
         pagina = self.client.get(reverse('admin:tiendas_tienda_plan', args=[self.tienda.pk]))
         self.assertContains(pagina, '<h1>Mi plan y mensualidades</h1>', html=True)
         self.assertContains(pagina, 'Debes RD$ 1,200.00')

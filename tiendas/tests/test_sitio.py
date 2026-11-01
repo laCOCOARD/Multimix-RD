@@ -59,8 +59,8 @@ class DirectorioTests(DosTiendas):
         self.assertContains(respuesta, 'href="/tienda/fitnes-rd/"')
         self.assertContains(respuesta, 'Todo para entrenar.')
         self.assertNotContains(respuesta, 'En preparación')
-        # En el sitio no hay carrito: se compra dentro de cada tienda.
-        self.assertNotContains(respuesta, 'js-contador-carrito')
+        # El carrito global está en el header para usuarios autenticados.
+        self.assertContains(respuesta, 'js-contador-carrito')
 
     def test_la_portada_muestra_productos_de_todas_las_tiendas_con_su_vendedor(self):
         # Pedido del dueño el 2026-10-25: se compra sin conocer al vendedor, pero cada producto dice de que tienda es.
@@ -267,12 +267,12 @@ class DirectorioTests(DosTiendas):
         self.assertIn('href="/" aria-current="page"', barra)
         self.assertIn(f'href="{reverse("tiendas:directorio")}"', barra)
         self.assertIn(f'href="{reverse("tiendas:buscar")}?oferta=on"', barra)
-        # En el sitio no hay carrito: cada tienda tiene el suyo.
+        # En el sitio no hay carrito en la barra movil (solo en el header via cabecera).
         self.assertNotIn('js-contador-carrito', barra)
-        # Dentro de una tienda: su inicio, su catalogo y su carrito con el contador.
+        # Dentro de una tienda: su inicio, su catalogo y el carrito global con el contador.
         barra = self.barra_del_telefono(self.client.get(ruta('catalogo:lista', tienda=self.fitnes)))
         self.assertIn(f'href="{ruta("catalogo:lista", tienda=self.fitnes)}" aria-current="page"', barra)
-        self.assertIn(f'href="{ruta("carrito:detalle", tienda=self.fitnes)}"', barra)
+        self.assertIn(f'href="{reverse("carrito_global:global")}"', barra)
         self.assertIn('js-contador-carrito', barra)
         self.assertNotIn(ruta('carrito:detalle', tienda=self.multimix), barra)
         # La cuenta se marca en sus paginas.

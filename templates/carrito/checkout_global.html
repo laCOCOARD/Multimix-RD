@@ -1,0 +1,142 @@
+{% extends 'base.html' %}
+{% load moneda static %}
+
+{% block titulo %}Confirmar pedido{% endblock %}
+{% block meta %}<meta name="robots" content="noindex">{% endblock %}
+
+{% block contenido %}
+<div class="container py-4">
+  <h1 class="h3 mb-4">Confirmar pedido</h1>
+
+  <div class="row g-4">
+    {# Formulario #}
+    <div class="col-lg-7">
+      <form method="post" enctype="multipart/form-data" novalidate>
+        {% csrf_token %}
+        {% if formulario.non_field_errors %}
+          <div class="alert alert-danger mb-3" role="alert">
+            {% for error in formulario.non_field_errors %}{{ error }}{% endfor %}
+          </div>
+        {% endif %}
+
+        <div class="mm-panel p-4 mb-3">
+          <h2 class="h6 mb-3">Tus datos</h2>
+          <div class="row g-3">
+            <div class="col-md-7">
+              <label class="form-label" for="{{ formulario.nombre.id_for_label }}">{{ formulario.nombre.label }}</label>
+              {{ formulario.nombre }}
+              {% if formulario.nombre.errors %}<div class="invalid-feedback d-block">{{ formulario.nombre.errors.0 }}</div>{% endif %}
+            </div>
+            <div class="col-md-5">
+              <label class="form-label" for="{{ formulario.telefono.id_for_label }}">{{ formulario.telefono.label }}</label>
+              {{ formulario.telefono }}
+              {% if formulario.telefono.errors %}<div class="invalid-feedback d-block">{{ formulario.telefono.errors.0 }}</div>{% endif %}
+            </div>
+          </div>
+        </div>
+
+        <div class="mm-panel p-4 mb-3">
+          <h2 class="h6 mb-3">Entrega</h2>
+          <div class="mb-3">
+            {% for choice in formulario.metodo_entrega %}
+            <div class="form-check">
+              {{ choice.tag }}
+              <label class="form-check-label" for="{{ choice.id_for_label }}">{{ choice.choice_label }}</label>
+            </div>
+            {% endfor %}
+            {% if formulario.metodo_entrega.errors %}<div class="invalid-feedback d-block">{{ formulario.metodo_entrega.errors.0 }}</div>{% endif %}
+          </div>
+          <div id="datos-envio" class="row g-3">
+            <div class="col-md-5">
+              <label class="form-label" for="{{ formulario.sector.id_for_label }}">{{ formulario.sector.label }}</label>
+              {{ formulario.sector }}
+              {% if formulario.sector.errors %}<div class="invalid-feedback d-block">{{ formulario.sector.errors.0 }}</div>{% endif %}
+            </div>
+            <div class="col-md-7">
+              <label class="form-label" for="{{ formulario.direccion.id_for_label }}">{{ formulario.direccion.label }}</label>
+              {{ formulario.direccion }}
+              {% if formulario.direccion.errors %}<div class="invalid-feedback d-block">{{ formulario.direccion.errors.0 }}</div>{% endif %}
+            </div>
+            <div class="col-12">
+              <label class="form-label" for="{{ formulario.referencia.id_for_label }}">{{ formulario.referencia.label }}</label>
+              {{ formulario.referencia }}
+            </div>
+          </div>
+          <p class="text-muted small mt-2 mb-0">
+            <i class="bi bi-info-circle me-1"></i>Si la tienda no tiene zona de envío para tu dirección, tu pedido se marcará como recoger en tienda.
+          </p>
+        </div>
+
+        <div class="mm-panel p-4 mb-3">
+          <h2 class="h6 mb-3">Pago</h2>
+          <p class="mb-2">
+            <i class="bi bi-shield-check text-success me-1"></i>
+            Transferencia bancaria a las cuentas del sitio. Tus pedidos se confirman cuando verifiquemos tu pago.
+          </p>
+          {% if cuentas_sitio %}
+          <div class="mt-3">
+            {% include 'includes/cuentas_bancarias.html' with cuentas=cuentas_sitio only %}
+          </div>
+          {% endif %}
+        </div>
+
+        <div class="mm-panel p-4 mb-3">
+          <h2 class="h6 mb-3">Notas</h2>
+          <label class="form-label" for="{{ formulario.notas.id_for_label }}">{{ formulario.notas.label }}</label>
+          {{ formulario.notas }}
+        </div>
+
+        <div class="mm-panel p-4 mb-3">
+          <div class="form-check mb-2">
+            {{ formulario.avisos_whatsapp }}
+            <label class="form-check-label" for="{{ formulario.avisos_whatsapp.id_for_label }}">{{ formulario.avisos_whatsapp.label }}</label>
+          </div>
+          <div class="form-check">
+            {{ formulario.acepta_terminos }}
+            <label class="form-check-label" for="{{ formulario.acepta_terminos.id_for_label }}">{{ formulario.acepta_terminos.label }}</label>
+            {% if formulario.acepta_terminos.errors %}<div class="invalid-feedback d-block">{{ formulario.acepta_terminos.errors.0 }}</div>{% endif %}
+          </div>
+        </div>
+
+        {{ formulario.sitio_web }}
+
+        <button class="btn btn-primary btn-lg w-100" type="submit">
+          Confirmar pedido <i class="bi bi-check-circle ms-1"></i>
+        </button>
+      </form>
+    </div>
+
+    {# Resumen del pedido #}
+    <div class="col-lg-5">
+      <div class="mm-panel p-4 position-sticky" style="top: 1rem;">
+        <h2 class="h6 mb-3">Tu pedido</h2>
+        {% for tienda, carrito in carritos.items %}
+          {% with resumen=carrito.resumen %}
+          <p class="fw-semibold mb-1 small">{{ tienda.nombre }}</p>
+          {% for linea in carrito.lineas %}
+          <div class="d-flex justify-content-between small mb-1 text-muted">
+            <span>{{ linea.producto.nombre }} × {{ linea.cantidad }}</span>
+            <span>{{ linea.subtotal|moneda }}</span>
+          </div>
+          {% endfor %}
+          {% if resumen.descuento %}
+          <div class="d-flex justify-content-between small text-success mb-1">
+            <span>Cupón {{ resumen.cupon.codigo }}</span>
+            <span>−{{ resumen.descuento|moneda }}</span>
+          </div>
+          {% endif %}
+          <hr class="my-2">
+          {% endwith %}
+        {% endfor %}
+        <div class="d-flex justify-content-between fw-bold">
+          <span>Total</span>
+          <span>{{ total_global|moneda }}</span>
+        </div>
+        <p class="text-muted small mt-2 mb-0">
+          Más el costo de envío si aplica (cada tienda calcula el suyo).
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

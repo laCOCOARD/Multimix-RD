@@ -975,3 +975,41 @@ def rechazar_cambio_de_plan(tienda, usuario=None):
 
 def cambios_de_plan_pendientes():
     return Tienda.objects.filter(plan_pedido__isnull=False).count()
+
+
+COMISION_VENTAS_PORCENTAJE = Decimal('2.00')
+
+
+def cobrar_comision_venta(pedido, usuario=None):
+    """Registra el cargo del 2%% sobre los productos del pedido (post-cupon, sin envio).
+
+    Solo para pedidos del carrito global (cobra_el_sitio=True). No hace nada si ya existe
+    un cargo de comision para este pedido. La comision se descuenta en la liquidacion al
+    distribuir a la tienda.
+    """
+    from .models import Cargo, Tipo
+
+    if not pedido.cobra_el_sitio:
+        return None
+    base = pedido.subtotal - pedido.descuento
+    if base <= Decimal('0.00'):
+        return None
+    monto = (base * COMISION_VENTAS_PORCENTAJE / Decimal('100')).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+    if monto < Decimal('0.01'):
+        return None
+    concepto = f'Comisión de ventas · Pedido {pedido.numero}'
+    hoy = _hoy()
+    cargo, creado = Cargo.objects.get_or_create(
+        tienda=pedido.tienda, tipo=Tipo.COMISION,
+        concepto=concepto,
+        defaults={
+            'periodo': primer_dia(hoy),
+            'monto': monto,
+            'vence': hoy,
+            'detalle': (
+                f'{COMISION_VENTAS_PORCENTAJE}%% sobre RD$ {base} (pedido {pedido.numero} del carrito global). '
+                'Se descuenta en la liquidación.'
+            ),
+        },
+    )
+    return cargo if creado else None

@@ -1,3 +1,5 @@
+import uuid
+
 from django.conf import settings
 from django.db import models
 from django.db.models import Q
@@ -7,6 +9,64 @@ from django.dispatch import receiver
 from core.archivos import NombreUnico, almacenamiento_privado
 from core.validators import validar_imagen
 from pedidos.models import Pedido
+
+
+class PagoGlobal(models.Model):
+    """Comprobante unico para un grupo de pedidos de distintas tiendas.
+
+    El cliente transfiere al sitio; el administrador lo aprueba para todas las tiendas a la vez.
+    Cada pedido del grupo tiene cobra_el_sitio=True y apunta aqui via grupo_pago.
+    """
+
+    class Estado(models.TextChoices):
+        PENDIENTE = 'pendiente', 'Pendiente de pago'
+        EN_REVISION = 'en_revision', 'Pago en revisión'
+        APROBADO = 'aprobado', 'Pago confirmado'
+        RECHAZADO = 'rechazado', 'Rechazado'
+        CANCELADO = 'cancelado', 'Cancelado'
+
+    POR_RESOLVER = (Estado.PENDIENTE, Estado.EN_REVISION)
+
+    grupo = models.UUIDField(unique=True, default=uuid.uuid4, editable=False)
+    monto_total = models.DecimalField('monto total', max_digits=12, decimal_places=2)
+    comprobante = models.ImageField(
+        upload_to=NombreUnico('comprobantes_globales'), blank=True,
+        validators=[validar_imagen], storage=almacenamiento_privado,
+    )
+    comprobante_privado = models.BooleanField(default=False, editable=False)
+    referencia_cliente = models.CharField('referencia', max_length=60, blank=True)
+    nota = models.CharField('nota', max_length=255, blank=True)
+    estado = models.CharField(max_length=12, choices=Estado.choices, default=Estado.PENDIENTE)
+
+    creado = models.DateTimeField(auto_now_add=True)
+    revisado_en = models.DateTimeField(null=True, blank=True)
+    revisado_por = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='pagos_globales_revisados',
+    )
+
+    class Meta:
+        verbose_name = 'pago global'
+        verbose_name_plural = 'pagos globales'
+        ordering = ['-creado', '-id']
+
+    def __str__(self):
+        return f'Pago global {str(self.grupo)[:8]} · {self.get_estado_display()}'
+
+    @property
+    def por_resolver(self):
+        return self.estado in self.POR_RESOLVER
+
+    @property
+    def almacenamiento_del_comprobante(self):
+        from django.core.files.storage import storages
+        return storages['privado'] if self.comprobante_privado else storages['default']
+
+
+@receiver(post_delete, sender=PagoGlobal)
+def borrar_comprobante_global(sender, instance, **kwargs):
+    if instance.comprobante:
+        instance.almacenamiento_del_comprobante.delete(instance.comprobante.name)
 
 
 class Pago(models.Model):

@@ -152,6 +152,97 @@ def sincronizar_con_pedido(pedido):
             pago.save(update_fields=['estado', 'revisado_en', 'actualizado'])
 
 
+@transaction.atomic
+def registrar_comprobante_global(pago_global, archivo=None, referencia=''):
+    """El cliente avisa que transfirio al sitio con su comprobante (obligatorio).
+
+    Marca todos los pedidos del grupo como transferencia_realizada y el PagoGlobal queda en revision.
+    """
+    from .models import PagoGlobal
+
+    pago_global = PagoGlobal.objects.select_for_update(of=('self',)).get(pk=pago_global.pk)
+    if pago_global.estado not in PagoGlobal.POR_RESOLVER:
+        raise PagoError('Este pago ya no admite comprobantes.')
+    if not archivo:
+        raise PagoError(MENSAJE_FALTA_COMPROBANTE)
+
+    anterior = pago_global.comprobante.name if pago_global.comprobante else ''
+    almacen_anterior = pago_global.almacenamiento_del_comprobante
+    pago_global.comprobante.save(f'{uuid4().hex}.webp', convertir_a_webp(archivo, LADO_COMPROBANTE), save=False)
+    pago_global.comprobante_privado = hay_almacenamiento_privado()
+    pago_global.referencia_cliente = (referencia or '').strip()[:60]
+    pago_global.estado = PagoGlobal.Estado.EN_REVISION
+    pago_global.save()
+    if anterior:
+        almacen_anterior.delete(anterior)
+
+    for pedido in pago_global.pedidos.filter(estado=Pedido.Estado.PENDIENTE):
+        pedidos.marcar_transferencia(pedido, pago_global.referencia_cliente)
+        pago = pago_vigente(pedido)
+        pago.estado = Estado.EN_REVISION
+        pago.save(update_fields=['estado', 'actualizado'])
+
+    logger.info('PagoGlobal %s en revision con comprobante', pago_global.grupo)
+    return pago_global
+
+
+@transaction.atomic
+def aprobar_pago_global(pago_global, usuario=None):
+    """Aprueba el pago del grupo: todos los pedidos pasan a Pagado y se crea el cargo del 2%% por tienda."""
+    from .models import PagoGlobal
+    from planes.services import cobrar_comision_venta
+
+    pago_global = PagoGlobal.objects.select_for_update(of=('self',)).get(pk=pago_global.pk)
+    if pago_global.estado == PagoGlobal.Estado.APROBADO:
+        return pago_global
+    if not pago_global.por_resolver:
+        raise PagoError(f'El pago global está "{pago_global.get_estado_display()}" y ya no se puede aprobar.')
+
+    for pedido in pago_global.pedidos.select_related('tienda').filter(estado__in=[Pedido.Estado.PENDIENTE, Pedido.Estado.PAGADO]):
+        pago = pago_vigente(pedido)
+        if pedido.estado == Pedido.Estado.PENDIENTE:
+            pedidos.cambiar_estado(pedido, Pedido.Estado.PAGADO, usuario=usuario)
+        pago.refresh_from_db()
+        if pago.estado != Estado.APROBADO:
+            pago.estado = Estado.APROBADO
+            pago.revisado_en = pago.revisado_en or timezone.now()
+            pago.revisado_por = usuario
+            pago.save(update_fields=['estado', 'revisado_en', 'revisado_por', 'actualizado'])
+        cobrar_comision_venta(pedido, usuario=usuario)
+
+    pago_global.estado = PagoGlobal.Estado.APROBADO
+    pago_global.revisado_en = timezone.now()
+    pago_global.revisado_por = usuario
+    pago_global.save(update_fields=['estado', 'revisado_en', 'revisado_por'])
+    logger.info('PagoGlobal %s aprobado por %s', pago_global.grupo, usuario or 'el sistema')
+    return pago_global
+
+
+@transaction.atomic
+def rechazar_comprobante_global(pago_global, usuario=None, nota=''):
+    """El comprobante no sirve: el PagoGlobal vuelve a pendiente."""
+    from .models import PagoGlobal
+
+    pago_global = PagoGlobal.objects.select_for_update(of=('self',)).get(pk=pago_global.pk)
+    if not pago_global.por_resolver:
+        raise PagoError(f'El pago global está "{pago_global.get_estado_display()}" y ya no se puede rechazar.')
+    pago_global.estado = PagoGlobal.Estado.PENDIENTE
+    pago_global.nota = (nota or pago_global.nota or 'El comprobante no corresponde a un depósito recibido.')[:255]
+    pago_global.revisado_en = timezone.now()
+    pago_global.revisado_por = usuario
+    pago_global.save(update_fields=['estado', 'nota', 'revisado_en', 'revisado_por'])
+
+    for pedido in pago_global.pedidos.filter(estado=Pedido.Estado.PENDIENTE, transferencia_realizada=True):
+        Pedido.objects.filter(pk=pedido.pk).update(transferencia_realizada=False, referencia_transferencia='')
+        pago = pago_vigente(pedido)
+        if pago.por_resolver:
+            pago.estado = Estado.RECHAZADO
+            pago.save(update_fields=['estado', 'actualizado'])
+
+    logger.info('PagoGlobal %s rechazado por %s', pago_global.grupo, usuario or 'el sistema')
+    return pago_global
+
+
 def mover_comprobantes_al_privado(limite=5):
     """Pasa al almacenamiento privado los comprobantes que quedaron en el publico. Devuelve cuantos movio.
 

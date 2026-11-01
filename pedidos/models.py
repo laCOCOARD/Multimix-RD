@@ -160,6 +160,12 @@ class Pedido(models.Model):
     entrega_desde = models.DateField('entrega estimada desde', null=True, blank=True, editable=False)
     entrega_hasta = models.DateField('entrega estimada hasta', null=True, blank=True, editable=False)
     stock_descontado = models.BooleanField('stock ya descontado', default=False, editable=False)
+    # Pago global: se fija al crear el pedido desde el checkout del carrito global.
+    grupo_pago = models.ForeignKey(
+        'pagos.PagoGlobal', on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='pedidos', verbose_name='pago global', editable=False,
+    )
+
     # Reparto a la tienda (pagos/liquidaciones.py). Solo los toca `pagos.liquidaciones.liquidar`.
     liquidacion = models.ForeignKey(
         'pagos.Liquidacion', on_delete=models.SET_NULL, null=True, blank=True, related_name='pedidos',

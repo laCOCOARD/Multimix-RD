@@ -1,0 +1,129 @@
+{% extends 'base.html' %}
+{% load moneda static %}
+
+{% block titulo %}Pedido confirmado{% endblock %}
+{% block meta %}<meta name="robots" content="noindex, nofollow"><meta name="referrer" content="same-origin">{% endblock %}
+
+{% block contenido %}
+<div class="container py-4">
+  <div class="row justify-content-center">
+    <div class="col-lg-8">
+
+      <div class="mm-panel text-center mb-4">
+        {% if pago_global.estado == 'aprobado' %}
+          <i class="bi bi-check-circle-fill mm-icono-estado text-success"></i>
+          <h1 class="h3 mt-2">¡Pago confirmado!</h1>
+          <p class="text-muted mb-0">Tus pedidos están en camino.</p>
+        {% elif pago_global.estado == 'cancelado' %}
+          <i class="bi bi-x-circle-fill mm-icono-estado text-danger"></i>
+          <h1 class="h3 mt-2">Pedidos cancelados</h1>
+          <p class="text-muted mb-0">Estos pedidos fueron cancelados.</p>
+        {% else %}
+          <i class="bi bi-check-circle-fill mm-icono-estado text-success"></i>
+          <h1 class="h3 mt-2">¡Recibimos tu pedido!</h1>
+          <p class="text-muted mb-2">Haz la transferencia y nosotros confirmamos cada pedido al verificar el pago.</p>
+          <span class="badge mm-estado mm-estado-{{ pago_global.estado }}">{{ pago_global.get_estado_display }}</span>
+        {% endif %}
+      </div>
+
+      {# Transferencia pendiente #}
+      {% if pago_global.estado in 'pendiente en_revision' %}
+        <div class="mm-panel mb-4">
+          <h2 class="h5 mb-3"><i class="bi bi-bank me-2"></i>Datos para la transferencia</h2>
+          <p>Transfiere <strong>{{ pago_global.monto_total|moneda }}</strong> a cualquiera de estas cuentas.</p>
+          {% include 'includes/cuentas_bancarias.html' with cuentas=cuentas_sitio only %}
+
+          {% if pago_global.comprobante %}
+            <div class="alert alert-success mt-3 mb-0">
+              <i class="bi bi-check2 me-1"></i>Nos avisaste que ya transferiste{% if pago_global.referencia_cliente %} (Ref.: {{ pago_global.referencia_cliente }}){% endif %}. Lo estamos revisando.
+            </div>
+          {% endif %}
+
+          {% if pago_global.nota and not pago_global.comprobante %}
+            <div class="alert alert-warning mt-3 mb-0">
+              <i class="bi bi-exclamation-triangle me-1"></i>{{ pago_global.nota }}
+            </div>
+          {% endif %}
+
+          {% if puede_avisar %}
+            <form class="mt-3" method="post" enctype="multipart/form-data" action="{% url 'carrito_global:aviso_transferencia_global' pago_global.grupo %}">
+              {% csrf_token %}
+              <p class="fw-semibold mb-2">¿Ya transferiste? Sube tu comprobante</p>
+              <div class="row g-2">
+                <div class="col-md-6">
+                  <label class="form-label small" for="comprobante-global">Comprobante (foto o captura)</label>
+                  <input class="form-control" type="file" id="comprobante-global" name="comprobante" accept="image/jpeg,image/png,image/webp" required>
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label small" for="referencia-global">Referencia (opcional)</label>
+                  <input class="form-control" type="text" id="referencia-global" name="referencia_transferencia" maxlength="60">
+                </div>
+              </div>
+              <button class="btn btn-primary mt-3" type="submit">Enviar comprobante</button>
+              <p class="small text-muted mt-2 mb-0">JPG, PNG o WebP de hasta 5 MB. Tus pedidos se confirman cuando verifiquemos la transferencia.</p>
+            </form>
+          {% elif pago_global.comprobante and pago_global.estado == 'en_revision' %}
+            <form class="mt-3" method="post" enctype="multipart/form-data" action="{% url 'carrito_global:aviso_transferencia_global' pago_global.grupo %}">
+              {% csrf_token %}
+              <p class="fw-semibold mb-2">¿Quieres cambiar el comprobante?</p>
+              <div class="row g-2">
+                <div class="col-md-6">
+                  <label class="form-label small" for="comprobante-nuevo">Nuevo comprobante</label>
+                  <input class="form-control" type="file" id="comprobante-nuevo" name="comprobante" accept="image/jpeg,image/png,image/webp" required>
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label small" for="referencia-nuevo">Referencia (opcional)</label>
+                  <input class="form-control" type="text" id="referencia-nuevo" name="referencia_transferencia" maxlength="60" value="{{ pago_global.referencia_cliente }}">
+                </div>
+              </div>
+              <button class="btn btn-outline-primary mt-3" type="submit">Cambiar comprobante</button>
+            </form>
+          {% endif %}
+        </div>
+      {% endif %}
+
+      {# Pedidos del grupo #}
+      <div class="mm-panel mb-4">
+        <h2 class="h5 mb-3">Tus pedidos</h2>
+        {% for pedido in pedidos %}
+          <div class="border rounded p-3 mb-3{% if not forloop.last %} mb-3{% endif %}">
+            <div class="d-flex align-items-center gap-2 mb-2">
+              {% if pedido.tienda.logo %}
+                <img src="{{ pedido.tienda.logo.url }}" alt="" width="24" height="24" class="rounded-circle object-fit-cover">
+              {% endif %}
+              <strong>{{ pedido.tienda.nombre }}</strong>
+              <span class="ms-auto badge mm-estado mm-estado-{{ pedido.estado }}">{{ pedido.get_estado_display }}</span>
+            </div>
+            <p class="small text-muted mb-1">Pedido <strong>{{ pedido.numero }}</strong></p>
+            <ul class="list-unstyled small mb-2 mm-resumen-lineas">
+              {% for detalle in pedido.detalles.all %}
+                <li>
+                  <span>{{ detalle.cantidad }} × {{ detalle.nombre_producto }}</span>
+                  <span>{{ detalle.subtotal|moneda }}</span>
+                </li>
+              {% endfor %}
+            </ul>
+            <div class="d-flex justify-content-between small fw-semibold">
+              <span>Total</span>
+              <span>{{ pedido.total|moneda }}</span>
+            </div>
+            <div class="mt-2">
+              <a class="btn btn-sm btn-outline-primary" href="{% url 'pedidos:confirmacion' pedido.token %}">Ver pedido <i class="bi bi-arrow-right ms-1"></i></a>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+
+      <div class="d-flex flex-wrap justify-content-center gap-2 mb-4">
+        <a class="btn btn-outline-primary" href="{% url 'tiendas:directorio' %}">Seguir comprando</a>
+        {% if user.is_authenticated %}
+          <a class="btn btn-outline-primary" href="{% url 'clientes:cuenta' %}">Mis pedidos</a>
+        {% endif %}
+      </div>
+
+      <p class="small text-muted text-center">Guarda este enlace para ver el estado de tus pedidos. Un pedido sin pagar se cancela automáticamente si pasa mucho tiempo.</p>
+
+    </div>
+  </div>
+</div>
+{% endblock %}

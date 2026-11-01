@@ -15,7 +15,7 @@ from tiendas.panel import AdminDeTienda
 from tiendas.services import ve_todas
 
 from . import liquidaciones, services
-from .models import Liquidacion, Pago
+from .models import Liquidacion, Pago, PagoGlobal
 
 
 @admin.register(Pago)
@@ -169,6 +169,140 @@ class PagoAdmin(AdminDeTienda, admin.ModelAdmin):
                 'SUPABASE_S3_BUCKET_PRIVADO (docs/RENDER.md).',
             )
         return enlace
+
+
+@admin.register(PagoGlobal)
+class PagoGlobalAdmin(admin.ModelAdmin):
+    """Pagos del carrito global: un comprobante para varios pedidos de distintas tiendas.
+    Solo el administrador principal puede aprobar o rechazar (cobra_el_sitio=True en todos sus pedidos)."""
+
+    date_hierarchy = 'creado'
+    list_display = ['grupo_corto', 'creado', 'monto_formateado', 'estado_con_color', 'tiene_comprobante', 'num_pedidos']
+    list_filter = ['estado', 'creado']
+    search_fields = ['grupo', 'referencia_cliente', 'pedidos__numero', 'pedidos__nombre']
+    list_per_page = 40
+    actions = ['aprobar', 'rechazar']
+    readonly_fields = [
+        'grupo', 'monto_formateado', 'estado_con_color', 'creado', 'revisado_en', 'revisado_por',
+        'referencia_cliente', 'vista_del_comprobante', 'pedidos_enlazados',
+    ]
+    fields = [
+        'grupo', 'creado', 'monto_formateado', 'estado_con_color',
+        'referencia_cliente', 'vista_del_comprobante',
+        'revisado_en', 'revisado_por', 'nota',
+        'pedidos_enlazados',
+    ]
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+    def has_module_perms(self, request):
+        return ve_todas(request.user)
+
+    def has_view_permission(self, request, obj=None):
+        return ve_todas(request.user)
+
+    def has_change_permission(self, request, obj=None):
+        return ve_todas(request.user)
+
+    def get_actions(self, request):
+        acciones = super().get_actions(request)
+        acciones.pop('delete_selected', None)
+        if not ve_todas(request.user):
+            acciones.pop('aprobar', None)
+            acciones.pop('rechazar', None)
+        return acciones
+
+    def get_urls(self):
+        propias = [
+            path(
+                '<path:object_id>/comprobante/', self.admin_site.admin_view(self.comprobante_vista),
+                name='pagos_pagoglobal_comprobante',
+            ),
+        ]
+        return propias + super().get_urls()
+
+    def comprobante_vista(self, request, object_id):
+        if not ve_todas(request.user):
+            raise PermissionDenied
+        pago_global = get_object_or_404(PagoGlobal, pk=unquote(object_id))
+        if not pago_global.comprobante:
+            raise Http404
+        try:
+            archivo = pago_global.almacenamiento_del_comprobante.open(pago_global.comprobante.name)
+        except (FileNotFoundError, *ERRORES_DE_ALMACENAMIENTO):
+            raise Http404('No se encontró el archivo del comprobante.')
+        respuesta = FileResponse(archivo, content_type='image/webp')
+        respuesta['Cache-Control'] = 'private, no-store'
+        respuesta['Content-Disposition'] = f'inline; filename="comprobante-{pago_global.grupo}.webp"'
+        return respuesta
+
+    def _resolver(self, request, queryset, accion, hecho):
+        if not ve_todas(request.user):
+            raise PermissionDenied
+        total = 0
+        for pago_global in queryset.order_by('creado'):
+            try:
+                accion(pago_global, request.user)
+                total += 1
+            except services.PagoError as error:
+                self.message_user(request, error.mensaje, messages.ERROR)
+        if total:
+            self.message_user(request, f'{total} pago(s) global(es) {hecho}.', messages.SUCCESS)
+
+    @admin.action(description='Aprobar pago (todos los pedidos del grupo pasan a Pagado)')
+    def aprobar(self, request, queryset):
+        self._resolver(request, queryset, services.aprobar_pago_global, 'aprobados')
+
+    @admin.action(description='Rechazar comprobante (el cliente puede enviar otro)')
+    def rechazar(self, request, queryset):
+        self._resolver(request, queryset, services.rechazar_comprobante_global, 'rechazados')
+
+    # --- Columnas -------------------------------------------------------------------
+
+    @admin.display(description='Grupo', ordering='grupo')
+    def grupo_corto(self, pago_global):
+        return str(pago_global.grupo)[:8]
+
+    @admin.display(description='Monto', ordering='monto_total')
+    def monto_formateado(self, pago_global):
+        return formatear_monto(pago_global.monto_total)
+
+    @admin.display(description='Estado', ordering='estado')
+    def estado_con_color(self, pago_global):
+        return format_html('<span class="panel-estado panel-pago-{}">{}</span>', pago_global.estado, pago_global.get_estado_display())
+
+    @admin.display(description='Comprobante', boolean=True)
+    def tiene_comprobante(self, pago_global):
+        return bool(pago_global.comprobante)
+
+    @admin.display(description='Pedidos')
+    def num_pedidos(self, pago_global):
+        return pago_global.pedidos.count()
+
+    @admin.display(description='Comprobante')
+    def vista_del_comprobante(self, pago_global):
+        if not pago_global.comprobante:
+            return 'El cliente no adjuntó comprobante.'
+        return format_html(
+            '<a href="{0}" target="_blank" rel="noopener"><img src="{0}" alt="Comprobante" class="panel-comprobante"></a>',
+            reverse('admin:pagos_pagoglobal_comprobante', args=[pago_global.pk]),
+        )
+
+    @admin.display(description='Pedidos del grupo')
+    def pedidos_enlazados(self, pago_global):
+        pedidos_qs = pago_global.pedidos.select_related('tienda').order_by('tienda__nombre')
+        if not pedidos_qs:
+            return 'Ninguno'
+        filas = format_html_join('', '<li><a href="{}">{}</a> · {} · {} · {}</li>', (
+            (reverse('admin:pedidos_pedido_change', args=[p.pk]), p.numero, p.tienda.nombre,
+             p.get_estado_display(), formatear_monto(p.total))
+            for p in pedidos_qs
+        ))
+        return format_html('<ul style="margin: 0; padding-left: 1.2em;">{}</ul>', filas)
 
 
 @admin.register(Liquidacion)
