@@ -1,5 +1,8 @@
 """Datos del resumen que se muestra en la portada del panel de administracion."""
+from datetime import timedelta
+
 from django.db.models import Count, F, Q, Sum
+from django.db.models.functions import TruncDay
 from django.utils import timezone
 
 from catalogo.models import Producto, q_agotado, q_comprable
@@ -20,6 +23,30 @@ def _ventas_desde(pedidos, inicio):
 def _inicio_del_dia_y_del_mes():
     inicio_dia = timezone.localtime().replace(hour=0, minute=0, second=0, microsecond=0)
     return inicio_dia, inicio_dia.replace(day=1)
+
+
+def _ventas_7dias(pedidos, inicio_dia):
+    """Ventas diarias de los últimos 7 días (incluye hoy) con su altura en pixeles para el gráfico."""
+    hace_6 = inicio_dia - timedelta(days=6)
+    tz = timezone.get_current_timezone()
+    por_dia = {
+        row['dia'].date(): row['total']
+        for row in (
+            pedidos.filter(fecha_pago__gte=hace_6)
+            .exclude(estado__in=Pedido.ESTADOS_SIN_VENTA)
+            .annotate(dia=TruncDay('fecha_pago', tzinfo=tz))
+            .values('dia')
+            .annotate(total=Sum('total'))
+        )
+    }
+    dias = [
+        {'dia': (hace_6 + timedelta(days=i)).date(), 'total': por_dia.get((hace_6 + timedelta(days=i)).date(), 0)}
+        for i in range(7)
+    ]
+    maximo = max((d['total'] for d in dias), default=1) or 1
+    for d in dias:
+        d['altura'] = max(4, round(d['total'] / maximo * 48))
+    return dias
 
 
 def resumen_panel(tiendas=None):
@@ -43,9 +70,34 @@ def resumen_panel(tiendas=None):
     agotados = productos.filter(q_agotado()).order_by('nombre')
     pendientes = pedidos.filter(estado=Pedido.Estado.PENDIENTE)
 
+    # Ventas del mes y comparación con el mes anterior.
+    inicio_mes_ant = (inicio_mes - timedelta(days=1)).replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    ventas_mes = _ventas_desde(pedidos, inicio_mes)
+    ventas_mes_ant = (
+        pedidos.filter(fecha_pago__gte=inicio_mes_ant, fecha_pago__lt=inicio_mes)
+        .exclude(estado__in=Pedido.ESTADOS_SIN_VENTA)
+        .aggregate(total=Sum('total'))['total'] or 0
+    )
+    pedidos_mes = (
+        pedidos.filter(fecha_pago__gte=inicio_mes)
+        .exclude(estado__in=Pedido.ESTADOS_SIN_VENTA)
+        .count()
+    )
+    if ventas_mes_ant:
+        tendencia_mes = round((ventas_mes - ventas_mes_ant) / ventas_mes_ant * 100)
+        tendencia_abs = abs(tendencia_mes)
+    else:
+        tendencia_mes = None
+        tendencia_abs = 0
+
     return {
         'ventas_dia': _ventas_desde(pedidos, inicio_dia),
-        'ventas_mes': _ventas_desde(pedidos, inicio_mes),
+        'ventas_mes': ventas_mes,
+        'ventas_mes_anterior': ventas_mes_ant,
+        'tendencia_mes': tendencia_mes,
+        'tendencia_abs': tendencia_abs,
+        'pedidos_mes': pedidos_mes,
+        'ventas_7dias': _ventas_7dias(pedidos, inicio_dia),
         'pedidos_pendientes': pendientes.count(),
         'transferencias_por_verificar': pendientes.filter(transferencia_realizada=True).count(),
         'total_stock_bajo': stock_bajo.count(),

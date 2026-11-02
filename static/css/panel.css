@@ -319,6 +319,19 @@ html[data-theme="dark"] .pv-al-dia { background: #14352a; color: #bbf7d0; }
 .pv-productos li { padding: 3px 0; list-style: none; }
 .pv-cantidad { font-weight: 800; }
 .pv-todos-los-datos { margin: 8px 0 10px; font-size: 1rem; color: var(--body-quiet-color); }
+/* ══ Tendencia del mes y sparkline ══════════════════════════════════════ */
+.pv-tendencia { white-space: nowrap; }
+.pv-tendencia-sube { color: #16a34a; font-weight: 700; }
+.pv-tendencia-baja { color: #dc2626; font-weight: 700; }
+
+.pv-sparkline { display: flex; align-items: flex-end; gap: 5px; height: 68px; margin-top: 14px;
+  padding: 8px 10px 0; background: var(--darkened-bg); border-radius: 8px; border: 1px solid var(--hairline-color); }
+.pv-spark-col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; }
+.pv-spark-barra { width: 100%; min-height: 4px; border-radius: 3px 3px 0 0; background: var(--accent); opacity: .55; transition: opacity .2s; }
+.pv-spark-barra:hover { opacity: 1; }
+.pv-spark-barra-hoy { opacity: 1; }
+.pv-spark-label { font-size: .6rem; color: var(--body-quiet-color); text-transform: uppercase; padding-bottom: 4px; }
+
 @media (max-width: 767px) {
   .pv-bandejas { flex-wrap: nowrap; overflow-x: auto; padding-bottom: 4px; }
   .pv-bandeja { flex: 0 0 auto; }

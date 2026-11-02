@@ -80,7 +80,14 @@
       <a class="panel-tarjeta" href="{% url 'admin:pedidos_pedido_reporte' %}">
         <span class="panel-tarjeta-titulo">Este mes</span>
         <strong class="panel-tarjeta-valor">{{ resumen.ventas_mes|moneda }}</strong>
-        <span class="panel-tarjeta-nota">Ver el reporte de ventas ›</span>
+        <span class="panel-tarjeta-nota">
+          {{ resumen.pedidos_mes }} pedido{{ resumen.pedidos_mes|pluralize }}
+          {% if resumen.tendencia_mes is not None %}·
+            <span class="pv-tendencia {% if resumen.tendencia_mes >= 0 %}pv-tendencia-sube{% else %}pv-tendencia-baja{% endif %}">
+              {% if resumen.tendencia_mes >= 0 %}▲{% else %}▼{% endif %} {{ resumen.tendencia_abs }}%
+            </span>
+          {% endif %}
+        </span>
       </a>
       {% if resumen.total_stock_bajo %}
       <a class="panel-tarjeta panel-tarjeta-bajo" href="{% url 'admin:catalogo_producto_changelist' %}?stock=bajo">
@@ -96,6 +103,15 @@
         <span class="panel-tarjeta-nota">No se pueden comprar</span>
       </a>
       {% endif %}
+    </div>
+    <div class="pv-sparkline" aria-label="Ventas de los últimos 7 días">
+      {% for dia in resumen.ventas_7dias %}
+        <div class="pv-spark-col">
+          <div class="pv-spark-barra{% if forloop.last %} pv-spark-barra-hoy{% endif %}" style="height:{{ dia.altura }}px"
+               title="{{ dia.dia|date:'l j' }}: {{ dia.total|moneda }}"></div>
+          <span class="pv-spark-label">{{ dia.dia|date:'D' }}</span>
+        </div>
+      {% endfor %}
     </div>
   </section>
 
