@@ -69,9 +69,9 @@
         <input type="hidden" name="producto_id" value="{{ producto.pk }}">
         <input type="hidden" name="cantidad" value="1">
         <input type="hidden" name="next" value="{{ request.get_full_path }}">
-        <button class="btn btn-outline-primary mm-tarjeta-agregar" type="submit" data-solo-icono
-                aria-label="Agregar {{ producto.nombre }} al carrito" title="Agregar al carrito"><i class="bi bi-bag-plus"></i></button>
-        <button class="btn btn-primary flex-grow-1 mm-tarjeta-comprar" type="submit" name="comprar" value="1"><i class="bi bi-lightning-charge-fill me-1"></i>Comprar</button>
+        <button class="btn btn-outline-secondary mm-tarjeta-agregar" type="submit" data-solo-icono
+                aria-label="Agregar {{ producto.nombre }} al carrito" title="Al carrito"><i class="bi bi-bag-plus"></i></button>
+        <button class="btn btn-acento flex-grow-1 mm-tarjeta-comprar" type="submit" name="comprar" value="1">Lo quiero</button>
       </form>
     {% endif %}
     </div>

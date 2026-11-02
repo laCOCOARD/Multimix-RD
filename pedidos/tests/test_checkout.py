@@ -87,7 +87,7 @@ class CheckoutTests(TestCase):
         pagina = self.client.get(respuesta.url)
         self.assertContains(pagina, pedido.numero)
         # La compra termina aqui: WhatsApp queda como una forma opcional de escribirle a la tienda.
-        self.assertContains(pagina, '¡Recibimos tu pedido!')
+        self.assertContains(pagina, '¡Listo! Ya recibimos tu pedido')
         self.assertNotContains(pagina, 'Falta un paso')
         self.assertNotContains(pagina, 'data-abrir')
         self.assertContains(pagina, 'Escribir a la tienda por WhatsApp')

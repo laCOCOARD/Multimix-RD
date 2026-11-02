@@ -433,7 +433,7 @@ class PedidoPorTiendaTests(DosTiendas):
         self.assertContains(pagina, f'000-{self.fitnes.pk}')
         self.assertNotContains(pagina, f'000-{self.multimix.pk}')
         self.assertNotContains(pagina, 'Banco Popular')
-        self.assertContains(pagina, 'Compra en <strong>Fitnes RD</strong>')
+        self.assertContains(pagina, 'Compraste en <strong>Fitnes RD</strong>')
 
     def test_cada_tienda_numera_sus_pedidos_por_separado(self):
         for tienda, producto in ((self.multimix, self.lampara), (self.fitnes, self.pesas), (self.fitnes, self.pesas)):

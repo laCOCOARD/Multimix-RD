@@ -62,9 +62,9 @@ class RecorridoDeCompraTests(TestCase):
         # 4. Confirmacion clara, con el numero y el total; el carrito queda vacio.
         confirmacion = self.client.get(pedido.get_absolute_url())
         self.assertContains(confirmacion, pedido.numero)
-        self.assertContains(confirmacion, 'Recibimos tu pedido')
+        self.assertContains(confirmacion, 'Ya recibimos tu pedido')
         self.assertContains(confirmacion, 'Pendiente de pago')
-        self.assertContains(self.client.get(ruta('carrito:detalle')), 'Tu carrito está vacío')
+        self.assertContains(self.client.get(ruta('carrito:detalle')), 'Todavía no hay nada aquí')
 
         # 5. Otro cliente no ve el pedido en su cuenta.
         entrar_como_cliente(self.client, 'luis@example.com', 'Luis Gil')

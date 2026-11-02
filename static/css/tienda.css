@@ -290,8 +290,8 @@ img { max-width: 100%; height: auto; }
 /* --- Tarjeta de producto ------------------------------------------------ */
 /* `position: relative` contiene lo que va posicionado dentro (el "Vendido por" oculto): dentro de una fila que se */
 /* desliza, si escapara de la tarjeta ensancharia toda la pagina en el celular. */
-.mm-tarjeta { position: relative; display: flex; flex-direction: column; background: var(--mm-superficie); border: 1px solid var(--mm-borde); border-radius: var(--mm-radio); box-shadow: var(--mm-sombra); overflow: hidden; transition: transform var(--mm-transicion), box-shadow var(--mm-transicion), border-color var(--mm-transicion); }
-.mm-tarjeta:hover { transform: translateY(-4px); box-shadow: var(--mm-sombra-alta); border-color: var(--mm-borde-fuerte); }
+.mm-tarjeta { position: relative; display: flex; flex-direction: column; background: var(--mm-superficie); border: 1px solid var(--mm-borde); border-bottom: 3px solid transparent; border-radius: var(--mm-radio); box-shadow: 0 1px 4px rgba(0,0,0,.07), 0 4px 14px rgba(0,0,0,.05); overflow: hidden; transition: transform .25s ease, box-shadow .25s ease, border-color .25s ease; }
+.mm-tarjeta:hover { transform: translateY(-3px); box-shadow: 0 6px 24px rgba(0,0,0,.11); border-bottom-color: var(--mm-calido); }
 /* La foto se ve entera (como en la ficha) sobre blanco: una foto alargada no se recorta. El corazon va encima, */
 /* fuera del enlace de la foto (un boton no puede ir dentro de un enlace). */
 .mm-tarjeta-media { position: relative; }
@@ -323,7 +323,7 @@ a.mm-favorito { position: absolute; top: .5rem; right: .5rem; z-index: 2; }
 .mm-tarjeta-agregar { flex: 0 0 auto; width: 2.6rem; }
 .mm-tarjeta-comprar { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 .mm-tarjeta-categoria { margin: 0 0 .15rem; font-size: .72rem; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; color: var(--mm-texto-suave); }
-.mm-tarjeta-nombre { font-size: .95rem; font-weight: 600; line-height: 1.3; margin: 0 0 .45rem; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; min-height: 2.6em; }
+.mm-tarjeta-nombre { font-size: .95rem; font-weight: 700; line-height: 1.3; margin: 0 0 .45rem; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; min-height: 2.6em; }
 .mm-tarjeta-nombre a { color: var(--mm-oscuro); }
 /* Quien lo vende: debajo del nombre, mas discreto que el nombre y el precio pero a la vista y con enlace a la tienda. */
 .mm-tarjeta-vendedor { position: relative; display: flex; align-items: center; gap: .3rem; min-width: 0; margin: -.15rem 0 .5rem; font-size: .8rem; color: var(--mm-texto-suave); white-space: nowrap; }
@@ -336,7 +336,7 @@ a.mm-favorito { position: absolute; top: .5rem; right: .5rem; z-index: 2; }
 .mm-precio-grande .mm-precio-final { font-size: 1.9rem; }
 .mm-precio-grande .mm-precio-anterior { font-size: 1.1rem; }
 @media (min-width: 360px) { .mm-precio-final { white-space: nowrap; } }
-@media (min-width: 576px) { .mm-tarjeta .mm-precio-final { font-size: 1.25rem; } }
+@media (min-width: 576px) { .mm-tarjeta .mm-precio-final { font-size: 1.35rem; font-weight: 800; } }
 /* Celulares: las tarjetas van de dos en dos y quedan angostas. */
 @media (max-width: 575.98px) {
   .mm-tarjeta-cuerpo { padding: .7rem; }
@@ -484,7 +484,7 @@ a.mm-favorito { position: absolute; top: .5rem; right: .5rem; z-index: 2; }
 .js .revelar-zoom { transform: scale(.6); transition-timing-function: ease, cubic-bezier(.34, 1.56, .64, 1); }
 .js .revelar-suave { transform: none; }
 .js .revelar.visible { opacity: 1; transform: none; }
-.js .mm-tarjeta.revelar.visible:hover { transform: translateY(-4px); }
+.js .mm-tarjeta.revelar.visible:hover { transform: translateY(-3px); }
 .js .mm-tienda.revelar.visible:hover, .js .mm-llamado.revelar.visible:hover, .js .mm-categoria.revelar.visible:hover { transform: translateY(-3px); }
 html:not(.js) .solo-con-js { display: none !important; }
 .js .solo-sin-js { display: none !important; }
@@ -1396,8 +1396,7 @@ html.mm-visor-abierto { overflow: hidden; }
   --bs-badge-color: var(--mm-oscuro);
 }
 
-/* Tarjetas de producto: borde dorado al hacer hover */
-.mm-tarjeta:hover { border-color: rgba(245,158,11,.40); }
+/* Tarjetas de producto: el hover con borde ambar abajo esta en la regla principal de .mm-tarjeta */
 
 /* Numero de pedido con glow dorado en la victoria */
 .mm-numero-pedido-victoria {

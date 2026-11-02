@@ -16,10 +16,10 @@
           <h1 class="h3 mt-2">Pedido cancelado</h1>
         {% else %}
           <i class="bi bi-check-circle-fill mm-icono-estado text-success"></i>
-          <h1 class="h3 mt-2">¡Recibimos tu pedido!</h1>
+          <h1 class="h3 mt-2">¡Listo! Ya recibimos tu pedido</h1>
         {% endif %}
-        <p class="text-muted mb-2">Compra en <strong>{{ tienda.nombre }}</strong></p>
-        <p class="mb-1">Número de pedido</p>
+        <p class="text-muted mb-2">Compraste en <strong>{{ tienda.nombre }}</strong></p>
+        <p class="mb-1">Tu número de pedido</p>
         <p class="mm-numero-pedido">{{ pedido.numero }}</p>
         <p class="mb-3">
           <span class="badge mm-estado mm-estado-{{ pedido.estado }}">Pedido: {{ pedido.get_estado_display }}</span>
@@ -48,11 +48,11 @@
         {% if pedido.estado == 'pendiente' %}
           <p class="text-muted mb-0">
             {% if pedido.paga_por_transferencia %}
-              Tu pedido ya está registrado. Haz la transferencia con los datos de abajo y la tienda lo confirma al verificar el pago.
+              Haz la transferencia con los datos de abajo; en cuanto la tienda la confirme, empieza a preparar tu pedido.
             {% elif pedido.recoge_en_tienda %}
-              Tu pedido ya está registrado. La tienda lo prepara y pagas en efectivo al recogerlo.
+              La tienda ya está en ello. Cuando esté listo, pasa a recogerlo y pagas en efectivo.
             {% else %}
-              Tu pedido ya está registrado. La tienda lo prepara y pagas en efectivo al recibirlo.
+              La tienda ya está en ello. Te lo llevamos y cobras en efectivo al recibirlo.
             {% endif %}
           </p>
         {% endif %}
