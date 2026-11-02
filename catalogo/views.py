@@ -14,7 +14,7 @@ from clientes.services import es_favorito
 from core import metricas
 from core.archivos import ERRORES_DE_ALMACENAMIENTO
 from core.red import quien_es
-from core.seo import producto_json_ld, ruta_json_ld
+from core.seo import producto_json_ld, ruta_json_ld, tienda_json_ld
 from core.templatetags.moneda import formatear_monto
 from opiniones import services as opiniones
 
@@ -50,6 +50,12 @@ def inicio(request):
         {'titulo': 'Nuevos', 'icono': 'bi-stars', 'productos': services.nuevos(tienda), 'enlace': '?orden=nuevos'},
         {'titulo': 'Más vendidos', 'icono': 'bi-fire', 'productos': services.mas_vendidos(tienda), 'enlace': '?orden=vendidos'},
     ]
+    url_absoluta = request.build_absolute_uri(tienda.get_absolute_url())
+    og_imagen = None
+    if tienda.banner_imagen:
+        og_imagen = request.build_absolute_uri(tienda.banner_imagen.url)
+    elif tienda.logo:
+        og_imagen = request.build_absolute_uri(tienda.logo.url)
     return render(request, 'catalogo/inicio.html', {
         'secciones': [s for s in secciones if s['productos']],
         'categorias': services.categorias_de_portada(tienda),
@@ -57,6 +63,10 @@ def inicio(request):
         'vistos': services.vistos(request.session, tienda),
         # Su video (plan Premium), arriba de la pagina.
         'historias': historias_de_la_tienda(tienda),
+        # SEO y compartir en redes.
+        'url_absoluta': url_absoluta,
+        'og_imagen': og_imagen,
+        'tienda_json_ld': tienda_json_ld(tienda, url_absoluta),
     })
 
 
@@ -72,8 +82,13 @@ def lista(request, slug=None):
         metricas.anotar(request, metricas.Evento.BUSQUEDA, request.tienda)
         if not pagina.object_list:
             metricas.anotar(request, metricas.Evento.BUSQUEDA_SIN_RESULTADOS, request.tienda)
+    if categoria:
+        url_canon = request.build_absolute_uri(reverse('catalogo:categoria', args=[request.tienda.slug, categoria.slug]))
+    else:
+        url_canon = request.build_absolute_uri(reverse('catalogo:lista', args=[request.tienda.slug]))
     return render(request, 'catalogo/lista.html', {
         'categoria': categoria,
+        'url_canon': url_canon,
         'categorias': services.categorias_de(request.tienda),
         'marcas': services.marcas_de(request.tienda, categoria),
         'filtros': filtros,

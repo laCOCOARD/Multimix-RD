@@ -23,6 +23,7 @@ urlpatterns = [
     path('', include('core.urls')),
     path('', include('planes.urls')),
     path('', include('tiendas.urls')),
+    path('', include('referidos.urls')),
 ]
 
 if settings.DEBUG:

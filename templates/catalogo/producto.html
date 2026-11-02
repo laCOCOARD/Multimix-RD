@@ -195,6 +195,12 @@
         <button class="btn btn-link solo-con-js js-compartir" type="button" data-titulo="{{ producto.nombre }}" data-url="{{ url_absoluta }}">
           <i class="bi bi-share me-1" aria-hidden="true"></i>Compartir
         </button>
+        <a class="btn btn-link" href="https://wa.me/?text={{ url_absoluta|urlencode }}" target="_blank" rel="noopener noreferrer" aria-label="Compartir por WhatsApp">
+          <i class="bi bi-whatsapp me-1" aria-hidden="true"></i>WhatsApp
+        </a>
+        <a class="btn btn-link" href="https://www.facebook.com/sharer/sharer.php?u={{ url_absoluta|urlencode }}" target="_blank" rel="noopener noreferrer" aria-label="Compartir en Facebook">
+          <i class="bi bi-facebook me-1" aria-hidden="true"></i>Facebook
+        </a>
       </div>
 
       {% if preguntas %}

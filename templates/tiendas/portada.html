@@ -155,6 +155,25 @@
 </section>
 {% endif %}
 
+{% if tiendas_destacadas %}
+<div class="mm-banda">
+<section class="container mm-seccion" aria-labelledby="titulo-destacadas">
+  <div class="mm-seccion-cabecera">
+    <div>
+      <h2 id="titulo-destacadas">Descubre tiendas increíbles</h2>
+      <p class="mm-seccion-texto">Conoce los emprendimientos que están creciendo en {{ plataforma.nombre }}.</p>
+    </div>
+    <a href="{% url 'tiendas:directorio' %}">Ver todas <i class="bi bi-arrow-right" aria-hidden="true"></i></a>
+  </div>
+  <div class="mm-tiendas{% if tiendas_destacadas|length == 1 %} una-sola{% endif %}">
+    {% for item in tiendas_destacadas %}
+      {% include 'includes/tarjeta_tienda.html' %}
+    {% endfor %}
+  </div>
+</section>
+</div>
+{% endif %}
+
 <div class="mm-banda">
 <section class="container mm-seccion" id="tiendas" aria-labelledby="titulo-tiendas">
   <div class="mm-seccion-cabecera">

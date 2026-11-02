@@ -96,6 +96,11 @@ def banners_de(tienda):
     )
 
 
+def tiendas_destacadas():
+    """Tiendas activas marcadas como destacadas, en su orden."""
+    return Tienda.objects.activas().filter(destacada=True).order_by('orden', 'nombre')
+
+
 def directorio():
     """Tiendas activas con la cantidad de productos que muestra su catalogo.
 

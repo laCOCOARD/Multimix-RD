@@ -68,6 +68,49 @@
     </div>
   </nav>
 
+  {# Centro de crecimiento: QR de la tienda y programa de referidos #}
+  {% if tiendas|length == 1 %}
+  <section class="pv-bloque" aria-labelledby="titulo-crecimiento">
+    <h2 id="titulo-crecimiento">Centro de crecimiento</h2>
+    <div class="pv-crecimiento-grid">
+
+      <div class="pv-crecimiento-card">
+        <h3 class="pv-crecimiento-titulo">Promociona tu tienda</h3>
+        <p class="pv-crecimiento-texto">Comparte tu enlace directo con clientes por WhatsApp, redes sociales o donde prefieras.</p>
+        <div class="pv-promo-fila">
+          <code class="pv-promo-url">{{ tienda_url_absoluta }}</code>
+          <button type="button" class="pv-boton-copiar" data-copiar="{{ tienda_url_absoluta }}">Copiar</button>
+        </div>
+        <div class="pv-qr-bloque">
+          <img src="{% url 'admin:qr_tienda' tiendas.0.pk %}" alt="Código QR de {{ tiendas.0.nombre }}" class="pv-qr-imagen" width="120" height="120" loading="lazy">
+          <div>
+            <p class="pv-crecimiento-texto">Úsalo en tarjetas, empaques o materiales impresos.</p>
+            <a class="pv-boton pv-boton-claro" href="{% url 'admin:qr_tienda' tiendas.0.pk %}" download="qr-{{ tiendas.0.slug }}.png">Descargar QR</a>
+          </div>
+        </div>
+      </div>
+
+      <div class="pv-crecimiento-card">
+        <h3 class="pv-crecimiento-titulo">Programa de referidos</h3>
+        <p class="pv-crecimiento-texto">Invita a otros emprendedores a Multimix RD. Cuando se registren con tu enlace quedan vinculados a ti.</p>
+        {% if referidos_stats %}
+        <div class="pv-ref-stats">
+          <div class="pv-ref-stat"><strong>{{ referidos_stats.clics }}</strong><span>visitas</span></div>
+          <div class="pv-ref-stat"><strong>{{ referidos_stats.registros }}</strong><span>registros</span></div>
+          <div class="pv-ref-stat"><strong>{{ referidos_stats.tiendas }}</strong><span>tiendas</span></div>
+        </div>
+        <p class="pv-crecimiento-etiqueta">Tu código: <strong>{{ referidos_stats.codigo.codigo }}</strong></p>
+        <div class="pv-promo-fila">
+          <code class="pv-promo-url pv-promo-url-corta">{{ ref_enlace }}</code>
+          <button type="button" class="pv-boton-copiar" data-copiar="{{ ref_enlace }}">Copiar</button>
+        </div>
+        {% endif %}
+      </div>
+
+    </div>
+  </section>
+  {% endif %}
+
   {# Numeros #}
   <section class="pv-bloque" aria-labelledby="titulo-ventas">
     <h2 id="titulo-ventas">Tus ventas</h2>

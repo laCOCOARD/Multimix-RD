@@ -42,6 +42,10 @@ class Tienda(models.Model):
     activa = models.BooleanField(
         default=True, help_text='Si la apagas, la tienda y sus productos dejan de verse en el sitio.',
     )
+    destacada = models.BooleanField(
+        default=False,
+        help_text='Las tiendas destacadas aparecen en una sección especial de la portada y del directorio.',
+    )
     orden = models.PositiveSmallIntegerField(default=0, help_text='Posición en el directorio de tiendas.')
     usuarios = models.ManyToManyField(
         settings.AUTH_USER_MODEL, blank=True, related_name='tiendas', verbose_name='vendedores',

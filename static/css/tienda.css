@@ -717,8 +717,9 @@ html.mm-visor-abierto { overflow: hidden; }
 .mm-tienda:hover { border-color: var(--mm-borde-fuerte); box-shadow: var(--mm-sombra-alta); transform: translateY(-3px); }
 .mm-tienda:has(.stretched-link:focus-visible) { outline: 3px solid var(--mm-foco); outline-offset: 2px; }
 .mm-tienda .stretched-link:focus-visible { outline: 0; }
-.mm-tienda-portada { display: block; flex: 0 0 auto; height: 7rem; background-size: cover; background-position: center; transition: transform .6s ease; }
+.mm-tienda-portada { display: block; flex: 0 0 auto; height: 7rem; background-size: cover; background-position: center; transition: transform .6s ease; overflow: hidden; position: relative; }
 .mm-tienda:hover .mm-tienda-portada { transform: scale(1.05); }
+.mm-tienda-badge { position: absolute; top: 8px; right: 8px; padding: 2px 8px; border-radius: 999px; background: var(--mm-calido); color: #111827; font-size: .68rem; font-weight: 800; text-transform: uppercase; letter-spacing: .06em; }
 /* Sin banner propio, un degradado de la marca; cambia de tono entre tiendas para que no se vean todas iguales. */
 .mm-tienda-tono-0 { background-color: var(--mm-oscuro); background-image: radial-gradient(circle at 85% 20%, rgba(var(--mm-calido-rgb), .45), transparent 55%), linear-gradient(120deg, var(--mm-oscuro), #374151); }
 .mm-tienda-tono-1 { background-color: var(--mm-calido); background-image: linear-gradient(120deg, var(--mm-calido-oscuro), #fbbf24); }
@@ -742,6 +743,8 @@ html.mm-visor-abierto { overflow: hidden; }
 .mm-tienda-visitar { margin-left: auto; }
 .mm-tienda-visitar i { transition: transform var(--mm-transicion); }
 .mm-tienda:hover .mm-tienda-visitar i { transform: translateX(3px); }
+.mm-tienda-compartir { display: inline-flex; align-items: center; justify-content: center; width: 2.2rem; height: 2.2rem; padding: 0; border: none; border-radius: 50%; background: none; color: var(--mm-texto-suave); cursor: pointer; transition: color var(--mm-transicion), background-color var(--mm-transicion); }
+.mm-tienda-compartir:hover { color: var(--mm-calido); background: rgba(245,158,11,.1); }
 /* Una sola tienda: la franja a la izquierda y los datos a la derecha. */
 @media (min-width: 768px) {
   .mm-tiendas.una-sola .mm-tienda { flex-direction: row; }
@@ -1467,4 +1470,15 @@ html.mm-visor-abierto { overflow: hidden; }
   .mm-badge-nuevo { animation: none; }
   .mm-contador.mm-salto-dorado { animation: none; }
 }
+
+/* ══ Directorio mejorado ══════════════════════════════════════════════════ */
+.mm-directorio-cabecera { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 1rem 2rem; margin-bottom: 1.5rem; }
+.mm-directorio-titulo { font-size: clamp(1.4rem, 1.2rem + 1vw, 2rem); font-weight: 800; margin: 0 0 .25rem; }
+.mm-directorio-subtitulo { margin: 0; color: var(--mm-texto-suave); font-size: .95rem; }
+.mm-directorio-busqueda { display: flex; gap: .4rem; width: 100%; max-width: 28rem; }
+.mm-directorio-busqueda .form-control { flex: 1 1 auto; }
+.mm-directorio-categorias { display: flex; flex-wrap: wrap; gap: .4rem .5rem; margin-bottom: 1.5rem; }
+.mm-dir-cat { display: inline-block; padding: .38rem .9rem; border: 1.5px solid var(--mm-borde); border-radius: 999px; color: var(--mm-texto); font-size: .88rem; font-weight: 600; text-decoration: none; transition: border-color .15s, background-color .15s; }
+.mm-dir-cat:hover { border-color: var(--mm-calido); color: var(--mm-texto); }
+.mm-dir-cat-activa { border-color: var(--mm-oscuro); background: var(--mm-oscuro); color: #fff !important; }
 .mm-celebracion-guardar:hover { border-color: var(--mm-oscuro); color: var(--mm-oscuro); }

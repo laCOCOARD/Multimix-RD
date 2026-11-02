@@ -8,6 +8,26 @@
     const boton = evento.target.closest('[data-confirmar]');
     if (boton && !window.confirm(boton.dataset.confirmar)) evento.preventDefault();
   });
+
+  // Copiar al portapapeles (data-copiar="texto").
+  document.addEventListener('click', async (evento) => {
+    const boton = evento.target.closest('[data-copiar]');
+    if (!boton) return;
+    const texto = boton.dataset.copiar;
+    const etiqueta = boton.textContent;
+    try {
+      await navigator.clipboard.writeText(texto);
+    } catch {
+      const aux = document.createElement('input');
+      aux.value = texto;
+      document.body.appendChild(aux);
+      aux.select();
+      document.execCommand('copy');
+      document.body.removeChild(aux);
+    }
+    boton.textContent = '¡Copiado!';
+    setTimeout(() => { boton.textContent = etiqueta; }, 2000);
+  });
 })();
 
 // Envia las fotos una por una: asi no importa cuantas sean ni cuanto tarde cada una.

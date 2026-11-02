@@ -43,6 +43,7 @@ def portada(request):
     from planes.services import historias_para_la_portada, promociones_para
 
     tiendas = list(services.directorio()[:TIENDAS_EN_PORTADA + 1])
+    destacadas_qs = list(services.tiendas_destacadas()[:6])
     # Promociones (anuncios, patrocinados y ofertas), primero lo que se parece a lo que el visitante busco o miro.
     promociones, personalizadas = promociones_para(request.session, usuario=request.user)
     # Fotos reales para la bienvenida: productos de distintas tiendas, cada uno con la suya.
@@ -51,6 +52,7 @@ def portada(request):
     return render(request, 'tiendas/portada.html', {
         'tiendas': services.para_el_directorio(tiendas[:TIENDAS_EN_PORTADA]),
         'hay_mas_tiendas': len(tiendas) > TIENDAS_EN_PORTADA,
+        'tiendas_destacadas': services.para_el_directorio(destacadas_qs),
         'categorias': _preferidas_primero(categorias_del_sitio(), request.user),
         'promociones': promociones,
         'promociones_personalizadas': personalizadas,
@@ -69,11 +71,23 @@ def portada(request):
 
 @require_GET
 def directorio(request):
-    """Todas las tiendas activas, por paginas: la portada muestra solo las primeras."""
-    pagina = Paginator(services.directorio(), TIENDAS_POR_PAGINA).get_page(request.GET.get('pagina'))
+    """Todas las tiendas activas, por paginas. Soporta filtro ?categoria=slug."""
+    slug_cat = request.GET.get('categoria', '')[:100]
+    categoria = Categoria.objects.filter(slug=slug_cat, activa=True).first() if slug_cat else None
+    qs = services.directorio()
+    if categoria is not None:
+        qs = qs.filter(
+            Q(productos__categoria=categoria) | Q(productos__categoria__padre=categoria),
+            productos__activo=True,
+        ).distinct()
+    pagina = Paginator(qs, TIENDAS_POR_PAGINA).get_page(request.GET.get('pagina'))
+    destacadas_qs = list(services.tiendas_destacadas()[:6]) if not categoria else []
     return render(request, 'tiendas/directorio.html', {
         'pagina': pagina,
         'tiendas': services.para_el_directorio(pagina.object_list),
+        'tiendas_destacadas': services.para_el_directorio(destacadas_qs),
+        'categoria': categoria,
+        'categorias_filtro': categorias_del_sitio(),
     })
 
 

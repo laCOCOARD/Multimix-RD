@@ -97,7 +97,58 @@ class PanelAdminSite(admin.AdminSite):
     def get_urls(self):
         from django.urls import path
 
-        return [path('pendientes/', self.admin_view(self.pendientes_view), name='pendientes'), *super().get_urls()]
+        return [
+            path('pendientes/', self.admin_view(self.pendientes_view), name='pendientes'),
+            path('qr-tienda/<int:pk>/', self.admin_view(self.qr_tienda_view), name='qr_tienda'),
+            *super().get_urls(),
+        ]
+
+    def qr_tienda_view(self, request, pk):
+        """Genera el código QR de la tienda como imagen PNG descargable."""
+        from io import BytesIO
+
+        import qrcode
+        from PIL import Image
+        from django.http import Http404, HttpResponse
+
+        from tiendas.panel import tiendas_del_panel
+        from tiendas.models import Tienda
+
+        if request.user.is_superuser:
+            try:
+                tienda = Tienda.objects.get(pk=pk)
+            except Tienda.DoesNotExist:
+                raise Http404
+        else:
+            tienda = tiendas_del_panel(request).filter(pk=pk).first()
+            if tienda is None:
+                raise Http404
+
+        url = request.build_absolute_uri(tienda.get_absolute_url())
+        qr = qrcode.QRCode(
+            version=None,
+            error_correction=qrcode.constants.ERROR_CORRECT_H,
+            box_size=10,
+            border=4,
+        )
+        qr.add_data(url)
+        qr.make(fit=True)
+        img = qr.make_image(fill_color='#111827', back_color='white').convert('RGB')
+
+        if tienda.logo:
+            try:
+                logo_img = Image.open(tienda.logo).convert('RGBA')
+                tam_qr = img.size[0]
+                tam_logo = tam_qr // 5
+                logo_img = logo_img.resize((tam_logo, tam_logo), Image.LANCZOS)
+                pos = ((tam_qr - tam_logo) // 2, (tam_qr - tam_logo) // 2)
+                img.paste(logo_img, pos, logo_img)
+            except Exception:
+                pass
+
+        buf = BytesIO()
+        img.save(buf, format='PNG')
+        return HttpResponse(buf.getvalue(), content_type='image/png')
 
     def pendientes_view(self, request):
         """Para el panel del vendedor: los numeritos del menu y "Para hacer ahora", sin recargar la pagina."""
@@ -151,6 +202,18 @@ class PanelAdminSite(admin.AdminSite):
                 }
             else:
                 tiendas = tiendas_del_panel(request)
+                from referidos import services as ref_services
+                ref_codigo = ref_services.codigo_de(request.user)
+                ref_enlace = request.build_absolute_uri(f'/ref/{ref_codigo.codigo}/')
+                referidos_stats = {
+                    'codigo': ref_codigo,
+                    'clics': ref_codigo.clics,
+                    'registros': ref_codigo.usuario.referidos_hechos.count(),
+                    'tiendas': ref_codigo.usuario.referidos_hechos.filter(tienda_creada=True).count(),
+                }
+                tienda_url_absoluta = (
+                    request.build_absolute_uri(tiendas[0].get_absolute_url()) if len(tiendas) == 1 else None
+                )
                 contexto = {
                     'resumen': resumen_panel(tiendas),
                     'title': 'Inicio',
@@ -167,6 +230,10 @@ class PanelAdminSite(admin.AdminSite):
                         (tienda, pasos) for tienda, pasos in ((t, primeros_pasos(t)) for t in tiendas)
                         if not all(paso['hecho'] for paso in pasos)
                     ],
+                    # Centro de crecimiento: QR y referidos.
+                    'ref_enlace': ref_enlace,
+                    'referidos_stats': referidos_stats,
+                    'tienda_url_absoluta': tienda_url_absoluta,
                 }
         contexto.update(extra_context or {})
         return super().index(request, extra_context=contexto)

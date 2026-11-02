@@ -76,6 +76,26 @@ def sitio_json_ld(nombre, url_inicio, url_busqueda, logo=''):
     })
 
 
+def tienda_json_ld(tienda, url):
+    """LocalBusiness schema para una tienda. Solo incluye lo que es verdad en la base."""
+    datos = {
+        '@context': 'https://schema.org',
+        '@type': 'Store',
+        'name': tienda.nombre,
+        'url': url,
+    }
+    if tienda.telefono:
+        datos['telephone'] = tienda.telefono
+    if tienda.direccion_tienda:
+        datos['address'] = {'@type': 'PostalAddress', 'streetAddress': tienda.direccion_tienda}
+    if tienda.horario:
+        datos['openingHours'] = tienda.horario
+    redes = [r for r in (tienda.facebook, tienda.instagram, tienda.tiktok) if r]
+    if redes:
+        datos['sameAs'] = redes
+    return json_ld(datos)
+
+
 def ruta_json_ld(pasos):
     """Ruta de navegacion (BreadcrumbList) a partir de pares (nombre, url absoluta)."""
     return json_ld({

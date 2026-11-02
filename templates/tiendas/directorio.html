@@ -1,7 +1,11 @@
 {% extends 'base.html' %}
 
-{% block titulo %}Tiendas · {{ plataforma.nombre }}{% endblock %}
-{% block descripcion %}Conoce las tiendas de emprendedores de {{ plataforma.nombre }} y entra a su catálogo.{% endblock %}
+{% block titulo %}Explorar tiendas · {{ plataforma.nombre }}{% endblock %}
+{% block descripcion %}Encuentra tu próxima tienda favorita entre los emprendimientos de {{ plataforma.nombre }}.{% endblock %}
+
+{% block meta %}
+<link rel="canonical" href="{{ request.scheme }}://{{ request.get_host }}{% url 'tiendas:directorio' %}">
+{% endblock %}
 
 {% block contenido %}
 <div class="container py-4">
@@ -12,11 +16,48 @@
     </ol>
   </nav>
 
-  <h1 class="h3 mb-1">Tiendas</h1>
-  <p class="text-muted mb-4">
-    {{ pagina.paginator.count }} tienda{{ pagina.paginator.count|pluralize }} en {{ plataforma.nombre }}.
-    Cada una publica sus productos y precios y atiende sus pedidos.
-  </p>
+  <header class="mm-directorio-cabecera">
+    <div>
+      <h1 class="mm-directorio-titulo">Encuentra tu próxima tienda favorita</h1>
+      <p class="mm-directorio-subtitulo">Explora emprendimientos, descubre productos y apoya el comercio local.</p>
+    </div>
+    <form class="mm-directorio-busqueda" action="{% url 'tiendas:buscar' %}" method="get" role="search">
+      <label class="visually-hidden" for="dir-buscar">Buscar tiendas o productos</label>
+      <input id="dir-buscar" class="form-control" type="search" name="q" placeholder="Buscar tiendas o productos…" autocomplete="off">
+      <button class="btn btn-acento" type="submit"><i class="bi bi-search" aria-hidden="true"></i><span class="visually-hidden">Buscar</span></button>
+    </form>
+  </header>
+
+  {% if categorias_filtro %}
+  <div class="mm-directorio-categorias" aria-label="Filtrar por categoría">
+    <a class="mm-dir-cat{% if not categoria %} mm-dir-cat-activa{% endif %}" href="{% url 'tiendas:directorio' %}">Todas</a>
+    {% for cat in categorias_filtro %}
+      <a class="mm-dir-cat{% if categoria.pk == cat.pk %} mm-dir-cat-activa{% endif %}"
+         href="{% url 'tiendas:directorio' %}?categoria={{ cat.slug }}">{{ cat.nombre }}</a>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  {% if tiendas_destacadas and not categoria %}
+  <section class="mm-seccion" aria-labelledby="titulo-destacadas-dir">
+    <div class="mm-seccion-cabecera">
+      <div>
+        <h2 id="titulo-destacadas-dir" class="h5 mb-1">Tiendas destacadas</h2>
+        <p class="text-muted small mb-0">Emprendimientos que están creciendo en {{ plataforma.nombre }}.</p>
+      </div>
+    </div>
+    <div class="mm-tiendas mm-tiendas-todas">
+      {% for item in tiendas_destacadas %}
+        {% include 'includes/tarjeta_tienda.html' %}
+      {% endfor %}
+    </div>
+  </section>
+  <hr class="my-4">
+  {% endif %}
+
+  {% if categoria %}
+  <p class="text-muted mb-3">Tiendas con productos en <strong>{{ categoria.nombre }}</strong> · <a href="{% url 'tiendas:directorio' %}">Ver todas</a></p>
+  {% endif %}
 
   {% if tiendas %}
     <div class="mm-tiendas mm-tiendas-todas">

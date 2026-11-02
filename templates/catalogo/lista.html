@@ -3,6 +3,16 @@
 {% block titulo %}{% if categoria %}{{ categoria.nombre }}{% else %}Catálogo{% endif %} · {{ tienda.nombre }}{% endblock %}
 {% block descripcion %}{% if categoria and categoria.descripcion %}{{ categoria.descripcion|truncatechars:155 }}{% else %}Catálogo de productos de {{ tienda.nombre }}.{% endif %}{% endblock %}
 
+{% block meta %}
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="{{ plataforma.nombre }}">
+<meta property="og:title" content="{% if categoria %}{{ categoria.nombre }}{% else %}Catálogo{% endif %} · {{ tienda.nombre }}">
+<meta property="og:description" content="{% if categoria and categoria.descripcion %}{{ categoria.descripcion|truncatechars:155 }}{% else %}Catálogo de productos de {{ tienda.nombre }}.{% endif %}">
+<meta property="og:url" content="{{ url_canon }}">
+<meta property="og:locale" content="es_DO">
+<link rel="canonical" href="{{ url_canon }}">
+{% endblock %}
+
 {% block contenido %}
 <div class="container py-4">
   <nav aria-label="Ruta de navegación">

@@ -21,15 +21,15 @@ class TiendaAdmin(AvisaImagenesSinGuardar, admin.ModelAdmin):
     """El administrador principal crea, activa, asigna y pone el plan de cada tienda; cada vendedor edita los datos de
     la suya y ve su plan."""
 
-    list_display = ['nombre', 'enlace_publico', 'prefijo', 'productos_a_la_venta', 'vendedores', 'activa', 'orden']
-    list_filter = ['activa', 'cerrada_por_falta_de_pago', 'plan']
+    list_display = ['nombre', 'enlace_publico', 'prefijo', 'productos_a_la_venta', 'vendedores', 'activa', 'destacada', 'orden']
+    list_filter = ['activa', 'destacada', 'cerrada_por_falta_de_pago', 'plan']
     search_fields = ['nombre', 'slug', 'prefijo']
     filter_horizontal = ['usuarios']
-    actions = ['habilitar', 'aprobar_cambio_de_plan', 'rechazar_cambio_de_plan']
+    actions = ['destacar', 'quitar_destacada', 'habilitar', 'aprobar_cambio_de_plan', 'rechazar_cambio_de_plan']
 
     # El primer bloque completo es solo para el administrador principal; el vendedor cambia el nombre.
     fieldsets = [
-        ('Tienda', {'fields': ['nombre', 'slug', 'prefijo', 'activa', 'orden', 'usuarios']}),
+        ('Tienda', {'fields': ['nombre', 'slug', 'prefijo', 'activa', 'destacada', 'orden', 'usuarios']}),
         ('Marca', {'fields': ['logo', 'banner_titulo', 'banner_subtitulo', 'banner_texto_boton', 'banner_imagen']}),
         ('Contacto', {'fields': ['whatsapp', 'telefono', 'correo', 'horario', 'direccion_tienda']}),
         ('Redes', {'fields': ['facebook', 'instagram', 'tiktok']}),
@@ -214,6 +214,20 @@ class TiendaAdmin(AvisaImagenesSinGuardar, admin.ModelAdmin):
             from planes.services import habilitar_tienda
 
             habilitar_tienda(obj, request.user)
+
+    @admin.action(description='Marcar como tiendas destacadas')
+    def destacar(self, request, queryset):
+        if not ve_todas(request.user):
+            return
+        total = queryset.update(destacada=True)
+        self.message_user(request, f'{total} tienda(s) marcada(s) como destacada(s).', messages.SUCCESS)
+
+    @admin.action(description='Quitar de tiendas destacadas')
+    def quitar_destacada(self, request, queryset):
+        if not ve_todas(request.user):
+            return
+        total = queryset.update(destacada=False)
+        self.message_user(request, f'{total} tienda(s) quitada(s) de destacadas.', messages.SUCCESS)
 
     @admin.action(description='Habilitar (abrir) las tiendas elegidas')
     def habilitar(self, request, queryset):

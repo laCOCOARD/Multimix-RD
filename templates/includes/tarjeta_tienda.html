@@ -2,7 +2,9 @@
 {# Toda la tarjeta lleva a la tienda: el enlace es el nombre y su area cubre la tarjeta (stretched-link). #}
 <article class="mm-tienda">
   <span class="mm-tienda-portada mm-tienda-tono-{{ item.tono }}"
-        {% if item.banner_imagen %}style="background-image: url('{{ item.banner_imagen.url }}');"{% endif %}></span>
+        {% if item.banner_imagen %}style="background-image: url('{{ item.banner_imagen.url }}');"{% endif %}>
+    {% if item.destacada %}<span class="mm-tienda-badge">Destacada</span>{% endif %}
+  </span>
   <div class="mm-tienda-cuerpo">
     <span class="mm-tienda-avatar{% if item.logo %} con-logo{% endif %}" aria-hidden="true">
       {% if item.logo %}<img src="{{ item.logo.url }}" alt="" loading="lazy" decoding="async" width="60" height="60">{% else %}{{ item.nombre|slice:':1'|upper }}{% endif %}
@@ -16,6 +18,11 @@
     </div>
     <div class="mm-tienda-pie">
       <span class="mm-tienda-visitar" aria-hidden="true">Visitar tienda <i class="bi bi-arrow-right"></i></span>
+      <button class="mm-tienda-compartir solo-con-js js-compartir position-relative" type="button"
+              data-titulo="{{ item.nombre }}" data-url="{{ item.get_absolute_url }}"
+              aria-label="Compartir {{ item.nombre }}">
+        <i class="bi bi-share" aria-hidden="true"></i>
+      </button>
     </div>
   </div>
 </article>
