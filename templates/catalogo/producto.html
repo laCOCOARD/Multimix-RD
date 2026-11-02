@@ -79,11 +79,16 @@
         {% if producto.marca %}<a href="{% url 'catalogo:lista' tienda.slug %}?marca={{ producto.marca|urlencode }}">{{ producto.marca }}</a> · {% endif %}<a href="{% url 'catalogo:categoria' tienda.slug producto.categoria.slug %}">{{ producto.categoria.nombre }}</a>
       </p>
       <h1 class="mm-ficha-nombre">{{ producto.nombre }}</h1>
-      {% if resumen_resenas.total %}
-        <a class="mm-estrellas-resumen" href="#opiniones" aria-label="{{ resumen_resenas.promedio }} de 5 estrellas, {{ resumen_resenas.total }} opiniones">
-          <i class="bi bi-star-fill"></i> {{ resumen_resenas.promedio }} · {{ resumen_resenas.total }} opini{{ resumen_resenas.total|pluralize:'ón,ones' }}
-        </a>
-      {% endif %}
+      <div class="mm-ficha-meta">
+        {% if resumen_resenas.total %}
+          <a class="mm-estrellas-resumen" href="#opiniones" aria-label="{{ resumen_resenas.promedio }} de 5 estrellas, {{ resumen_resenas.total }} opiniones">
+            <i class="bi bi-star-fill"></i> {{ resumen_resenas.promedio }} · {{ resumen_resenas.total }} opini{{ resumen_resenas.total|pluralize:'ón,ones' }}
+          </a>
+        {% endif %}
+        {% if preguntas %}
+          <a class="mm-ficha-preguntas" href="#preguntas"><i class="bi bi-chat-dots me-1"></i>{{ preguntas|length }} pregunta{{ preguntas|length|pluralize:" respondida, respondidas" }}</a>
+        {% endif %}
+      </div>
 
       <p class="mm-precio mm-precio-grande my-3">
         <span class="mm-precio-final">{{ producto.precio_final|moneda }}</span>
@@ -191,6 +196,21 @@
           <i class="bi bi-share me-1" aria-hidden="true"></i>Compartir
         </button>
       </div>
+
+      {% if preguntas %}
+        <div class="mm-faq-mini" aria-labelledby="faq-titulo">
+          <h2 class="mm-faq-titulo" id="faq-titulo"><i class="bi bi-chat-dots me-1" aria-hidden="true"></i>Preguntas frecuentes</h2>
+          {% for pregunta in preguntas|slice:':3' %}
+            <details class="mm-faq-item">
+              <summary>{{ pregunta.texto }}</summary>
+              <p class="mm-faq-respuesta">{{ pregunta.respuesta|linebreaksbr }}</p>
+            </details>
+          {% endfor %}
+          <a class="mm-faq-mas" href="#preguntas">{% if preguntas|length > 3 %}Ver las {{ preguntas|length }} preguntas ›{% else %}Ver preguntas y hacer la tuya ›{% endif %}</a>
+        </div>
+      {% else %}
+        <a class="mm-faq-hacer" href="#preguntas"><i class="bi bi-chat-dots me-1"></i>¿Tienes una duda? La tienda te responde aquí</a>
+      {% endif %}
 
       {# Quien lo vende: la tienda, con enlace a su catalogo y su WhatsApp para dudas (contacto secundario). #}
       <section class="mm-vendedor" aria-labelledby="titulo-vendedor">

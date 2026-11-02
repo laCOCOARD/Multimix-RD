@@ -1135,6 +1135,27 @@ html.mm-visor-abierto { overflow: hidden; }
 .mm-ficha-acciones form { margin: 0; }
 .mm-ficha-acciones .btn-link { padding: .35rem 0; color: var(--mm-texto); font-weight: 600; text-decoration: none; }
 .mm-ficha-acciones .btn-link:hover { color: var(--mm-calido-texto); }
+/* Enlace de preguntas junto a las estrellas */
+.mm-ficha-meta { display: flex; flex-wrap: wrap; align-items: center; gap: .35rem 1.1rem; margin-bottom: .25rem; }
+.mm-ficha-meta .mm-estrellas-resumen { margin-bottom: 0; }
+.mm-ficha-preguntas { font-size: .88rem; font-weight: 600; color: var(--mm-primario); text-decoration: none; }
+.mm-ficha-preguntas:hover { text-decoration: underline; }
+
+/* Mini FAQ en la ficha del producto */
+.mm-faq-mini { margin: .75rem 0 1rem; padding: .85rem 1rem; border: 1px solid var(--mm-borde); border-radius: var(--mm-radio); background: var(--mm-superficie); }
+.mm-faq-titulo { margin: 0 0 .6rem; font-size: .82rem; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--mm-texto-suave); }
+.mm-faq-item { padding: .45rem 0; border-bottom: 1px solid var(--mm-borde); }
+.mm-faq-item:last-of-type { border-bottom: none; }
+.mm-faq-item summary { cursor: pointer; font-size: .9rem; font-weight: 600; list-style: none; display: flex; align-items: baseline; gap: .5rem; }
+.mm-faq-item summary::before { content: '▶'; font-size: .6rem; color: var(--mm-calido); flex-shrink: 0; transition: transform .2s; }
+.mm-faq-item[open] summary::before { transform: rotate(90deg); }
+.mm-faq-item summary::-webkit-details-marker { display: none; }
+.mm-faq-respuesta { margin: .4rem 0 .1rem .95rem; font-size: .88rem; color: var(--mm-texto-suave); }
+.mm-faq-mas { display: block; margin-top: .6rem; font-size: .85rem; font-weight: 600; color: var(--mm-primario); text-decoration: none; }
+.mm-faq-mas:hover { text-decoration: underline; }
+.mm-faq-hacer { display: inline-block; margin: .5rem 0 1rem; font-size: .9rem; font-weight: 600; color: var(--mm-primario); text-decoration: none; }
+.mm-faq-hacer:hover { text-decoration: underline; }
+
 /* "Vendido por": la tienda con su logo, sus datos y como contactarla. */
 .mm-vendedor { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: .5rem .9rem; padding: 1rem; border: 1px solid var(--mm-borde); border-radius: var(--mm-radio); background: var(--mm-superficie); box-shadow: var(--mm-sombra); }
 .mm-vendedor-avatar { width: 3.25rem; height: 3.25rem; margin: 0; border-width: 1px; border-color: var(--mm-borde); box-shadow: none; font-size: 1.2rem; }
