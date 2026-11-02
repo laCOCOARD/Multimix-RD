@@ -8,6 +8,7 @@ from django.urls import reverse
 
 from core.correo import enviar, url_absoluta
 from core.models import ConfiguracionTienda
+from core.telefonos import normalizar_whatsapp
 
 from . import whatsapp_api
 from .models import Pedido
@@ -30,6 +31,13 @@ def correos_de_la_tienda(tienda):
     return vendedores or correos_del_sitio()
 
 
+def _enlace_whatsapp_tienda(tienda):
+    if not tienda.whatsapp:
+        return ''
+    numero = normalizar_whatsapp(tienda.whatsapp)
+    return f'https://wa.me/{numero}'
+
+
 def _contexto(pedido, **extra):
     return {
         'pedido': pedido,
@@ -37,6 +45,7 @@ def _contexto(pedido, **extra):
         'sitio': ConfiguracionTienda.obtener().nombre,
         'enlace_pedido': url_absoluta(pedido.get_absolute_url()),
         'enlace_panel': url_absoluta(reverse('admin:pedidos_pedido_change', args=[pedido.pk])),
+        'enlace_whatsapp_tienda': _enlace_whatsapp_tienda(pedido.tienda),
         **extra,
     }
 

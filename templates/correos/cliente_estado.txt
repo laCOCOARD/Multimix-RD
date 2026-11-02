@@ -8,6 +8,9 @@
 
 Ver el pedido:
 {{ enlace_pedido }}
-
+{% if enlace_whatsapp_tienda %}
+¿Tienes dudas? Escríbele a la tienda por WhatsApp:
+{{ enlace_whatsapp_tienda }}
+{% endif %}
 {{ tienda.nombre }}
 {% endautoescape %}

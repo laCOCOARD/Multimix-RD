@@ -11,7 +11,7 @@ from django.views.decorators.cache import never_cache
 from django.views.decorators.debug import sensitive_post_parameters
 from django.views.decorators.http import require_POST
 
-from catalogo.models import Producto
+from catalogo.models import AvisoDisponible, Producto
 
 from core.red import ip_del_cliente
 from pedidos.models import Pedido
@@ -33,6 +33,10 @@ def _destino(request, por_defecto='clientes:cuenta'):
     if url_has_allowed_host_and_scheme(siguiente, allowed_hosts={request.get_host()}, require_https=request.is_secure()):
         return siguiente
     return por_defecto
+
+
+def _es_checkout(url):
+    return '/pedido/checkout/' in url or '/carrito/checkout/' in url
 
 
 @login_not_required
@@ -65,7 +69,7 @@ def registro(request):
         'formulario': formulario,
         'titulo': 'Crear cuenta',
         'intro': ('Crea tu cuenta en un minuto para terminar tu compra. Tu carrito te espera.'
-                  if '/pedido/checkout/' in _destino(request, '') else
+                  if _es_checkout(_destino(request, '')) else
                   'Con tu cuenta ves tus pedidos, no escribes tus datos en cada compra y los avisos te llegan a tu correo.'),
         'aviso_legal': True,
         'boton': 'Crear mi cuenta',
@@ -89,14 +93,35 @@ class Entrar(acceso.LoginView):
         ],
     }
 
+    def get_template_names(self):
+        siguiente = _destino(self.request, '')
+        if _es_checkout(siguiente):
+            return ['clientes/entrar_para_comprar.html']
+        return [self.template_name]
+
     def get_context_data(self, **kwargs):
         contexto = super().get_context_data(**kwargs)
         siguiente = _destino(self.request, '')
         contexto.update(formulario=contexto['form'], siguiente=siguiente)
-        if '/pedido/checkout/' in siguiente:
-            # Viene del carrito: el carrito se conserva al entrar o al crear la cuenta.
-            contexto['intro'] = 'Inicia sesión para terminar tu compra. Tu carrito te espera.'
+        if _es_checkout(siguiente):
+            # Viene del carrito: muestra el formulario combinado login + registro.
+            contexto['formulario_registro'] = RegistroForm()
         return contexto
+
+
+@login_not_required
+@never_cache
+@sensitive_post_parameters('clave', 'clave_repetida')
+def entrar_para_comprar(request):
+    """Página combinada login + registro para cuando el cliente llega desde el checkout."""
+    if request.user.is_authenticated:
+        return redirect(_destino(request))
+    siguiente = _destino(request, '')
+    return render(request, 'clientes/entrar_para_comprar.html', {
+        'siguiente': siguiente,
+        'formulario': EntrarForm(),
+        'formulario_registro': RegistroForm(),
+    })
 
 
 class Salir(acceso.LogoutView):
@@ -141,11 +166,16 @@ def confirma_tu_correo(request):
 def cuenta(request):
     """Los pedidos del cliente en todas las tiendas. Solo los suyos."""
     pedidos = Pedido.objects.filter(cliente=request.user).select_related('tienda').order_by('-creado', '-id')
+    avisos = (AvisoDisponible.objects
+              .filter(usuario=request.user, avisado=None)
+              .select_related('producto', 'tienda')
+              .order_by('-creado'))
     return render(request, 'clientes/cuenta.html', {
         'pagina': Paginator(pedidos, PEDIDOS_POR_PAGINA).get_page(request.GET.get('pagina')),
         'perfil': services.perfil_de(request.user),
         'direccion': services.direcciones_de(request.user).first(),
         'correo_confirmado': services.correo_confirmado(request.user),
+        'avisos': avisos,
     })
 
 

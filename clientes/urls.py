@@ -18,6 +18,7 @@ urlpatterns = [
     path('recordatorios/<str:token>/', views.apagar_recordatorios, name='apagar_recordatorios'),
     path('confirmar/', views.confirma_tu_correo, name='confirma_tu_correo'),
     path('confirmar/<str:token>/', views.confirmar_correo, name='confirmar_correo'),
+    path('entrar/checkout/', views.entrar_para_comprar, name='entrar_para_comprar'),
     path('favoritos/', views.favoritos, name='favoritos'),
     path('favoritos/<int:producto_id>/', views.alternar_favorito, name='alternar_favorito'),
     path('clave/', views.CambiarClave.as_view(), name='clave'),

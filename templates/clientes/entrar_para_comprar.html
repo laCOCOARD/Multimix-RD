@@ -1,0 +1,64 @@
+{% extends 'base.html' %}
+
+{% block titulo %}Iniciar sesión o crear cuenta · {{ plataforma.nombre }}{% endblock %}
+{% block meta %}<meta name="robots" content="noindex">{% endblock %}
+
+{% block contenido %}
+<div class="container py-4" style="max-width:860px">
+  <h1 class="h4 mb-1 text-center">Tu carrito te espera</h1>
+  <p class="text-muted text-center mb-4">Entra o crea una cuenta gratis para terminar tu compra.</p>
+
+  <div class="row g-4">
+    {# --- Columna izquierda: iniciar sesion --- #}
+    <div class="col-md-6">
+      <div class="mm-panel h-100">
+        <h2 class="h5 mb-1">Ya tengo cuenta</h2>
+        <p class="text-muted small mb-3">Inicia sesión para continuar.</p>
+        <form method="post" action="{% url 'clientes:entrar' %}">
+          {% csrf_token %}
+          <input type="hidden" name="next" value="{{ siguiente }}">
+          {% for campo in formulario %}
+            <div class="mb-3">
+              <label for="{{ campo.id_for_label }}" class="form-label">{{ campo.label }}</label>
+              {{ campo }}
+              {% if campo.errors %}<div class="text-danger small mt-1">{{ campo.errors.0 }}</div>{% endif %}
+            </div>
+          {% endfor %}
+          <div class="d-grid">
+            <button class="btn btn-primary" type="submit">Entrar</button>
+          </div>
+        </form>
+        <p class="text-center mt-3 mb-0 small">
+          <a href="{% url 'clientes:recuperar' %}">Olvidé mi contraseña</a>
+        </p>
+      </div>
+    </div>
+
+    {# --- Columna derecha: crear cuenta --- #}
+    <div class="col-md-6">
+      <div class="mm-panel h-100">
+        <h2 class="h5 mb-1">Soy nuevo</h2>
+        <p class="text-muted small mb-3">Crea tu cuenta en un minuto.</p>
+        <form method="post" action="{% url 'clientes:registro' %}">
+          {% csrf_token %}
+          <input type="hidden" name="next" value="{{ siguiente }}">
+          {% for campo in formulario_registro %}
+            <div class="mb-3">
+              <label for="{{ campo.id_for_label }}" class="form-label">{{ campo.label }}</label>
+              {{ campo }}
+              {% if campo.errors %}<div class="text-danger small mt-1">{{ campo.errors.0 }}</div>{% endif %}
+            </div>
+          {% endfor %}
+          <div class="d-grid">
+            <button class="btn btn-outline-primary" type="submit">Crear mi cuenta</button>
+          </div>
+        </form>
+        <p class="text-center mt-3 mb-0 small text-muted">
+          Al crear tu cuenta aceptas nuestros
+          <a href="{% url 'core:terminos' %}" target="_blank" rel="noopener">términos y condiciones</a>.
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
