@@ -6,7 +6,7 @@
 <meta name="robots" content="noindex, nofollow"><meta name="referrer" content="same-origin">{% endblock %}
 
 {% block contenido %}
-<div class="container py-4" id="confirmacion">
+<div class="container py-4" id="confirmacion"{% if pedido.estado not in 'cancelado reembolsado' %} data-pedido-victoria="{{ pedido.token }}"{% endif %}>
   <div class="row justify-content-center">
     <div class="col-lg-8">
 
@@ -25,6 +25,18 @@
           <span class="badge mm-estado mm-estado-{{ pedido.estado }}">Pedido: {{ pedido.get_estado_display }}</span>
           {% if pago %}<span class="badge mm-estado mm-pago-{{ pago.estado }}">{{ pago.get_estado_display }}</span>{% endif %}
         </p>
+
+        {% if pasos_progreso %}
+          <nav class="mm-progreso-estados" aria-label="Estado del pedido">
+            {% for paso in pasos_progreso %}
+              <div class="mm-progreso-paso{% if paso.hecho %} hecho{% elif paso.actual %} actual{% endif %}"
+                   role="listitem" {% if paso.actual %}aria-current="step"{% endif %}>
+                <div class="mm-progreso-bola">{% if paso.hecho %}✓{% else %}{{ forloop.counter }}{% endif %}</div>
+                <div class="mm-progreso-etiqueta">{{ paso.etiqueta }}</div>
+              </div>
+            {% endfor %}
+          </nav>
+        {% endif %}
 
         {% if pedido.entrega_desde and pedido.estado in 'pendiente pagado preparando enviado en_reparto' %}
           <p class="mm-plazo mb-3"><i class="bi bi-calendar-check me-1"></i>

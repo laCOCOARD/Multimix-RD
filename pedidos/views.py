@@ -196,6 +196,43 @@ def pedido_del_enlace(request, token, consulta=None):
     return pedido
 
 
+def _pasos_progreso(pedido):
+    """Pasos visuales para la barra de progreso del pedido. Vacio si el pedido esta cancelado."""
+    if pedido.estado in (Pedido.Estado.CANCELADO, Pedido.Estado.REEMBOLSADO):
+        return []
+    si_recoger = pedido.recoge_en_tienda
+    etapas = [
+        (Pedido.Estado.PENDIENTE, 'Recibido'),
+        (Pedido.Estado.PAGADO, 'Pagado'),
+        (Pedido.Estado.PREPARANDO, 'Preparando'),
+        (Pedido.Estado.LISTO if si_recoger else Pedido.Estado.ENVIADO,
+         'Listo para recoger' if si_recoger else 'En camino'),
+        (Pedido.Estado.ENTREGADO, 'Entregado'),
+    ]
+    ORDEN = [Pedido.Estado.PENDIENTE, Pedido.Estado.PAGADO, Pedido.Estado.PREPARANDO,
+             Pedido.Estado.LISTO, Pedido.Estado.ENVIADO, Pedido.Estado.EN_REPARTO,
+             Pedido.Estado.ENTREGADO]
+    try:
+        estado_idx = ORDEN.index(pedido.estado)
+    except ValueError:
+        estado_idx = 0
+    pasos = []
+    for clave, etiqueta in etapas:
+        try:
+            etapa_idx = ORDEN.index(clave)
+        except ValueError:
+            etapa_idx = 0
+        # "enviado" en el progreso cubre tambien "en_reparto"
+        es_actual = (pedido.estado == clave) or (clave == Pedido.Estado.ENVIADO and pedido.estado == Pedido.Estado.EN_REPARTO)
+        pasos.append({
+            'clave': clave,
+            'etiqueta': etiqueta,
+            'hecho': (not es_actual) and etapa_idx < estado_idx,
+            'actual': es_actual,
+        })
+    return pasos
+
+
 @login_not_required
 def confirmacion(request, token):
     pedido = pedido_del_enlace(
@@ -215,6 +252,7 @@ def confirmacion(request, token):
         'puede_avisar_transferencia': (
             pedido.paga_por_transferencia and pedido.estado == Pedido.Estado.PENDIENTE
         ),
+        'pasos_progreso': _pasos_progreso(pedido),
     })
 
 

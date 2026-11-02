@@ -54,9 +54,10 @@
     document.querySelectorAll('.js-contador-carrito').forEach((contador) => {
       contador.textContent = cantidad;
       contador.classList.toggle('d-none', !cantidad);
-      contador.classList.remove('mm-salto');
+      contador.classList.remove('mm-salto', 'mm-salto-dorado');
       void contador.offsetWidth;
-      contador.classList.add('mm-salto');
+      // Si hay producto nuevo: rebote dorado; si se vacia: rebote simple.
+      contador.classList.add(cantidad ? 'mm-salto-dorado' : 'mm-salto');
     });
   }
 
@@ -135,6 +136,82 @@
         t += d + pausas[i];
       });
     } catch (e) {}
+  }
+
+  /** Confetti solo en tonos dorados: para la victoria del checkout. */
+  function _confettiDorado() {
+    const canvas = document.createElement('canvas');
+    canvas.className = 'mm-confetti-canvas';
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    document.body.appendChild(canvas);
+    const ctx2 = canvas.getContext('2d');
+    const COLORES = ['#F59E0B', '#FFD04A', '#FFF7C0', '#D97706', '#FEF3C7', '#ffffff', '#111827'];
+    const piezas = Array.from({ length: 90 }, () => ({
+      x: Math.random() * canvas.width,
+      y: -20 - Math.random() * 80,
+      vx: (Math.random() - 0.5) * 3,
+      vy: 2 + Math.random() * 3,
+      w: 5 + Math.random() * 8,
+      h: 3 + Math.random() * 4,
+      a: Math.random() * Math.PI * 2,
+      va: (Math.random() - 0.5) * 0.13,
+      color: COLORES[Math.floor(Math.random() * COLORES.length)],
+      op: 1,
+    }));
+    let activo = true;
+    let raf;
+    (function tick() {
+      ctx2.clearRect(0, 0, canvas.width, canvas.height);
+      let vivos = 0;
+      piezas.forEach((p) => {
+        if (p.y > canvas.height + 20) return;
+        vivos++;
+        p.x += p.vx; p.y += p.vy; p.vy += 0.055; p.a += p.va;
+        if (p.y > canvas.height * 0.75) p.op = Math.max(0, p.op - 0.02);
+        ctx2.save();
+        ctx2.translate(p.x, p.y);
+        ctx2.rotate(p.a);
+        ctx2.globalAlpha = p.op;
+        ctx2.fillStyle = p.color;
+        ctx2.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
+        ctx2.restore();
+      });
+      if (vivos > 0 && activo) raf = requestAnimationFrame(tick);
+      else canvas.remove();
+    })();
+    return () => { activo = false; cancelAnimationFrame(raf); setTimeout(() => canvas.remove(), 50); };
+  }
+
+  /** Cuatro notas ascendentes suaves: la victoria tranquila del checkout. */
+  function _sonarVictoria() {
+    try {
+      const ac = new (window.AudioContext || window.webkitAudioContext)();
+      [[523.25, 0, .14], [659.25, .13, .13], [783.99, .26, .15], [1046.5, .40, .36]]
+        .forEach(([freq, delay, dur]) => {
+          const o = ac.createOscillator();
+          const g = ac.createGain();
+          o.connect(g); g.connect(ac.destination);
+          o.type = 'sine';
+          o.frequency.setValueAtTime(freq, ac.currentTime + delay);
+          g.gain.setValueAtTime(0, ac.currentTime + delay);
+          g.gain.linearRampToValueAtTime(0.14, ac.currentTime + delay + .03);
+          g.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + delay + dur);
+          o.start(ac.currentTime + delay);
+          o.stop(ac.currentTime + delay + dur + .05);
+        });
+    } catch (e) {}
+  }
+
+  /** Victoria al confirmar un pedido: confetti dorado + sonido suave. Una sola vez por sesion. */
+  function celebrarPedido(token) {
+    if (sinMovimiento) return;
+    const key = `mm-v-${token}`;
+    try { if (sessionStorage.getItem(key)) return; } catch (e) {}
+    try { sessionStorage.setItem(key, '1'); } catch (e) {}
+    _sonarVictoria();
+    _confettiDorado();
+    document.querySelector('.mm-numero-pedido')?.classList.add('mm-numero-pedido-victoria');
   }
 
   /** Celebración cuando un cupón meta se aplica automáticamente al carrito.
@@ -229,7 +306,7 @@
     nodo.querySelector('.mm-celebracion-fondo').addEventListener('click', () => cerrar('aplicar'));
   }
 
-  window.Multimix = { enviar, avisar, actualizarContador, celebrarCupon };
+  window.Multimix = { enviar, avisar, actualizarContador, celebrarCupon, celebrarPedido };
 
   // Promociones de la portada: rotan solas (se detienen al pasar el raton o con "reducir movimiento").
   document.querySelectorAll('.js-promos').forEach((carrusel) => {
@@ -738,6 +815,10 @@
       seccionInstalar.querySelector('.js-instalar-ios').hidden = false;
     }
   }
+
+  // Victoria al llegar a la confirmacion de un pedido: lee el token del data-attribute.
+  const panelVictoria = document.querySelector('[data-pedido-victoria]');
+  if (panelVictoria) celebrarPedido(panelVictoria.dataset.pedidoVictoria);
 
   // Lupa en la foto del producto: con el raton, la foto que se ve se amplia donde apunta.
   const marco = document.querySelector('.mm-galeria-principal');
