@@ -175,7 +175,10 @@ def generar_mensualidades(hoy=None):
                 concepto=f'Mensualidad de {nombre_del_mes(periodo)} · Plan {tienda.plan.nombre}',
             )
             if cargo:
-                creados.append(cargo)
+                # Programa de referidos: bienvenida de una tienda invitada o premio de la que invita.
+                from referidos.services import aplicar_descuentos
+
+                creados.append(aplicar_descuentos(cargo, hoy))
     return creados
 
 
@@ -474,6 +477,10 @@ def aprobar_cargo(cargo, usuario=None):
     cargo.revisado_el = timezone.now()
     cargo.revisado_por = usuario
     cargo.save(update_fields=['estado', 'revisado_el', 'revisado_por'])
+    # Programa de referidos: la primera mensualidad pagada de una tienda invitada puede darle un premio a quien la invito.
+    from referidos.services import al_pagar_mensualidad
+
+    al_pagar_mensualidad(cargo)
     # El deposito de un cambio de plan era lo que faltaba: el plan cambia ya (con su propio correo).
     if cargo.tipo == Tipo.CAMBIO_DE_PLAN and cargo.plan_id and cargo.tienda.plan_pedido_id == cargo.plan_id:
         aprobar_cambio_de_plan(cargo.tienda, usuario)
@@ -564,20 +571,31 @@ def _repartir(por_tienda, limite):
     return elegidos
 
 
+def limite_de_anuncios(tienda, hoy=None):
+    """Anuncios de la portada que la tienda puede tener a la vez: los de su plan mas los de sus premios por referidos."""
+    from referidos.services import anuncios_extra
+
+    del_plan = tienda.plan.anuncios_portada if tienda.plan_id else 0
+    return del_plan + anuncios_extra(tienda, hoy)
+
+
 def anuncios_para_la_portada(limite=8):
-    """Anuncios aprobados y vigentes de tiendas activas, sin pasar de lo que permite el plan de cada una."""
+    """Anuncios aprobados y vigentes de tiendas activas, sin pasar de lo que permite el plan de cada una (mas los
+    anuncios extra de sus premios por referidos)."""
     ahora = timezone.now()
     anuncios = (
-        Anuncio.objects.filter(activo=True, aprobado=True, tienda__activa=True, tienda__plan__anuncios_portada__gt=0)
+        Anuncio.objects.filter(activo=True, aprobado=True, tienda__activa=True)
         .filter(Q(vigente_desde__isnull=True) | Q(vigente_desde__lte=ahora))
         .filter(Q(vigente_hasta__isnull=True) | Q(vigente_hasta__gte=ahora))
         .select_related('tienda__plan', 'producto__categoria', 'producto__tienda')
         .order_by('orden', '-creado', '-id')
     )
-    por_tienda = {}
+    por_tienda, limites = {}, {}
     for anuncio in anuncios:
+        if anuncio.tienda_id not in limites:
+            limites[anuncio.tienda_id] = limite_de_anuncios(anuncio.tienda)
         lista = por_tienda.setdefault(anuncio.tienda_id, [])
-        if len(lista) < anuncio.tienda.plan.anuncios_portada:
+        if len(lista) < limites[anuncio.tienda_id]:
             lista.append(anuncio)
     return _repartir(por_tienda, limite)
 
@@ -921,7 +939,10 @@ def _ajustar_mensualidad_por_cobrar(tienda, hoy, usuario=None):
     cargo.monto = plan.mensualidad
     cargo.concepto = f'Mensualidad de {nombre_del_mes(proximo)} · Plan {plan.nombre}'
     cargo.save(update_fields=['monto', 'concepto'])
-    return cargo
+    # Si tenia descuentos de referidos se recalculan sobre el precio del plan nuevo.
+    from referidos.services import aplicar_descuentos
+
+    return aplicar_descuentos(cargo, hoy)
 
 
 @transaction.atomic

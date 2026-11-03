@@ -356,3 +356,10 @@ html[data-theme="dark"] .pv-al-dia { background: #14352a; color: #bbf7d0; }
 .pv-ref-stat { display: flex; flex-direction: column; align-items: center; padding: 8px 12px; border: 1px solid var(--hairline-color); border-radius: 8px; background: var(--darkened-bg); flex: 1; }
 .pv-ref-stat strong { font-size: 1.4rem; font-weight: 800; }
 .pv-ref-stat span { font-size: .72rem; color: var(--body-quiet-color); text-transform: uppercase; letter-spacing: .04em; }
+
+/* Programa de referidos (2026-11-02): avance al proximo premio y premios ganados. */
+.pv-ref-avance { margin: .75rem 0; }
+.pv-ref-barra { height: .6rem; overflow: hidden; border-radius: 999px; background: #e5e7eb; }
+.pv-ref-barra span { display: block; height: 100%; min-width: .6rem; border-radius: inherit; background: #f59e0b; }
+.pv-ref-premios { margin: .75rem 0 0; padding-left: 1.1rem; font-size: .88rem; line-height: 1.5; }
+.pv-ref-premios li + li { margin-top: .35rem; }

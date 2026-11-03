@@ -316,6 +316,10 @@ class SolicitudTienda(models.Model):
     rubro = models.CharField('rubro del negocio', max_length=20, choices=RUBROS, default='otro')
     descripcion = models.TextField('qué vende')
     redes = models.CharField('redes o sitio web', max_length=200, blank=True)
+    codigo_referido = models.CharField(
+        'código de quien lo invitó', max_length=12, blank=True,
+        help_text='Programa de referidos: sale solo del enlace de invitación o lo escribe el negocio.',
+    )
     estado = models.CharField(max_length=12, choices=Estado.choices, default=Estado.PENDIENTE)
     notas = models.TextField(
         'notas internas', blank=True, help_text='Solo las ve el administrador principal; el negocio no las recibe.',

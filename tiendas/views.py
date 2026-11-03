@@ -221,9 +221,15 @@ def solicitar_tienda(request):
 
     from .forms import SolicitudTiendaForm
 
+    from referidos.services import COOKIE_REF
+
     inicial = {}
     if request.user.is_authenticated:
         inicial = {'nombre_responsable': request.user.get_full_name(), 'correo': request.user.email}
+    # Programa de referidos: si llego por el enlace de otra tienda (/ref/<codigo>/), el codigo ya va puesto.
+    codigo = request.COOKIES.get(COOKIE_REF, '').strip().upper()[:12]
+    if codigo:
+        inicial['codigo_referido'] = codigo
     formulario = SolicitudTiendaForm(request.POST or None, initial=inicial)
     if request.method == 'POST' and formulario.is_valid():
         ip = ip_del_cliente(request)

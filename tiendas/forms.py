@@ -31,7 +31,10 @@ class SolicitudTiendaForm(ConEstilo, forms.ModelForm):
 
     class Meta:
         model = SolicitudTienda
-        fields = ['nombre_responsable', 'nombre_comercial', 'correo', 'telefono', 'rubro', 'descripcion', 'redes']
+        fields = [
+            'nombre_responsable', 'nombre_comercial', 'correo', 'telefono', 'rubro', 'descripcion', 'redes',
+            'codigo_referido',
+        ]
         labels = {
             'nombre_responsable': 'Tu nombre completo',
             'nombre_comercial': 'Nombre de tu negocio',
@@ -39,6 +42,7 @@ class SolicitudTiendaForm(ConEstilo, forms.ModelForm):
             'rubro': '¿A qué se dedica tu negocio?',
             'descripcion': '¿Qué vendes?',
             'redes': 'Instagram, Facebook o sitio web (opcional)',
+            'codigo_referido': '¿Te invitó otra tienda? Su código (opcional)',
         }
         help_texts = {
             'nombre_comercial': 'Como quieres que se llame tu tienda.',
@@ -46,6 +50,8 @@ class SolicitudTiendaForm(ConEstilo, forms.ModelForm):
             'descripcion': f'Cuéntanos en pocas líneas qué productos ofreces ({MINIMO_DESCRIPCION} a '
                            f'{MAXIMO_DESCRIPCION} caracteres).',
             'redes': 'Nos ayuda a conocer tu negocio.',
+            'codigo_referido': 'Si llegaste por el enlace de otra tienda ya está puesto. Tu primera mensualidad tendrá un '
+                               'descuento.',
         }
         widgets = {
             'nombre_responsable': forms.TextInput(attrs={'autocomplete': 'name', 'minlength': 3}),
@@ -55,6 +61,7 @@ class SolicitudTiendaForm(ConEstilo, forms.ModelForm):
                 'rows': 4, 'minlength': MINIMO_DESCRIPCION, 'maxlength': MAXIMO_DESCRIPCION,
             }),
             'redes': forms.TextInput(attrs={'placeholder': '@minegocio o https://...'}),
+            'codigo_referido': forms.TextInput(attrs={'autocomplete': 'off', 'class': 'text-uppercase'}),
         }
 
     def __init__(self, *args, **kwargs):
@@ -101,6 +108,14 @@ class SolicitudTiendaForm(ConEstilo, forms.ModelForm):
         if datos.get('sitio_web'):
             raise forms.ValidationError('No pudimos enviar tu solicitud. Inténtalo de nuevo.')
         return datos
+
+    def clean_codigo_referido(self):
+        from referidos.models import CodigoReferido
+
+        codigo = (self.cleaned_data.get('codigo_referido') or '').strip().upper()
+        if codigo and not CodigoReferido.objects.filter(codigo=codigo).exists():
+            raise forms.ValidationError('No encontramos ese código. Revísalo o déjalo vacío.')
+        return codigo
 
     def datos_de_la_solicitud(self):
         return {campo: self.cleaned_data[campo] for campo in self.Meta.fields}

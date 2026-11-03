@@ -209,7 +209,10 @@ class Anuncio(models.Model):
         if self.vigente_desde and self.vigente_hasta and self.vigente_hasta <= self.vigente_desde:
             errores['vigente_hasta'] = 'La vigencia debe terminar después de su inicio.'
         if self.activo and self.tienda_id and not self.vencido:
-            limite = self.tienda.plan.anuncios_portada if self.tienda.plan_id else 0
+            from planes.services import limite_de_anuncios
+
+            # El plan mas los anuncios extra de los premios por referidos.
+            limite = limite_de_anuncios(self.tienda)
             activos = Anuncio.objects.que_ocupan_cupo(self.tienda_id).exclude(pk=self.pk).count()
             if activos >= limite:
                 errores['activo'] = (

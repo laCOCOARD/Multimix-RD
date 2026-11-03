@@ -113,16 +113,15 @@ class PanelAdminSite(admin.AdminSite):
 
         from tiendas.panel import tiendas_del_panel
         from tiendas.models import Tienda
+        from tiendas.services import ve_todas
 
-        if request.user.is_superuser:
-            try:
-                tienda = Tienda.objects.get(pk=pk)
-            except Tienda.DoesNotExist:
-                raise Http404
+        if ve_todas(request.user):
+            tienda = Tienda.objects.filter(pk=pk).first()
         else:
-            tienda = tiendas_del_panel(request).filter(pk=pk).first()
-            if tienda is None:
-                raise Http404
+            # tiendas_del_panel es una lista (no una consulta): se busca la tienda en ella.
+            tienda = next((t for t in tiendas_del_panel(request) if t.pk == pk), None)
+        if tienda is None:
+            raise Http404
 
         url = request.build_absolute_uri(tienda.get_absolute_url())
         qr = qrcode.QRCode(
@@ -137,18 +136,22 @@ class PanelAdminSite(admin.AdminSite):
 
         if tienda.logo:
             try:
-                logo_img = Image.open(tienda.logo).convert('RGBA')
+                with tienda.logo.open('rb') as archivo:
+                    logo_img = Image.open(archivo).convert('RGBA')
                 tam_qr = img.size[0]
                 tam_logo = tam_qr // 5
-                logo_img = logo_img.resize((tam_logo, tam_logo), Image.LANCZOS)
+                logo_img = logo_img.resize((tam_logo, tam_logo), Image.Resampling.LANCZOS)
                 pos = ((tam_qr - tam_logo) // 2, (tam_qr - tam_logo) // 2)
                 img.paste(logo_img, pos, logo_img)
             except Exception:
+                # Sin logo el QR sirve igual: el logo es solo adorno.
                 pass
 
         buf = BytesIO()
         img.save(buf, format='PNG')
-        return HttpResponse(buf.getvalue(), content_type='image/png')
+        respuesta = HttpResponse(buf.getvalue(), content_type='image/png')
+        respuesta['Content-Disposition'] = f'inline; filename="qr-{tienda.slug}.png"'
+        return respuesta
 
     def pendientes_view(self, request):
         """Para el panel del vendedor: los numeritos del menu y "Para hacer ahora", sin recargar la pagina."""
@@ -233,6 +236,8 @@ class PanelAdminSite(admin.AdminSite):
                     # Centro de crecimiento: QR y referidos.
                     'ref_enlace': ref_enlace,
                     'referidos_stats': referidos_stats,
+                    # Premios por invitar tiendas: avance al proximo y los que ya gano (referidos.services).
+                    'programa': ref_services.programa_de(tiendas[0]) if len(tiendas) == 1 else None,
                     'tienda_url_absoluta': tienda_url_absoluta,
                 }
         contexto.update(extra_context or {})

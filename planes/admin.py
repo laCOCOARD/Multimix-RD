@@ -362,10 +362,14 @@ class AnuncioAdmin(AvisaImagenesSinGuardar, AdminDeTienda, admin.ModelAdmin):
                 setattr(campo.widget, permiso, False)
         tiendas = tiendas_del_panel(request)
         if not ve_todas(request.user) and len(tiendas) == 1 and 'activo' in formulario.base_fields:
-            plan = tiendas[0].plan
-            limite = plan.anuncios_portada if plan else 0
+            from referidos.services import anuncios_extra
+
+            from .services import limite_de_anuncios
+
+            limite, extra = limite_de_anuncios(tiendas[0]), anuncios_extra(tiendas[0])
+            premio = f' (incluye {extra} de tus premios por invitar tiendas)' if extra else ''
             formulario.base_fields['activo'].help_text = (
-                f'Tu plan {plan.nombre} permite {limite} anuncio(s) a la vez; los vencidos no cuentan.' if plan
+                f'Puedes tener {limite} anuncio(s) a la vez{premio}; los vencidos no cuentan.' if limite
                 else 'Tu tienda no tiene un plan con anuncios todavía.'
             )
         return formulario

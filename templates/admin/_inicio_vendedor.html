@@ -91,14 +91,35 @@
       </div>
 
       <div class="pv-crecimiento-card">
-        <h3 class="pv-crecimiento-titulo">Programa de referidos</h3>
-        <p class="pv-crecimiento-texto">Invita a otros emprendedores a Multimix RD. Cuando se registren con tu enlace quedan vinculados a ti.</p>
-        {% if referidos_stats %}
-        <div class="pv-ref-stats">
-          <div class="pv-ref-stat"><strong>{{ referidos_stats.clics }}</strong><span>visitas</span></div>
-          <div class="pv-ref-stat"><strong>{{ referidos_stats.registros }}</strong><span>registros</span></div>
-          <div class="pv-ref-stat"><strong>{{ referidos_stats.tiendas }}</strong><span>tiendas</span></div>
+        <h3 class="pv-crecimiento-titulo">Invita tiendas y gana premios</h3>
+        {% if programa %}
+        <p class="pv-crecimiento-texto">Por cada {{ programa.por_premio }} tiendas que abran con tu enlace y paguen su primera mensualidad, ganas <strong>{{ programa.descuento_premio|floatformat:"-2" }}% en tu próxima mensualidad</strong> y <strong>1 anuncio extra en la portada por {{ programa.dias_anuncio }} días</strong>. La tienda que invitas recibe {{ programa.descuento_bienvenida|floatformat:"-2" }}% en su primera mensualidad.</p>
+        <div class="pv-ref-avance">
+          <p class="pv-crecimiento-etiqueta">Llevas <strong>{{ programa.avance }} de {{ programa.por_premio }}</strong> para tu próximo premio</p>
+          <div class="pv-ref-barra" role="progressbar" aria-label="Avance al próximo premio" aria-valuenow="{{ programa.avance }}" aria-valuemin="0" aria-valuemax="{{ programa.por_premio }}"><span style="width: {{ programa.porcentaje_avance }}%"></span></div>
         </div>
+        <div class="pv-ref-stats">
+          <div class="pv-ref-stat"><strong>{{ referidos_stats.clics }}</strong><span>visitas a tu enlace</span></div>
+          <div class="pv-ref-stat"><strong>{{ programa.solicitudes }}</strong><span>solicitudes</span></div>
+          <div class="pv-ref-stat"><strong>{{ programa.activas }}</strong><span>tiendas activas</span></div>
+        </div>
+        {% if programa.premios %}
+          <ul class="pv-ref-premios">
+            {% for premio in programa.premios %}
+              <li>
+                <strong>Premio {{ premio.numero }}:</strong>
+                {% if premio.cargo and premio.cargo.estado != 'anulado' %}{{ premio.descuento|floatformat:"-2" }}% usado en {{ premio.cargo.concepto }}.
+                {% elif premio.disponible %}{{ premio.descuento|floatformat:"-2" }}% para tu próxima mensualidad (úsalo antes del {{ premio.vence|date:"j \d\e F" }}).
+                {% else %}el descuento venció el {{ premio.vence|date:"j \d\e F" }}.{% endif %}
+                {% if premio.anuncios_vigentes %}+{{ premio.anuncios_extra }} anuncio hasta el {{ premio.anuncios_hasta|date:"j \d\e F" }}.{% endif %}
+              </li>
+            {% endfor %}
+          </ul>
+        {% endif %}
+        {% else %}
+        <p class="pv-crecimiento-texto">Invita a otros emprendedores a Multimix RD con tu enlace.</p>
+        {% endif %}
+        {% if referidos_stats %}
         <p class="pv-crecimiento-etiqueta">Tu código: <strong>{{ referidos_stats.codigo.codigo }}</strong></p>
         <div class="pv-promo-fila">
           <code class="pv-promo-url pv-promo-url-corta">{{ ref_enlace }}</code>

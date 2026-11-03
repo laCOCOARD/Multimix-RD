@@ -356,10 +356,12 @@ class SolicitudTiendaAdmin(admin.ModelAdmin):
     actions = ['marcar_en_revision', 'rechazar']
     readonly_fields = [
         'nombre_responsable', 'nombre_comercial', 'contacto', 'rubro', 'descripcion', 'redes', 'creada',
-        'revisada_por', 'revisada_el', 'crear_tienda',
+        'revisada_por', 'revisada_el', 'crear_tienda', 'invitada_por',
     ]
     fieldsets = [
-        ('Quién la envía', {'fields': ['nombre_responsable', 'nombre_comercial', 'contacto', 'rubro', 'redes', 'creada']}),
+        ('Quién la envía', {'fields': [
+            'nombre_responsable', 'nombre_comercial', 'contacto', 'rubro', 'redes', 'creada', 'invitada_por',
+        ]}),
         ('Qué vende', {'fields': ['descripcion']}),
         ('Revisión', {'fields': ['estado', 'notas', 'tienda', 'crear_tienda', 'revisada_por', 'revisada_el']}),
     ]
@@ -388,6 +390,22 @@ class SolicitudTiendaAdmin(admin.ModelAdmin):
         super().save_model(request, obj, form, change)
         if nuevo_estado:
             avisar_resultado_de_solicitud(obj)
+        # Programa de referidos: al elegir la tienda creada, queda vinculada a la tienda que la invito.
+        from referidos.services import vincular_tienda
+
+        if vincular_tienda(obj):
+            self.message_user(request, 'La tienda quedó vinculada a la tienda que la invitó (programa de referidos).',
+                              messages.SUCCESS)
+
+    @admin.display(description='Invitada por')
+    def invitada_por(self, solicitud):
+        from referidos.services import tienda_del_codigo
+
+        if not solicitud.codigo_referido:
+            return '—'
+        referente = tienda_del_codigo(solicitud.codigo_referido)
+        nombre = referente.nombre if referente else 'código sin tienda'
+        return f'{nombre} (código {solicitud.codigo_referido})'
 
     def _cambiar_estado(self, request, queryset, estado):
         total = 0
