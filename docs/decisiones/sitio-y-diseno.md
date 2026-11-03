@@ -32,7 +32,20 @@ Decisiones tomadas en Multimix RD (movidas desde CLAUDE.md el 2026-10-28). Leela
     conversion solo con 5 revisadas o mas) y la actividad de todas las tiendas; el vendedor, solo la de las suyas.
     En las pruebas hay que mandar `HTTP_USER_AGENT` de un navegador para que cuente.
   - `requirements*.txt` con tope en la siguiente version mayor: Render instala lo mas nuevo en cada despliegue.
-- Portada, Fase 1 del rediseño (2026-10-27): bienvenida carbon "Descubre. Compra. Emprende." con "Explorar productos"
+- Portada al estilo de las grandes tiendas (pedido del dueño el 2026-11-02, "full Amazon"; reemplaza la bienvenida
+  "Descubre. Compra. Emprende." y la portada sin "Descubre productos" del 2026-10-28): banda oscura con el carrusel de
+  promociones (`mm-az-cabeza`; sin promociones, un titulo y "Ver todos los productos") y, encima de su borde, cuadros
+  blancos de cuatro en fila (dos en el celular) que arma `tiendas.views._tarjetas_de_la_portada`: la cuenta ("Entra y
+  compra más fácil" o "Hola" con atajos), cada categoria con cuatro fotos de sus productos (una sola si tiene menos),
+  la oferta con foto y las tiendas; se recortan categorias para completar filas (siguen abajo en su fila). Despues
+  filas sobre paneles blancos: "Sigue mirando" (vistos de todas las tiendas), "Ofertas del día", "Lo nuevo"
+  (`nuevos_del_sitio`), videos, "Lo mejor en <categoria>" (`catalogo.services.estantes_del_sitio`: por categoria
+  principal y sus subcategorias, solo lo comprable, con foto primero; una consulta con `RowNumber`; solo categorias con
+  3 o mas, hasta 6), tiendas y una franja corta para vender. Todo sale de la base. La cabecera lleva siempre el lugar
+  del carrito (`con-carrito`): sin el, en la PC el carrito caia a una segunda fila.
+- Comprar con menos pasos (2026-11-02): quien crea su cuenta viniendo del pago va directo al pago, sin las preguntas
+  de gustos (las contesta despues desde "Mi cuenta").
+- Portada, Fase 1 del rediseño (2026-10-27, reemplazada el 2026-11-02): bienvenida carbon "Descubre. Compra. Emprende." con "Explorar productos"
   (ambar) y "Conocer las tiendas", tres puntos ciertos para cualquier tienda y cuatro productos reales de la seleccion
   con el nombre de su tienda; categorias como tarjetas con foto y "Ver productos"; tiendas en una banda blanca
   (`mm-banda`) con boton "Visitar tienda"; "Compra con confianza" (`includes/confianza.html`, el mismo texto del

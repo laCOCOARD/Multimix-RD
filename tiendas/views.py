@@ -11,8 +11,8 @@ from django.views.decorators.http import require_GET
 from catalogo.forms import ORDENES, FiltroCatalogoForm
 from catalogo.models import Categoria
 from catalogo.services import (
-    categorias_del_sitio, en_oferta, filtrar_catalogo, nuevos, ofertas_del_sitio, recordar_busqueda,
-    sugerencias as sugerencias_de_productos, vitrina_del_sitio,
+    categorias_del_sitio, en_oferta, estantes_del_sitio, filtrar_catalogo, nuevos, nuevos_del_sitio, ofertas_del_sitio,
+    recordar_busqueda, sugerencias as sugerencias_de_productos, vistos as vistos_recientes, vitrina_del_sitio,
 )
 from catalogo.views import sugerencias_de_productos as datos_de_sugerencias
 from clientes.gustos import de as gustos_del_cliente
@@ -35,10 +35,38 @@ def _preferidas_primero(categorias, usuario):
     return sorted(categorias, key=lambda categoria: categoria.pk not in preferidas) if preferidas else categorias
 
 
+PRODUCTOS_POR_ESTANTE = 10
+ESTANTES_EN_PORTADA = 6
+
+
+def _tarjetas_de_la_portada(categorias, ofertas, tiendas):
+    """Los cuadros de arriba de la portada, al estilo de las grandes tiendas: la cuenta, cada categoria con cuatro
+    fotos de sus productos, la mejor oferta y las tiendas. Se recortan categorias para completar filas de cuatro
+    (esas siguen abajo en su fila de productos)."""
+    de_categorias = []
+    for categoria in categorias:
+        con_foto = [producto for producto in categoria.estante if producto.foto_principal]
+        if con_foto:
+            de_categorias.append({'tipo': 'categoria', 'categoria': categoria, 'productos': con_foto[:4]})
+    oferta = next((producto for producto in ofertas if producto.foto_principal), None)
+    fijas = [
+        {'tipo': 'cuenta'},
+        *([{'tipo': 'oferta', 'producto': oferta}] if oferta else []),
+        *([{'tipo': 'tiendas', 'tiendas': tiendas[:4]}] if tiendas else []),
+    ]
+    total = len(fijas) + len(de_categorias)
+    if total > 4 and total % 4:
+        de_categorias = de_categorias[:max(0, len(de_categorias) - total % 4)]
+    # La cuenta primero, la oferta y las tiendas entre las categorias.
+    tarjetas = [fijas[0], *de_categorias[:2], *fijas[1:2], *de_categorias[2:4], *fijas[2:], *de_categorias[4:]]
+    return tarjetas
+
+
 @require_GET
 def portada(request):
-    """Portada del sitio: productos de todas las tiendas y las tiendas mismas, para comprar sin conocer al vendedor
-    o para entrar a la tienda de un emprendedor. Cada producto se sigue comprando dentro de su tienda."""
+    """Portada del sitio al estilo de las grandes tiendas (pedido del dueño el 2026-11-02, "full Amazon"): promociones
+    arriba, cuadros de categorias con fotos y filas de productos de todas las tiendas. Cada producto dice de que
+    tienda es y se sigue comprando dentro de ella."""
     from core.models import PreguntaFrecuente
     from planes.services import historias_para_la_portada, promociones_para
 
@@ -46,20 +74,27 @@ def portada(request):
     destacadas_qs = list(services.tiendas_destacadas()[:6])
     # Promociones (anuncios, patrocinados y ofertas), primero lo que se parece a lo que el visitante busco o miro.
     promociones, personalizadas = promociones_para(request.session, usuario=request.user)
-    # Fotos reales para la bienvenida: productos de distintas tiendas, cada uno con la suya.
-    vitrina = [producto for producto in vitrina_del_sitio(8) if producto.foto_principal][:4]
+    categorias = _preferidas_primero(categorias_del_sitio(), request.user)
+    estantes = estantes_del_sitio(categorias, PRODUCTOS_POR_ESTANTE)
+    for categoria in categorias:
+        categoria.estante = estantes.get(categoria.pk, [])
+    ofertas = ofertas_del_sitio(PRODUCTOS_POR_ESTANTE)
+    tiendas_del_directorio = services.para_el_directorio(tiendas[:TIENDAS_EN_PORTADA])
     plataforma = ConfiguracionTienda.obtener()
     return render(request, 'tiendas/portada.html', {
-        'tiendas': services.para_el_directorio(tiendas[:TIENDAS_EN_PORTADA]),
+        'tiendas': tiendas_del_directorio,
         'hay_mas_tiendas': len(tiendas) > TIENDAS_EN_PORTADA,
         'tiendas_destacadas': services.para_el_directorio(destacadas_qs),
-        'categorias': _preferidas_primero(categorias_del_sitio(), request.user),
+        'categorias': categorias,
+        'tarjetas': _tarjetas_de_la_portada(categorias, ofertas, tiendas_del_directorio),
+        'estantes': [categoria for categoria in categorias if len(categoria.estante) >= 3][:ESTANTES_EN_PORTADA],
         'promociones': promociones,
         'promociones_personalizadas': personalizadas,
         # Videos de las tiendas (plan Premium): un circulo por tienda, en otro orden en cada visita.
         'historias': historias_para_la_portada(),
-        'ofertas': ofertas_del_sitio(),
-        'vitrina': vitrina,
+        'ofertas': ofertas,
+        'nuevos': nuevos_del_sitio(PRODUCTOS_POR_ESTANTE),
+        'vistos': vistos_recientes(request.session),
         'preguntas': PreguntaFrecuente.objects.filter(activa=True)[:6],
         'sitio_json_ld': sitio_json_ld(
             plataforma.nombre, request.build_absolute_uri('/'),

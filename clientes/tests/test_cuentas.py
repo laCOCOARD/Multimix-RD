@@ -48,10 +48,15 @@ class RegistroTests(TestCase):
     def test_vuelve_a_la_pagina_de_donde_venia_pero_no_a_otro_sitio(self):
         checkout = ruta('pedidos:checkout')
         respuesta = self.client.post(reverse('clientes:registro'), self.datos(next=checkout))
-        # Pasa por las preguntas de gustos, que llevan a donde iba ("Ahora no" o "Guardar").
-        gustos = f"{reverse('clientes:gustos')}?{urlencode({'next': checkout})}"
+        # Venia a pagar: va directo al pago, sin las preguntas de gustos (2026-11-02, comprar con menos pasos).
+        self.assertRedirects(respuesta, checkout, fetch_redirect_response=False)
+        # Desde otra pagina si pasa por las preguntas, que llevan a donde iba ("Ahora no" o "Guardar").
+        self.client.post(reverse('clientes:salir'))
+        busqueda = reverse('tiendas:buscar')
+        respuesta = self.client.post(reverse('clientes:registro'), self.datos(correo='tres@example.com', next=busqueda))
+        gustos = f"{reverse('clientes:gustos')}?{urlencode({'next': busqueda})}"
         self.assertRedirects(respuesta, gustos, fetch_redirect_response=False)
-        self.assertRedirects(self.client.post(gustos, {'omitir': '1'}), checkout, fetch_redirect_response=False)
+        self.assertRedirects(self.client.post(gustos, {'omitir': '1'}), busqueda, fetch_redirect_response=False)
         self.client.post(reverse('clientes:salir'))
         respuesta = self.client.post(reverse('clientes:registro'), self.datos(correo='otra@example.com', next='https://malo.example/'))
         self.assertRedirects(respuesta, f"{reverse('clientes:gustos')}?next=%2Fcuenta%2F", fetch_redirect_response=False)

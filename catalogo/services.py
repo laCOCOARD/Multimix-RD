@@ -239,6 +239,43 @@ def ofertas_del_sitio(limite=10, excluir=()):
     )
 
 
+def nuevos_del_sitio(limite=12, excluir=()):
+    """Lo nuevo de todas las tiendas que se puede comprar, repartido entre las tiendas."""
+    return _repartidos_entre_tiendas(_base().filter(q_comprable(), q_nuevos()).exclude(pk__in=excluir), limite)
+
+
+def estantes_del_sitio(categorias, por_categoria=8):
+    """Portada al estilo de las grandes tiendas (pedido del dueño el 2026-11-02): por cada categoria principal, sus
+    productos que se pueden comprar, de todas las tiendas (con foto primero, despues destacados y lo nuevo).
+
+    Devuelve {id de la categoria: [productos]}. Una consulta numera los candidatos y otra trae los elegidos.
+    """
+    ids = [categoria.pk for categoria in categorias]
+    if not ids:
+        return {}
+    principal = Coalesce('categoria__padre_id', 'categoria_id')
+    candidatos = (
+        Producto.objects.activos().sin_variantes_repetidas().filter(q_comprable(), categoria__activa=True)
+        .annotate(principal_id=principal, tiene_foto=Exists(FotoProducto.objects.filter(producto=OuterRef('pk'))))
+        .filter(principal_id__in=ids)
+        .annotate(puesto=Window(
+            RowNumber(), partition_by=[principal],
+            order_by=[F('tiene_foto').desc(), F('destacado').desc(), F('creado').desc(), F('id').desc()],
+        ))
+        .filter(puesto__lte=por_categoria)
+        .order_by('principal_id', 'puesto')
+        .values_list('pk', 'principal_id')
+    )
+    por_categoria_ids = {}
+    for pk, categoria_id in candidatos:
+        por_categoria_ids.setdefault(categoria_id, []).append(pk)
+    encontrados = _base().in_bulk([pk for lista in por_categoria_ids.values() for pk in lista])
+    return {
+        categoria_id: [encontrados[pk] for pk in lista if pk in encontrados]
+        for categoria_id, lista in por_categoria_ids.items()
+    }
+
+
 def patrocinados_del_sitio(limite=4):
     """Productos que las tiendas anuncian en la portada (planes, 2026-10-26): salen en el carrusel de promociones,
     marcados como anuncio. Cada tienda, hasta lo que permite su plan; una de cada tienda por vuelta."""

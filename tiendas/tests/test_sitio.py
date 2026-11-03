@@ -64,12 +64,13 @@ class DirectorioTests(DosTiendas):
 
     def test_la_portada_muestra_productos_de_todas_las_tiendas_con_su_vendedor(self):
         # Pedido del dueño el 2026-10-25: se compra sin conocer al vendedor, pero cada producto dice de que tienda es.
-        # Desde el 2026-10-27 no hay "Descubre productos": salen en ofertas y en las promociones.
+        # Desde el 2026-11-02 (portada al estilo de las grandes tiendas) salen en cuadros y filas por categoria.
         for producto in (self.lampara, self.pesas):
             producto.precio_oferta = producto.precio * Decimal('0.8')
             producto.save()
         portada = self.client.get('/')
-        self.assertNotContains(portada, 'Descubre productos')
+        self.assertEqual({p.nombre for c in portada.context['estantes'] for p in c.estante} | {
+            p.nombre for p in portada.context['ofertas']}, {'Lámpara', 'Pesas rusas'})
         self.assertEqual({p.nombre for p in portada.context['ofertas']}, {'Lámpara', 'Pesas rusas'})
         self.assertContains(portada, 'Vendido por')
         self.assertContains(portada, f'<a href="{self.fitnes.get_absolute_url()}">Fitnes RD</a>', html=True)
@@ -116,15 +117,37 @@ class DirectorioTests(DosTiendas):
         self.assertEqual({p.categoria.nombre for p in de_multimix[:2]}, {'Bebidas', 'General'})
         self.assertEqual(len(de_multimix), 5)
 
+    def test_estantes_por_categoria_con_sus_subcategorias_y_solo_lo_comprable(self):
+        from catalogo.models import Categoria, Producto
+        from catalogo.services import estantes_del_sitio
+
+        belleza = Categoria.objects.create(nombre='Belleza', orden=1)
+        maquillaje = Categoria.objects.create(nombre='Maquillaje', padre=belleza)
+        crear_producto(nombre='Labial', sku='E1', categoria=maquillaje, tienda=self.fitnes)
+        crear_producto(nombre='Crema', sku='E2', categoria=belleza)
+        crear_producto(nombre='Rubor', sku='E3', categoria=belleza)
+        crear_producto(nombre='Agotado', sku='E4', categoria=belleza, disponibilidad=Producto.Disponibilidad.AGOTADO)
+        estantes = estantes_del_sitio([belleza], por_categoria=2)
+        self.assertEqual(list(estantes), [belleza.pk])
+        self.assertEqual(len(estantes[belleza.pk]), 2)
+        self.assertEqual({p.nombre for p in estantes_del_sitio([belleza])[belleza.pk]}, {'Labial', 'Crema', 'Rubor'})
+        portada = self.client.get('/')
+        self.assertEqual([c.nombre for c in portada.context['estantes']], ['Belleza'])
+        self.assertContains(portada, 'Lo mejor en Belleza')
+
     def test_la_portada_no_se_parece_al_inicio_de_una_tienda(self):
         portada = self.client.get('/')
         # Sin el banner de las tiendas, sin su boton de catalogo y sin el lema de ninguna en su encabezado.
         self.assertNotContains(portada, 'mm-banner')
         self.assertNotContains(portada, 'Ver catálogo')
         self.assertNotContains(portada, 'Tu tienda de bienestar')
-        self.assertContains(portada, 'Descubre. Compra. <span>Emprende.</span>', html=False)
-        self.assertContains(portada, 'Conocer las tiendas')
-        self.assertContains(portada, 'Explorar productos')
+        # Al estilo de las grandes tiendas (2026-11-02): cuadros de la cuenta, categorias y tiendas arriba.
+        self.assertContains(portada, 'Compra en las tiendas de emprendedores dominicanos')
+        self.assertContains(portada, 'Ir a mi cuenta')
+        self.assertContains(portada, 'Explorar las tiendas')
+        # Sin sesion, el cuadro de la cuenta invita a entrar.
+        self.client.logout()
+        self.assertContains(self.client.get('/'), 'Entra y compra más fácil')
         self.assertContains(portada, f'href="{reverse("tiendas:directorio")}"')
         self.assertContains(portada, '¿Qué producto estás buscando?')
         self.assertContains(portada, 'Tiendas de emprendedores en un solo lugar.')

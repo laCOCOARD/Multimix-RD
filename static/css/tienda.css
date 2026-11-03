@@ -1216,6 +1216,74 @@ html.mm-visor-abierto { overflow: hidden; }
 }
 @media (hover: none) { .mm-promos-flecha { display: none; } }
 
+/* --- Portada al estilo de las grandes tiendas (pedido del dueño el 2026-11-02) ---------------------------------
+   Banda oscura con las promociones que se funde con el fondo; encima de su borde, cuadros blancos (cuenta,
+   categorias con cuatro fotos, oferta, tiendas) y despues filas de productos sobre paneles blancos. */
+.mm-az-cabeza { padding: 1rem 0 3.5rem; background: linear-gradient(180deg, var(--mm-oscuro) 0, var(--mm-oscuro-2) 62%, var(--mm-fondo) 100%); }
+.mm-az-cabeza.sin-promos { padding: 2.25rem 0 4.5rem; color: var(--mm-sobre-oscuro); }
+.mm-az-titulo { margin: 0 0 .6rem; max-width: 36rem; font-size: clamp(1.7rem, 1.2rem + 2.2vw, 2.6rem); font-weight: 800; line-height: 1.1; letter-spacing: -.03em; color: #fff; }
+.mm-az-subtitulo { max-width: 34rem; margin: 0 0 1.25rem; font-size: 1.05rem; line-height: 1.55; }
+.mm-az-promos { box-shadow: none; }
+.mm-az-promos .mm-promo { min-height: 0; }
+.mm-az-promos .mm-promo-imagen, .mm-az-promos .mm-promo-imagen img { height: 10.5rem; }
+.mm-az-promos .mm-promo-texto { padding-bottom: 3.25rem; }
+.mm-az-promos .mm-promo-etiqueta .bi { color: var(--mm-calido); }
+
+.mm-az-cuadros { position: relative; z-index: 1; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .75rem; margin-top: -2.5rem; }
+.mm-az-cuadro { display: flex; flex-direction: column; min-width: 0; padding: .9rem; border-radius: var(--mm-radio); background: var(--mm-superficie); box-shadow: var(--mm-sombra); }
+.mm-az-cuadro-titulo { margin: 0 0 .7rem; font-size: .98rem; font-weight: 800; line-height: 1.25; letter-spacing: -.01em; }
+.mm-az-cuadro-texto { margin: 0 0 .9rem; font-size: .86rem; line-height: 1.45; color: var(--mm-texto-suave); }
+.mm-az-cuadro-enlace { margin-top: auto; padding-top: .8rem; font-size: .84rem; font-weight: 700; color: var(--mm-calido-texto); }
+.mm-az-cuadro .btn + .mm-az-cuadro-enlace { margin-top: 0; }
+.mm-az-mosaico { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .55rem; }
+.mm-az-mosaico.uno { grid-template-columns: minmax(0, 1fr); }
+.mm-az-mosaico a, .mm-az-oferta { display: flex; flex-direction: column; gap: .3rem; min-width: 0; color: var(--mm-texto); text-decoration: none; }
+.mm-az-foto { display: grid; place-items: center; aspect-ratio: 1; overflow: hidden; border-radius: var(--mm-radio-chico); }
+.mm-az-foto:not(.mm-az-logo) { background: var(--mm-fondo); }
+.mm-az-foto img { width: 100%; height: 100%; object-fit: contain; mix-blend-mode: multiply; transition: transform var(--mm-transicion); }
+.mm-az-mosaico a:hover img, .mm-az-oferta:hover img { transform: scale(1.05); }
+.mm-az-foto-nombre { overflow: hidden; font-size: .76rem; line-height: 1.3; color: var(--mm-texto-suave); white-space: nowrap; text-overflow: ellipsis; }
+.mm-az-mosaico a:hover .mm-az-foto-nombre, .mm-az-oferta:hover .mm-az-foto-nombre { color: var(--mm-texto); text-decoration: underline; }
+.mm-az-logo img { object-fit: cover; mix-blend-mode: normal; }
+.mm-az-logo span { font-size: 1.9rem; font-weight: 800; color: #fff; }
+.mm-az-oferta-precio { display: flex; flex-wrap: wrap; align-items: center; gap: .4rem; font-size: 1.05rem; font-weight: 800; color: var(--mm-oscuro); }
+.mm-az-descuento { padding: .15rem .45rem; border-radius: .35rem; background: var(--mm-peligro); color: #fff; font-size: .78rem; font-weight: 700; }
+.mm-az-atajos { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .5rem; }
+.mm-az-atajos a { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: .3rem; aspect-ratio: 1.25; padding: .5rem; border-radius: var(--mm-radio-chico); background: var(--mm-fondo); color: var(--mm-oscuro); font-size: .8rem; font-weight: 600; text-align: center; text-decoration: none; }
+.mm-az-atajos a:hover { background: var(--mm-calido-suave); }
+.mm-az-atajos .bi { font-size: 1.35rem; color: var(--mm-calido-texto); }
+
+.mm-az-estante { padding-top: 1rem; }
+.mm-az-panel { padding: 1rem 1rem .5rem; border-radius: var(--mm-radio); background: var(--mm-superficie); box-shadow: var(--mm-sombra); }
+.mm-az-panel .mm-seccion-cabecera { margin-bottom: .75rem; }
+.mm-az-panel .mm-seccion-cabecera h2 { font-size: clamp(1.15rem, 1.05rem + .5vw, 1.45rem); }
+
+.mm-az-vender { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 1rem 1.5rem; padding: 1.4rem 1.5rem; border-radius: var(--mm-radio); background: var(--mm-oscuro); color: var(--mm-sobre-oscuro); }
+.mm-az-vender h2 { margin: 0 0 .25rem; font-size: 1.2rem; font-weight: 800; color: #fff; }
+.mm-az-vender p { margin: 0; font-size: .92rem; }
+.mm-az-vender-acciones { display: flex; flex-wrap: wrap; gap: .5rem; }
+.mm-az-vender .btn-outline-light { --bs-btn-border-color: rgba(255, 255, 255, .35); --bs-btn-hover-bg: #fff; --bs-btn-hover-color: var(--mm-oscuro); }
+
+@media (max-width: 380px) {
+  .mm-az-cuadros { gap: .6rem; }
+  .mm-az-cuadro { padding: .75rem; }
+  .mm-az-cuadro-titulo { font-size: .9rem; }
+}
+@media (min-width: 768px) {
+  .mm-az-cabeza { padding-bottom: 6rem; }
+  .mm-az-promos .mm-promo { min-height: 0; height: 19rem; }
+  .mm-az-promos .mm-promo-imagen, .mm-az-promos .mm-promo-imagen img { height: 19rem; }
+  .mm-az-cuadros { gap: 1rem; margin-top: -4.5rem; }
+  .mm-az-cuadro { padding: 1.15rem; }
+  .mm-az-cuadro-titulo { font-size: 1.12rem; }
+  .mm-az-panel { padding: 1.25rem 1.4rem .75rem; }
+}
+@media (min-width: 992px) {
+  .mm-az-cabeza { padding-bottom: 8rem; }
+  .mm-az-cuadros { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1.25rem; margin-top: -6.5rem; }
+  .mm-az-estante { padding-top: 1.25rem; }
+}
+
 /* --- Gustos del cliente (2026-10-27): cuatro preguntas con opciones que se tocan --------- */
 .mm-gustos { max-width: 44rem; margin: 0 auto; padding: clamp(1.4rem, 4vw, 2.5rem); }
 .mm-pregunta-gusto { margin: 0 0 1.6rem; padding: 0; border: 0; }

@@ -1,10 +1,9 @@
 {% extends 'base.html' %}
 {% load moneda static %}
 
-{# Portada del sitio (pedido del dueño el 2026-10-25): un sitio de muchas tiendas. Se puede comprar sin conocer al #}
-{# vendedor (categorias y productos de todas las tiendas, cada uno con su tienda a la vista) o entrar a una tienda. #}
-{# Todo sale de la base; las secciones sin datos (ofertas, preguntas...) no se muestran. No lleva el banner de las #}
-{# tiendas (`mm-banner`): la bienvenida es clara y corta para que los productos queden cerca. #}
+{# Portada del sitio al estilo de las grandes tiendas (pedido del dueño el 2026-11-02, "full Amazon"): promociones #}
+{# arriba, cuadros de categorias con fotos encima de su borde y despues filas de productos de todas las tiendas. #}
+{# Todo sale de la base; las secciones sin datos no se muestran. Cada producto dice que tienda lo vende. #}
 {% block titulo %}{{ plataforma.nombre }} · Tiendas de emprendedores dominicanos en un solo lugar{% endblock %}
 
 {% block meta %}
@@ -13,39 +12,148 @@
 {% endblock %}
 
 {% block contenido %}
-{# Bienvenida (Fase 1 del rediseño, 2026-10-27): dice de entrada que es un sitio de muchas tiendas. Las fotos son #}
-{# productos reales de la seleccion, cada uno con su tienda; con menos de cuatro con foto no se muestran. #}
-<section class="mm-hero" aria-labelledby="titulo-portada">
-  <div class="container mm-hero-contenido{% if vitrina|length == 4 %} con-vitrina{% endif %}">
-    <div class="mm-hero-texto">
-      <p class="mm-eyebrow"><i class="bi bi-shop" aria-hidden="true"></i>Tiendas de emprendedores dominicanos</p>
-      <h1 class="mm-hero-titulo" id="titulo-portada">Descubre. Compra. <span>Emprende.</span></h1>
-      <p class="mm-hero-subtitulo">Encuentra productos de diferentes negocios dominicanos y descubre tiendas que tienen algo especial para ti.</p>
-      <div class="mm-hero-acciones">
-        <a class="btn btn-acento btn-lg" href="{% url 'tiendas:buscar' %}"><i class="bi bi-grid" aria-hidden="true"></i>Explorar productos</a>
-        <a class="btn btn-outline-light btn-lg" href="{% url 'tiendas:directorio' %}"><i class="bi bi-shop" aria-hidden="true"></i>Conocer las tiendas</a>
+<section class="mm-az-cabeza{% if not promociones %} sin-promos{% endif %}" aria-labelledby="titulo-portada">
+  <div class="container">
+    <h1 class="{% if promociones %}visually-hidden{% else %}mm-az-titulo{% endif %}" id="titulo-portada">Compra en las tiendas de emprendedores dominicanos</h1>
+    {% if promociones %}
+      {# Promociones: anuncios, patrocinados y ofertas reales, primero lo que se parece a lo que el visitante busco. #}
+      <div class="carousel slide mm-promos-carrusel mm-az-promos js-promos" id="promos" aria-roledescription="carrusel" aria-label="{% if promociones_personalizadas %}Elegidas para ti{% else %}Promociones{% endif %}">
+        {% if promociones|length > 1 %}
+          <div class="carousel-indicators">
+            {% for promocion in promociones %}
+              <button type="button" data-bs-target="#promos" data-bs-slide-to="{{ forloop.counter0 }}"{% if forloop.first %} class="active" aria-current="true"{% endif %} aria-label="Promoción {{ forloop.counter }} de {{ promociones|length }}"></button>
+            {% endfor %}
+          </div>
+        {% endif %}
+        <div class="carousel-inner">
+          {% for promocion in promociones %}
+            <div class="carousel-item{% if forloop.first %} active{% endif %}" aria-roledescription="diapositiva" aria-label="{{ forloop.counter }} de {{ promociones|length }}">
+              <a class="mm-promo" href="{{ promocion.url }}">
+                <span class="mm-promo-texto">
+                  <span class="mm-promo-etiquetas">
+                    {% if promociones_personalizadas and forloop.first %}<span class="mm-promo-etiqueta"><i class="bi bi-stars" aria-hidden="true"></i> Elegidas para ti</span>{% endif %}
+                    <span class="mm-promo-etiqueta{% if promocion.etiqueta != 'Anuncio' %} es-oferta{% endif %}">{{ promocion.etiqueta }}</span>
+                    <span class="mm-promo-tienda"><i class="bi bi-shop" aria-hidden="true"></i>{{ promocion.tienda }}</span>
+                  </span>
+                  <span class="mm-promo-titulo">{{ promocion.titulo }}</span>
+                  {% if promocion.texto %}<span class="mm-promo-descripcion">{{ promocion.texto }}</span>{% endif %}
+                  {% if promocion.precio %}
+                    <span class="mm-promo-precio">{{ promocion.precio|moneda }}{% if promocion.precio_anterior %} <s>{{ promocion.precio_anterior|moneda }}</s>{% endif %}</span>
+                  {% endif %}
+                  <span class="btn btn-acento mm-promo-boton" aria-hidden="true">Ver {% if promocion.es_foto_de_producto %}producto{% else %}promoción{% endif %} <i class="bi bi-arrow-right"></i></span>
+                </span>
+                <span class="mm-promo-imagen{% if promocion.es_foto_de_producto %} es-producto{% endif %}">
+                  {% if promocion.imagen %}<img src="{{ promocion.imagen }}" alt="" {% if not forloop.first %}loading="lazy" {% endif %}decoding="async" width="600" height="400">{% else %}<i class="bi bi-image" aria-hidden="true"></i>{% endif %}
+                </span>
+              </a>
+            </div>
+          {% endfor %}
+        </div>
+        {% if promociones|length > 1 %}
+          <button class="carousel-control-prev mm-promos-flecha" type="button" data-bs-target="#promos" data-bs-slide="prev"><span class="bi bi-chevron-left" aria-hidden="true"></span><span class="visually-hidden">Anterior</span></button>
+          <button class="carousel-control-next mm-promos-flecha" type="button" data-bs-target="#promos" data-bs-slide="next"><span class="bi bi-chevron-right" aria-hidden="true"></span><span class="visually-hidden">Siguiente</span></button>
+        {% endif %}
       </div>
-      <ul class="mm-hero-puntos">
-        <li><i class="bi bi-shop-window" aria-hidden="true"></i>Varias tiendas en un solo lugar</li>
-        <li><i class="bi bi-person-check" aria-hidden="true"></i>Compras directo a cada emprendedor</li>
-        <li><i class="bi bi-truck" aria-hidden="true"></i>Sigues tu pedido en línea</li>
-      </ul>
-      {% if not user.is_staff %}
-        <a class="mm-hero-vender" href="{% url 'tiendas:vender' %}">¿Tienes un negocio? <strong>Vende en {{ plataforma.nombre }}</strong> <i class="bi bi-arrow-right" aria-hidden="true"></i></a>
-      {% endif %}
-    </div>
-    {% if vitrina|length == 4 %}
-      <div class="mm-hero-vitrina">
-        {% for producto in vitrina %}
-          <a class="mm-vitrina-item" href="{{ producto.get_absolute_url }}" aria-label="{{ producto.nombre }}, de {{ producto.tienda.nombre }}">
-            <img src="{{ producto.foto_principal.url_tarjeta }}" alt="" decoding="async" width="240" height="240">
-            <span class="mm-vitrina-tienda" aria-hidden="true"><i class="bi bi-shop"></i>{{ producto.tienda.nombre }}</span>
-          </a>
-        {% endfor %}
-      </div>
+    {% else %}
+      <p class="mm-az-subtitulo">Productos de muchos negocios dominicanos. Compras directo a cada tienda y sigues tu pedido en línea.</p>
+      <a class="btn btn-acento btn-lg" href="{% url 'tiendas:buscar' %}"><i class="bi bi-grid me-2" aria-hidden="true"></i>Ver todos los productos</a>
     {% endif %}
   </div>
 </section>
+
+{% if tarjetas %}
+{# Cuadros de arriba: la cuenta, cada categoria con cuatro fotos, la mejor oferta y las tiendas. #}
+<section class="container mm-az-cuadros" aria-label="Explora">
+  {% for tarjeta in tarjetas %}
+    <article class="mm-az-cuadro">
+      {% if tarjeta.tipo == 'cuenta' %}
+        {% if user.is_authenticated %}
+          <h2 class="mm-az-cuadro-titulo">Hola, {{ user.first_name|default:user.username }}</h2>
+          <div class="mm-az-atajos">
+            <a href="{% url 'clientes:cuenta' %}"><i class="bi bi-box-seam" aria-hidden="true"></i><span>Mis pedidos</span></a>
+            <a href="{% url 'clientes:favoritos' %}"><i class="bi bi-heart" aria-hidden="true"></i><span>Favoritos</span></a>
+            <a href="{% url 'tiendas:buscar' %}?oferta=on"><i class="bi bi-tag" aria-hidden="true"></i><span>Ofertas</span></a>
+            <a href="{% url 'tiendas:directorio' %}"><i class="bi bi-shop" aria-hidden="true"></i><span>Tiendas</span></a>
+          </div>
+          <a class="mm-az-cuadro-enlace" href="{% url 'clientes:cuenta' %}">Ir a mi cuenta</a>
+        {% else %}
+          <h2 class="mm-az-cuadro-titulo">Entra y compra más fácil</h2>
+          <p class="mm-az-cuadro-texto">Guarda tus favoritos, sigue tus pedidos y no vuelvas a escribir tus datos.</p>
+          <a class="btn btn-acento w-100" href="{% url 'clientes:entrar' %}">Iniciar sesión</a>
+          <a class="mm-az-cuadro-enlace" href="{% url 'clientes:registro' %}">¿Eres nuevo? Crea tu cuenta gratis</a>
+        {% endif %}
+      {% elif tarjeta.tipo == 'categoria' %}
+        <h2 class="mm-az-cuadro-titulo">{{ tarjeta.categoria.nombre }}</h2>
+        <div class="mm-az-mosaico{% if tarjeta.productos|length < 4 %} uno{% endif %}">
+          {% for producto in tarjeta.productos %}
+            {% if tarjeta.productos|length >= 4 or forloop.first %}
+              <a href="{{ producto.get_absolute_url }}">
+                <span class="mm-az-foto"><img src="{{ producto.foto_principal.url_tarjeta }}" alt="" loading="lazy" decoding="async" width="200" height="200"></span>
+                <span class="mm-az-foto-nombre">{{ producto.nombre }}</span>
+              </a>
+            {% endif %}
+          {% endfor %}
+        </div>
+        <a class="mm-az-cuadro-enlace" href="{% url 'tiendas:buscar' %}?categoria={{ tarjeta.categoria.slug }}">Ver más en {{ tarjeta.categoria.nombre }}</a>
+      {% elif tarjeta.tipo == 'oferta' %}
+        <h2 class="mm-az-cuadro-titulo">Oferta destacada</h2>
+        <a class="mm-az-oferta" href="{{ tarjeta.producto.get_absolute_url }}">
+          <span class="mm-az-foto grande"><img src="{{ tarjeta.producto.foto_principal.url_tarjeta }}" alt="" loading="lazy" decoding="async" width="400" height="400"></span>
+          <span class="mm-az-oferta-precio"><span class="mm-az-descuento">-{{ tarjeta.producto.porcentaje_descuento }}%</span> {{ tarjeta.producto.precio_final|moneda }}</span>
+          <span class="mm-az-foto-nombre">{{ tarjeta.producto.nombre }}</span>
+        </a>
+        <a class="mm-az-cuadro-enlace" href="{% url 'tiendas:buscar' %}?oferta=on">Ver todas las ofertas</a>
+      {% elif tarjeta.tipo == 'tiendas' %}
+        <h2 class="mm-az-cuadro-titulo">Tiendas para conocer</h2>
+        <div class="mm-az-mosaico">
+          {% for item in tarjeta.tiendas %}
+            <a href="{{ item.get_absolute_url }}">
+              <span class="mm-az-foto mm-az-logo mm-tienda-tono-{{ item.tono }}">
+                {% if item.logo %}<img src="{{ item.logo.url }}" alt="" loading="lazy" decoding="async" width="120" height="120">{% else %}<span>{{ item.nombre|slice:':1'|upper }}</span>{% endif %}
+              </span>
+              <span class="mm-az-foto-nombre">{{ item.nombre }}</span>
+            </a>
+          {% endfor %}
+        </div>
+        <a class="mm-az-cuadro-enlace" href="{% url 'tiendas:directorio' %}">Explorar las tiendas</a>
+      {% endif %}
+    </article>
+  {% endfor %}
+</section>
+{% endif %}
+
+{% if vistos %}
+<section class="container mm-seccion mm-az-estante" aria-labelledby="titulo-vistos">
+<div class="mm-az-panel">
+  <div class="mm-seccion-cabecera"><h2 id="titulo-vistos">Sigue mirando</h2></div>
+  {% include 'includes/fila_productos.html' with productos=vistos %}
+</div>
+</section>
+{% endif %}
+
+{% if ofertas %}
+<section class="container mm-seccion mm-az-estante" aria-labelledby="titulo-ofertas">
+<div class="mm-az-panel">
+  <div class="mm-seccion-cabecera">
+    <h2 id="titulo-ofertas"><i class="bi bi-tag-fill me-2" aria-hidden="true"></i>Ofertas del día</h2>
+    <a href="{% url 'tiendas:buscar' %}?oferta=on">Ver todas las ofertas <i class="bi bi-arrow-right" aria-hidden="true"></i></a>
+  </div>
+  {% include 'includes/fila_productos.html' with productos=ofertas %}
+</div>
+</section>
+{% endif %}
+
+{% if nuevos %}
+<section class="container mm-seccion mm-az-estante" aria-labelledby="titulo-nuevos">
+<div class="mm-az-panel">
+  <div class="mm-seccion-cabecera">
+    <h2 id="titulo-nuevos">Lo nuevo</h2>
+    <a href="{% url 'tiendas:buscar' %}?orden=nuevos">Ver más <i class="bi bi-arrow-right" aria-hidden="true"></i></a>
+  </div>
+  {% include 'includes/fila_productos.html' with productos=nuevos %}
+</div>
+</section>
+{% endif %}
 
 {% if historias %}
 {# Videos de las tiendas (plan Premium), como las historias: un circulo por tienda que abre el visor. Son anuncios #}
@@ -78,91 +186,22 @@
 {% include 'includes/visor_historias.html' with etiqueta='Anuncio' %}
 {% endif %}
 
-{% if promociones %}
-{# Promociones (pedido del dueño el 2026-10-27): un carrusel que rota solo con anuncios, patrocinados y ofertas reales, #}
-{# primero lo que se parece a lo que el visitante busco o miro (solo de su sesion). Cada una dice que es. #}
-<section class="container mm-seccion mm-promos" aria-labelledby="titulo-promos">
-  <h2 class="{% if promociones_personalizadas %}mm-promos-titulo{% else %}visually-hidden{% endif %}" id="titulo-promos">{% if promociones_personalizadas %}<i class="bi bi-stars" aria-hidden="true"></i>Elegidas para ti{% else %}Promociones{% endif %}</h2>
-  <div class="carousel slide mm-promos-carrusel js-promos" id="promos" aria-roledescription="carrusel">
-    {% if promociones|length > 1 %}
-      <div class="carousel-indicators">
-        {% for promocion in promociones %}
-          <button type="button" data-bs-target="#promos" data-bs-slide-to="{{ forloop.counter0 }}"{% if forloop.first %} class="active" aria-current="true"{% endif %} aria-label="Promoción {{ forloop.counter }} de {{ promociones|length }}"></button>
-        {% endfor %}
-      </div>
-    {% endif %}
-    <div class="carousel-inner">
-      {% for promocion in promociones %}
-        <div class="carousel-item{% if forloop.first %} active{% endif %}" aria-roledescription="diapositiva" aria-label="{{ forloop.counter }} de {{ promociones|length }}">
-          <a class="mm-promo" href="{{ promocion.url }}">
-            <span class="mm-promo-texto">
-              <span class="mm-promo-etiquetas">
-                <span class="mm-promo-etiqueta{% if promocion.etiqueta != 'Anuncio' %} es-oferta{% endif %}">{{ promocion.etiqueta }}</span>
-                <span class="mm-promo-tienda"><i class="bi bi-shop" aria-hidden="true"></i>{{ promocion.tienda }}</span>
-              </span>
-              <span class="mm-promo-titulo">{{ promocion.titulo }}</span>
-              {% if promocion.texto %}<span class="mm-promo-descripcion">{{ promocion.texto }}</span>{% endif %}
-              {% if promocion.precio %}
-                <span class="mm-promo-precio">{{ promocion.precio|moneda }}{% if promocion.precio_anterior %} <s>{{ promocion.precio_anterior|moneda }}</s>{% endif %}</span>
-              {% endif %}
-              <span class="btn btn-acento mm-promo-boton" aria-hidden="true">Ver {% if promocion.es_foto_de_producto %}producto{% else %}promoción{% endif %} <i class="bi bi-arrow-right"></i></span>
-            </span>
-            <span class="mm-promo-imagen{% if promocion.es_foto_de_producto %} es-producto{% endif %}">
-              {% if promocion.imagen %}<img src="{{ promocion.imagen }}" alt="" {% if not forloop.first %}loading="lazy" {% endif %}decoding="async" width="600" height="400">{% else %}<i class="bi bi-image" aria-hidden="true"></i>{% endif %}
-            </span>
-          </a>
-        </div>
-      {% endfor %}
-    </div>
-    {% if promociones|length > 1 %}
-      <button class="carousel-control-prev mm-promos-flecha" type="button" data-bs-target="#promos" data-bs-slide="prev"><span class="bi bi-chevron-left" aria-hidden="true"></span><span class="visually-hidden">Anterior</span></button>
-      <button class="carousel-control-next mm-promos-flecha" type="button" data-bs-target="#promos" data-bs-slide="next"><span class="bi bi-chevron-right" aria-hidden="true"></span><span class="visually-hidden">Siguiente</span></button>
-    {% endif %}
-  </div>
-</section>
-{% endif %}
-
-{% if categorias %}
-<section class="container mm-seccion" aria-labelledby="titulo-categorias">
+{% for categoria in estantes %}
+<section class="container mm-seccion mm-az-estante" aria-labelledby="titulo-estante-{{ categoria.pk }}">
+<div class="mm-az-panel">
   <div class="mm-seccion-cabecera">
-    <h2 id="titulo-categorias">Explora por categoría</h2>
-    <a href="{% url 'tiendas:buscar' %}">Ver todo <i class="bi bi-arrow-right" aria-hidden="true"></i></a>
+    <h2 id="titulo-estante-{{ categoria.pk }}">Lo mejor en {{ categoria.nombre }}</h2>
+    <a href="{% url 'tiendas:buscar' %}?categoria={{ categoria.slug }}">Ver más <i class="bi bi-arrow-right" aria-hidden="true"></i></a>
   </div>
-  {# Una fila que se desliza (con el dedo, o con flechas si no caben): sirve igual para 5 que para 50 categorias. #}
-  <div class="mm-fila" data-fila>
-    <button class="mm-fila-flecha mm-fila-anterior" type="button" data-mover="-1" aria-label="Ver categorías anteriores" hidden><i class="bi bi-chevron-left"></i></button>
-    <div class="mm-fila-pista mm-fila-categorias" tabindex="0">
-      {% for categoria in categorias %}
-        <div class="mm-fila-item">
-          <a class="mm-categoria" href="{% url 'tiendas:buscar' %}?categoria={{ categoria.slug }}">
-            <span class="mm-categoria-foto{% if categoria.usa_foto_de_producto %} con-producto{% endif %}">
-              {% if categoria.url_portada %}
-                <img src="{{ categoria.url_portada }}" alt="" loading="lazy" decoding="async" width="160" height="160">
-              {% else %}
-                <i class="bi bi-tags" aria-hidden="true"></i>
-              {% endif %}
-            </span>
-            <span class="mm-categoria-texto">
-              <span class="mm-categoria-nombre">{{ categoria.nombre }}</span>
-              <span class="mm-categoria-ir" aria-hidden="true">Ver productos <i class="bi bi-arrow-right"></i></span>
-            </span>
-          </a>
-        </div>
-      {% endfor %}
-    </div>
-    <button class="mm-fila-flecha mm-fila-siguiente" type="button" data-mover="1" aria-label="Ver más categorías" hidden><i class="bi bi-chevron-right"></i></button>
-  </div>
+  {% include 'includes/fila_productos.html' with productos=categoria.estante %}
+</div>
 </section>
-{% endif %}
+{% endfor %}
 
 {% if tiendas_destacadas %}
-<div class="mm-banda">
 <section class="container mm-seccion" aria-labelledby="titulo-destacadas">
   <div class="mm-seccion-cabecera">
-    <div>
-      <h2 id="titulo-destacadas">Descubre tiendas increíbles</h2>
-      <p class="mm-seccion-texto">Conoce los emprendimientos que están creciendo en {{ plataforma.nombre }}.</p>
-    </div>
+    <h2 id="titulo-destacadas">Tiendas destacadas</h2>
     <a href="{% url 'tiendas:directorio' %}">Ver todas <i class="bi bi-arrow-right" aria-hidden="true"></i></a>
   </div>
   <div class="mm-tiendas{% if tiendas_destacadas|length == 1 %} una-sola{% endif %}">
@@ -171,16 +210,11 @@
     {% endfor %}
   </div>
 </section>
-</div>
 {% endif %}
 
-<div class="mm-banda">
 <section class="container mm-seccion" id="tiendas" aria-labelledby="titulo-tiendas">
   <div class="mm-seccion-cabecera">
-    <div>
-      <h2 id="titulo-tiendas">Tiendas para conocer</h2>
-      <p class="mm-seccion-texto">Conoce a los emprendedores y entra a su catálogo.</p>
-    </div>
+    <h2 id="titulo-tiendas">Tiendas para conocer</h2>
     {% if hay_mas_tiendas %}<a href="{% url 'tiendas:directorio' %}">Ver todas las tiendas <i class="bi bi-arrow-right" aria-hidden="true"></i></a>{% endif %}
   </div>
   {% if tiendas %}
@@ -196,42 +230,22 @@
     </div>
   {% endif %}
 </section>
-</div>
 
-{% if ofertas %}
-<section class="container mm-seccion" aria-labelledby="titulo-ofertas">
-  <div class="mm-seccion-cabecera">
-    <h2 id="titulo-ofertas"><i class="bi bi-tag-fill me-2" aria-hidden="true"></i>Ofertas</h2>
-    <a href="{% url 'tiendas:buscar' %}?oferta=on">Ver todas las ofertas <i class="bi bi-arrow-right" aria-hidden="true"></i></a>
-  </div>
-  {% include 'includes/fila_productos.html' with productos=ofertas %}
-</section>
-{% endif %}
-
-{# Para emprendedores: lleva a la pagina de vender y al formulario de solicitud (Fase 2, 2026-10-27). #}
+{# Para emprendedores: una franja corta que lleva a la pagina de vender y al formulario de solicitud. #}
 <section class="container mm-seccion" id="vender" aria-labelledby="titulo-vender">
-  <div class="mm-vender">
-    <div class="mm-vender-texto">
-      <p class="mm-eyebrow"><i class="bi bi-rocket-takeoff" aria-hidden="true"></i>Para emprendedores</p>
-      <h2 id="titulo-vender">Tu marca merece su propia tienda online</h2>
-      <p>Presenta tus productos, construye tu identidad digital y gestiona los pedidos de tu negocio desde {{ plataforma.nombre }}.</p>
-      <div class="mm-vender-acciones">
-        {% if user.is_staff %}
-          <a class="btn btn-acento btn-lg" href="{% url 'admin:index' %}"><i class="bi bi-speedometer2" aria-hidden="true"></i>Ir a mi panel</a>
-        {% else %}
-          <a class="btn btn-acento btn-lg" href="{% url 'tiendas:solicitar_tienda' %}"><i class="bi bi-shop-window" aria-hidden="true"></i>Solicitar mi tienda</a>
-          <a class="btn btn-outline-light btn-lg" href="{% url 'tiendas:vender' %}#como-funciona"><i class="bi bi-signpost-split" aria-hidden="true"></i>Cómo funciona</a>
-        {% endif %}
-      </div>
-      {% if vender and not user.is_staff %}
-        <p class="mm-vender-nota">¿Prefieres hablar antes? <a class="text-white text-decoration-underline" href="{{ vender.url }}"{% if vender.medio == 'whatsapp' %} target="_blank" rel="noopener"{% endif %}>{% if vender.medio == 'whatsapp' %}Escríbenos por WhatsApp{% elif vender.medio == 'correo' %}Escríbenos un correo{% else %}Contáctanos{% endif %}</a>.</p>
-      {% endif %}
+  <div class="mm-az-vender">
+    <div>
+      <h2 id="titulo-vender">¿Tienes un negocio? Vende en {{ plataforma.nombre }}</h2>
+      <p>Tu propia tienda con tu logo, tu catálogo y tus pedidos en un panel.{% if vender and not user.is_staff %} ¿Prefieres hablar antes? <a class="text-white text-decoration-underline" href="{{ vender.url }}"{% if vender.medio == 'whatsapp' %} target="_blank" rel="noopener"{% endif %}>{% if vender.medio == 'whatsapp' %}Escríbenos por WhatsApp{% elif vender.medio == 'correo' %}Escríbenos un correo{% else %}Contáctanos{% endif %}</a>.{% endif %}</p>
     </div>
-    <ul class="mm-vender-lista">
-      <li><i class="bi bi-shop-window" aria-hidden="true"></i><span><strong>Tu propia tienda</strong> con tu logo, tu portada y su dirección dentro del sitio.</span></li>
-      <li><i class="bi bi-images" aria-hidden="true"></i><span><strong>Tu catálogo</strong> con fotos, precios y ofertas que tú mismo actualizas.</span></li>
-      <li><i class="bi bi-receipt" aria-hidden="true"></i><span><strong>Tus pedidos</strong> llegan a tu panel y desde ahí les das seguimiento.</span></li>
-    </ul>
+    {% if user.is_staff %}
+      <a class="btn btn-acento" href="{% url 'admin:index' %}"><i class="bi bi-speedometer2 me-2" aria-hidden="true"></i>Ir a mi panel</a>
+    {% else %}
+      <div class="mm-az-vender-acciones">
+        <a class="btn btn-acento" href="{% url 'tiendas:solicitar_tienda' %}">Solicitar mi tienda</a>
+        <a class="btn btn-outline-light" href="{% url 'tiendas:vender' %}#como-funciona">Cómo funciona</a>
+      </div>
+    {% endif %}
   </div>
 </section>
 

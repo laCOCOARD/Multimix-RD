@@ -47,8 +47,8 @@
   {% endif %}
 
   {# Cabecera: en el celular son dos filas y al bajar solo queda fija la del buscador (con el menu y el carrito); #}
-  {# en pantallas anchas es una sola fila fija. El carrito es de cada tienda: en las paginas del sitio no hay. #}
-  <header class="mm-cabecera sticky-top{% if not puede_navegar %} sin-buscador{% elif tienda %} con-carrito{% endif %}">
+  {# en pantallas anchas es una sola fila fija. El carrito va en todas las paginas (lleva al de todas las tiendas). #}
+  <header class="mm-cabecera sticky-top{% if not puede_navegar %} sin-buscador{% else %} con-carrito{% endif %}">
     <div class="container mm-cabecera-fila">
       <button class="mm-btn-menu" type="button" data-bs-toggle="offcanvas" data-bs-target="#menu-lateral"
               aria-controls="menu-lateral" aria-label="Abrir menú">

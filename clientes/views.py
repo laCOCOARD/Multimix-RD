@@ -64,8 +64,12 @@ def registro(request):
                     request, f'¡Bienvenido, {usuario.first_name}! Te enviamos un enlace a {usuario.email} para '
                              'confirmar tu correo antes de tu primera compra.',
                 )
-            # Una sola vez: cuatro preguntas cortas sobre sus gustos; "Ahora no" lo lleva a donde iba.
+            # Una sola vez: cuatro preguntas cortas sobre sus gustos; "Ahora no" lo lleva a donde iba. Si venia a
+            # pagar, va directo al pago (pedido del dueño el 2026-11-02: comprar con menos pasos); los gustos
+            # los puede contestar despues desde "Mi cuenta".
             destino = _destino(request, reverse('clientes:cuenta'))
+            if _es_checkout(destino):
+                return redirect(destino)
             return redirect(f"{reverse('clientes:gustos')}?{urlencode({'next': destino})}")
     return render(request, PLANTILLA, {
         'formulario': formulario,
