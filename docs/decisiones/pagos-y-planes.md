@@ -98,3 +98,14 @@ Decisiones tomadas en Multimix RD (movidas desde CLAUDE.md el 2026-10-28). Leela
 - Plan y mensualidades son lo mismo para la tienda (dueño, 2026-10-28): una sola pagina "Mi plan y mensualidades"
   (`tiendas_tienda_plan`; `tiendas_tienda_mi_plan` la abre desde el menu) con su plan, lo que debe, los planes para
   cambiar y sus ultimas mensualidades. La lista de Planes del vendedor redirige ahi; el administrador la sigue viendo.
+- Premios por invitar tiendas (pedido del dueño el 2026-11-02; `referidos/services.py`): la solicitud de tienda guarda
+  `codigo_referido` (lo pone la cookie del enlace `/ref/<codigo>/` o lo escribe el negocio; uno que no existe se
+  rechaza). Al elegir en la solicitud la tienda creada, `vincular_tienda` crea `TiendaReferida` (referente = la primera
+  tienda del dueño del codigo; nunca ella misma ni dos veces). Cuenta como activa cuando `aprobar_cargo` aprueba su
+  primera mensualidad (`al_pagar_mensualidad`). Cada 2 activas = un `PremioReferido`: 25% en la proxima mensualidad
+  (uno por mensualidad, se usa en 90 dias o se pierde) y 1 anuncio extra en la portada por 30 dias
+  (`planes.services.limite_de_anuncios` = plan + `anuncios_extra`). La invitada tiene 10% en su primera mensualidad.
+  `aplicar_descuentos` recalcula el monto desde el precio del plan (al crear la mensualidad, al cambiar de plan y al
+  ganar un premio si hay una por pagar sin comprobante) y lo explica en `Cargo.detalle`. Un premio no se quita si la
+  invitada se va. Reglas en "Condiciones para vendedores" (`core/0025`). Las tablas solo las ve el administrador
+  principal; el vendedor ve su avance en el inicio del panel.
