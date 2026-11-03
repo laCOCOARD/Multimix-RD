@@ -108,6 +108,7 @@ Al cerrar cada modulo: check, makemigrations, migrate, test y commit.
 - `docs/decisiones/tecnico.md` — tareas periodicas sin cron, imagenes, correos, Supabase, rutas, migracion a
   subtiendas, particularidades de Django y del admin.
 - `docs/RENDER.md` (despliegue, base, buckets), `docs/WHATSAPP.md`, `docs/esquema.sql` (referencia).
+- `docs/PENDIENTES.md` — lo que quedo pendiente y en que orden (leerlo al empezar una sesion nueva).
 
 ## Pruebas
 - `tiendas.tests.utiles`: `tienda_de_prueba()` (la tienda "Multimix RD", prefijo MMX, donde corren casi todas
