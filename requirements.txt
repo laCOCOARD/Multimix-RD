@@ -7,3 +7,5 @@ qrcode[pil]>=8.0,<9
 # El extra [xlsx] instala openpyxl, necesario para importar/exportar Excel.
 django-import-export[xlsx]>=4.3,<5
 python-dotenv>=1.0,<2
+# Limite de intentos de entrada en el panel y en las cuentas (5 intentos, 1 hora).
+django-axes>=8.3,<9

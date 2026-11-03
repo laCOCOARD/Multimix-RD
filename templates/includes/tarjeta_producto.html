@@ -4,10 +4,10 @@
 {# tienda quedan encima del enlace grande. Fuera de su tienda la tarjeta dice quien lo vende. #}
 <article class="mm-tarjeta h-100 revelar">
   <div class="mm-tarjeta-media">
-  <span class="mm-tarjeta-foto" aria-hidden="true">
+  <span class="mm-tarjeta-foto">
     {% with foto=producto.foto_principal %}
       {% if foto %}
-        <img src="{{ foto.url_tarjeta }}" alt="" loading="lazy" decoding="async" width="400" height="400">
+        <img src="{{ foto.url_tarjeta }}" alt="{{ producto.nombre }}" loading="lazy" decoding="async" width="400" height="400">
       {% else %}
         <span class="mm-sin-foto"><i class="bi bi-image"></i><span>Sin foto</span></span>
       {% endif %}

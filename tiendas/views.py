@@ -37,48 +37,84 @@ def _preferidas_primero(categorias, usuario):
 
 PRODUCTOS_POR_ESTANTE = 10
 ESTANTES_EN_PORTADA = 6
+MINIMO_POR_SECCION = 2  # pedido del dueño el 2026-11-02: una seccion con menos de 2 productos no se muestra
 
 
-def _tarjetas_de_la_portada(categorias, ofertas, tiendas):
-    """Los cuadros de arriba de la portada, al estilo de las grandes tiendas: la cuenta, cada categoria con cuatro
-    fotos de sus productos, la mejor oferta y las tiendas. Se recortan categorias para completar filas de cuatro
-    (esas siguen abajo en su fila de productos)."""
+class _Repartidor:
+    """Reparte los productos de la portada para que ninguno salga en dos secciones (pedido del dueño el 2026-11-02).
+    Las secciones toman productos en el orden en que se ven, de arriba hacia abajo."""
+
+    def __init__(self, usados=()):
+        self.usados = set(usados)
+
+    def tomar(self, productos, limite, con_foto=False):
+        elegidos = []
+        for producto in productos:
+            if len(elegidos) >= limite:
+                break
+            if producto.pk in self.usados or (con_foto and not producto.foto_principal):
+                continue
+            elegidos.append(producto)
+        if len(elegidos) < MINIMO_POR_SECCION:
+            return []
+        self.usados.update(producto.pk for producto in elegidos)
+        return elegidos
+
+
+def _tarjetas_de_la_portada(categorias, oferta, repartidor):
+    """Los cuadros de arriba de la portada, al estilo de las grandes tiendas: la cuenta, la mejor oferta y cada
+    categoria con dos o cuatro fotos de sus productos. Se recortan categorias para completar filas de cuatro."""
     de_categorias = []
     for categoria in categorias:
-        con_foto = [producto for producto in categoria.estante if producto.foto_principal]
-        if con_foto:
-            de_categorias.append({'tipo': 'categoria', 'categoria': categoria, 'productos': con_foto[:4]})
-    oferta = next((producto for producto in ofertas if producto.foto_principal), None)
-    fijas = [
-        {'tipo': 'cuenta'},
-        *([{'tipo': 'oferta', 'producto': oferta}] if oferta else []),
-        *([{'tipo': 'tiendas', 'tiendas': tiendas[:4]}] if tiendas else []),
-    ]
+        candidatos = [producto for producto in categoria.estante if producto.foto_principal and producto.pk not in repartidor.usados]
+        cuantos = 4 if len(candidatos) >= 4 else 2
+        productos = repartidor.tomar(candidatos, cuantos, con_foto=True)
+        if productos:
+            de_categorias.append({'tipo': 'categoria', 'categoria': categoria, 'productos': productos})
+    fijas = [{'tipo': 'cuenta'}, *([{'tipo': 'oferta', 'producto': oferta}] if oferta else [])]
     total = len(fijas) + len(de_categorias)
     if total > 4 and total % 4:
-        de_categorias = de_categorias[:max(0, len(de_categorias) - total % 4)]
-    # La cuenta primero, la oferta y las tiendas entre las categorias.
-    tarjetas = [fijas[0], *de_categorias[:2], *fijas[1:2], *de_categorias[2:4], *fijas[2:], *de_categorias[4:]]
-    return tarjetas
+        for sobrante in de_categorias[len(de_categorias) - total % 4:]:
+            repartidor.usados.difference_update(producto.pk for producto in sobrante['productos'])
+        de_categorias = de_categorias[:len(de_categorias) - total % 4]
+    # La cuenta primero y la oferta entre las categorias.
+    return [fijas[0], *de_categorias[:2], *fijas[1:], *de_categorias[2:]]
 
 
 @require_GET
 def portada(request):
     """Portada del sitio al estilo de las grandes tiendas (pedido del dueño el 2026-11-02, "full Amazon"): promociones
-    arriba, cuadros de categorias con fotos y filas de productos de todas las tiendas. Cada producto dice de que
-    tienda es y se sigue comprando dentro de ella."""
+    arriba, cuadros de categorias con fotos y filas de productos de todas las tiendas. Cada producto sale una sola vez
+    y dice de que tienda es; se sigue comprando dentro de ella."""
     from core.models import PreguntaFrecuente
     from planes.services import historias_para_la_portada, promociones_para
 
-    tiendas = list(services.directorio()[:TIENDAS_EN_PORTADA + 1])
     destacadas_qs = list(services.tiendas_destacadas()[:6])
+    # "Tiendas para conocer" una sola vez: las destacadas tienen su seccion y no se repiten en la lista.
+    tiendas = list(services.directorio().exclude(pk__in=[t.pk for t in destacadas_qs])[:TIENDAS_EN_PORTADA + 1])
     # Promociones (anuncios, patrocinados y ofertas), primero lo que se parece a lo que el visitante busco o miro.
     promociones, personalizadas = promociones_para(request.session, usuario=request.user)
+    repartidor = _Repartidor(promocion.producto_id for promocion in promociones if promocion.producto_id)
     categorias = _preferidas_primero(categorias_del_sitio(), request.user)
-    estantes = estantes_del_sitio(categorias, PRODUCTOS_POR_ESTANTE)
+    # Candidatos de sobra por categoria: sus cuadros y su fila salen de aqui sin repetirse.
+    estantes = estantes_del_sitio(categorias, PRODUCTOS_POR_ESTANTE * 3)
     for categoria in categorias:
         categoria.estante = estantes.get(categoria.pk, [])
-    ofertas = ofertas_del_sitio(PRODUCTOS_POR_ESTANTE)
+    todas_las_ofertas = ofertas_del_sitio(PRODUCTOS_POR_ESTANTE * 2)
+    oferta = next((p for p in todas_las_ofertas if p.foto_principal and p.pk not in repartidor.usados), None)
+    if oferta:
+        repartidor.usados.add(oferta.pk)
+    tarjetas = _tarjetas_de_la_portada(categorias, oferta, repartidor)
+    vistos = repartidor.tomar(vistos_recientes(request.session), PRODUCTOS_POR_ESTANTE)
+    ofertas = repartidor.tomar(todas_las_ofertas, PRODUCTOS_POR_ESTANTE)
+    nuevos = repartidor.tomar(nuevos_del_sitio(PRODUCTOS_POR_ESTANTE * 2), PRODUCTOS_POR_ESTANTE)
+    estantes_visibles = []
+    for categoria in categorias:
+        if len(estantes_visibles) >= ESTANTES_EN_PORTADA:
+            break
+        categoria.estante = repartidor.tomar(categoria.estante, PRODUCTOS_POR_ESTANTE)
+        if categoria.estante:
+            estantes_visibles.append(categoria)
     tiendas_del_directorio = services.para_el_directorio(tiendas[:TIENDAS_EN_PORTADA])
     plataforma = ConfiguracionTienda.obtener()
     return render(request, 'tiendas/portada.html', {
@@ -86,15 +122,15 @@ def portada(request):
         'hay_mas_tiendas': len(tiendas) > TIENDAS_EN_PORTADA,
         'tiendas_destacadas': services.para_el_directorio(destacadas_qs),
         'categorias': categorias,
-        'tarjetas': _tarjetas_de_la_portada(categorias, ofertas, tiendas_del_directorio),
-        'estantes': [categoria for categoria in categorias if len(categoria.estante) >= 3][:ESTANTES_EN_PORTADA],
+        'tarjetas': tarjetas,
+        'estantes': estantes_visibles,
         'promociones': promociones,
         'promociones_personalizadas': personalizadas,
         # Videos de las tiendas (plan Premium): un circulo por tienda, en otro orden en cada visita.
         'historias': historias_para_la_portada(),
         'ofertas': ofertas,
-        'nuevos': nuevos_del_sitio(PRODUCTOS_POR_ESTANTE),
-        'vistos': vistos_recientes(request.session),
+        'nuevos': nuevos,
+        'vistos': vistos,
         'preguntas': PreguntaFrecuente.objects.filter(activa=True)[:6],
         'sitio_json_ld': sitio_json_ld(
             plataforma.nombre, request.build_absolute_uri('/'),

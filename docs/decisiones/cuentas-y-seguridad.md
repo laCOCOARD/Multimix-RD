@@ -62,3 +62,9 @@ Decisiones tomadas en Multimix RD (movidas desde CLAUDE.md el 2026-10-28). Leela
   entrega) en `/cuenta/gustos/`, con "Ahora no" que sigue a donde iba. Se usan para ordenar promociones, categorias de
   la portada y el buscador sin orden elegido, y para marcar la entrega del checkout; se cambian o borran desde "Mi
   cuenta". La politica de privacidad lo dice (`core/0024`). No se comparten con las tiendas.
+- django-axes (pedido del dueño el 2026-11-02; `config/settings.py`): 5 intentos fallidos con el mismo usuario desde la
+  misma IP bloquean 1 hora la entrada al panel y a las cuentas (`AxesStandaloneBackend` primero en
+  `AUTHENTICATION_BACKENDS`, `AxesMiddleware` al final, plantilla `clientes/bloqueado.html`, respuesta 429). La IP sale
+  de `core.red.ip_para_axes`. Se suma al limite propio de 15 minutos (`LimiteDeEntrada`), que corre antes. Entrar bien
+  borra los fallos. Apagado en las pruebas salvo `clientes/tests/test_axes.py`. Para desbloquear a alguien: Panel >
+  Axes > Access attempts (borrar su fila) o `manage.py axes_reset_username <usuario>`.

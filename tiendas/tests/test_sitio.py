@@ -51,6 +51,20 @@ class DosTiendas(TestCase):
         return self.client.post(ruta('pedidos:checkout', tienda=tienda), datos)
 
 
+def productos_de_la_portada(contexto):
+    """Los ids de los productos que muestra la portada, en todas sus secciones (con repeticiones, si las hubiera)."""
+    ids = [promocion.producto_id for promocion in contexto['promociones'] if promocion.producto_id]
+    for tarjeta in contexto['tarjetas']:
+        ids += [producto.pk for producto in tarjeta.get('productos', [])]
+        if tarjeta.get('producto'):
+            ids.append(tarjeta['producto'].pk)
+    for seccion in ('vistos', 'ofertas', 'nuevos'):
+        ids += [producto.pk for producto in contexto[seccion]]
+    for categoria in contexto['estantes']:
+        ids += [producto.pk for producto in categoria.estante]
+    return ids
+
+
 class DirectorioTests(DosTiendas):
     def test_la_portada_lista_las_tiendas_activas(self):
         Tienda.objects.create(nombre='En preparación', activa=False)
@@ -69,12 +83,13 @@ class DirectorioTests(DosTiendas):
             producto.precio_oferta = producto.precio * Decimal('0.8')
             producto.save()
         portada = self.client.get('/')
-        self.assertEqual({p.nombre for c in portada.context['estantes'] for p in c.estante} | {
-            p.nombre for p in portada.context['ofertas']}, {'Lámpara', 'Pesas rusas'})
-        self.assertEqual({p.nombre for p in portada.context['ofertas']}, {'Lámpara', 'Pesas rusas'})
-        self.assertContains(portada, 'Vendido por')
-        self.assertContains(portada, f'<a href="{self.fitnes.get_absolute_url()}">Fitnes RD</a>', html=True)
-        # Cada tarjeta lleva a la ficha en su tienda (sin botones de compra desde el 2026-11-02).
+        ids = productos_de_la_portada(portada.context)
+        self.assertEqual(set(ids), {self.lampara.pk, self.pesas.pk})
+        # Cada producto sale una sola vez (pedido del dueño el 2026-11-02).
+        self.assertEqual(len(ids), len(set(ids)))
+        # Las dos ofertas van en las promociones, cada una con el nombre de su tienda.
+        self.assertContains(portada, '<i class="bi bi-shop" aria-hidden="true"></i>Fitnes RD', html=False)
+        # Cada producto lleva a su ficha en su tienda (sin botones de compra desde el 2026-11-02).
         self.assertContains(portada, f'href="{self.pesas.get_absolute_url()}"')
         self.assertNotContains(portada, 'name="comprar"')
 
@@ -90,7 +105,7 @@ class DirectorioTests(DosTiendas):
         # Todos en oferta: si alguno se colara, saldria en ofertas o en las promociones.
         Producto.objects.update(precio_oferta=Decimal('500'))
         portada = self.client.get('/')
-        self.assertEqual({p.nombre for p in portada.context['ofertas']}, {'Lámpara', 'Pesas rusas'})
+        self.assertEqual(set(productos_de_la_portada(portada.context)), {self.lampara.pk, self.pesas.pk})
         self.assertEqual({p.titulo for p in portada.context['promociones']}, {'Lámpara', 'Pesas rusas'})
         for nombre in ('tienda apagada', 'categoría apagada', 'Producto inactivo', 'Producto agotado', 'Oculta'):
             self.assertNotContains(portada, nombre)
@@ -131,8 +146,16 @@ class DirectorioTests(DosTiendas):
         self.assertEqual(len(estantes[belleza.pk]), 2)
         self.assertEqual({p.nombre for p in estantes_del_sitio([belleza])[belleza.pk]}, {'Labial', 'Crema', 'Rubor'})
         portada = self.client.get('/')
-        self.assertEqual([c.nombre for c in portada.context['estantes']], ['Belleza'])
-        self.assertContains(portada, 'Lo mejor en Belleza')
+        ids = productos_de_la_portada(portada.context)
+        self.assertEqual(len(ids), len(set(ids)))
+        # Ninguna seccion de productos con menos de 2.
+        for seccion in ('vistos', 'ofertas', 'nuevos'):
+            self.assertNotIn(len(portada.context[seccion]), (1,), seccion)
+        for categoria in portada.context['estantes']:
+            self.assertGreaterEqual(len(categoria.estante), 2)
+        for tarjeta in portada.context['tarjetas']:
+            if tarjeta['tipo'] == 'categoria':
+                self.assertIn(len(tarjeta['productos']), (2, 4))
 
     def test_la_portada_no_se_parece_al_inicio_de_una_tienda(self):
         portada = self.client.get('/')
@@ -143,7 +166,8 @@ class DirectorioTests(DosTiendas):
         # Al estilo de las grandes tiendas (2026-11-02): cuadros de la cuenta, categorias y tiendas arriba.
         self.assertContains(portada, 'Compra en las tiendas de emprendedores dominicanos')
         self.assertContains(portada, 'Ir a mi cuenta')
-        self.assertContains(portada, 'Explorar las tiendas')
+        # "Tiendas para conocer" una sola vez (pedido del dueño el 2026-11-02).
+        self.assertContains(portada, 'Tiendas para conocer', count=1)
         # Sin sesion, el cuadro de la cuenta invita a entrar.
         self.client.logout()
         self.assertContains(self.client.get('/'), 'Entra y compra más fácil')
@@ -188,13 +212,14 @@ class DirectorioTests(DosTiendas):
         self.pesas.precio_oferta = Decimal('2000')
         self.pesas.save()
         portada = self.client.get('/')
-        self.assertEqual(portada.context['ofertas'], [self.pesas])
-        self.assertContains(portada, 'Ver todas las ofertas')
+        # Una sola oferta: sale en las promociones y no se repite en "Ofertas del día" (que con 1 no se muestra).
         self.assertContains(portada, 'Oferta -20%')
+        self.assertEqual(portada.context['ofertas'], [])
+        self.assertEqual(productos_de_la_portada(portada.context).count(self.pesas.pk), 1)
         # Sin ofertas vigentes no hay seccion de ofertas, y el enlace "Ofertas" lo dice en vez de "no encontramos".
         self.pesas.precio_oferta = None
         self.pesas.save()
-        self.assertNotContains(self.client.get('/'), 'Ver todas las ofertas')
+        self.assertNotContains(self.client.get('/'), 'Ofertas del día')
         self.assertContains(self.client.get(reverse('tiendas:buscar'), {'oferta': 'on'}), 'Por ahora no hay ofertas')
 
     def test_directorio_de_todas_las_tiendas(self):
@@ -296,7 +321,7 @@ class DirectorioTests(DosTiendas):
         self.assertIn(f'href="{ruta("catalogo:lista", tienda=self.fitnes)}" aria-current="page"', barra)
         self.assertIn(f'href="{reverse("carrito_global:global")}"', barra)
         self.assertIn('js-contador-carrito', barra)
-        self.assertNotIn(ruta('carrito:detalle', tienda=self.multimix), barra)
+        self.assertNotIn(ruta('carrito:detalle', tienda=self.fitnes), barra)
         # La cuenta se marca en sus paginas.
         barra = self.barra_del_telefono(self.client.get(reverse('clientes:cuenta')))
         self.assertIn(f'href="{reverse("clientes:cuenta")}" aria-current="page"', barra)
@@ -397,12 +422,13 @@ class CarritoPorTiendaTests(DosTiendas):
     def test_cada_tienda_tiene_su_carrito(self):
         self.agregar(self.lampara, self.multimix, 2)
         self.agregar(self.pesas, self.fitnes, 1)
-        en_multimix = self.client.get(ruta('carrito:detalle', tienda=self.multimix))
-        en_fitnes = self.client.get(ruta('carrito:detalle', tienda=self.fitnes))
-        self.assertEqual([(l.producto, l.cantidad) for l in en_multimix.context['lineas']], [(self.lampara, 2)])
-        self.assertEqual([(l.producto, l.cantidad) for l in en_fitnes.context['lineas']], [(self.pesas, 1)])
-        self.assertEqual((en_multimix.context['carrito_cantidad'], en_fitnes.context['carrito_cantidad']), (2, 1))
-        self.assertEqual(en_fitnes.context['resumen'].total, Decimal('2500.00'))
+        # Un solo carrito (2026-11-02), separado por tienda: cada una con sus productos y su total.
+        carritos = self.client.get(reverse('carrito_global:global')).context['carritos']
+        en_multimix, en_fitnes = carritos[self.multimix], carritos[self.fitnes]
+        self.assertEqual([(l.producto, l.cantidad) for l in en_multimix.lineas()], [(self.lampara, 2)])
+        self.assertEqual([(l.producto, l.cantidad) for l in en_fitnes.lineas()], [(self.pesas, 1)])
+        self.assertEqual((len(en_multimix), len(en_fitnes)), (2, 1))
+        self.assertEqual(en_fitnes.resumen().total, Decimal('2500.00'))
 
     def test_no_se_agrega_un_producto_de_otra_tienda(self):
         respuesta = self.agregar(self.pesas, self.multimix, **FETCH)
@@ -421,7 +447,7 @@ class CarritoPorTiendaTests(DosTiendas):
         sesion = self.client.session
         sesion[settings.CARRITO_SESSION_ID] = {'items': {str(self.lampara.pk): 3}, 'cupon': 'MULTI10'}
         sesion.save()
-        self.assertEqual(self.client.get(ruta('carrito:detalle')).context['lineas'], [])
+        self.assertEqual(self.client.get(reverse('carrito_global:global')).context['lineas'], [])
         self.agregar(self.lampara, self.multimix)
         self.assertEqual(
             self.client.session[settings.CARRITO_SESSION_ID],
@@ -442,8 +468,9 @@ class PedidoPorTiendaTests(DosTiendas):
         self.assertEqual(pedido.total, Decimal('2500.00'))
 
         # El carrito de la otra tienda sigue como estaba.
-        self.assertEqual(self.client.get(ruta('carrito:detalle', tienda=self.fitnes)).context['lineas'], [])
-        self.assertEqual(len(self.client.get(ruta('carrito:detalle', tienda=self.multimix)).context['lineas']), 1)
+        carritos = self.client.get(reverse('carrito_global:global')).context['carritos']
+        self.assertNotIn(self.fitnes, carritos)
+        self.assertEqual([(l.producto, l.cantidad) for l in carritos[self.multimix].lineas()], [(self.lampara, 2)])
 
     def test_la_confirmacion_lleva_los_datos_de_la_tienda_que_vendio(self):
         self.agregar(self.pesas, self.fitnes)

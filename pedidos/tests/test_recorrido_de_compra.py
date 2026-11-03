@@ -29,17 +29,17 @@ class RecorridoDeCompraTests(TestCase):
         self.client.post(ruta('carrito:agregar'), {'producto_id': self.lampara.pk, 'cantidad': 2})
         self.client.post(ruta('carrito:agregar'), {'producto_id': self.mesa.pk, 'cantidad': 1})
         # 2. Carrito: ve los articulos, cambia la cantidad y elimina uno; el total lo calcula el servidor.
-        carrito = self.client.get(ruta('carrito:detalle'))
+        carrito = self.client.get(reverse('carrito_global:global'))
         self.assertContains(carrito, 'Lámpara de mesa')
         self.assertContains(carrito, 'RD$ 4,500.00')
         self.client.post(ruta('carrito:actualizar'), {'producto_id': self.lampara.pk, 'cantidad': 3})
         self.client.post(ruta('carrito:eliminar'), {'producto_id': self.mesa.pk})
-        carrito = self.client.get(ruta('carrito:detalle'))
+        carrito = self.client.get(reverse('carrito_global:global'))
         self.assertEqual([(linea.producto, linea.cantidad) for linea in carrito.context['lineas']], [(self.lampara, 3)])
-        self.assertEqual(carrito.context['resumen'].subtotal, Decimal('3000'))
+        self.assertEqual(next(iter(carrito.context['carritos'].values())).resumen().subtotal, Decimal('3000'))
         # Una cantidad absurda no pasa del tope por producto.
         self.client.post(ruta('carrito:actualizar'), {'producto_id': self.lampara.pk, 'cantidad': 100000})
-        self.assertLess(self.client.get(ruta('carrito:detalle')).context['lineas'][0].cantidad, 100000)
+        self.assertLess(self.client.get(reverse('carrito_global:global')).context['lineas'][0].cantidad, 100000)
         self.client.post(ruta('carrito:actualizar'), {'producto_id': self.lampara.pk, 'cantidad': 3})
 
         # 3. Checkout: envio a domicilio, pago contra transferencia; un total inventado por el navegador se ignora.
@@ -64,7 +64,7 @@ class RecorridoDeCompraTests(TestCase):
         self.assertContains(confirmacion, pedido.numero)
         self.assertContains(confirmacion, 'Ya recibimos tu pedido')
         self.assertContains(confirmacion, 'Pendiente de pago')
-        self.assertContains(self.client.get(ruta('carrito:detalle')), 'Todavía no hay nada aquí')
+        self.assertContains(self.client.get(reverse('carrito_global:global')), 'Todavía no hay nada aquí')
 
         # 5. Otro cliente no ve el pedido en su cuenta.
         entrar_como_cliente(self.client, 'luis@example.com', 'Luis Gil')

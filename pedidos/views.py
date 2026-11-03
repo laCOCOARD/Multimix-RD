@@ -95,12 +95,12 @@ def checkout(request):
     carrito = Carrito(request, tienda)
     if not carrito:
         messages.info(request, 'Tu carrito está vacío. Agrega productos para hacer tu pedido.')
-        return redirect('carrito:detalle', tienda.slug)
+        return redirect('carrito_global:global')
     avisos = carrito.sincronizar()
     if avisos:
         for aviso in avisos:
             messages.warning(request, aviso)
-        return redirect('carrito:detalle', tienda.slug)
+        return redirect('carrito_global:global')
 
     cliente = request.user
     if request.method != 'POST':
@@ -128,7 +128,7 @@ def checkout(request):
                 metricas.anotar(request, metricas.Evento.ERROR_COMPRA, tienda)
                 carrito.sincronizar()
                 messages.error(request, f'{error.mensaje} Revisa tu carrito y vuelve a confirmar.')
-                return redirect('carrito:detalle', tienda.slug)
+                return redirect('carrito_global:global')
             except (services.PedidoError, pagos.PagoError) as error:
                 carrito.resumen()
                 formulario.add_error(None, error.mensaje)
@@ -308,7 +308,7 @@ def volver_a_pedir(request, token):
         messages.success(request, f'Pusimos en tu carrito los productos del pedido {pedido.numero}.')
     else:
         messages.error(request, 'Ninguno de los productos de ese pedido está a la venta ahora.')
-    return redirect('carrito:detalle', pedido.tienda.slug)
+    return redirect('carrito_global:global')
 
 
 @login_not_required

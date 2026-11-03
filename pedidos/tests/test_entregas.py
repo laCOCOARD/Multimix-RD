@@ -4,6 +4,7 @@ from decimal import Decimal
 
 from django.core.exceptions import ValidationError
 from django.test import TestCase
+from django.urls import reverse
 from django.utils import translation
 
 from catalogo.models import Disponibilidad
@@ -128,8 +129,8 @@ class PaginasTests(TestCase):
 
     def test_el_carrito_dice_cuanto_falta(self):
         self.client.post(ruta('carrito:agregar'), {'producto_id': self.producto.pk, 'cantidad': 1})
-        respuesta = self.client.get(ruta('carrito:detalle'))
-        self.assertContains(respuesta, 'Te faltan <strong>RD$ 2,000.00</strong> para el envío gratis')
+        respuesta = self.client.get(reverse('carrito_global:global'))
+        self.assertContains(respuesta, 'Te faltan <strong>RD$ 2,000.00</strong> en Multimix RD para el envío gratis')
         datos = self.client.post(
             ruta('carrito:actualizar'), {'producto_id': self.producto.pk, 'cantidad': 3},
             headers={'X-Requested-With': 'fetch'},

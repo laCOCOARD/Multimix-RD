@@ -4,6 +4,7 @@
 {% block descripcion %}Encuentra tu próxima tienda favorita entre los emprendimientos de {{ plataforma.nombre }}.{% endblock %}
 
 {% block meta %}
+{{ block.super }}
 <link rel="canonical" href="{{ request.scheme }}://{{ request.get_host }}{% url 'tiendas:directorio' %}">
 {% endblock %}
 

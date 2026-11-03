@@ -192,7 +192,8 @@ class SitioTests(ConVideos):
         portada = self.client.get('/')
         self.assertEqual(portada.context['historias'], [{'tienda': self.tienda, 'videos': [video]}])
         self.assertContains(portada, 'Videos de las tiendas')
-        self.assertContains(portada, 'data-etiqueta="Anuncio"')
+        # Desde el 2026-11-02 la seccion se llama "Videos de las tiendas", sin la etiqueta "Anuncios".
+        self.assertNotContains(portada, 'data-etiqueta="Anuncio"')
         self.assertContains(portada, f'data-producto="{self.crema.get_absolute_url()}"')
         self.assertContains(portada, 'js/historias')
         self.assertIn("media-src 'self' blob: https:", portada['Content-Security-Policy'])

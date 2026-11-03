@@ -5,6 +5,7 @@ import tablib
 from django.apps import apps
 from django.conf import settings
 from django.test import TestCase
+from django.urls import reverse
 
 from carrito.carrito import CarritoError
 from catalogo.models import Disponibilidad, Producto
@@ -110,7 +111,7 @@ class CarritoSinInventarioTests(TestCase):
     def test_agregar_desde_la_tienda(self):
         producto = sin_inventario()
         self.client.post(ruta('carrito:agregar'), {'producto_id': producto.pk, 'cantidad': 2})
-        self.assertContains(self.client.get(ruta('carrito:detalle')), producto.nombre)
+        self.assertContains(self.client.get(reverse('carrito_global:global')), producto.nombre)
 
 
 class PedidoSinInventarioTests(TestCase):

@@ -95,7 +95,7 @@ class CarritoGuardadoTests(TestCase):
         otro_equipo = Client()
         self.agregar(otro_equipo, self.otro)  # sin sesion
         otro_equipo.force_login(self.ana)
-        pagina = otro_equipo.get(ruta('carrito:detalle'))
+        pagina = otro_equipo.get(reverse('carrito_global:global'))
         self.assertEqual({linea.producto for linea in pagina.context['lineas']}, {self.producto, self.otro})
         # Lo unido queda tambien en la cuenta.
         guardado.refresh_from_db()
@@ -129,7 +129,7 @@ class RecordatorioTests(TestCase):
         correo = mail.outbox[0]
         self.assertEqual(correo.to, [self.ana.email])
         self.assertIn('Lámpara', correo.body)
-        self.assertIn(ruta('carrito:detalle'), correo.body)
+        self.assertIn(reverse('carrito_global:global'), correo.body)
         self.assertEqual(services.recordar_carritos_abandonados(), 0)
 
         # Si despues vuelve a tocar el carrito y lo deja otra vez, se le recuerda de nuevo.
@@ -182,7 +182,7 @@ class VolverAPedirTests(TestCase):
         self.mesa.activo = False
         self.mesa.save()
         respuesta = self.client.post(reverse('pedidos:volver_a_pedir', args=[self.pedido.token]))
-        self.assertRedirects(respuesta, ruta('carrito:detalle'), fetch_redirect_response=False)
-        carrito = self.client.get(ruta('carrito:detalle'))
+        self.assertRedirects(respuesta, reverse('carrito_global:global'), fetch_redirect_response=False)
+        carrito = self.client.get(reverse('carrito_global:global'))
         self.assertEqual([(l.producto, l.cantidad) for l in carrito.context['lineas']], [(self.lampara, 2)])
         self.assertContains(carrito, '&quot;Mesa&quot; ya no se vende.')

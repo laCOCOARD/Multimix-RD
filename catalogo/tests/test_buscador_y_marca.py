@@ -96,7 +96,7 @@ class ComprarAhoraTests(TestCase):
     def test_si_no_se_puede_comprar_no_va_al_checkout(self):
         producto = crear_producto(nombre='Taza', stock_almacen=0)
         respuesta = self.client.post(ruta('carrito:agregar'), {'producto_id': producto.pk, 'comprar': '1'})
-        self.assertRedirects(respuesta, ruta('carrito:detalle'), fetch_redirect_response=False)
+        self.assertRedirects(respuesta, reverse('carrito_global:global'), fetch_redirect_response=False)
 
     def test_la_ficha_ofrece_comprar_ahora_y_compartir(self):
         respuesta = self.client.get(crear_producto(nombre='Taza').get_absolute_url())

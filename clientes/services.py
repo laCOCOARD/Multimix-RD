@@ -262,7 +262,7 @@ def recordar_carritos_abandonados():
                 'usuario': usuario,
                 'carritos': [
                     {'tienda': tienda, 'productos': productos,
-                     'enlace': url_absoluta(reverse('carrito:detalle', args=[tienda.slug]))}
+                     'enlace': url_absoluta(reverse('carrito_global:global'))}
                     for tienda, productos in lineas
                 ],
                 'enlace_apagar': url_absoluta(

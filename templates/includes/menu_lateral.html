@@ -27,7 +27,7 @@
               {% endfor %}
               <a href="{% url 'catalogo:lista' tienda.slug %}?oferta=on"><i class="bi bi-percent"></i>Ofertas</a>
               <a href="{% url 'core:envios' tienda.slug %}"><i class="bi bi-truck"></i>Envíos y retiros</a>
-              <a href="{% url 'carrito:detalle' tienda.slug %}"><i class="bi bi-bag"></i>Mi carrito</a>
+              <a href="{% url 'carrito_global:global' %}"><i class="bi bi-bag"></i>Mi carrito</a>
               <a href="{% url 'tiendas:portada' %}"><i class="bi bi-arrow-left-circle"></i>Todas las tiendas</a>
             {% else %}
               <a href="{% url 'tiendas:directorio' %}"><i class="bi bi-shop"></i>Tiendas</a>

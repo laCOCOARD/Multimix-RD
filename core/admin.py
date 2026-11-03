@@ -23,6 +23,9 @@ class ConfiguracionTiendaAdmin(AvisaImagenesSinGuardar, admin.ModelAdmin):
             'fields': ['dias_producto_nuevo', 'umbral_stock_bajo'],
         }),
         ('Pedidos (todas las tiendas)', {'fields': ['horas_vencimiento_pedido', 'dias_devolucion']}),
+        ('Precio en la página "Vender"', {
+            'fields': ['vender_precio_visible', 'vender_precio_titulo', 'vender_precio_texto'],
+        }),
         ('Cobro a las tiendas (planes)', {
             'fields': ['dias_aviso_mensualidad', 'dias_de_gracia'],
             'description': 'Los planes, sus montos y límites se cambian en Planes; el plan de cada tienda, en Tiendas.',

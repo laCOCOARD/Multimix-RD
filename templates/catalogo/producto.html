@@ -437,7 +437,7 @@
         {% for otro in en_otras_tiendas %}
           <li>
             <a class="mm-comparar-item" href="{{ otro.get_absolute_url }}">
-              <span class="mm-comparar-foto">{% with foto=otro.foto_principal %}{% if foto %}<img src="{{ foto.url_tarjeta }}" alt="" loading="lazy" decoding="async" width="64" height="64">{% else %}<i class="bi bi-image" aria-hidden="true"></i>{% endif %}{% endwith %}</span>
+              <span class="mm-comparar-foto">{% with foto=otro.foto_principal %}{% if foto %}<img src="{{ foto.url_tarjeta }}" alt="{{ otro.nombre }}" loading="lazy" decoding="async" width="64" height="64">{% else %}<i class="bi bi-image" aria-hidden="true"></i>{% endif %}{% endwith %}</span>
               <span class="mm-comparar-datos">
                 <span class="mm-comparar-tienda"><i class="bi bi-shop" aria-hidden="true"></i>{{ otro.tienda.nombre }}</span>
                 <span class="mm-comparar-nombre">{{ otro.nombre }}</span>

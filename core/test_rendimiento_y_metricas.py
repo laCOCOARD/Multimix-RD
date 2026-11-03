@@ -45,9 +45,10 @@ class MiniaturasTests(ConMedia):
         with Image.open(foto.imagen.path) as grande, Image.open(foto.miniatura.path) as chica:
             self.assertEqual((grande.size, chica.size, chica.format), ((1200, 600), (480, 240), 'WEBP'))
         self.assertEqual(foto.url_tarjeta, foto.miniatura.url)
-        portada = self.client.get('/')
-        self.assertContains(portada, foto.miniatura.url)
-        self.assertNotContains(portada, f'src="{foto.imagen.url}"')
+        # Las tarjetas del catalogo usan la miniatura (la portada no muestra secciones de un solo producto).
+        lista = self.client.get(ruta('catalogo:lista'))
+        self.assertContains(lista, foto.miniatura.url)
+        self.assertNotContains(lista, f'src="{foto.imagen.url}"')
         # La ficha si muestra la foto grande.
         self.assertContains(self.client.get(producto.get_absolute_url()), f'src="{foto.imagen.url}"')
         # Al borrarla se van los dos archivos.

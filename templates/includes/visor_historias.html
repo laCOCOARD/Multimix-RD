@@ -1,6 +1,7 @@
 {# Visor de los videos de las tiendas (static/js/historias.js), una sola vez por pagina. Recibe `historias` (de #}
 {# planes.services: un grupo por tienda) y `etiqueta` ("Anuncio" en la portada). Los datos van en atributos, ya #}
-{# escapados; el JS los lee con dataset y los pone con textContent, nunca como HTML. #}
+{# escapados; el JS los lee con dataset y los pone con textContent, nunca como HTML. Los enlaces no traen una direccion vacia: #}
+{# historias.js les pone la direccion real de la tienda y del producto, y los muestra solo si la hay. #}
 <div id="mm-historias-datos" hidden data-csrf="{{ csrf_token }}" data-etiqueta="{{ etiqueta|default:'' }}">
   {% for grupo in historias %}
     <div class="js-historia-grupo" data-nombre="{{ grupo.tienda.nombre }}" data-url="{{ grupo.tienda.get_absolute_url }}"{% if grupo.tienda.logo %} data-logo="{{ grupo.tienda.logo.url }}"{% endif %}>
@@ -17,7 +18,7 @@
   <div class="mm-visor-marco">
     <div class="mm-visor-barras" aria-hidden="true"></div>
     <div class="mm-visor-cabecera">
-      <a class="mm-visor-tienda" href="#">
+      <a class="mm-visor-tienda">
         <span class="mm-visor-logo" aria-hidden="true"></span>
         <span class="mm-visor-datos"><span class="mm-visor-nombre"></span><span class="mm-visor-etiqueta"></span></span>
       </a>
@@ -33,8 +34,8 @@
     <div class="mm-visor-pie">
       <p class="mm-visor-titulo"></p>
       <div class="mm-visor-acciones">
-        <a class="btn btn-acento js-visor-producto" href="#">Ver el producto</a>
-        <a class="btn btn-light js-visor-tienda" href="#">Visitar la tienda</a>
+        <a class="btn btn-acento js-visor-producto" hidden>Ver el producto</a>
+        <a class="btn btn-light js-visor-tienda" hidden>Visitar la tienda</a>
       </div>
     </div>
   </div>

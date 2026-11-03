@@ -26,7 +26,7 @@ class NavegarSinCuentaTests(TestCase):
             self.assertEqual(self.client.get(url).status_code, 200, url)
         self.client.post(ruta('carrito:agregar'), {'producto_id': self.producto.pk, 'cantidad': 2})
         checkout = ruta('pedidos:checkout')
-        self.assertContains(self.client.get(ruta('carrito:detalle')), 'Iniciar sesión y continuar')
+        self.assertContains(self.client.get(reverse('carrito_global:global')), 'Iniciar sesión y continuar')
 
         respuesta = self.client.get(checkout)
         entrar = f"{reverse('clientes:entrar')}?next={checkout}"
@@ -88,7 +88,7 @@ class SugerenciasTests(TestCase):
 
     def test_el_carrito_sugiere_de_la_misma_categoria_sin_repetir_ni_agotados(self):
         self.client.post(ruta('carrito:agregar'), {'producto_id': self.lampara.pk, 'cantidad': 1})
-        pagina = self.client.get(ruta('carrito:detalle'))
+        pagina = self.client.get(reverse('carrito_global:global'))
         self.assertEqual(pagina.context['sugeridos'], [self.mesa])
         self.assertContains(pagina, 'Completa tu pedido')
 

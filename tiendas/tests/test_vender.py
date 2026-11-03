@@ -34,9 +34,20 @@ class PaginaParaVenderTests(TestCase):
         self.assertContains(pagina, 'href="#como-funciona"')
         self.assertContains(pagina, 'id="como-funciona"')
         self.assertContains(pagina, '¿Qué información debo preparar?')
-        # No promete lo que no existe: precio, aprobacion automatica ni plazos.
-        for promesa in ('gratis', 'Gratis', 'sin costo', 'automátic', 'horas', 'comisión'):
+        # No promete lo que no existe: aprobacion automatica, plazos ni comisiones.
+        for promesa in ('sin costo', 'automátic', 'horas', 'comisión'):
             self.assertNotContains(pagina, promesa)
+        # El precio (pedido del dueño el 2026-11-02) sale solo del bloque que el dueño edita en la configuracion.
+        from core.models import ConfiguracionTienda
+
+        self.assertContains(pagina, 'Primeros 3 meses gratis')
+        configuracion = ConfiguracionTienda.obtener()
+        configuracion.vender_precio_titulo = 'Primer mes gratis'
+        configuracion.save()
+        self.assertContains(self.client.get(reverse('tiendas:vender')), 'Primer mes gratis')
+        configuracion.vender_precio_visible = False
+        configuracion.save()
+        self.assertNotContains(self.client.get(reverse('tiendas:vender')), 'id="titulo-precio-vender"')
 
     def test_los_accesos_del_sitio_llevan_a_la_pagina(self):
         tienda_de_prueba()

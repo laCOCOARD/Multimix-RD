@@ -1,0 +1,17 @@
+{% extends 'base.html' %}
+
+{# Lo muestra django-axes cuando alguien falla 5 veces seguidas al entrar (pedido del dueño el 2026-11-02). #}
+{% block titulo %}Demasiados intentos{% endblock %}
+{% block meta %}<meta name="robots" content="noindex">{% endblock %}
+
+{% block contenido %}
+<div class="container py-5">
+  <div class="mm-panel mx-auto text-center" style="max-width: 32rem;">
+    <i class="bi bi-shield-lock display-5 text-muted d-block mb-3" aria-hidden="true"></i>
+    <h1 class="h3">Demasiados intentos</h1>
+    <p class="mb-3">Por seguridad bloqueamos la entrada con esta cuenta desde tu conexión durante <strong>1 hora</strong>, después de 5 intentos con una contraseña incorrecta.</p>
+    <p class="text-muted small mb-4">Si olvidaste tu contraseña, puedes crear una nueva ahora: el enlace llega a tu correo.</p>
+    <a class="btn btn-acento" href="{% url 'clientes:recuperar' %}">Recuperar mi contraseña</a>
+  </div>
+</div>
+{% endblock %}

@@ -44,3 +44,9 @@ def quien_es(request):
     if ip:
         quien.append(('ip', ip))
     return quien
+
+
+def ip_para_axes(request):
+    """IP para django-axes (limite de intentos de entrada): la misma de los limites del sitio; si no se sabe con
+    certeza, la de la conexion, para no dejar el limite sin IP."""
+    return ip_del_cliente(request) or request.META.get('REMOTE_ADDR') or ''

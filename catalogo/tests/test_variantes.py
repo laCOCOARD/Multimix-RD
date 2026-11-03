@@ -51,7 +51,7 @@ class VariantesTests(TestCase):
 
     def test_cada_variante_se_compra_por_separado(self):
         self.client.post(ruta('carrito:agregar'), {'producto_id': self.azul.pk, 'cantidad': 1})
-        lineas = self.client.get(ruta('carrito:detalle')).context['lineas']
+        lineas = self.client.get(reverse('carrito_global:global')).context['lineas']
         self.assertEqual([(linea.producto, linea.precio_unitario) for linea in lineas], [(self.azul, Decimal('850'))])
 
     def test_reglas_del_grupo(self):

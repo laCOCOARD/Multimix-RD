@@ -39,6 +39,7 @@ ADMIN_URL = os.getenv('ADMIN_URL', 'panel').strip('/') or 'panel'
 INSTALLED_APPS = [
     'config.apps.PanelAdminConfig',
     'django.contrib.auth',
+    'axes',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
@@ -72,6 +73,8 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'config.middleware.PoliticaDeContenidoMiddleware',
     'config.middleware.TareasPeriodicasMiddleware',
+    # django-axes: va al final (lo pide su documentacion) para responder al bloqueo despues de todo lo demas.
+    'axes.middleware.AxesMiddleware',
 ]
 
 ROOT_URLCONF = 'config.urls'
@@ -160,7 +163,25 @@ AUTH_PASSWORD_VALIDATORS = [
 # Cuentas de clientes. El panel tiene su propia pantalla de entrada.
 # Se entra con el usuario o con el correo de la cuenta (el administrador no tiene el correo como usuario).
 # ModelBackend sigue en la lista para no cerrar las sesiones abiertas antes de este cambio.
-AUTHENTICATION_BACKENDS = ['clientes.autenticacion.CorreoOUsuarioBackend', 'django.contrib.auth.backends.ModelBackend']
+# django-axes primero: si la cuenta esta bloqueada por intentos fallidos, no se sigue con los demas.
+AUTHENTICATION_BACKENDS = [
+    'axes.backends.AxesStandaloneBackend',
+    'clientes.autenticacion.CorreoOUsuarioBackend',
+    'django.contrib.auth.backends.ModelBackend',
+]
+
+# --- Limite de intentos de entrada (django-axes, pedido del dueño el 2026-11-02) ---
+# 5 intentos fallidos con el mismo usuario desde la misma IP bloquean 1 hora el panel y las cuentas de clientes.
+# Por usuario + IP: desde otra conexion nadie puede dejar afuera al dueño real de la cuenta. Se suma a los limites
+# propios del sitio (core.Intento). En las pruebas esta apagado salvo donde se prueba (override_settings).
+AXES_ENABLED = not EN_TESTS
+AXES_FAILURE_LIMIT = 5
+AXES_COOLOFF_TIME = 1  # horas
+AXES_LOCKOUT_PARAMETERS = [['username', 'ip_address']]
+AXES_RESET_ON_SUCCESS = True
+AXES_CLIENT_IP_CALLABLE = 'core.red.ip_para_axes'
+AXES_LOCKOUT_TEMPLATE = 'clientes/bloqueado.html'
+AXES_VERBOSE = False
 
 LOGIN_URL = 'clientes:entrar'
 LOGIN_REDIRECT_URL = 'clientes:cuenta'

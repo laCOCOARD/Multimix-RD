@@ -1,15 +1,13 @@
 from django.contrib import messages
 from django.http import JsonResponse
-from django.shortcuts import redirect, render
+from django.shortcuts import redirect
 from django.urls import reverse
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.http import require_GET, require_POST
 
 from catalogo.models import Producto
-from catalogo.services import sugerencias_para_el_carrito
 from core import metricas
 from core.templatetags.moneda import formatear_monto
-from decimal import Decimal
 from pedidos.services import progreso_envio_gratis
 from promociones.services import CuponInvalido
 from tiendas.decoradores import de_tienda
@@ -80,32 +78,15 @@ def _responder(request, carrito, ok, mensaje):
     siguiente = request.POST.get('next', '')
     if url_has_allowed_host_and_scheme(siguiente, allowed_hosts={request.get_host()}, require_https=request.is_secure()):
         return redirect(siguiente)
-    return redirect('carrito:detalle', request.tienda.slug)
+    return redirect('carrito_global:global')
 
 
 @require_GET
 @de_tienda
 def detalle(request):
-    carrito = Carrito(request, request.tienda)
-    for aviso in carrito.sincronizar():
-        messages.warning(request, aviso)
-    resumen = carrito.resumen()
-    if resumen.aviso_cupon:
-        messages.warning(request, resumen.aviso_cupon)
-    if resumen.cupon_meta_auto and resumen.cupon:
-        messages.success(
-            request,
-            f'¡Llegaste a {formatear_monto(resumen.cupon.compra_minima)}! '
-            f'El cupón {resumen.cupon.codigo} se aplicó automáticamente. '
-            f'Ahorras {formatear_monto(resumen.descuento)}.',
-        )
-    lineas = carrito.lineas()
-    return render(request, 'carrito/detalle.html', {
-        'lineas': lineas,
-        'resumen': resumen,
-        'envio_gratis': progreso_envio_gratis(request.tienda, resumen.subtotal - resumen.descuento),
-        'sugeridos': sugerencias_para_el_carrito(request.tienda, [linea.producto.pk for linea in lineas]),
-    })
+    """Un solo carrito (pedido del dueño el 2026-11-02): /tienda/<slug>/carrito/ lleva a /carrito/, donde estan los
+    productos de todas las tiendas con su cupon, su envio gratis y su cantidad."""
+    return redirect('carrito_global:global')
 
 
 @require_POST

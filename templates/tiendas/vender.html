@@ -40,6 +40,22 @@
   </div>
 </section>
 
+{% if plataforma.vender_precio_visible and plataforma.vender_precio_titulo %}
+{# Bloque de precio (pedido del dueño el 2026-11-02): el texto se edita en Panel > Configuración > Precio en la #}
+{# página "Vender" y se puede ocultar desde ahi. #}
+<section class="container mm-seccion" aria-labelledby="titulo-precio-vender">
+  <div class="mm-precio-vender">
+    <span class="mm-precio-vender-icono" aria-hidden="true"><i class="bi bi-gift"></i></span>
+    <div class="mm-precio-vender-texto">
+      <p class="mm-precio-vender-etiqueta">Precio</p>
+      <h2 id="titulo-precio-vender">{{ plataforma.vender_precio_titulo }}</h2>
+      {% if plataforma.vender_precio_texto %}<p class="mb-0">{{ plataforma.vender_precio_texto }}</p>{% endif %}
+    </div>
+    <a class="btn btn-acento btn-lg" href="{% url 'tiendas:solicitar_tienda' %}">Solicitar mi tienda</a>
+  </div>
+</section>
+{% endif %}
+
 <section class="container mm-seccion" id="como-funciona" aria-labelledby="titulo-como-funciona">
   <div class="mm-seccion-cabecera">
     <div>
@@ -49,19 +65,16 @@
   </div>
   <ol class="mm-pasos">
     <li>
-      <span class="mm-paso-numero" aria-hidden="true">1</span>
       <i class="bi bi-envelope-paper" aria-hidden="true"></i>
       <h3>Solicita tu tienda</h3>
       <p>Llena el formulario con los datos de tu negocio. Revisamos cada solicitud y te contactamos para los siguientes pasos.</p>
     </li>
     <li>
-      <span class="mm-paso-numero" aria-hidden="true">2</span>
       <i class="bi bi-palette" aria-hidden="true"></i>
       <h3>Personaliza tu marca y prepara tu catálogo</h3>
       <p>Con tu acceso al panel subes tu logo y tu portada, registras las cuentas donde cobras y cargas tus productos con fotos y precios.</p>
     </li>
     <li>
-      <span class="mm-paso-numero" aria-hidden="true">3</span>
       <i class="bi bi-box-seam" aria-hidden="true"></i>
       <h3>Publica tus productos y administra tus pedidos</h3>
       <p>Tus productos salen en tu tienda y en el buscador del sitio. Cada pedido llega a tu panel y a tu correo para que le des seguimiento.</p>

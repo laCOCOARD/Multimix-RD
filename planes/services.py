@@ -620,6 +620,7 @@ class Promocion:
     precio_anterior: object = None
     es_foto_de_producto: bool = False
     puntos: int = 0
+    producto_id: object = None  # para que la portada no repita el producto en otra seccion
 
 
 def _puntos(texto, categorias, tienda_id, intereses):
@@ -654,7 +655,7 @@ def _promocion_de_producto(producto, etiqueta, intereses):
     return Promocion(
         titulo=producto.nombre, url=producto.get_absolute_url(), imagen=foto.url_tarjeta if foto else '',
         tienda=producto.tienda.nombre, etiqueta=etiqueta, precio=producto.precio_final,
-        precio_anterior=producto.precio if producto.en_oferta else None, es_foto_de_producto=True,
+        precio_anterior=producto.precio if producto.en_oferta else None, es_foto_de_producto=True, producto_id=producto.pk,
         puntos=_puntos(f'{producto.texto_busqueda} {producto.categoria.nombre}', categorias, producto.tienda_id, intereses)
         + _puntos_por_gustos(producto, intereses),
     )
@@ -677,7 +678,7 @@ def promociones_para(sesion, limite=8, usuario=None):
                           producto.categoria.nombre if producto else '', anuncio.tienda.nombre])
         promociones.append(Promocion(
             titulo=anuncio.titulo, texto=anuncio.texto, url=anuncio.get_url(), imagen=anuncio.imagen.url,
-            tienda=anuncio.tienda.nombre, etiqueta='Anuncio',
+            tienda=anuncio.tienda.nombre, etiqueta='Anuncio', producto_id=anuncio.producto_id,
             puntos=_puntos(texto, categorias, anuncio.tienda_id, intereses),
         ))
     patrocinados = patrocinados_del_sitio()

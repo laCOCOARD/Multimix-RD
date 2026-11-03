@@ -17,7 +17,7 @@ class CuentaObligatoriaTests(TestCase):
     def test_sin_sesion_todo_lleva_a_entrar(self):
         entrar = reverse('clientes:entrar')
         for url in (reverse('tiendas:portada'), self.tienda.get_absolute_url(), self.producto.get_absolute_url(),
-                    ruta('catalogo:lista'), ruta('carrito:detalle'), ruta('pedidos:checkout'), reverse('tiendas:buscar')):
+                    ruta('catalogo:lista'), reverse('carrito_global:global'), ruta('pedidos:checkout'), reverse('tiendas:buscar')):
             self.assertRedirects(self.client.get(url), f'{entrar}?next={url}', fetch_redirect_response=False, msg_prefix=url)
 
     def test_lo_necesario_para_entrar_abre_sin_sesion(self):

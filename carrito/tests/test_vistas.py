@@ -1,6 +1,7 @@
 from decimal import Decimal
 
 from django.test import Client, TestCase
+from django.urls import reverse
 
 from catalogo.models import Producto
 from catalogo.tests.test_modelos import crear_producto
@@ -21,17 +22,17 @@ class CarritoVistasTests(TestCase):
 
     def test_agregar_sin_javascript_redirige_con_mensaje(self):
         respuesta = self.agregar(2)
-        self.assertRedirects(respuesta, ruta('carrito:detalle'), fetch_redirect_response=False)
-        pagina = self.client.get(ruta('carrito:detalle'))
+        self.assertRedirects(respuesta, reverse('carrito_global:global'), fetch_redirect_response=False)
+        pagina = self.client.get(reverse('carrito_global:global'))
         self.assertContains(pagina, 'se agregó al carrito')
         self.assertContains(pagina, 'RD$ 2,000.00')
-        self.assertEqual(pagina.context['carrito_cantidad'], 2)
+        self.assertEqual(pagina.context['carrito_cantidad_global'], 2)
 
     def test_next_externo_se_ignora(self):
         respuesta = self.client.post(ruta('carrito:agregar'), {
             'producto_id': self.producto.pk, 'cantidad': 1, 'next': 'https://malicioso.example/',
         })
-        self.assertRedirects(respuesta, ruta('carrito:detalle'))
+        self.assertRedirects(respuesta, reverse('carrito_global:global'))
 
     def test_agregar_con_fetch_devuelve_json(self):
         datos = self.agregar(2, **FETCH).json()
@@ -71,7 +72,7 @@ class CarritoVistasTests(TestCase):
     def test_el_carrito_se_ajusta_si_cambio_el_stock(self):
         self.agregar(4)
         Producto.objects.filter(pk=self.producto.pk).update(stock_almacen=2)
-        pagina = self.client.get(ruta('carrito:detalle'))
+        pagina = self.client.get(reverse('carrito_global:global'))
         self.assertContains(pagina, 'No tenemos más unidades')
         self.assertNotContains(pagina, 'quedan 2')
         self.assertEqual(pagina.context['lineas'][0].cantidad, 2)
@@ -80,16 +81,21 @@ class CarritoVistasTests(TestCase):
         cupon_de_prueba('DIEZ')
         self.agregar(2)
         self.client.post(ruta('carrito:cupon_aplicar'), {'codigo': 'nada'})
-        self.assertContains(self.client.get(ruta('carrito:detalle')), 'no existe o no está activo')
+        self.assertContains(self.client.get(reverse('carrito_global:global')), 'no existe o no está activo')
         self.client.post(ruta('carrito:cupon_aplicar'), {'codigo': 'diez'})
-        pagina = self.client.get(ruta('carrito:detalle'))
+        pagina = self.client.get(reverse('carrito_global:global'))
         self.assertContains(pagina, 'Cupón DIEZ aplicado.')
-        self.assertEqual(pagina.context['resumen'].total, Decimal('1800.00'))
+        self.assertEqual(next(iter(pagina.context['carritos'].values())).resumen().total, Decimal('1800.00'))
         self.client.post(ruta('carrito:cupon_quitar'))
-        self.assertEqual(self.client.get(ruta('carrito:detalle')).context['resumen'].total, Decimal('2000.00'))
+        self.assertEqual(next(iter(self.client.get(reverse('carrito_global:global')).context['carritos'].values())).resumen().total, Decimal('2000.00'))
 
     def test_exige_csrf_y_post(self):
         estricto = Client(enforce_csrf_checks=True)
         respuesta = estricto.post(ruta('carrito:agregar'), {'producto_id': self.producto.pk})
         self.assertEqual(respuesta.status_code, 403)
         self.assertEqual(self.client.get(ruta('carrito:agregar')).status_code, 405)
+
+    def test_el_carrito_de_cada_tienda_lleva_al_carrito_unico(self):
+        # Un solo carrito (pedido del dueño el 2026-11-02): /tienda/<slug>/carrito/ redirige a /carrito/.
+        self.assertRedirects(self.client.get(ruta('carrito:detalle')), reverse('carrito_global:global'),
+                             fetch_redirect_response=False)

@@ -22,11 +22,44 @@ logger = logging.getLogger('multimix.carrito')
 
 def carrito_global(request):
     """Carrito de todas las tiendas. Se ve y se edita sin cuenta; la cuenta se pide al pagar (checkout_global)."""
+    from core.templatetags.moneda import formatear_monto
+    from pedidos.services import progreso_envio_gratis
+
     carrito = CarritoGlobal(request)
     carritos = carrito.carritos()
+    # Un solo carrito (2026-11-02): lo que hacia el de cada tienda se hace aqui, tienda por tienda.
+    for tienda, de_la_tienda in carritos.items():
+        for aviso in de_la_tienda.sincronizar():
+            messages.warning(request, aviso)
+        resumen = de_la_tienda.resumen()
+        if resumen.aviso_cupon:
+            messages.warning(request, resumen.aviso_cupon)
+        if resumen.cupon_meta_auto and resumen.cupon:
+            messages.success(
+                request,
+                f'¡Llegaste a {formatear_monto(resumen.cupon.compra_minima)} en {tienda.nombre}! El cupón '
+                f'{resumen.cupon.codigo} se aplicó automáticamente. Ahorras {formatear_monto(resumen.descuento)}.',
+            )
+    # Despues de revisar, una tienda pudo quedar sin productos: se vuelven a leer.
+    carritos = carrito.carritos()
+    for tienda, de_la_tienda in carritos.items():
+        resumen = de_la_tienda.resumen()
+        de_la_tienda.envio_gratis = progreso_envio_gratis(tienda, resumen.subtotal - resumen.descuento)
+    from catalogo.services import sugerencias_para_el_carrito
+
     total_global = sum(c.resumen().total for c in carritos.values())
+    lineas = [linea for de_la_tienda in carritos.values() for linea in de_la_tienda.lineas()]
+    # "Completa tu pedido": de las tiendas que ya estan en el carrito, sin repetir lo que lleva.
+    sugeridos = []
+    for tienda, de_la_tienda in carritos.items():
+        en_el_carrito = [linea.producto.pk for linea in de_la_tienda.lineas()]
+        sugeridos += sugerencias_para_el_carrito(tienda, en_el_carrito, limite=10 - len(sugeridos))
+        if len(sugeridos) >= 10:
+            break
     return render(request, 'carrito/carrito_global.html', {
         'carritos': carritos,
+        'lineas': lineas,
+        'sugeridos': sugeridos,
         'total_global': total_global,
     })
 

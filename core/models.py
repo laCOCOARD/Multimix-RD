@@ -56,6 +56,19 @@ class ConfiguracionTienda(models.Model):
         'días para pedir una devolución', default=7,
         help_text='Días después de la entrega en que el cliente puede solicitar una devolución. 0 = no se ofrecen.',
     )
+    # Bloque de precio de /vender (pedido del dueño el 2026-11-02): lo que se ofrece a quien abre una tienda.
+    vender_precio_visible = models.BooleanField(
+        'mostrar el bloque de precio en "Vender"', default=True,
+    )
+    vender_precio_titulo = models.CharField(
+        'título del precio', max_length=80, default='Primeros 3 meses gratis',
+        help_text='Lo que ve quien quiere abrir su tienda, en grande.',
+    )
+    vender_precio_texto = models.CharField(
+        'detalle del precio', max_length=240, blank=True,
+        default='Abre tu tienda y vende sin pagar mensualidad durante tus primeros 3 meses.',
+        help_text='Una o dos frases debajo del título. Que diga solo lo que de verdad se cumple.',
+    )
     # Cobro a las tiendas (pedido del dueño el 2026-10-26): la mensualidad vence el dia 1.
     dias_de_gracia = models.PositiveSmallIntegerField(
         'días de gracia de la mensualidad', default=4, validators=[MaxValueValidator(27)],

@@ -60,7 +60,7 @@ class AvisoAutomaticoTests(TestCase):
         return Pedido.objects.latest('id')
 
     def test_apagado_sin_configurar(self):
-        self.assertNotContains(self.client.get(ruta('carrito:detalle')), 'avisos_whatsapp')
+        self.assertNotContains(self.client.get(reverse('carrito_global:global')), 'avisos_whatsapp')
         with mock.patch('pedidos.whatsapp_api.urllib.request.urlopen') as urlopen:
             pedido = self.comprar(avisos_whatsapp='on')
         self.assertFalse(pedido.avisos_whatsapp)

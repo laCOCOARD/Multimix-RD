@@ -26,7 +26,7 @@
           <div class="mm-linea">
             <a class="mm-linea-foto" href="{{ linea.producto.get_absolute_url }}">
               {% with foto=linea.producto.foto_principal %}
-                {% if foto %}<img src="{{ foto.url_tarjeta }}" alt="" loading="lazy" decoding="async" width="96" height="96">
+                {% if foto %}<img src="{{ foto.url_tarjeta }}" alt="{{ linea.producto.nombre }}" loading="lazy" decoding="async" width="96" height="96">
                 {% else %}<span class="mm-sin-foto"><i class="bi bi-image"></i></span>{% endif %}
               {% endwith %}
             </a>
@@ -58,14 +58,35 @@
             <p class="mm-linea-subtotal">{{ linea.subtotal|moneda }}</p>
           </div>
           {% endfor %}
-          <div class="px-3 py-2 d-flex justify-content-between align-items-center border-top small">
-            <span class="text-muted">
-              {% if resumen.cupon %}<i class="bi bi-tag-fill text-success me-1"></i>Cupón {{ resumen.cupon.codigo }} aplicado{% endif %}
-            </span>
-            <span>
-              {% if resumen.descuento %}<s class="text-muted me-2">{{ resumen.subtotal|moneda }}</s>{% endif %}
-              <strong>{{ resumen.total|moneda }}</strong>
-            </span>
+          <div class="px-3 py-3 border-top small mm-carrito-tienda-pie">
+            {% if carrito.envio_gratis %}
+              <p class="mb-2{% if carrito.envio_gratis.logrado %} text-success{% endif %}">
+                <i class="bi bi-truck me-1" aria-hidden="true"></i>{% if carrito.envio_gratis.logrado %}¡Tu envío a domicilio desde {{ tienda_carrito.nombre }} es gratis!{% else %}Te faltan <strong>{{ carrito.envio_gratis.falta|moneda }}</strong> en {{ tienda_carrito.nombre }} para el envío gratis.{% endif %}
+              </p>
+            {% endif %}
+            {% if resumen.cupon %}
+              <form class="d-flex justify-content-between align-items-center gap-2 mb-2" method="post" action="{% url 'carrito:cupon_quitar' tienda_carrito.slug %}">
+                {% csrf_token %}<input type="hidden" name="next" value="{{ url_carrito }}">
+                <span><i class="bi bi-tag-fill text-success me-1" aria-hidden="true"></i>Cupón <strong>{{ resumen.cupon.codigo }}</strong> aplicado</span>
+                <button class="btn btn-sm btn-outline-danger" type="submit">Quitar</button>
+              </form>
+            {% else %}
+              <form class="mb-2" method="post" action="{% url 'carrito:cupon_aplicar' tienda_carrito.slug %}">
+                {% csrf_token %}<input type="hidden" name="next" value="{{ url_carrito }}">
+                <label class="visually-hidden" for="cupon-{{ tienda_carrito.pk }}">Cupón de {{ tienda_carrito.nombre }}</label>
+                <div class="input-group input-group-sm">
+                  <input class="form-control text-uppercase" type="text" id="cupon-{{ tienda_carrito.pk }}" name="codigo" maxlength="30" autocomplete="off" required placeholder="Código de cupón">
+                  <button class="btn btn-outline-primary" type="submit">Aplicar</button>
+                </div>
+              </form>
+            {% endif %}
+            <div class="d-flex justify-content-between align-items-center">
+              <span class="text-muted">Subtotal de {{ tienda_carrito.nombre }}</span>
+              <span>
+                {% if resumen.descuento %}<s class="text-muted me-2">{{ resumen.subtotal|moneda }}</s>{% endif %}
+                <strong>{{ resumen.total|moneda }}</strong>
+              </span>
+            </div>
           </div>
         </section>
         {% endwith %}
@@ -108,6 +129,13 @@
     <p class="lead">Todavía no hay nada aquí, pero eso tiene solución.</p>
     <a class="btn btn-primary" href="{% url 'tiendas:portada' %}">Ver productos</a>
   </div>
+  {% endif %}
+
+  {% if sugeridos %}
+    <section class="mm-seccion" aria-labelledby="titulo-sugeridos">
+      <div class="mm-seccion-cabecera"><h2 id="titulo-sugeridos">Completa tu pedido</h2></div>
+      {% include 'includes/fila_productos.html' with productos=sugeridos %}
+    </section>
   {% endif %}
 </div>
 {% endblock %}

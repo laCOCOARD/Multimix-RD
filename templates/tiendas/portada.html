@@ -43,7 +43,7 @@
                   <span class="btn btn-acento mm-promo-boton" aria-hidden="true">Ver {% if promocion.es_foto_de_producto %}producto{% else %}promoción{% endif %} <i class="bi bi-arrow-right"></i></span>
                 </span>
                 <span class="mm-promo-imagen{% if promocion.es_foto_de_producto %} es-producto{% endif %}">
-                  {% if promocion.imagen %}<img src="{{ promocion.imagen }}" alt="" {% if not forloop.first %}loading="lazy" {% endif %}decoding="async" width="600" height="400">{% else %}<i class="bi bi-image" aria-hidden="true"></i>{% endif %}
+                  {% if promocion.imagen %}<img src="{{ promocion.imagen }}" alt="{{ promocion.titulo }}" {% if not forloop.first %}loading="lazy" {% endif %}decoding="async" width="600" height="400">{% else %}<i class="bi bi-image" aria-hidden="true"></i>{% endif %}
                 </span>
               </a>
             </div>
@@ -84,38 +84,23 @@
         {% endif %}
       {% elif tarjeta.tipo == 'categoria' %}
         <h2 class="mm-az-cuadro-titulo">{{ tarjeta.categoria.nombre }}</h2>
-        <div class="mm-az-mosaico{% if tarjeta.productos|length < 4 %} uno{% endif %}">
+        <div class="mm-az-mosaico">
           {% for producto in tarjeta.productos %}
-            {% if tarjeta.productos|length >= 4 or forloop.first %}
               <a href="{{ producto.get_absolute_url }}">
-                <span class="mm-az-foto"><img src="{{ producto.foto_principal.url_tarjeta }}" alt="" loading="lazy" decoding="async" width="200" height="200"></span>
+                <span class="mm-az-foto"><img src="{{ producto.foto_principal.url_tarjeta }}" alt="{{ producto.nombre }}" loading="lazy" decoding="async" width="200" height="200"></span>
                 <span class="mm-az-foto-nombre">{{ producto.nombre }}</span>
               </a>
-            {% endif %}
           {% endfor %}
         </div>
         <a class="mm-az-cuadro-enlace" href="{% url 'tiendas:buscar' %}?categoria={{ tarjeta.categoria.slug }}">Ver más en {{ tarjeta.categoria.nombre }}</a>
       {% elif tarjeta.tipo == 'oferta' %}
         <h2 class="mm-az-cuadro-titulo">Oferta destacada</h2>
         <a class="mm-az-oferta" href="{{ tarjeta.producto.get_absolute_url }}">
-          <span class="mm-az-foto grande"><img src="{{ tarjeta.producto.foto_principal.url_tarjeta }}" alt="" loading="lazy" decoding="async" width="400" height="400"></span>
+          <span class="mm-az-foto grande"><img src="{{ tarjeta.producto.foto_principal.url_tarjeta }}" alt="{{ tarjeta.producto.nombre }}" loading="lazy" decoding="async" width="400" height="400"></span>
           <span class="mm-az-oferta-precio"><span class="mm-az-descuento">-{{ tarjeta.producto.porcentaje_descuento }}%</span> {{ tarjeta.producto.precio_final|moneda }}</span>
           <span class="mm-az-foto-nombre">{{ tarjeta.producto.nombre }}</span>
         </a>
         <a class="mm-az-cuadro-enlace" href="{% url 'tiendas:buscar' %}?oferta=on">Ver todas las ofertas</a>
-      {% elif tarjeta.tipo == 'tiendas' %}
-        <h2 class="mm-az-cuadro-titulo">Tiendas para conocer</h2>
-        <div class="mm-az-mosaico">
-          {% for item in tarjeta.tiendas %}
-            <a href="{{ item.get_absolute_url }}">
-              <span class="mm-az-foto mm-az-logo mm-tienda-tono-{{ item.tono }}">
-                {% if item.logo %}<img src="{{ item.logo.url }}" alt="" loading="lazy" decoding="async" width="120" height="120">{% else %}<span>{{ item.nombre|slice:':1'|upper }}</span>{% endif %}
-              </span>
-              <span class="mm-az-foto-nombre">{{ item.nombre }}</span>
-            </a>
-          {% endfor %}
-        </div>
-        <a class="mm-az-cuadro-enlace" href="{% url 'tiendas:directorio' %}">Explorar las tiendas</a>
       {% endif %}
     </article>
   {% endfor %}
@@ -156,12 +141,12 @@
 {% endif %}
 
 {% if historias %}
-{# Videos de las tiendas (plan Premium), como las historias: un circulo por tienda que abre el visor. Son anuncios #}
-{# y lo dicen. El video solo se descarga cuando alguien lo toca; sin JavaScript el circulo abre el video tal cual. #}
+{# Videos de las tiendas (plan Premium), como las historias: un circulo por tienda que abre el visor. Desde el #}
+{# 2026-11-02 (pedido del dueño) la seccion se llama solo "Videos de las tiendas", sin la etiqueta "Anuncios". #}
+{# El video solo se descarga cuando alguien lo toca; sin JavaScript el circulo abre el video tal cual. #}
 <section class="container mm-seccion mm-historias" aria-labelledby="titulo-historias">
   <div class="mm-seccion-cabecera">
     <h2 id="titulo-historias">Videos de las tiendas</h2>
-    <span class="mm-historias-etiqueta">Anuncios</span>
   </div>
   <div class="mm-fila" data-fila>
     <button class="mm-fila-flecha mm-fila-anterior" type="button" data-mover="-1" aria-label="Ver videos anteriores" hidden><i class="bi bi-chevron-left"></i></button>
@@ -183,7 +168,7 @@
     <button class="mm-fila-flecha mm-fila-siguiente" type="button" data-mover="1" aria-label="Ver más videos" hidden><i class="bi bi-chevron-right"></i></button>
   </div>
 </section>
-{% include 'includes/visor_historias.html' with etiqueta='Anuncio' %}
+{% include 'includes/visor_historias.html' %}
 {% endif %}
 
 {% for categoria in estantes %}

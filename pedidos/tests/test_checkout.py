@@ -44,8 +44,8 @@ class CheckoutTests(TestCase):
         return respuesta.context['formulario'].errors
 
     def test_carrito_vacio_redirige(self):
-        self.assertRedirects(self.client.get(self.url), ruta('carrito:detalle'))
-        self.assertRedirects(self.client.post(self.url, self.datos()), ruta('carrito:detalle'))
+        self.assertRedirects(self.client.get(self.url), reverse('carrito_global:global'))
+        self.assertRedirects(self.client.post(self.url, self.datos()), reverse('carrito_global:global'))
 
     def test_todo_en_una_sola_pantalla(self):
         """Datos, entrega, pago y confirmar en la misma pagina: sin pasos ni pantalla de revision."""
@@ -97,7 +97,7 @@ class CheckoutTests(TestCase):
         self.assertTrue(enlace.startswith('https://wa.me/18095550000?text='))
         self.assertEqual(parse_qs(urlparse(enlace).query)['text'], [construir_mensaje(pedido)])
 
-        self.assertEqual(self.client.get(ruta('carrito:detalle')).context['lineas'], [])
+        self.assertEqual(self.client.get(reverse('carrito_global:global')).context['lineas'], [])
 
     def test_los_montos_enviados_por_el_navegador_se_ignoran(self):
         self.llenar_carrito(1)
@@ -235,7 +235,7 @@ class CheckoutTests(TestCase):
         self.llenar_carrito(4)
         Producto.objects.filter(pk=self.producto.pk).update(stock_almacen=1)
         respuesta = self.client.post(self.url, self.datos(), follow=True)
-        self.assertRedirects(respuesta, ruta('carrito:detalle'))
+        self.assertRedirects(respuesta, reverse('carrito_global:global'))
         self.assertContains(respuesta, 'No tenemos más unidades')
         self.assertEqual(Pedido.objects.count(), 0)
         self.assertEqual(respuesta.context['lineas'][0].cantidad, 1)

@@ -193,3 +193,18 @@ Decisiones tomadas en Multimix RD (movidas desde CLAUDE.md el 2026-10-28). Leela
   (`services.avanzar_pedido`, guardados antes del aviso). Debajo: cliente (WhatsApp y llamar), entrega y productos;
   luego "Todos los datos del pedido" como antes. El correo "Transferencia por revisar" lleva al pedido, no al pago.
   "Para hacer ahora" cuenta tambien el efectivo al recoger ("pedidos para cobrar al entregar").
+- Arreglos del dueño del 2026-11-02 (tarde):
+  - Portada sin productos repetidos: `tiendas.views._Repartidor` reparte de arriba hacia abajo (promociones, oferta
+    destacada, cuadros de categoria, vistos, ofertas, lo nuevo, filas por categoria) y una seccion con menos de 2
+    productos no se muestra; los cuadros de categoria llevan 2 o 4 fotos. Sin el cuadro "Tiendas para conocer": la
+    seccion sale una sola vez y no repite las destacadas. Los videos ya no dicen "Anuncios".
+  - Un solo carrito: `/tienda/<slug>/carrito/` (`carrito:detalle`) redirige a `/carrito/` (`carrito_global`), que por
+    tienda trae cupon, envio gratis, avisos de la revision y "Completa tu pedido". Todos los enlaces y redirecciones van
+    a `/carrito/`.
+  - Sin enlaces vacios (`href="#"`): los del visor de videos los pone `historias.js` y se ocultan sin direccion.
+  - `alt`: fotos de productos y promociones con su nombre, logos sueltos "Logo de <tienda>"; los logos junto al nombre
+    escrito son decorativos (`alt=""`).
+  - /vender: los pasos se numeran con CSS (escritos en el HTML se leian "1 1"); bloque de precio editable en
+    Configuracion > "Precio en la página Vender" (`vender_precio_*`, `core/0026`). OJO: el texto por defecto dice
+    "Primeros 3 meses gratis", pero los cobros todavia no lo aplican solos.
+  - `/tiendas/` vuelve a tener las etiquetas og: (le faltaba `block.super`).

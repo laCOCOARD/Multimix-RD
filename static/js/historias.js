@@ -129,6 +129,7 @@
     const item = itemActual();
     enlaceTienda.href = grupo.url;
     botonTienda.href = grupo.url;
+    botonTienda.hidden = !grupo.url;
     nombre.textContent = grupo.nombre;
     logo.replaceChildren();
     if (grupo.logo) {
@@ -141,8 +142,10 @@
     }
     titulo.textContent = item.titulo;
     titulo.hidden = !item.titulo;
+    // Sin producto vinculado no hay boton (ni un enlace vacio).
     botonProducto.hidden = !item.producto;
     if (item.producto) botonProducto.href = item.producto;
+    else botonProducto.removeAttribute('href');
     video.setAttribute('aria-label', item.titulo || `Video de ${grupo.nombre}`);
     pintarBarras();
     pausado = false;
