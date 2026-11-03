@@ -1550,3 +1550,48 @@ html.mm-visor-abierto { overflow: hidden; }
 .mm-dir-cat:hover { border-color: var(--mm-calido); color: var(--mm-texto); }
 .mm-dir-cat-activa { border-color: var(--mm-oscuro); background: var(--mm-oscuro); color: #fff !important; }
 .mm-celebracion-guardar:hover { border-color: var(--mm-oscuro); color: var(--mm-oscuro); }
+
+/* --- Tarjetas sin botones y ficha con entrega, pago y devoluciones (pedido del dueño el 2026-11-02) ------------
+   Toda la tarjeta lleva a la ficha (stretched-link en el nombre); el corazon y "Vendido por" quedan encima. */
+.mm-tarjeta { cursor: pointer; }
+.mm-tarjeta-vendedor a { position: relative; z-index: 2; }
+.mm-tarjeta-pie .mm-precio { margin-bottom: 0; }
+.mm-tarjeta-estado { margin: .25rem 0 0; font-size: .8rem; font-weight: 600; color: var(--mm-peligro); }
+
+.mm-ficha-cantidad { display: flex; align-items: center; gap: 1rem; }
+.mm-ficha-cantidad .form-label { font-weight: 600; }
+.mm-cantidad-grande { width: 10rem; }
+.mm-cantidad-grande .btn, .mm-cantidad-grande input { height: 3rem; font-size: 1.15rem; }
+.mm-cantidad-grande .btn { width: 3rem; padding: 0; }
+.js-paso-cantidad.enviando { opacity: .55; pointer-events: none; }
+
+.mm-mas-barato { display: flex; align-items: flex-start; gap: .6rem; margin: .25rem 0 1rem; padding: .7rem .9rem; border: 1px solid var(--mm-calido); border-radius: var(--mm-radio-chico); background: var(--mm-calido-suave); color: var(--mm-texto); font-size: .9rem; text-decoration: none; }
+.mm-mas-barato .bi { color: var(--mm-calido-texto); font-size: 1.1rem; }
+.mm-mas-barato:hover { text-decoration: underline; color: var(--mm-texto); }
+
+.mm-info-compra { display: grid; gap: .75rem; margin: 1rem 0; }
+.mm-info-cuadro { padding: .95rem 1rem; border: 1px solid var(--mm-borde); border-radius: var(--mm-radio); background: var(--mm-superficie); font-size: .92rem; }
+.mm-info-titulo { display: flex; align-items: center; gap: .5rem; margin: 0 0 .55rem; font-size: 1rem; font-weight: 800; }
+.mm-info-titulo .bi { color: var(--mm-calido-texto); font-size: 1.15rem; }
+.mm-info-lista { margin: 0; padding: 0; list-style: none; }
+.mm-info-lista > li + li { margin-top: .6rem; padding-top: .6rem; border-top: 1px dashed var(--mm-borde); }
+.mm-info-detalle { display: block; margin-top: .15rem; font-size: .85rem; color: var(--mm-texto-suave); }
+.mm-info-nota { margin: .45rem 0 0; font-size: .85rem; font-weight: 600; color: var(--mm-verde); }
+.mm-info-enlace { display: inline-block; margin-top: .55rem; font-size: .85rem; font-weight: 700; color: var(--mm-calido-texto); }
+.mm-zonas { width: 100%; margin-top: .45rem; font-size: .86rem; }
+.mm-zonas th { padding: .2rem .5rem .2rem 0; font-weight: 600; }
+.mm-zonas td { padding: .2rem 0 .2rem .5rem; text-align: right; white-space: nowrap; }
+
+.mm-comparar { display: grid; grid-template-columns: minmax(0, 1fr); gap: .5rem; margin: 0; padding: 0; list-style: none; }
+.mm-comparar > li { min-width: 0; }
+.mm-comparar-item { display: flex; align-items: center; gap: .85rem; padding: .7rem .9rem; border: 1px solid var(--mm-borde); border-radius: var(--mm-radio); background: var(--mm-superficie); color: var(--mm-texto); text-decoration: none; transition: border-color var(--mm-transicion), box-shadow var(--mm-transicion); }
+.mm-comparar-item:hover { border-color: var(--mm-calido); box-shadow: var(--mm-sombra); text-decoration: none; color: var(--mm-texto); }
+.mm-comparar-foto { flex: 0 0 auto; display: grid; place-items: center; width: 4rem; height: 4rem; overflow: hidden; border-radius: var(--mm-radio-chico); background: var(--mm-fondo); color: var(--mm-texto-suave); }
+.mm-comparar-foto img { width: 100%; height: 100%; object-fit: contain; mix-blend-mode: multiply; }
+.mm-comparar-datos { display: flex; flex-direction: column; flex: 1; min-width: 0; }
+.mm-comparar-tienda { display: inline-flex; align-items: center; gap: .3rem; font-weight: 700; }
+.mm-comparar-tienda .bi { color: var(--mm-calido-texto); }
+.mm-comparar-nombre { overflow: hidden; font-size: .85rem; color: var(--mm-texto-suave); white-space: nowrap; text-overflow: ellipsis; }
+.mm-comparar-precio { display: flex; flex-direction: column; align-items: flex-end; text-align: right; white-space: nowrap; }
+.mm-comparar-precio strong { font-size: 1.05rem; color: var(--mm-oscuro); }
+.mm-comparar-ahorro { font-size: .78rem; font-weight: 700; color: var(--mm-verde); }

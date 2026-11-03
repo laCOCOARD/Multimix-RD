@@ -20,8 +20,8 @@ from .forms_global import AvisoTransferenciaGlobalForm, CheckoutGlobalForm
 logger = logging.getLogger('multimix.carrito')
 
 
-@login_required
 def carrito_global(request):
+    """Carrito de todas las tiendas. Se ve y se edita sin cuenta; la cuenta se pide al pagar (checkout_global)."""
     carrito = CarritoGlobal(request)
     carritos = carrito.carritos()
     total_global = sum(c.resumen().total for c in carritos.values())

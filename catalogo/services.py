@@ -376,6 +376,32 @@ def relacionados(producto, limite=10):
     )
 
 
+def en_otras_tiendas(producto, limite=6):
+    """El mismo producto vendido por otras tiendas (pedido del dueño el 2026-11-02: "tiendas que lo tengan mas
+    barato"). Es el mismo si coincide el SKU o el nombre exacto (sin importar mayusculas). Solo lo que se puede
+    comprar, del mas barato al mas caro; cada uno lleva `ahorro`: cuanto menos cuesta que el de esta ficha (0 si no)."""
+    candidatos = list(
+        _base(agrupar=False).filter(q_comprable())
+        .filter(Q(sku__iexact=producto.sku) | Q(nombre__iexact=producto.nombre.strip()))
+        .exclude(tienda_id=producto.tienda_id)[:50]
+    )
+    candidatos.sort(key=lambda otro: (otro.precio_final, otro.pk))
+    for otro in candidatos:
+        otro.ahorro = max(producto.precio_final - otro.precio_final, 0)
+    return candidatos[:limite]
+
+
+def similares_en_otras_tiendas(producto, limite=10, excluir=()):
+    """Productos de la misma categoria principal en otras tiendas, para comparar (destacados y nuevos primero)."""
+    principal = producto.categoria.padre_id or producto.categoria_id
+    return list(
+        _base().filter(q_comprable())
+        .filter(Q(categoria_id=principal) | Q(categoria__padre_id=principal))
+        .exclude(tienda_id=producto.tienda_id).exclude(pk__in=excluir)
+        .order_by('-destacado', '-creado', '-id')[:limite]
+    )
+
+
 def filtrar_catalogo(filtros, categoria=None, tienda=None):
     """Aplica los filtros ya validados (FiltroCatalogoForm.cleaned_data) y el orden elegido.
 

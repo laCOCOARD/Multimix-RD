@@ -138,11 +138,19 @@ def producto(request, slug):
     vistos_antes = services.vistos(request.session, tienda, excluir=item.pk)
     services.recordar_visto(request.session, item)
     metricas.anotar(request, metricas.Evento.VISTA_PRODUCTO, tienda)
-    zonas = zonas_activas(tienda)
+    zonas = list(zonas_activas(tienda).order_by('tarifa', 'orden', 'nombre'))
+    # Debajo de la ficha (pedido del dueño el 2026-11-02): el mismo producto en otras tiendas, similares de otras
+    # tiendas y mas de esta.
+    otras = services.en_otras_tiendas(item)
     return render(request, 'catalogo/producto.html', {
         'producto': item,
         'fotos': item.fotos_ordenadas,
         'relacionados': services.relacionados(item),
+        'en_otras_tiendas': otras,
+        'mas_barato_en': next((otro for otro in otras if otro.ahorro), None),
+        'similares': services.similares_en_otras_tiendas(item, excluir=[otro.pk for otro in otras]),
+        'zonas': zonas[:6],
+        'hay_mas_zonas': len(zonas) > 6,
         'opciones': services.opciones_de(item),
         'vistos': vistos_antes,
         'oferta_termina': services.oferta_por_terminar(item),

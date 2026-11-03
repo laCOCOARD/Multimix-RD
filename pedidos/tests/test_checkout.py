@@ -56,9 +56,10 @@ class CheckoutTests(TestCase):
         for viejo in ('data-paso', 'js-siguiente', 'Revisa y confirma', 'pasos-checkout'):
             self.assertNotContains(respuesta, viejo)
 
-    def test_comprar_desde_la_tarjeta_lleva_directo_a_pagar(self):
-        lista = self.client.get(ruta('catalogo:lista'))
-        self.assertContains(lista, 'name="comprar"')
+    def test_comprar_ahora_desde_la_ficha_lleva_directo_a_pagar(self):
+        # Desde el 2026-11-02 las tarjetas no compran: se toca el producto y en su ficha esta "Comprar ahora".
+        self.assertNotContains(self.client.get(ruta('catalogo:lista')), 'name="comprar"')
+        self.assertContains(self.client.get(self.producto.get_absolute_url()), 'name="comprar"')
         respuesta = self.client.post(ruta('carrito:agregar'), {'producto_id': self.producto.pk, 'cantidad': 1, 'comprar': '1'})
         self.assertRedirects(respuesta, self.url, fetch_redirect_response=False)
         self.assertContains(self.client.get(self.url), 'Lámpara')

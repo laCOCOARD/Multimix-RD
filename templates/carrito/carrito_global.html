@@ -5,18 +5,22 @@
 {% block meta %}<meta name="robots" content="noindex">{% endblock %}
 
 {% block contenido %}
+{# Carrito de todas las tiendas (2026-11-02): se cambia la cantidad con − y + o se quita cada producto aqui mismo. #}
+{# Cada cambio va al carrito de su tienda (carrito:actualizar / eliminar) y vuelve a esta pagina. #}
 <div class="container py-4">
   <h1 class="h3 mb-4">Mi carrito</h1>
 
+  {% url 'carrito_global:global' as url_carrito %}
   {% if carritos %}
   <div class="row g-4">
     <div class="col-lg-8">
-      {% for tienda, carrito in carritos.items %}
+      {% for tienda_carrito, carrito in carritos.items %}
         {% with lineas=carrito.lineas resumen=carrito.resumen %}
-        <div class="mm-panel p-0 mb-3">
+        <section class="mm-panel p-0 mb-3" aria-label="Productos de {{ tienda_carrito.nombre }}">
           <div class="px-3 pt-3 pb-2 border-bottom d-flex align-items-center gap-2">
-            {% if tienda.logo %}<img src="{{ tienda.logo.url }}" alt="" width="28" height="28" class="rounded-circle object-fit-cover">{% endif %}
-            <strong>{{ tienda.nombre }}</strong>
+            {% if tienda_carrito.logo %}<img src="{{ tienda_carrito.logo.url }}" alt="" width="28" height="28" class="rounded-circle object-fit-cover">{% endif %}
+            <strong>{{ tienda_carrito.nombre }}</strong>
+            <a class="ms-auto small" href="{{ tienda_carrito.get_absolute_url }}">Ver la tienda</a>
           </div>
           {% for linea in lineas %}
           <div class="mm-linea">
@@ -28,7 +32,28 @@
             </a>
             <div class="mm-linea-datos">
               <a class="mm-linea-nombre" href="{{ linea.producto.get_absolute_url }}">{{ linea.producto.nombre }}</a>
-              <p class="small text-muted mb-1">{{ linea.precio_unitario|moneda }} c/u · {{ linea.cantidad }} ud.</p>
+              <p class="small text-muted mb-2">{{ linea.precio_unitario|moneda }} c/u</p>
+              <div class="d-flex flex-wrap align-items-center gap-2">
+                <form class="d-flex align-items-center gap-2" method="post" action="{% url 'carrito:actualizar' tienda_carrito.slug %}">
+                  {% csrf_token %}
+                  <input type="hidden" name="producto_id" value="{{ linea.producto.pk }}">
+                  <input type="hidden" name="next" value="{{ url_carrito }}">
+                  <div class="input-group mm-cantidad js-paso-cantidad" data-enviar>
+                    <button class="btn btn-outline-secondary solo-con-js" type="button" data-paso="-1" aria-label="Quitar una unidad de {{ linea.producto.nombre }}">−</button>
+                    <input class="form-control text-center" type="number" name="cantidad" value="{{ linea.cantidad }}"
+                           min="1" max="{{ linea.producto.tope_a_la_vista }}" step="1" inputmode="numeric"
+                           aria-label="Cantidad de {{ linea.producto.nombre }}">
+                    <button class="btn btn-outline-secondary solo-con-js" type="button" data-paso="1" aria-label="Agregar una unidad de {{ linea.producto.nombre }}">+</button>
+                  </div>
+                  <button class="btn btn-sm btn-outline-primary solo-sin-js" type="submit">Actualizar</button>
+                </form>
+                <form method="post" action="{% url 'carrito:eliminar' tienda_carrito.slug %}">
+                  {% csrf_token %}
+                  <input type="hidden" name="producto_id" value="{{ linea.producto.pk }}">
+                  <input type="hidden" name="next" value="{{ url_carrito }}">
+                  <button class="btn btn-sm btn-link text-danger" type="submit" aria-label="Quitar {{ linea.producto.nombre }} del carrito"><i class="bi bi-trash me-1" aria-hidden="true"></i>Quitar</button>
+                </form>
+              </div>
             </div>
             <p class="mm-linea-subtotal">{{ linea.subtotal|moneda }}</p>
           </div>
@@ -42,18 +67,21 @@
               <strong>{{ resumen.total|moneda }}</strong>
             </span>
           </div>
-        </div>
+        </section>
         {% endwith %}
       {% endfor %}
+      <a class="btn btn-link px-0" href="{% url 'tiendas:portada' %}"><i class="bi bi-arrow-left me-1"></i>Seguir comprando</a>
     </div>
 
     <div class="col-lg-4">
       <div class="mm-panel p-4">
         <h2 class="h6 mb-3">Resumen</h2>
-        <dl class="row small mb-0">
-          {% for tienda, carrito in carritos.items %}
-          <dt class="col-8 fw-normal text-muted">{{ tienda.nombre }}</dt>
-          <dd class="col-4 text-end mb-1">{{ carrito.resumen.total|moneda }}</dd>
+        <dl class="small mb-0">
+          {% for tienda_carrito, carrito in carritos.items %}
+          <div class="d-flex justify-content-between gap-3 mb-1">
+            <dt class="fw-normal text-muted">{{ tienda_carrito.nombre }}</dt>
+            <dd class="mb-0 text-nowrap">{{ carrito.resumen.total|moneda }}</dd>
+          </div>
           {% endfor %}
         </dl>
         <hr>
@@ -61,12 +89,15 @@
           <span>Total</span>
           <span>{{ total_global|moneda }}</span>
         </div>
-        <p class="text-muted small mt-2 mb-3">
-          <i class="bi bi-shield-check me-1"></i>Una sola transferencia para todas tus compras.
-        </p>
-        <a class="btn btn-primary w-100" href="{% url 'carrito_global:checkout_global' %}">
-          Confirmar pedido <i class="bi bi-arrow-right ms-1"></i>
-        </a>
+        <p class="text-muted small mt-2 mb-3">El envío se elige y se suma en el siguiente paso.</p>
+        {% url 'carrito_global:checkout_global' as url_checkout %}
+        {% if user.is_authenticated %}
+          <a class="btn btn-acento btn-lg w-100" href="{{ url_checkout }}">Continuar con el pedido <i class="bi bi-arrow-right ms-1"></i></a>
+        {% else %}
+          <a class="btn btn-acento btn-lg w-100" href="{% url 'clientes:entrar' %}?next={{ url_checkout|urlencode }}">Iniciar sesión y continuar</a>
+          <a class="btn btn-outline-primary w-100 mt-2" href="{% url 'clientes:registro' %}?next={{ url_checkout|urlencode }}">Crear cuenta y continuar</a>
+          <p class="small text-muted mt-2 mb-0">Tu carrito se guarda: no pierdes nada al entrar.</p>
+        {% endif %}
       </div>
     </div>
   </div>
@@ -75,9 +106,10 @@
   <div class="text-center py-5">
     <i class="bi bi-bag display-4 text-muted d-block mb-3"></i>
     <p class="lead">Todavía no hay nada aquí, pero eso tiene solución.</p>
-    <a class="btn btn-primary" href="{% url 'tiendas:directorio' %}">Ver tiendas</a>
+    <a class="btn btn-primary" href="{% url 'tiendas:portada' %}">Ver productos</a>
   </div>
   {% endif %}
 </div>
-
 {% endblock %}
+
+{% block scripts %}<script src="{% static 'js/cantidad.js' %}" defer></script>{% endblock %}

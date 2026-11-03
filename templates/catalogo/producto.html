@@ -164,21 +164,101 @@
           {% csrf_token %}
           <input type="hidden" name="producto_id" value="{{ producto.pk }}">
           <input type="hidden" name="next" value="{{ request.get_full_path }}">
-          <div class="row g-2 align-items-end">
-            <div class="col-4 col-sm-3">
-              <label class="form-label small mb-1" for="cantidad">Cantidad</label>
-              <input class="form-control form-control-lg text-center" type="number" id="cantidad" name="cantidad"
+          <div class="mm-ficha-cantidad">
+            <label class="form-label mb-0" for="cantidad">Cantidad</label>
+            {# El cliente elige cuantas: con − y + (cantidad.js) o escribiendo. Nunca se muestran existencias. #}
+            <div class="input-group mm-cantidad mm-cantidad-grande js-paso-cantidad">
+              <button class="btn btn-outline-secondary solo-con-js" type="button" data-paso="-1" aria-label="Quitar una unidad">−</button>
+              <input class="form-control text-center" type="number" id="cantidad" name="cantidad"
                      value="1" min="1" max="{{ cantidad_maxima }}" step="1" inputmode="numeric" required>
-            </div>
-            <div class="col">
-              <button class="btn btn-outline-primary btn-lg w-100" type="submit"><i class="bi bi-bag-plus me-1"></i>Agregar al carrito</button>
-            </div>
-            <div class="col-12">
-              <button class="btn btn-acento btn-lg w-100" type="submit" name="comprar" value="1"><i class="bi bi-lightning-charge-fill me-1"></i>Comprar ahora</button>
+              <button class="btn btn-outline-secondary solo-con-js" type="button" data-paso="1" aria-label="Agregar una unidad">+</button>
             </div>
           </div>
+          <div class="d-grid gap-2 mt-3">
+            <button class="btn btn-acento btn-lg" type="submit" name="comprar" value="1"><i class="bi bi-lightning-charge-fill me-1"></i>Comprar ahora</button>
+            <button class="btn btn-outline-primary btn-lg" type="submit"><i class="bi bi-bag-plus me-1"></i>Agregar al carrito</button>
+          </div>
         </form>
+        {% if mas_barato_en %}
+          <a class="mm-mas-barato" href="#en-otras-tiendas">
+            <i class="bi bi-tags" aria-hidden="true"></i>
+            <span><strong>{{ mas_barato_en.tienda.nombre }}</strong> lo tiene en {{ mas_barato_en.precio_final|moneda }}: ahorras {{ mas_barato_en.ahorro|moneda }}.</span>
+          </a>
+        {% endif %}
       {% endif %}
+
+
+
+      {# Entrega, pago y devoluciones en cuadros claros (pedido del dueño el 2026-11-02): lo mismo que ofrece el #}
+      {# checkout de esta tienda, con sus zonas, costos y plazos reales. #}
+      <div class="mm-info-compra">
+        <section class="mm-info-cuadro" aria-labelledby="titulo-entrega">
+          <h2 class="mm-info-titulo" id="titulo-entrega"><i class="bi bi-truck" aria-hidden="true"></i>Entrega</h2>
+          <ul class="mm-info-lista">
+            {% if hay_envio %}
+              <li>
+                <span class="mm-plazo">{% if plazo_envio and not producto.agotado %}A domicilio: llega <strong>{{ plazo_envio.texto }}</strong>, según tu zona.{% else %}A domicilio, según tu zona.{% endif %}</span>
+                <table class="mm-zonas">
+                  <caption class="visually-hidden">Zonas de envío, costo y días</caption>
+                  <tbody>
+                    {% for zona in zonas %}
+                      <tr>
+                        <th scope="row">{{ zona.nombre }}</th>
+                        <td>{% if zona.tarifa %}{{ zona.tarifa|moneda }}{% else %}Gratis{% endif %}</td>
+                        <td class="text-muted">{% if zona.dias_entrega_min == zona.dias_entrega_max or not zona.dias_entrega_max %}{{ zona.dias_entrega_min }}{% else %}{{ zona.dias_entrega_min }} a {{ zona.dias_entrega_max }}{% endif %} día{{ zona.dias_entrega_max|default:zona.dias_entrega_min|pluralize }}</td>
+                      </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+                {% if tienda.envio_gratis_desde %}<p class="mm-info-nota"><i class="bi bi-gift" aria-hidden="true"></i>Envío gratis en pedidos desde {{ tienda.envio_gratis_desde|moneda }}.</p>{% endif %}
+              </li>
+            {% endif %}
+            <li>
+              <span class="mm-plazo">{% if not producto.agotado %}Para recoger: listo <strong>{{ plazo_recoger.texto }}</strong>, sin costo.{% else %}Para recoger, sin costo.{% endif %}</span>
+              <span class="mm-info-detalle">{% if tienda.direccion_tienda %}En {{ tienda.direccion_tienda }}{% if tienda.horario %} · {{ tienda.horario }}{% endif %}{% else %}La tienda te confirma dónde recogerlo.{% endif %}</span>
+            </li>
+            {% if not hay_envio %}<li>Por ahora solo retiro en la tienda.</li>{% endif %}
+          </ul>
+          <a class="mm-info-enlace" href="{% url 'core:envios' tienda.slug %}">Ver envíos y retiros</a>
+        </section>
+
+        {% if formas_de_pago %}
+          <section class="mm-info-cuadro" aria-labelledby="titulo-pago">
+            <h2 class="mm-info-titulo" id="titulo-pago"><i class="bi bi-wallet2" aria-hidden="true"></i>Forma de pago</h2>
+            <p class="mb-1">Formas de pago: {{ formas_de_pago|join:', ' }}.</p>
+            <p class="mm-info-detalle mb-0"><i class="bi bi-shield-check" aria-hidden="true"></i> La tienda confirma tu pago antes de preparar el pedido. Nunca te pedimos datos de tarjeta.</p>
+            {% if 'metodos-de-pago' in paginas_publicadas %}<a class="mm-info-enlace" href="{% url 'core:pagina' 'metodos-de-pago' %}">Cómo pagar</a>{% endif %}
+          </section>
+        {% endif %}
+
+        <section class="mm-info-cuadro" aria-labelledby="titulo-devoluciones">
+          <h2 class="mm-info-titulo" id="titulo-devoluciones"><i class="bi bi-arrow-repeat" aria-hidden="true"></i>Cambios y devoluciones</h2>
+          {% if plataforma.dias_devolucion %}
+            <p class="mb-0">Tienes {{ plataforma.dias_devolucion }} días después de la entrega para pedir un cambio o devolución desde tu pedido.</p>
+          {% else %}
+            <p class="mb-0">Consulta con la tienda antes de comprar si aceptan cambios.</p>
+          {% endif %}
+          {% if 'cambios-y-devoluciones' in paginas_publicadas %}<a class="mm-info-enlace" href="{% url 'core:pagina' 'cambios-y-devoluciones' %}">Ver la política</a>{% elif 'garantias' in paginas_publicadas %}<a class="mm-info-enlace" href="{% url 'core:pagina' 'garantias' %}">Ver la política</a>{% endif %}
+        </section>
+      </div>
+
+      {# Quien lo vende: la tienda, con enlace a su catalogo y su WhatsApp para dudas (contacto secundario). #}
+      <section class="mm-vendedor" aria-labelledby="titulo-vendedor">
+        <span class="mm-tienda-avatar mm-vendedor-avatar{% if tienda.logo %} con-logo{% endif %}" aria-hidden="true">
+          {% if tienda.logo %}<img src="{{ tienda.logo.url }}" alt="" width="52" height="52" loading="lazy">{% else %}{{ tienda.nombre|slice:':1'|upper }}{% endif %}
+        </span>
+        <div class="mm-vendedor-datos">
+          <p class="mm-vendedor-etiqueta mb-0">Vendido por</p>
+          <h2 class="mm-vendedor-nombre" id="titulo-vendedor"><a href="{{ tienda.get_absolute_url }}">{{ tienda.nombre }}</a></h2>
+          {% if tienda.horario %}<p class="mm-vendedor-detalle mb-0">{{ tienda.horario }}</p>{% endif %}
+        </div>
+        <div class="mm-vendedor-acciones">
+          <a class="btn btn-sm btn-primary" href="{{ tienda.get_absolute_url }}">Ver la tienda</a>
+          {% if enlace_consulta %}
+            <a class="btn btn-sm btn-outline-success" href="{{ enlace_consulta }}" target="_blank" rel="noopener"><i class="bi bi-whatsapp me-1" aria-hidden="true"></i>Preguntar</a>
+          {% endif %}
+        </div>
+      </section>
 
       <div class="mm-ficha-acciones">
         {% if user.is_authenticated %}
@@ -218,35 +298,6 @@
         <a class="mm-faq-hacer" href="#preguntas"><i class="bi bi-chat-dots me-1"></i>¿Tienes una duda? La tienda te responde aquí</a>
       {% endif %}
 
-      {# Quien lo vende: la tienda, con enlace a su catalogo y su WhatsApp para dudas (contacto secundario). #}
-      <section class="mm-vendedor" aria-labelledby="titulo-vendedor">
-        <span class="mm-tienda-avatar mm-vendedor-avatar{% if tienda.logo %} con-logo{% endif %}" aria-hidden="true">
-          {% if tienda.logo %}<img src="{{ tienda.logo.url }}" alt="" width="52" height="52" loading="lazy">{% else %}{{ tienda.nombre|slice:':1'|upper }}{% endif %}
-        </span>
-        <div class="mm-vendedor-datos">
-          <p class="mm-vendedor-etiqueta mb-0">Vendido por</p>
-          <h2 class="mm-vendedor-nombre" id="titulo-vendedor"><a href="{{ tienda.get_absolute_url }}">{{ tienda.nombre }}</a></h2>
-          {% if tienda.horario %}<p class="mm-vendedor-detalle mb-0">{{ tienda.horario }}</p>{% endif %}
-        </div>
-        <div class="mm-vendedor-acciones">
-          <a class="btn btn-sm btn-primary" href="{{ tienda.get_absolute_url }}">Ver la tienda</a>
-          {% if enlace_consulta %}
-            <a class="btn btn-sm btn-outline-success" href="{{ enlace_consulta }}" target="_blank" rel="noopener"><i class="bi bi-whatsapp me-1" aria-hidden="true"></i>Preguntar</a>
-          {% endif %}
-        </div>
-      </section>
-
-      {# Entrega y pago: lo mismo que ofrece el checkout de esta tienda. #}
-      <ul class="list-unstyled mm-garantias mt-3 mb-0">
-        {% if not producto.agotado %}
-          {% if hay_envio and plazo_envio %}<li class="mm-plazo"><i class="bi bi-calendar-check"></i><span>A domicilio: llega <strong>{{ plazo_envio.texto }}</strong>, según tu zona.</span></li>{% endif %}
-          <li class="mm-plazo"><i class="bi bi-shop"></i><span>Para recoger: listo <strong>{{ plazo_recoger.texto }}</strong>.</span></li>
-        {% endif %}
-        <li><i class="bi bi-truck"></i><span>{% if hay_envio %}{% if tienda.envio_gratis_desde %}Envío gratis en pedidos desde {{ tienda.envio_gratis_desde|moneda }}. {% endif %}Envío a domicilio o retiro en la tienda.{% else %}Por ahora solo retiro en la tienda.{% endif %} <a href="{% url 'core:envios' tienda.slug %}">Ver envíos y retiros</a></span></li>
-        {% if formas_de_pago %}<li><i class="bi bi-wallet2"></i><span>Formas de pago: {{ formas_de_pago|join:', ' }}.</span></li>{% endif %}
-        <li><i class="bi bi-shield-check"></i>La tienda confirma tu pago antes de preparar el pedido. Nunca te pedimos datos de tarjeta.</li>
-        {% if plataforma.dias_devolucion %}<li><i class="bi bi-arrow-repeat"></i><span>{{ plataforma.dias_devolucion }} días después de la entrega para pedir un cambio o devolución.{% if 'garantias' in paginas_publicadas %} <a href="{% url 'core:pagina' 'garantias' %}">Ver la política</a>{% endif %}</span></li>{% endif %}
-      </ul>
       </div>
     </div>
   </div>
@@ -373,10 +424,50 @@
     </div>
   </section>
 
-  {% if relacionados %}
-    <section class="mm-seccion px-0">
+  {% if en_otras_tiendas %}
+    {# El mismo producto en otras tiendas, del mas barato al mas caro, para comparar (2026-11-02). #}
+    <section class="mm-seccion px-0" id="en-otras-tiendas" aria-labelledby="titulo-otras-tiendas">
       <div class="mm-seccion-cabecera">
-        <h2>También te puede interesar</h2>
+        <div>
+          <h2 id="titulo-otras-tiendas">También lo venden otras tiendas</h2>
+          <p class="mm-seccion-texto">Aquí cuesta {{ producto.precio_final|moneda }} en {{ tienda.nombre }}.</p>
+        </div>
+      </div>
+      <ul class="mm-comparar">
+        {% for otro in en_otras_tiendas %}
+          <li>
+            <a class="mm-comparar-item" href="{{ otro.get_absolute_url }}">
+              <span class="mm-comparar-foto">{% with foto=otro.foto_principal %}{% if foto %}<img src="{{ foto.url_tarjeta }}" alt="" loading="lazy" decoding="async" width="64" height="64">{% else %}<i class="bi bi-image" aria-hidden="true"></i>{% endif %}{% endwith %}</span>
+              <span class="mm-comparar-datos">
+                <span class="mm-comparar-tienda"><i class="bi bi-shop" aria-hidden="true"></i>{{ otro.tienda.nombre }}</span>
+                <span class="mm-comparar-nombre">{{ otro.nombre }}</span>
+              </span>
+              <span class="mm-comparar-precio">
+                <strong>{{ otro.precio_final|moneda }}</strong>
+                {% if otro.ahorro %}<span class="mm-comparar-ahorro">Ahorras {{ otro.ahorro|moneda }}</span>{% endif %}
+              </span>
+              <i class="bi bi-chevron-right text-muted" aria-hidden="true"></i>
+            </a>
+          </li>
+        {% endfor %}
+      </ul>
+    </section>
+  {% endif %}
+
+  {% if similares %}
+    <section class="mm-seccion px-0" aria-labelledby="titulo-similares">
+      <div class="mm-seccion-cabecera">
+        <h2 id="titulo-similares">Similares en otras tiendas</h2>
+        <a href="{% url 'tiendas:buscar' %}?categoria={% if producto.categoria.padre %}{{ producto.categoria.padre.slug }}{% else %}{{ producto.categoria.slug }}{% endif %}">Ver más <i class="bi bi-arrow-right" aria-hidden="true"></i></a>
+      </div>
+      {% include 'includes/fila_productos.html' with productos=similares %}
+    </section>
+  {% endif %}
+
+  {% if relacionados %}
+    <section class="mm-seccion px-0" aria-labelledby="titulo-relacionados">
+      <div class="mm-seccion-cabecera">
+        <h2 id="titulo-relacionados">Más de {{ tienda.nombre }}</h2>
         <a href="{% url 'catalogo:categoria' tienda.slug producto.categoria.slug %}">Ver {{ producto.categoria.nombre|lower }} <i class="bi bi-arrow-right"></i></a>
       </div>
       {% include 'includes/fila_productos.html' with productos=relacionados %}

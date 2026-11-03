@@ -43,6 +43,18 @@ Decisiones tomadas en Multimix RD (movidas desde CLAUDE.md el 2026-10-28). Leela
   principal y sus subcategorias, solo lo comprable, con foto primero; una consulta con `RowNumber`; solo categorias con
   3 o mas, hasta 6), tiendas y una franja corta para vender. Todo sale de la base. La cabecera lleva siempre el lugar
   del carrito (`con-carrito`): sin el, en la PC el carrito caia a una segunda fila.
+- Tarjetas y ficha para comprar (pedido del dueño el 2026-11-02): las tarjetas de producto ya no tienen "Lo quiero"
+  ni el boton del carrito; toda la tarjeta lleva a la ficha (`stretched-link` en el nombre; el corazon y "Vendido
+  por" quedan encima) y conservan el precio. En la ficha: cantidad con − y + (`static/js/cantidad.js`, generico para
+  `.js-paso-cantidad`), "Comprar ahora" primero, aviso si otra tienda lo tiene mas barato, cuadros de Entrega (cada
+  zona con su costo o "Gratis" y sus dias, envio gratis desde, recoger con direccion y horario), Forma de pago y
+  Cambios y devoluciones, y despues el vendedor. Debajo: "También lo venden otras tiendas"
+  (`catalogo.services.en_otras_tiendas`: mismo SKU o mismo nombre sin importar mayusculas, solo lo comprable, del mas
+  barato al mas caro, con lo que se ahorra), "Similares en otras tiendas" (misma categoria principal), "Más de
+  <tienda>" y vistos. Dentro de una tienda la tarjeta de un producto de otra dice "Vendido por".
+- Carrito de todas las tiendas (`carrito_global`, el de la cabecera): se ve sin cuenta y se edita ahi mismo (− y +
+  que se envian solos, "Quitar"); cada cambio va a `carrito:actualizar`/`eliminar` de su tienda con `next` de vuelta.
+  La cuenta se pide al continuar (`checkout_global`).
 - Comprar con menos pasos (2026-11-02): quien crea su cuenta viniendo del pago va directo al pago, sin las preguntas
   de gustos (las contesta despues desde "Mi cuenta").
 - Portada, Fase 1 del rediseño (2026-10-27, reemplazada el 2026-11-02): bienvenida carbon "Descubre. Compra. Emprende." con "Explorar productos"

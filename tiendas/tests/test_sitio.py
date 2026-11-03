@@ -74,10 +74,9 @@ class DirectorioTests(DosTiendas):
         self.assertEqual({p.nombre for p in portada.context['ofertas']}, {'Lámpara', 'Pesas rusas'})
         self.assertContains(portada, 'Vendido por')
         self.assertContains(portada, f'<a href="{self.fitnes.get_absolute_url()}">Fitnes RD</a>', html=True)
-        # Cada tarjeta compra en el carrito de su propia tienda.
-        self.assertContains(portada, ruta('carrito:agregar', tienda=self.fitnes))
-        self.assertContains(portada, ruta('carrito:agregar', tienda=self.multimix))
-        self.assertContains(portada, 'data-tienda="Fitnes RD"')
+        # Cada tarjeta lleva a la ficha en su tienda (sin botones de compra desde el 2026-11-02).
+        self.assertContains(portada, f'href="{self.pesas.get_absolute_url()}"')
+        self.assertNotContains(portada, 'name="comprar"')
 
     def test_la_portada_solo_ofrece_lo_que_se_puede_comprar_de_tiendas_activas(self):
         from catalogo.models import Categoria, Producto
@@ -334,10 +333,9 @@ class DirectorioTests(DosTiendas):
         self.assertCountEqual([p.nombre for p in respuesta.context['pagina']], ['Lámpara', 'Pesas rusas'])
         self.assertContains(respuesta, self.pesas.get_absolute_url())
         self.assertContains(respuesta, 'Fitnes RD')
-        # Cada resultado se agrega o se compra en el carrito de su propia tienda.
-        self.assertContains(respuesta, ruta('carrito:agregar', tienda=self.fitnes))
-        self.assertContains(respuesta, ruta('carrito:agregar', tienda=self.multimix))
-        self.assertContains(respuesta, 'name="comprar"')
+        # Las tarjetas no compran (2026-11-02): llevan a la ficha de su tienda, donde se elige la cantidad y se compra.
+        self.assertNotContains(respuesta, 'name="comprar"')
+        self.assertContains(respuesta, f'class="stretched-link" href="{self.pesas.get_absolute_url()}"')
         respuesta = self.client.get(reverse('tiendas:buscar'), {'q': 'pesas'})
         self.assertEqual([p.nombre for p in respuesta.context['pagina']], ['Pesas rusas'])
 
