@@ -51,7 +51,7 @@ class FichaParaComprarTests(TestCase):
     def test_la_ficha_muestra_entrega_pago_y_devoluciones(self):
         ficha = self.client.get(self.crema.get_absolute_url())
         for texto in ('Entrega', 'Santo Domingo', 'RD$ 250.00', 'Gratis', 'Para recoger: listo', 'Cambios y devoluciones',
-                      'Comprar ahora', 'Agregar al carrito', 'js-paso-cantidad'):
+                      'Comprar ahora', 'Agregar al carrito', 'js-paso-cantidad', 'js/cantidad'):
             self.assertContains(ficha, texto)
 
     def test_las_tarjetas_no_tienen_botones_de_compra(self):

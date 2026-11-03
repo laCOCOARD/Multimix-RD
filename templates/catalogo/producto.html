@@ -1,5 +1,5 @@
 {% extends 'base.html' %}
-{% load moneda %}
+{% load moneda static %}
 
 {% block titulo %}{{ producto.nombre }} · {{ tienda.nombre }}{% endblock %}
 {% block descripcion %}{{ producto.descripcion|default:producto.nombre|truncatechars:155 }}{% endblock %}
@@ -494,3 +494,5 @@
   </div>
 {% endif %}
 {% endblock %}
+
+{% block scripts %}<script src="{% static 'js/cantidad.js' %}" defer></script>{% endblock %}
