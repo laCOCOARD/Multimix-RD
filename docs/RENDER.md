@@ -86,6 +86,15 @@ no está llegando: los límites por cuenta y por correo siguen funcionando, pero
   se cuentan en la base (`core.Intento`), así que no se reinician al dormirse.
 - **Respaldos de la base.** No hay ninguno automático.
 
+## Donde esta la base (desde el 2026-11-02)
+
+La base ya **no** esta en Render: el 2026-11-02 se paso a la base PostgreSQL gratis del proyecto de Supabase (el
+mismo de las fotos), que no caduca. `DATABASE_URL` del servicio web apunta al *Session pooler* de Supabase
+(`aws-0-us-east-1.pooler.supabase.com:5432`, usuario `postgres.<id del proyecto>`); la conexion directa de Supabase
+es solo IPv6 y Render no la alcanza. La contraseña se cambia en Supabase (Project Settings → Database) y despues en
+`DATABASE_URL` de Render. El plan gratis de Supabase pausa el proyecto tras 7 dias sin ninguna actividad: si pasa,
+se reanuda desde su panel. Para respaldar, los mismos pasos de abajo con la URL de Supabase.
+
 ## Respaldar la base y pasarla a otra
 
 La base gratis **se borra 30 días después de crearla**. Antes de esa fecha hay que copiar los datos a una base
