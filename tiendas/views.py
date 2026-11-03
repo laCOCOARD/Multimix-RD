@@ -61,9 +61,10 @@ class _Repartidor:
         return elegidos
 
 
-def _tarjetas_de_la_portada(categorias, oferta, repartidor):
-    """Los cuadros de arriba de la portada, al estilo de las grandes tiendas: la cuenta, la mejor oferta y cada
-    categoria con dos o cuatro fotos de sus productos. Se recortan categorias para completar filas de cuatro."""
+def _tarjetas_de_la_portada(categorias, repartidor):
+    """Los cuadros de arriba de la portada: cada categoria con dos o cuatro fotos de sus productos. Se recortan
+    categorias para completar filas de cuatro. Sin el cuadro de la cuenta ni el de la oferta destacada (pedido del
+    dueño el 2026-11-03: la barra de abajo ya lleva a la cuenta y el carrusel ya muestra las ofertas)."""
     de_categorias = []
     for categoria in categorias:
         candidatos = [producto for producto in categoria.estante if producto.foto_principal and producto.pk not in repartidor.usados]
@@ -71,14 +72,12 @@ def _tarjetas_de_la_portada(categorias, oferta, repartidor):
         productos = repartidor.tomar(candidatos, cuantos, con_foto=True)
         if productos:
             de_categorias.append({'tipo': 'categoria', 'categoria': categoria, 'productos': productos})
-    fijas = [{'tipo': 'cuenta'}, *([{'tipo': 'oferta', 'producto': oferta}] if oferta else [])]
-    total = len(fijas) + len(de_categorias)
+    total = len(de_categorias)
     if total > 4 and total % 4:
-        for sobrante in de_categorias[len(de_categorias) - total % 4:]:
+        for sobrante in de_categorias[total - total % 4:]:
             repartidor.usados.difference_update(producto.pk for producto in sobrante['productos'])
-        de_categorias = de_categorias[:len(de_categorias) - total % 4]
-    # La cuenta primero y la oferta entre las categorias.
-    return [fijas[0], *de_categorias[:2], *fijas[1:], *de_categorias[2:]]
+        de_categorias = de_categorias[:total - total % 4]
+    return de_categorias
 
 
 @require_GET
@@ -101,10 +100,7 @@ def portada(request):
     for categoria in categorias:
         categoria.estante = estantes.get(categoria.pk, [])
     todas_las_ofertas = ofertas_del_sitio(PRODUCTOS_POR_ESTANTE * 2)
-    oferta = next((p for p in todas_las_ofertas if p.foto_principal and p.pk not in repartidor.usados), None)
-    if oferta:
-        repartidor.usados.add(oferta.pk)
-    tarjetas = _tarjetas_de_la_portada(categorias, oferta, repartidor)
+    tarjetas = _tarjetas_de_la_portada(categorias, repartidor)
     vistos = repartidor.tomar(vistos_recientes(request.session), PRODUCTOS_POR_ESTANTE)
     ofertas = repartidor.tomar(todas_las_ofertas, PRODUCTOS_POR_ESTANTE)
     nuevos = repartidor.tomar(nuevos_del_sitio(PRODUCTOS_POR_ESTANTE * 2), PRODUCTOS_POR_ESTANTE)

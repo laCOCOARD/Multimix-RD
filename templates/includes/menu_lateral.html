@@ -83,14 +83,9 @@
         <div class="collapse mm-menu-contenido" id="menu-ayuda" data-bs-parent="#menu-secciones">
           {% if contenido_pie.hay_preguntas %}<a href="{% url 'core:preguntas' %}"><i class="bi bi-chat-square-text"></i>Preguntas frecuentes</a>{% endif %}
           {% if enlace_whatsapp_tienda %}<a href="{{ enlace_whatsapp_tienda }}" target="_blank" rel="noopener"><i class="bi bi-whatsapp"></i>Escríbenos por WhatsApp</a>{% endif %}
-          {% if marca.telefono %}<a href="tel:{{ marca.telefono }}"><i class="bi bi-telephone"></i>{{ marca.telefono }}</a>{% endif %}
-          {% if marca.correo %}<a href="mailto:{{ marca.correo }}"><i class="bi bi-envelope"></i>{{ marca.correo }}</a>{% endif %}
-          {% for pagina in paginas_ayuda %}
+          {# Solo lo que mas se busca (2026-11-03): el telefono, el correo y las politicas siguen en el pie de pagina. #}
+          {% for pagina in paginas_ayuda|slice:":2" %}
             <a href="{% url 'core:pagina' pagina.slug %}"><i class="bi bi-file-earmark-text"></i>{{ pagina.titulo }}</a>
-          {% endfor %}
-          <a href="{% url 'core:terminos' %}"><i class="bi bi-file-earmark-check"></i>Términos del sitio</a>
-          {% for pagina in paginas_legales %}
-            <a href="{% url 'core:pagina' pagina.slug %}"><i class="bi bi-file-earmark-lock"></i>{{ pagina.titulo }}</a>
           {% endfor %}
         </div>
       </section>

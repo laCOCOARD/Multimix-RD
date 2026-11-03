@@ -62,46 +62,20 @@
 </section>
 
 {% if tarjetas %}
-{# Cuadros de arriba: la cuenta, cada categoria con cuatro fotos, la mejor oferta y las tiendas. #}
+{# Cuadros de arriba: cada categoria con dos o cuatro fotos (sin cuenta ni oferta destacada, 2026-11-03). #}
 <section class="container mm-az-cuadros" aria-label="Explora">
   {% for tarjeta in tarjetas %}
     <article class="mm-az-cuadro">
-      {% if tarjeta.tipo == 'cuenta' %}
-        {% if user.is_authenticated %}
-          <h2 class="mm-az-cuadro-titulo">Hola, {{ user.first_name|default:user.username }}</h2>
-          <div class="mm-az-atajos">
-            <a href="{% url 'clientes:cuenta' %}"><i class="bi bi-box-seam" aria-hidden="true"></i><span>Mis pedidos</span></a>
-            <a href="{% url 'clientes:favoritos' %}"><i class="bi bi-heart" aria-hidden="true"></i><span>Favoritos</span></a>
-            <a href="{% url 'tiendas:buscar' %}?oferta=on"><i class="bi bi-tag" aria-hidden="true"></i><span>Ofertas</span></a>
-            <a href="{% url 'tiendas:directorio' %}"><i class="bi bi-shop" aria-hidden="true"></i><span>Tiendas</span></a>
-          </div>
-          <a class="mm-az-cuadro-enlace" href="{% url 'clientes:cuenta' %}">Ir a mi cuenta</a>
-        {% else %}
-          <h2 class="mm-az-cuadro-titulo">Entra y compra más fácil</h2>
-          <p class="mm-az-cuadro-texto">Guarda tus favoritos, sigue tus pedidos y no vuelvas a escribir tus datos.</p>
-          <a class="btn btn-acento w-100" href="{% url 'clientes:entrar' %}">Iniciar sesión</a>
-          <a class="mm-az-cuadro-enlace" href="{% url 'clientes:registro' %}">¿Eres nuevo? Crea tu cuenta gratis</a>
-        {% endif %}
-      {% elif tarjeta.tipo == 'categoria' %}
-        <h2 class="mm-az-cuadro-titulo">{{ tarjeta.categoria.nombre }}</h2>
-        <div class="mm-az-mosaico">
-          {% for producto in tarjeta.productos %}
-              <a href="{{ producto.get_absolute_url }}">
-                <span class="mm-az-foto"><img src="{{ producto.foto_principal.url_tarjeta }}" alt="{{ producto.nombre }}" loading="lazy" decoding="async" width="200" height="200"></span>
-                <span class="mm-az-foto-nombre">{{ producto.nombre }}</span>
-              </a>
-          {% endfor %}
-        </div>
-        <a class="mm-az-cuadro-enlace" href="{% url 'tiendas:buscar' %}?categoria={{ tarjeta.categoria.slug }}">Ver más en {{ tarjeta.categoria.nombre }}</a>
-      {% elif tarjeta.tipo == 'oferta' %}
-        <h2 class="mm-az-cuadro-titulo">Oferta destacada</h2>
-        <a class="mm-az-oferta" href="{{ tarjeta.producto.get_absolute_url }}">
-          <span class="mm-az-foto grande"><img src="{{ tarjeta.producto.foto_principal.url_tarjeta }}" alt="{{ tarjeta.producto.nombre }}" loading="lazy" decoding="async" width="400" height="400"></span>
-          <span class="mm-az-oferta-precio"><span class="mm-az-descuento">-{{ tarjeta.producto.porcentaje_descuento }}%</span> {{ tarjeta.producto.precio_final|moneda }}</span>
-          <span class="mm-az-foto-nombre">{{ tarjeta.producto.nombre }}</span>
-        </a>
-        <a class="mm-az-cuadro-enlace" href="{% url 'tiendas:buscar' %}?oferta=on">Ver todas las ofertas</a>
-      {% endif %}
+      <h2 class="mm-az-cuadro-titulo">{{ tarjeta.categoria.nombre }}</h2>
+      <div class="mm-az-mosaico">
+        {% for producto in tarjeta.productos %}
+            <a href="{{ producto.get_absolute_url }}">
+              <span class="mm-az-foto"><img src="{{ producto.foto_principal.url_tarjeta }}" alt="{{ producto.nombre }}" loading="lazy" decoding="async" width="200" height="200"></span>
+              <span class="mm-az-foto-nombre">{{ producto.nombre }}</span>
+            </a>
+        {% endfor %}
+      </div>
+      <a class="mm-az-cuadro-enlace" href="{% url 'tiendas:buscar' %}?categoria={{ tarjeta.categoria.slug }}">Ver más en {{ tarjeta.categoria.nombre }}</a>
     </article>
   {% endfor %}
 </section>

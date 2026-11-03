@@ -3,10 +3,12 @@
 Todo con datos de prueba: ningun pago real (la transferencia la confirma la tienda; la tarjeta no esta conectada).
 """
 from decimal import Decimal
+from urllib.parse import unquote
 
 from django.test import TestCase
 from django.urls import reverse
 
+from catalogo.models import Producto
 from catalogo.tests.test_modelos import crear_producto
 from core.models import ConfiguracionTienda
 from pedidos.models import Pedido
@@ -151,3 +153,32 @@ class BuscadorDelSitioTests(TestCase):
         # Vacio o una sola letra: nada.
         self.assertEqual(self.client.get(reverse('tiendas:sugerencias'), {'q': 'c'}).json(),
                          {'resultados': [], 'tiendas': []})
+
+
+class WhatsAppDeCadaTiendaEnLaConfirmacionTests(TestCase):
+    """Pedido del dueño (2026-11-03): al comprar en varias tiendas, cada una sale con su propio WhatsApp."""
+
+    def setUp(self):
+        self.tienda = tienda_de_prueba(whatsapp='18095550123')
+        self.otra = tienda_de_prueba('Rincón Fitness', prefijo='FIT', whatsapp='18295550456')
+        self.sin_numero = tienda_de_prueba('Casa Sin Número', prefijo='CSN')
+        crear_producto(nombre='Lámpara', precio=Decimal('1000'))
+        crear_producto(nombre='Bandas', sku='B1', precio=Decimal('900'), tienda=self.otra)
+        crear_producto(nombre='Vaso', sku='V1', precio=Decimal('300'), tienda=self.sin_numero)
+        entrar_como_cliente(self.client, 'ana@example.com')
+
+    def test_cada_tienda_con_su_numero_y_sin_boton_si_no_tiene(self):
+        for producto in Producto.objects.all():
+            self.client.post(ruta('carrito:agregar', tienda=producto.tienda), {'producto_id': producto.pk, 'cantidad': 1})
+        respuesta = self.client.post(reverse('carrito_global:checkout_global'), {
+            'nombre': 'Ana Pérez', 'telefono': '809-555-1234', 'metodo_entrega': 'recoger',
+            'acepta_terminos': 'on', 'sitio_web': '',
+        }, follow=True)
+        self.assertEqual(Pedido.objects.count(), 3)
+        self.assertContains(respuesta, 'https://wa.me/18095550123?text=')
+        self.assertContains(respuesta, 'https://wa.me/18295550456?text=')
+        self.assertContains(respuesta, 'Escribir a Rincón Fitness')
+        self.assertNotContains(respuesta, 'Escribir a Casa Sin Número')
+        # El mensaje lleva el numero del pedido de esa tienda.
+        pedido_fit = Pedido.objects.get(tienda=self.otra)
+        self.assertIn(pedido_fit.numero, unquote(respuesta.content.decode()))

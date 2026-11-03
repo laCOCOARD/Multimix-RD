@@ -107,8 +107,11 @@
               <span>Total</span>
               <span>{{ pedido.total|moneda }}</span>
             </div>
-            <div class="mt-2">
+            <div class="mt-2 d-flex flex-wrap gap-2">
               <a class="btn btn-sm btn-outline-primary" href="{% url 'pedidos:confirmacion' pedido.token %}">Ver pedido <i class="bi bi-arrow-right ms-1"></i></a>
+              {% if pedido.enlace_whatsapp %}
+                <a class="btn btn-sm btn-outline-success" href="{{ pedido.enlace_whatsapp }}" target="_blank" rel="noopener"><i class="bi bi-whatsapp me-1"></i>Escribir a {{ pedido.tienda.nombre }}</a>
+              {% endif %}
             </div>
           </div>
         {% endfor %}

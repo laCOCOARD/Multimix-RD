@@ -43,6 +43,11 @@ Decisiones tomadas en Multimix RD (movidas desde CLAUDE.md el 2026-10-28). Leela
   principal y sus subcategorias, solo lo comprable, con foto primero; una consulta con `RowNumber`; solo categorias con
   3 o mas, hasta 6), tiendas y una franja corta para vender. Todo sale de la base. La cabecera lleva siempre el lugar
   del carrito (`con-carrito`): sin el, en la PC el carrito caia a una segunda fila.
+- Menos contenido (pedido del dueño el 2026-11-03): los cuadros de arriba son solo de categorias (sin el de la cuenta
+  ni el de la oferta destacada: la barra de abajo ya lleva a la cuenta y el carrusel ya muestra ofertas), sin el boton
+  flotante de volver arriba (tapaba las tarjetas en el celular) y el menu "Ayuda" con preguntas, WhatsApp y las dos
+  primeras paginas de ayuda; telefono, correo y politicas quedan en el pie. En la confirmacion del carrito global cada
+  tienda lleva su boton "Escribir a <tienda>" con su propio WhatsApp y el pedido escrito (si la tienda tiene numero).
 - Tarjetas y ficha para comprar (pedido del dueño el 2026-11-02): las tarjetas de producto ya no tienen "Lo quiero"
   ni el boton del carrito; toda la tarjeta lleva a la ficha (`stretched-link` en el nombre; el corazon y "Vendido
   por" quedan encima) y conservan el precio. En la ficha: cantidad con − y + (`static/js/cantidad.js`, generico para

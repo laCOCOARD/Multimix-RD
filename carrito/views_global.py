@@ -12,7 +12,7 @@ from core.models import cuentas_del_sitio
 from core.red import ip_del_cliente as _ip_cliente
 from pagos import services as pagos
 from pedidos import services as pedidos
-from pedidos.whatsapp import construir_enlace
+from pedidos.whatsapp import construir_enlace, enlace_del_pedido
 
 from .carrito import CarritoGlobal
 from .forms_global import AvisoTransferenciaGlobalForm, CheckoutGlobalForm
@@ -119,7 +119,13 @@ def _contexto_checkout(carrito, formulario):
 def confirmacion_global(request, grupo):
     from pagos.models import PagoGlobal
     pago_global = get_object_or_404(PagoGlobal, grupo=grupo)
-    pedidos_del_grupo = pago_global.pedidos.select_related('tienda').order_by('tienda__nombre')
+    pedidos_del_grupo = list(
+        pago_global.pedidos.select_related('tienda').prefetch_related('detalles').order_by('tienda__nombre')
+    )
+    # Cada tienda tiene su propio WhatsApp: el cliente le escribe a cada una sin entrar a cada pedido.
+    for pedido in pedidos_del_grupo:
+        numero = pedido.tienda.whatsapp
+        pedido.enlace_whatsapp = enlace_del_pedido(pedido, numero) if numero else ''
     return render(request, 'carrito/confirmacion_global.html', {
         'pago_global': pago_global,
         'pedidos': pedidos_del_grupo,

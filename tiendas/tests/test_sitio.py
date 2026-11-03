@@ -163,14 +163,15 @@ class DirectorioTests(DosTiendas):
         self.assertNotContains(portada, 'mm-banner')
         self.assertNotContains(portada, 'Ver catálogo')
         self.assertNotContains(portada, 'Tu tienda de bienestar')
-        # Al estilo de las grandes tiendas (2026-11-02): cuadros de la cuenta, categorias y tiendas arriba.
+        # Al estilo de las grandes tiendas (2026-11-02): cuadros de categorias y tiendas arriba. Sin el cuadro de
+        # la cuenta ni el de la oferta destacada (pedido del dueño el 2026-11-03).
         self.assertContains(portada, 'Compra en las tiendas de emprendedores dominicanos')
-        self.assertContains(portada, 'Ir a mi cuenta')
+        self.assertNotContains(portada, 'Ir a mi cuenta')
+        self.assertNotContains(portada, 'Oferta destacada')
         # "Tiendas para conocer" una sola vez (pedido del dueño el 2026-11-02).
         self.assertContains(portada, 'Tiendas para conocer', count=1)
-        # Sin sesion, el cuadro de la cuenta invita a entrar.
         self.client.logout()
-        self.assertContains(self.client.get('/'), 'Entra y compra más fácil')
+        self.assertNotContains(self.client.get('/'), 'Entra y compra más fácil')
         self.assertContains(portada, f'href="{reverse("tiendas:directorio")}"')
         self.assertContains(portada, '¿Qué producto estás buscando?')
         self.assertContains(portada, 'Tiendas de emprendedores en un solo lugar.')
