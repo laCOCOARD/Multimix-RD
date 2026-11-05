@@ -6,8 +6,9 @@ Cómo está desplegado el sitio hoy y cómo mantenerlo. Para un servidor propio 
 
 | Qué             | Dónde                                                                          |
 | --------------- | ------------------------------------------------------------------------------ |
-| Sitio web       | Render, servicio web `Multimix-RD-web` (plan gratis), rama `main` de GitHub     |
-| Base de datos   | PostgreSQL de Render `Multimix-RD` (plan gratis: **se borra a los 30 días**)    |
+| Sitio web       | Render, servicio web `multimix-rd` (`srv-dbkuijk9v7es73fdggqg`, Virginia, plan gratis), rama `main` de GitHub: https://multimix-rd.onrender.com |
+| Base de datos   | Supabase PostgreSQL (us-east-1, Virginia), por el Session pooler                |
+| (antes)         | `Multimix-RD-web` en Oregon, suspendido desde el 2026-11-04: la base quedaba lejos y cada pagina tardaba segundos |
 | Fotos           | Supabase Storage, bucket público `multimix-media`                               |
 | Correos         | Brevo, por su API                                                               |
 
