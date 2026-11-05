@@ -126,6 +126,12 @@ class AvisosPorCorreoTests(TestCase):
         with override_settings(CORREO_CONFIGURADO=True):
             self.client.post(url)
             self.assertEqual(mail.outbox[-1].to, ['admin@sitio.example'])
+            # Con correo de contacto llega ahi, que es a donde van los avisos del sitio.
+            configuracion = ConfiguracionTienda.obtener()
+            configuracion.correo = 'contacto@sitio.example'
+            configuracion.save()
+            self.client.post(url)
+            self.assertEqual(mail.outbox[-1].to, ['contacto@sitio.example'])
             with mock.patch('core.admin.send_mail', side_effect=OSError('clave incorrecta')):
                 respuesta = self.client.post(url, follow=True)
             self.assertContains(respuesta, 'No se pudo enviar: OSError: clave incorrecta')

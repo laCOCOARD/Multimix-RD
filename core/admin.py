@@ -51,7 +51,8 @@ class ConfiguracionTiendaAdmin(AvisaImagenesSinGuardar, admin.ModelAdmin):
         return propias + super().get_urls()
 
     def _destino_de_prueba(self, request):
-        return request.user.email or ConfiguracionTienda.obtener().correo
+        # El correo de contacto primero: es a donde llegan los avisos del sitio (pedido del dueño el 2026-11-05).
+        return ConfiguracionTienda.obtener().correo or request.user.email
 
     def change_view(self, request, object_id, form_url='', extra_context=None):
         contexto = {
