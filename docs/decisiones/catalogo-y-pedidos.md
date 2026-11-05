@@ -78,7 +78,9 @@ Decisiones tomadas en Multimix RD (movidas desde CLAUDE.md el 2026-10-28). Leela
 - Inicio de tienda: `catalogo.services.categorias_de_portada(tienda)` trae las categorias con productos de
   la tienda y da a la que no tiene imagen la foto de uno de ellos.
 - Fotos por SKU: `catalogo.services.asignar_foto_por_sku` usa el nombre del archivo como SKU (dentro de la
-  tienda) y deja la foto como principal. La pagina del panel las envia una por una con `fetch` (cada foto se convierte y se sube al
+  tienda) y deja la foto como principal. Desde el 2026-11-05 `SKU-2.jpg` a `SKU-9.jpg` son fotos secundarias (`orden` = el
+  numero) si no hay un producto con ese SKU completo; con "reemplazar" la principal no borra las numeradas y cada
+  numerada reemplaza solo la de su numero, asi se sube todo junto en cualquier orden. La pagina del panel las envia una por una con `fetch` (cada foto se convierte y se sube al
   almacenamiento; en una sola peticion se agotaria el tiempo de Gunicorn). Sin JavaScript funciona con un POST normal.
 - QR de la factura: lleva `pedidos.factura.codigo_de_verificacion` (el id firmado con `Signer`, sin fecha) en
   `/factura/<codigo>/`, nunca el token: el token abre la pagina privada del pedido y la factura se comparte en

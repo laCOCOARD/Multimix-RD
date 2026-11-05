@@ -1,5 +1,6 @@
 """Catalogo: secciones de la portada de cada tienda, filtros del listado y carga de fotos por SKU."""
 import logging
+import re
 from dataclasses import dataclass
 from datetime import timedelta
 from pathlib import Path
@@ -460,13 +461,26 @@ def _es_imagen(archivo):
     return True
 
 
-def asignar_foto_por_sku(archivo, tienda, reemplazar=False):
-    """Pone el archivo como foto principal del producto de la tienda cuyo SKU es el nombre del archivo.
+# `RLJ-001-2.jpg`: la foto numero 2 del producto RLJ-001 (pedido del dueño el 2026-11-05).
+SUFIJO_DE_FOTO = re.compile(r'^(?P<sku>.+)-(?P<numero>[2-9])$')
 
-    `123785.jpg` va al producto con SKU 123785. Con `reemplazar` se borran las fotos que ya tenia.
+
+def asignar_foto_por_sku(archivo, tienda, reemplazar=False):
+    """Pone el archivo como foto del producto de la tienda cuyo SKU es el nombre del archivo.
+
+    `123785.jpg` va como foto principal del producto con SKU 123785; `123785-2.jpg` hasta `123785-9.jpg`, como sus
+    fotos secundarias en ese orden (si no hay un producto cuyo SKU sea el nombre completo). Con `reemplazar`, la
+    principal borra las fotos que ya tenia el producto salvo las secundarias numeradas, y cada secundaria reemplaza
+    a la que tenia su mismo numero: asi se puede subir todo de una vez, en cualquier orden.
     """
     sku = Path(archivo.name).stem.strip().upper()
-    producto = Producto.objects.filter(tienda=tienda, sku=sku).first() if tienda else None
+    productos = Producto.objects.filter(tienda=tienda) if tienda else Producto.objects.none()
+    producto = productos.filter(sku=sku).first()
+    numero = None
+    if producto is None and (sufijo := SUFIJO_DE_FOTO.match(sku)):
+        producto = productos.filter(sku=sufijo['sku']).first()
+        numero = int(sufijo['numero']) if producto else None
+        sku = sufijo['sku'] if producto else sku
     if producto is None:
         return FotoPorSku(archivo.name, sku, False, 'No hay ningún producto con ese SKU.')
     try:
@@ -476,12 +490,18 @@ def asignar_foto_por_sku(archivo, tienda, reemplazar=False):
     if not _es_imagen(archivo):
         return FotoPorSku(archivo.name, sku, False, 'El archivo no es una imagen válida.')
 
-    nueva = FotoProducto.objects.create(producto=producto, imagen=archivo, principal=True)
+    if numero:
+        nueva = FotoProducto.objects.create(producto=producto, imagen=archivo, orden=numero)
+        anteriores = producto.fotos.filter(orden=numero, principal=False)
+    else:
+        nueva = FotoProducto.objects.create(producto=producto, imagen=archivo, principal=True)
+        anteriores = producto.fotos.filter(orden__lt=2)
     if reemplazar:
         # Se borran una a una para que tambien se elimine el archivo de cada foto.
-        for anterior in producto.fotos.exclude(pk=nueva.pk):
+        for anterior in anteriores.exclude(pk=nueva.pk):
             anterior.delete()
-    return FotoPorSku(archivo.name, sku, True, producto.nombre)
+    detalle = f'{producto.nombre} (foto {numero})' if numero else producto.nombre
+    return FotoPorSku(archivo.name, sku, True, detalle)
 
 
 # --- Miniaturas de las fotos (Fase 4 del rediseño, 2026-10-27) ------------------------------

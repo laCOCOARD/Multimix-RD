@@ -321,6 +321,26 @@ class FotosPorSkuTests(PanelBase):
         self.assertEqual(self.producto.fotos.filter(principal=True).count(), 1)
         self.assertEqual(self.producto.fotos.count(), 1)
 
+    def test_fotos_secundarias_con_guion_y_numero(self):
+        """`L1-2.jpg` y `L1-3.jpg` son las fotos 2 y 3 del producto L1, en cualquier orden y sin pisar la principal."""
+        fotos = [imagen_de_prueba('L1-3.png'), imagen_de_prueba('L1-2.png'), imagen_de_prueba('L1.png')]
+        respuesta = self.client.post(self.url, {'fotos': fotos, 'reemplazar': '1'})
+        self.assertContains(respuesta, '3 foto(s) asignadas, 0 sin asignar.')
+        self.assertEqual(
+            list(self.producto.fotos.values_list('principal', 'orden')), [(True, 0), (False, 2), (False, 3)],
+        )
+        # Volver a subir la foto 2 con "reemplazar" cambia solo esa.
+        segunda = self.producto.fotos.get(orden=2)
+        respuesta = self.client.post(
+            self.url, {'fotos': imagen_de_prueba('l1-2.png'), 'reemplazar': '1'}, HTTP_X_REQUESTED_WITH='fetch',
+        )
+        self.assertEqual(respuesta.json()['resultados'][0]['detalle'], 'Lámpara (foto 2)')
+        self.assertFalse(FotoProducto.objects.filter(pk=segunda.pk).exists())
+        self.assertEqual(self.producto.fotos.count(), 3)
+        # Un SKU sin producto, con o sin numero, no se asigna; el de otra tienda tampoco (ver tiendas/tests).
+        respuesta = self.client.post(self.url, {'fotos': imagen_de_prueba('NOEXISTE-2.png')}, HTTP_X_REQUESTED_WITH='fetch')
+        self.assertEqual(respuesta.json()['resultados'][0]['asignada'], False)
+
     def test_rechaza_lo_que_no_es_una_imagen(self):
         falsa = SimpleUploadedFile('L1.jpg', b'esto no es una foto')
         gif = SimpleUploadedFile('L1.gif', b'GIF89a')
