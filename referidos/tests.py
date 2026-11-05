@@ -147,6 +147,83 @@ class PremiosTests(ConTiendas):
         self.assertEqual(cargo.monto, D('1000.00'))
 
 
+class EscaleraDePremiosTests(ConTiendas):
+    """Pedido del dueño el 2026-11-05: 2 activas = 25% + anuncio; 4 = 50% + destacada 15 dias; 6 = mes gratis +
+    insignia "Tienda embajadora" (una sola vez); despues, cada 2 vuelve el primer premio."""
+
+    def activar(self, cuantas):
+        invitadas = [self.invitar(f'Invitada {n}') for n in range(cuantas)]
+        planes.generar_mensualidades(date(2026, 10, 25))
+        for invitada in invitadas:
+            cargo = Cargo.objects.get(tienda=invitada, tipo=Cargo.Tipo.MENSUALIDAD, periodo=date(2026, 11, 1))
+            with self.captureOnCommitCallbacks(execute=True):
+                planes.aprobar_cargo(cargo, self.admin)
+
+    def mensualidad(self, hoy):
+        return [c for c in planes.generar_mensualidades(hoy) if c.tienda_id == self.referente.pk][0]
+
+    def test_los_niveles_y_el_mes_gratis(self):
+        from tiendas.services import tiendas_destacadas
+
+        self.activar(8)
+        premios = list(PremioReferido.objects.filter(tienda=self.referente).order_by('numero'))
+        self.assertEqual([(p.numero, p.descuento, p.anuncios_extra) for p in premios],
+                         [(1, D('25'), 1), (2, D('50'), 0), (3, D('100'), 0), (4, D('25'), 1)])
+        self.assertIsNone(premios[0].destacada_hasta)
+        self.assertEqual(premios[1].destacada_hasta, timezone.localdate() + timedelta(days=15))
+        self.referente.refresh_from_db()
+        self.assertEqual(self.referente.embajadora_desde, timezone.localdate())
+        # Sale entre las destacadas por el premio, aunque nadie la marco.
+        self.assertFalse(self.referente.destacada)
+        self.assertIn(self.referente, tiendas_destacadas())
+        PremioReferido.objects.filter(pk=premios[1].pk).update(destacada_hasta=timezone.localdate() - timedelta(days=1))
+        self.assertNotIn(self.referente, tiendas_destacadas())
+
+        # Un premio por mensualidad, en orden: noviembre 25%, diciembre 50%, enero gratis y febrero 25%.
+        noviembre = Cargo.objects.get(tienda=self.referente, periodo=date(2026, 11, 1))
+        self.assertEqual(noviembre.monto, D('750.00'))
+        self.assertEqual(self.mensualidad(date(2026, 11, 25)).monto, D('500.00'))
+        enero = self.mensualidad(date(2026, 12, 25))
+        self.assertEqual(enero.estado, Cargo.Estado.ANULADO)
+        self.assertTrue(enero.nota.startswith(services.NOTA_MES_GRATIS))
+        self.assertIn('-100%', enero.detalle)
+        febrero = self.mensualidad(date(2027, 1, 25))
+        self.assertEqual(febrero.monto, D('750.00'))
+        self.assertEqual(PremioReferido.objects.get(tienda=self.referente, numero=4).cargo_id, febrero.pk)
+        # El mes gratis queda usado: no vuelve a aplicarse aunque su mensualidad este anulada.
+        programa = services.programa_de(self.referente)
+        tercero = next(p for p in programa['premios'] if p.numero == 3)
+        self.assertTrue(tercero.mes_gratis)
+        self.assertFalse(tercero.disponible)
+        self.assertTrue(programa['embajadora'])
+
+    def test_la_insignia_se_ve_en_la_tienda_y_en_el_directorio_y_no_se_quita(self):
+        self.activar(6)
+        self.referente.refresh_from_db()
+        self.assertContains(self.client.get(self.referente.get_absolute_url()), 'Tienda embajadora')
+        self.assertContains(self.client.get(reverse('tiendas:directorio')), 'Tienda embajadora')
+        # Si una invitada se va, el premio y la insignia se quedan.
+        Tienda.objects.filter(invitada_por__referente=self.referente).update(activa=False)
+        self.referente.refresh_from_db()
+        self.assertIsNotNone(self.referente.embajadora_desde)
+
+    def test_el_panel_muestra_la_escalera_y_el_proximo_premio(self):
+        self.activar(2)
+        self.client.force_login(self.vendedor)
+        inicio = self.client.get(reverse('admin:index'))
+        self.assertContains(inicio, 'tu tienda destacada en la portada por 15 días')
+        self.assertContains(inicio, 'un mes gratis')
+        self.assertContains(inicio, 'Tienda embajadora')
+        self.assertContains(inicio, 'para tu próximo premio (50%)')
+        self.assertEqual(inicio.context['programa']['proximo']['numero'], 2)
+
+    def test_el_correo_del_mes_gratis(self):
+        self.activar(6)
+        correo = [m for m in mail.outbox if 'premio' in m.subject.lower()][-1]
+        self.assertIn('Un mes gratis', correo.body)
+        self.assertIn('Tienda embajadora', correo.body)
+
+
 class PanelDelVendedorTests(ConTiendas):
     def test_el_inicio_muestra_el_avance_y_solo_sus_premios(self):
         ajena = self.tienda('Otra Tienda', 'ajeno')

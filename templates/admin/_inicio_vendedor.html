@@ -93,9 +93,18 @@
       <div class="pv-crecimiento-card">
         <h3 class="pv-crecimiento-titulo">Invita tiendas y gana premios</h3>
         {% if programa %}
-        <p class="pv-crecimiento-texto">Por cada {{ programa.por_premio }} tiendas que abran con tu enlace y paguen su primera mensualidad, ganas <strong>{{ programa.descuento_premio|floatformat:"-2" }}% en tu próxima mensualidad</strong> y <strong>1 anuncio extra en la portada por {{ programa.dias_anuncio }} días</strong>. La tienda que invitas recibe {{ programa.descuento_bienvenida|floatformat:"-2" }}% en su primera mensualidad.</p>
+        <p class="pv-crecimiento-texto">Cuenta cada tienda que abra con tu enlace y pague su primera mensualidad. La tienda que invitas recibe {{ programa.descuento_bienvenida|floatformat:"-2" }}% en su primera mensualidad.{% if programa.embajadora %} <strong>★ Eres Tienda embajadora.</strong>{% endif %}</p>
+        <ul class="pv-ref-escalera">
+          {% for escalon in programa.escalera %}
+            <li{% if programa.activas >= escalon.invitadas %} class="logrado"{% endif %}>
+              <strong>{{ escalon.invitadas }} tiendas:</strong>
+              {% if escalon.descuento >= 100 %}un mes gratis{% else %}{{ escalon.descuento|floatformat:"-2" }}% en tu próxima mensualidad{% endif %}{% if escalon.anuncios_extra %} y {{ escalon.anuncios_extra }} anuncio extra en la portada por {{ programa.dias_anuncio }} días{% endif %}{% if escalon.dias_destacada %} y tu tienda destacada en la portada por {{ escalon.dias_destacada }} días{% endif %}{% if escalon.embajadora %} y la insignia «Tienda embajadora»{% endif %}.
+            </li>
+          {% endfor %}
+          <li>Después, cada {{ programa.por_premio }} tiendas más: {{ programa.descuento_premio|floatformat:"-2" }}% y 1 anuncio extra.</li>
+        </ul>
         <div class="pv-ref-avance">
-          <p class="pv-crecimiento-etiqueta">Llevas <strong>{{ programa.avance }} de {{ programa.por_premio }}</strong> para tu próximo premio</p>
+          <p class="pv-crecimiento-etiqueta">Llevas <strong>{{ programa.avance }} de {{ programa.por_premio }}</strong> para tu próximo premio ({% if programa.proximo.descuento >= 100 %}un mes gratis{% else %}{{ programa.proximo.descuento|floatformat:"-2" }}%{% endif %})</p>
           <div class="pv-ref-barra" role="progressbar" aria-label="Avance al próximo premio" aria-valuenow="{{ programa.avance }}" aria-valuemin="0" aria-valuemax="{{ programa.por_premio }}"><span style="width: {{ programa.porcentaje_avance }}%"></span></div>
         </div>
         <div class="pv-ref-stats">
@@ -108,10 +117,12 @@
             {% for premio in programa.premios %}
               <li>
                 <strong>Premio {{ premio.numero }}:</strong>
-                {% if premio.cargo and premio.cargo.estado != 'anulado' %}{{ premio.descuento|floatformat:"-2" }}% usado en {{ premio.cargo.concepto }}.
-                {% elif premio.disponible %}{{ premio.descuento|floatformat:"-2" }}% para tu próxima mensualidad (úsalo antes del {{ premio.vence|date:"j \d\e F" }}).
+                {% if premio.mes_gratis %}mes gratis: {{ premio.cargo.concepto }}.
+                {% elif premio.usado %}{{ premio.descuento|floatformat:"-2" }}% usado en {{ premio.cargo.concepto }}.
+                {% elif premio.disponible %}{% if premio.descuento >= 100 %}un mes gratis{% else %}{{ premio.descuento|floatformat:"-2" }}%{% endif %} para tu próxima mensualidad (úsalo antes del {{ premio.vence|date:"j \d\e F" }}).
                 {% else %}el descuento venció el {{ premio.vence|date:"j \d\e F" }}.{% endif %}
                 {% if premio.anuncios_vigentes %}+{{ premio.anuncios_extra }} anuncio hasta el {{ premio.anuncios_hasta|date:"j \d\e F" }}.{% endif %}
+                {% if premio.destacada_vigente %}Tienda destacada hasta el {{ premio.destacada_hasta|date:"j \d\e F" }}.{% endif %}
               </li>
             {% endfor %}
           </ul>

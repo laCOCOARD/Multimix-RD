@@ -3,9 +3,12 @@
 ¡Felicidades! Ya son {{ por_premio }} tiendas más que abrieron en {{ sitio }} con tu enlace y pagaron su primera mensualidad.
 {% for premio in premios %}
 Tu premio {{ premio.numero }}:
-- {{ premio.descuento|floatformat:"-2" }}% de descuento en tu próxima mensualidad (se usa antes del {{ premio.vence|date:"j \d\e F \d\e Y" }}).
-- {{ premio.anuncios_extra }} anuncio extra en la portada hasta el {{ premio.anuncios_hasta|date:"j \d\e F" }}.
-{% endfor %}
+{% if premio.descuento >= 100 %}- Un mes gratis: tu próxima mensualidad no se cobra (se usa antes del {{ premio.vence|date:"j \d\e F \d\e Y" }}).
+{% else %}- {{ premio.descuento|floatformat:"-2" }}% de descuento en tu próxima mensualidad (se usa antes del {{ premio.vence|date:"j \d\e F \d\e Y" }}).
+{% endif %}{% if premio.anuncios_extra %}- {{ premio.anuncios_extra }} anuncio extra en la portada hasta el {{ premio.anuncios_hasta|date:"j \d\e F" }}.
+{% endif %}{% if premio.destacada_hasta %}- Tu tienda sale entre las tiendas destacadas de la portada hasta el {{ premio.destacada_hasta|date:"j \d\e F" }}.
+{% endif %}{% if premio.embajadora %}- La insignia «Tienda embajadora», que se ve en tu tienda y en el directorio. Es para siempre.
+{% endif %}{% endfor %}
 El descuento se aplica solo en tu mensualidad. Sigue invitando: cada {{ por_premio }} tiendas activas, otro premio.
 
 Puedes ver tus pagos en tu panel:

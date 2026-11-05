@@ -46,6 +46,10 @@ class Tienda(models.Model):
         default=False,
         help_text='Las tiendas destacadas aparecen en una sección especial de la portada y del directorio.',
     )
+    embajadora_desde = models.DateField(
+        'tienda embajadora desde', null=True, blank=True, editable=False,
+        help_text='Premio del programa de referidos (6 tiendas invitadas activas). La insignia no se quita.',
+    )
     orden = models.PositiveSmallIntegerField(default=0, help_text='Posición en el directorio de tiendas.')
     usuarios = models.ManyToManyField(
         settings.AUTH_USER_MODEL, blank=True, related_name='tiendas', verbose_name='vendedores',

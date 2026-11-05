@@ -363,3 +363,10 @@ html[data-theme="dark"] .pv-al-dia { background: #14352a; color: #bbf7d0; }
 .pv-ref-barra span { display: block; height: 100%; min-width: .6rem; border-radius: inherit; background: #f59e0b; }
 .pv-ref-premios { margin: .75rem 0 0; padding-left: 1.1rem; font-size: .88rem; line-height: 1.5; }
 .pv-ref-premios li + li { margin-top: .35rem; }
+/* Escalera de premios del programa de referidos (2026-11-05). */
+.pv-ref-escalera { margin: .6rem 0 0; padding: 0; list-style: none; font-size: .85rem; line-height: 1.45; }
+.pv-ref-escalera li { position: relative; padding-left: 1.4rem; color: var(--body-quiet-color); }
+.pv-ref-escalera li + li { margin-top: .3rem; }
+.pv-ref-escalera li::before { content: "○"; position: absolute; left: .1rem; color: var(--body-quiet-color); }
+.pv-ref-escalera li.logrado { color: var(--body-fg); }
+.pv-ref-escalera li.logrado::before { content: "✓"; color: #d97706; font-weight: 800; }

@@ -97,8 +97,10 @@ def banners_de(tienda):
 
 
 def tiendas_destacadas():
-    """Tiendas activas marcadas como destacadas, en su orden."""
-    return Tienda.objects.activas().filter(destacada=True).order_by('orden', 'nombre')
+    """Tiendas activas marcadas como destacadas, en su orden, y las que lo estan por un premio del programa de
+    referidos (referidos.services.NIVELES) mientras les dure."""
+    premio_vigente = Q(premios_referidos__destacada_hasta__gte=timezone.localdate())
+    return Tienda.objects.activas().filter(Q(destacada=True) | premio_vigente).distinct().order_by('orden', 'nombre')
 
 
 def directorio():

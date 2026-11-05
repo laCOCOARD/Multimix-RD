@@ -113,3 +113,9 @@ Decisiones tomadas en Multimix RD (movidas desde CLAUDE.md el 2026-10-28). Leela
   ganar un premio si hay una por pagar sin comprobante) y lo explica en `Cargo.detalle`. Un premio no se quita si la
   invitada se va. Reglas en "Condiciones para vendedores" (`core/0025`). Las tablas solo las ve el administrador
   principal; el vendedor ve su avance en el inicio del panel.
+- Escalera de premios (dueño, 2026-11-05, "lo que recomiendes"; `referidos.services.NIVELES`): premio 1 (2 activas)
+  25% + 1 anuncio 30 dias; premio 2 (4) 50% en lugar del 25% + destacada en la portada 15 dias
+  (`PremioReferido.destacada_hasta`, la lee `tiendas_destacadas`); premio 3 (6) mes gratis + insignia "Tienda
+  embajadora" (`Tienda.embajadora_desde`, para siempre, una sola vez); desde el 4, otra vez el premio 1. Un premio por
+  mensualidad, en orden. El mes gratis deja la mensualidad ANULADA con nota "Mes gratis..." (no es ingreso ni cierra
+  la tienda; `Cargo.monto` no admite 0) y ese premio cuenta como usado. Reglas en `core/0027`.

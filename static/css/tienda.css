@@ -710,6 +710,9 @@ html:not(.js) .solo-con-js { display: none !important; }
 .mm-tienda-nombre { margin: 0; font-size: 1.1rem; font-weight: 700; letter-spacing: -.01em; overflow-wrap: anywhere; }
 .mm-tienda-nombre a { color: var(--mm-oscuro); }
 .mm-tienda-nombre a:hover { text-decoration: none; }
+/* Insignia del programa de referidos (6 tiendas invitadas activas, 2026-11-05). */
+.mm-insignia-embajadora { display: inline-flex; align-items: center; gap: .3rem; width: fit-content; margin: 0; padding: .1rem .55rem; border-radius: 999px; background: var(--mm-calido-suave); color: var(--mm-calido-texto); font-size: .72rem; font-weight: 800; letter-spacing: .02em; }
+.mm-insignia-en-banner { margin-bottom: .6rem; background: var(--mm-calido); color: #111827; font-size: .8rem; }
 .mm-tienda-categorias { margin: 0; font-size: .8rem; font-weight: 600; color: var(--mm-texto-suave); }
 .mm-tienda-texto { margin: 0; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; font-size: .9rem; line-height: 1.5; color: var(--mm-texto); }
 .mm-tienda-pie { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .5rem .75rem; margin-top: auto; padding-top: .85rem; border-top: 1px solid var(--mm-borde); font-size: .86rem; color: var(--mm-texto-suave); }

@@ -62,6 +62,7 @@
   <div class="container">
     <div class="row">
       <div class="col-lg-7">
+        {% if tienda.embajadora_desde %}<p class="mm-insignia-embajadora mm-insignia-en-banner"><i class="bi bi-award-fill" aria-hidden="true"></i>Tienda embajadora de Multimix RD</p>{% endif %}
         <h1 class="mm-banner-titulo">{{ tienda.banner_titulo|default:tienda.nombre }}</h1>
         {% if tienda.banner_subtitulo %}<p class="mm-banner-subtitulo">{{ tienda.banner_subtitulo }}</p>{% endif %}
         <div class="d-flex flex-wrap gap-2">

@@ -11,6 +11,7 @@
     </span>
     <div class="mm-tienda-datos">
       <h3 class="mm-tienda-nombre"><a class="stretched-link" href="{{ item.get_absolute_url }}">{{ item.nombre }}</a></h3>
+      {% if item.embajadora_desde %}<p class="mm-insignia-embajadora"><i class="bi bi-award-fill" aria-hidden="true"></i>Tienda embajadora</p>{% endif %}
       {% if item.categorias_principales %}
         <p class="mm-tienda-categorias">{{ item.categorias_principales|join:' · ' }}</p>
       {% endif %}

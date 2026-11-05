@@ -72,8 +72,30 @@ INVITADAS_POR_PREMIO = 2
 DESCUENTO_DEL_PREMIO = Decimal('25')
 ANUNCIOS_DEL_PREMIO = 1
 DIAS_DE_ANUNCIO = 30
+DIAS_DESTACADA = 15
 DIAS_PARA_USAR = 90
 DESCUENTO_DE_BIENVENIDA = Decimal('10')
+# Escalera de premios (pedido del dueño el 2026-11-05). El premio 1 (2 activas) da 25% y un anuncio extra; el 2
+# (4 activas) da 50% en lugar del 25% y la tienda sale entre las destacadas; el 3 (6 activas) es un mes gratis y la
+# insignia "Tienda embajadora", una sola vez. Desde el 4 (8, 10... activas) vuelve el premio del primer nivel.
+NIVELES = {
+    1: {'descuento': DESCUENTO_DEL_PREMIO, 'anuncios_extra': ANUNCIOS_DEL_PREMIO, 'dias_destacada': 0, 'embajadora': False},
+    2: {'descuento': Decimal('50'), 'anuncios_extra': 0, 'dias_destacada': DIAS_DESTACADA, 'embajadora': False},
+    3: {'descuento': Decimal('100'), 'anuncios_extra': 0, 'dias_destacada': 0, 'embajadora': True},
+}
+# Un mes gratis no se cobra: la mensualidad queda anulada con esta nota (y el premio queda usado en ella).
+NOTA_MES_GRATIS = 'Mes gratis'
+
+
+def nivel(numero):
+    """Lo que trae el premio numero `numero` de una tienda."""
+    return NIVELES.get(numero, NIVELES[1])
+
+
+def _premio_usado(premio):
+    """Usado: en una mensualidad pagada o por pagar, o en un mes gratis."""
+    return premio.cargo_id is not None and (
+        premio.cargo.estado != 'anulado' or premio.cargo.nota.startswith(NOTA_MES_GRATIS))
 
 
 def tienda_del_codigo(codigo_str):
@@ -135,6 +157,7 @@ def aplicar_descuentos(cargo, hoy=None):
         premio = (
             PremioReferido.objects.filter(tienda=tienda, vence__gte=hoy)
             .filter(Q(cargo__isnull=True) | Q(cargo__estado=Cargo.Estado.ANULADO))
+            .exclude(cargo__nota__startswith=NOTA_MES_GRATIS)
             .order_by('numero').first()
         )
         if premio:
@@ -146,13 +169,24 @@ def aplicar_descuentos(cargo, hoy=None):
         lineas.append(f'Bienvenida por llegar invitada por {invitada.referente.nombre}: -{DESCUENTO_DE_BIENVENIDA:g}%.')
     for premio in PremioReferido.objects.filter(cargo=cargo):
         porcentaje += premio.descuento
-        lineas.append(f'Premio {premio.numero} por invitar tiendas: -{premio.descuento:g}%.')
+        if premio.descuento >= 100:
+            lineas.append(f'Premio {premio.numero} por invitar tiendas: mes gratis (-100%).')
+        else:
+            lineas.append(f'Premio {premio.numero} por invitar tiendas: -{premio.descuento.normalize():f}%.')
     if not porcentaje:
         return cargo
     base = tienda.plan.mensualidad if tienda.plan_id and tienda.plan.mensualidad > 0 else cargo.monto
     porcentaje = min(porcentaje, Decimal('100'))
-    cargo.monto = max((base * (100 - porcentaje) / 100).quantize(Decimal('0.01')), Decimal('0.01'))
     cargo.detalle = 'Descuentos del programa de referidos:\n' + '\n'.join(lineas)
+    if porcentaje >= 100:
+        # Mes gratis: no hay nada que pagar. Queda anulada (no es un ingreso ni cierra la tienda) con su motivo.
+        cargo.monto = base
+        cargo.estado = Cargo.Estado.ANULADO
+        cargo.nota = f'{NOTA_MES_GRATIS} por el programa de referidos.'
+        cargo.revisado_el = timezone.now()
+        cargo.save(update_fields=['monto', 'detalle', 'estado', 'nota', 'revisado_el'])
+        return cargo
+    cargo.monto = max((base * (100 - porcentaje) / 100).quantize(Decimal('0.01')), Decimal('0.01'))
     cargo.save(update_fields=['monto', 'detalle'])
     return cargo
 
@@ -192,10 +226,18 @@ def al_pagar_mensualidad(cargo, hoy=None):
     tiene = PremioReferido.objects.filter(tienda=referente).count()
     nuevos = []
     for numero in range(tiene + 1, ganados + 1):
-        nuevos.append(PremioReferido.objects.create(
-            tienda=referente, numero=numero, descuento=DESCUENTO_DEL_PREMIO, anuncios_extra=ANUNCIOS_DEL_PREMIO,
-            anuncios_hasta=hoy + timedelta(days=DIAS_DE_ANUNCIO), vence=hoy + timedelta(days=DIAS_PARA_USAR),
-        ))
+        datos = nivel(numero)
+        premio = PremioReferido.objects.create(
+            tienda=referente, numero=numero, descuento=datos['descuento'], anuncios_extra=datos['anuncios_extra'],
+            anuncios_hasta=hoy + timedelta(days=DIAS_DE_ANUNCIO if datos['anuncios_extra'] else 0),
+            destacada_hasta=hoy + timedelta(days=datos['dias_destacada']) if datos['dias_destacada'] else None,
+            vence=hoy + timedelta(days=DIAS_PARA_USAR),
+        )
+        premio.embajadora = datos['embajadora']
+        nuevos.append(premio)
+        if datos['embajadora'] and referente.embajadora_desde is None:
+            referente.embajadora_desde = hoy
+            referente.save(update_fields=['embajadora_desde'])
     if nuevos:
         pendiente = _mensualidad_por_pagar(referente)
         if pendiente:
@@ -237,8 +279,12 @@ def programa_de(tienda, hoy=None):
     codigos = list(CodigoReferido.objects.filter(usuario__in=tienda.usuarios.all()).values_list('codigo', flat=True))
     premios = list(PremioReferido.objects.filter(tienda=tienda).select_related('cargo').order_by('-numero'))
     for premio in premios:
-        premio.anuncios_vigentes = premio.anuncios_hasta >= hoy
-        premio.disponible = (premio.cargo_id is None or premio.cargo.estado == 'anulado') and premio.vence >= hoy
+        premio.anuncios_vigentes = premio.anuncios_extra > 0 and premio.anuncios_hasta >= hoy
+        premio.destacada_vigente = premio.destacada_hasta is not None and premio.destacada_hasta >= hoy
+        premio.usado = _premio_usado(premio)
+        premio.mes_gratis = premio.usado and premio.cargo.estado == 'anulado'
+        premio.disponible = not premio.usado and premio.vence >= hoy
+    proximo = activas // INVITADAS_POR_PREMIO + 1
     return {
         'solicitudes': SolicitudTienda.objects.filter(codigo_referido__in=codigos).count() if codigos else 0,
         'tiendas': invitadas.count(),
@@ -250,4 +296,8 @@ def programa_de(tienda, hoy=None):
         'descuento_premio': DESCUENTO_DEL_PREMIO,
         'descuento_bienvenida': DESCUENTO_DE_BIENVENIDA,
         'dias_anuncio': DIAS_DE_ANUNCIO,
+        'dias_destacada': DIAS_DESTACADA,
+        'proximo': {'numero': proximo, 'invitadas': proximo * INVITADAS_POR_PREMIO, **nivel(proximo)},
+        'escalera': [{'invitadas': numero * INVITADAS_POR_PREMIO, **nivel(numero)} for numero in sorted(NIVELES)],
+        'embajadora': tienda.embajadora_desde is not None,
     }

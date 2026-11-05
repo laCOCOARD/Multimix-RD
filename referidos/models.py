@@ -84,13 +84,15 @@ class TiendaReferida(models.Model):
 
 class PremioReferido(models.Model):
     """Lo que gana una tienda por cada 2 tiendas invitadas activas: un descuento en su proxima mensualidad (se usa
-    dentro del plazo o se pierde) y anuncios extra en la portada por unos dias."""
+    dentro del plazo o se pierde) y, segun el nivel (referidos.services.NIVELES), anuncios extra en la portada o
+    unos dias entre las tiendas destacadas."""
 
     tienda = models.ForeignKey('tiendas.Tienda', on_delete=models.CASCADE, related_name='premios_referidos')
     numero = models.PositiveSmallIntegerField('premio número')
     descuento = models.DecimalField('descuento (%)', max_digits=5, decimal_places=2)
     anuncios_extra = models.PositiveSmallIntegerField(default=1)
     anuncios_hasta = models.DateField('anuncios extra hasta')
+    destacada_hasta = models.DateField('destacada en la portada hasta', null=True, blank=True)
     vence = models.DateField('el descuento se usa hasta')
     cargo = models.ForeignKey(
         'planes.Cargo', on_delete=models.SET_NULL, null=True, blank=True, related_name='+',
