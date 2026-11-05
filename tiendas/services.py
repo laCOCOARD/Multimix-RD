@@ -1,4 +1,6 @@
 """Tiendas: quien administra cual, el acceso de los vendedores al panel y el directorio publico."""
+import logging
+
 from django.apps import apps
 from django.contrib.auth.management import create_permissions
 from django.contrib.auth.models import Group, Permission
@@ -8,6 +10,8 @@ from django.db.models.functions import Coalesce
 from django.utils import timezone
 
 from .models import Banner, SolicitudTienda, Tienda
+
+logger = logging.getLogger(__name__)
 
 GRUPO_VENDEDORES = 'Vendedores'
 
@@ -122,6 +126,49 @@ def directorio():
 TONOS_DE_TARJETA = 4
 
 
+def color_principal(archivo):
+    """El color que mas se ve en la franja de abajo de una imagen (donde la foto se junta con la tarjeta), como
+    '#rrggbb'. Si es casi blanco se oscurece un poco: la tarjeta no debe quedar blanca (pedido del dueño el
+    2026-11-05)."""
+    from PIL import Image
+
+    with Image.open(archivo) as imagen:
+        imagen = imagen.convert('RGB')
+        imagen.thumbnail((120, 120))
+        ancho, alto = imagen.size
+        franja = imagen.crop((0, alto * 2 // 3, ancho, alto))
+        paleta = franja.quantize(colors=5)
+        cuenta, indice = max(paleta.getcolors())
+        r, g, b = paleta.getpalette()[indice * 3:indice * 3 + 3]
+    if luminancia(r, g, b) > .9:
+        r, g, b = (round(c * .88) for c in (r, g, b))
+    return f'#{r:02x}{g:02x}{b:02x}'
+
+
+def luminancia(r, g, b):
+    """De 0 (negro) a 1 (blanco), como la percibe el ojo."""
+    return (0.299 * r + 0.587 * g + 0.114 * b) / 255
+
+
+def color_de_la_tarjeta(tienda):
+    """El color del banner de la tienda; lo calcula la primera vez (y cuando cambia el banner) y lo guarda. Vacio si
+    no tiene banner o no se pudo leer (entonces la tarjeta queda como siempre)."""
+    if not tienda.banner_imagen:
+        return ''
+    nombre = tienda.banner_imagen.name
+    if tienda.color_banner_de == nombre:
+        return tienda.color_banner
+    try:
+        with tienda.banner_imagen.open('rb') as archivo:
+            color = color_principal(archivo)
+    except Exception:
+        logger.warning('No se pudo leer el banner de %s para su color', tienda.nombre, exc_info=True)
+        color = ''
+    tienda.color_banner, tienda.color_banner_de = color, nombre
+    Tienda.objects.filter(pk=tienda.pk).update(color_banner=color, color_banner_de=nombre)
+    return color
+
+
 def para_el_directorio(tiendas, categorias=3):
     """Prepara las tarjetas del directorio con una sola consulta para todas las tiendas.
 
@@ -145,6 +192,11 @@ def para_el_directorio(tiendas, categorias=3):
     for tienda in tiendas:
         tienda.categorias_principales = por_tienda.get(tienda.pk, [])
         tienda.tono = tienda.pk % TONOS_DE_TARJETA
+        # La tarjeta toma el color de su banner; el texto va claro u oscuro segun ese color.
+        tienda.color = color_de_la_tarjeta(tienda)
+        if tienda.color:
+            r, g, b = (int(tienda.color[i:i + 2], 16) for i in (1, 3, 5))
+            tienda.color_claro = luminancia(r, g, b) > .55
     return tiendas
 
 

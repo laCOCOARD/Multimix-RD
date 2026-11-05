@@ -217,3 +217,8 @@ Decisiones tomadas en Multimix RD (movidas desde CLAUDE.md el 2026-10-28). Leela
     Configuracion > "Precio en la página Vender" (`vender_precio_*`, `core/0026`). OJO: el texto por defecto dice
     "Primeros 3 meses gratis", pero los cobros todavia no lo aplican solos.
   - `/tiendas/` vuelve a tener las etiquetas og: (le faltaba `block.super`).
+- Tarjeta de tienda con el color de su banner (dueño, 2026-11-05: "que no se vea eso blanco" y la foto mas
+  grande): `tiendas.services.color_de_la_tarjeta` saca el color que mas se ve en el tercio de abajo del banner (Pillow,
+  `quantize`), lo guarda en `Tienda.color_banner` junto al archivo del que salio (`color_banner_de`; si el banner
+  cambia se calcula otra vez) y oscurece un poco el casi blanco. La tarjeta (`con-color`, texto oscuro con
+  `color-claro`) lleva el banner en 12:5 y un degradado hacia ese color. Sin banner o si no se puede leer, queda igual.

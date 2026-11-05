@@ -734,6 +734,32 @@ html:not(.js) .solo-con-js { display: none !important; }
   .mm-tiendas.una-sola .mm-tienda-nombre { font-size: 1.35rem; }
   .mm-tiendas.una-sola .mm-tienda-texto { -webkit-line-clamp: 3; font-size: .95rem; }
 }
+/* Tarjeta con el color de su banner (2026-11-05): el banner se ve mas alto y se funde con la tarjeta. */
+.mm-tienda.con-color { border-color: transparent; background: var(--mm-tienda-color); }
+.mm-tienda.con-color .mm-tienda-portada { height: auto; aspect-ratio: 12 / 5; }
+.mm-tienda.con-color .mm-tienda-portada::after { content: ""; position: absolute; inset: auto 0 0; height: 35%; background: linear-gradient(transparent, var(--mm-tienda-color)); }
+.mm-tienda.con-color .mm-tienda-avatar { border-color: var(--mm-tienda-color); }
+.mm-tienda.con-color .mm-tienda-nombre a,
+.mm-tienda.con-color .mm-tienda-texto { color: #fff; }
+.mm-tienda.con-color .mm-tienda-categorias { color: rgba(255, 255, 255, .75); }
+.mm-tienda.con-color .mm-tienda-pie { border-top-color: rgba(255, 255, 255, .18); }
+.mm-tienda.con-color .mm-tienda-visitar { background: var(--mm-calido); color: var(--mm-oscuro); }
+.mm-tienda.con-color:hover .mm-tienda-visitar { background: #fff; }
+.mm-tienda.con-color .mm-tienda-compartir { color: rgba(255, 255, 255, .8); }
+.mm-tienda.con-color .mm-tienda-compartir:hover { color: #fff; background: rgba(255, 255, 255, .15); }
+.mm-tienda.color-claro .mm-tienda-nombre a,
+.mm-tienda.color-claro .mm-tienda-texto { color: var(--mm-oscuro); }
+.mm-tienda.color-claro .mm-tienda-categorias { color: rgba(17, 24, 39, .65); }
+.mm-tienda.color-claro .mm-tienda-pie { border-top-color: rgba(17, 24, 39, .12); }
+.mm-tienda.color-claro .mm-tienda-visitar { background: var(--mm-oscuro); color: #fff; }
+.mm-tienda.color-claro:hover .mm-tienda-visitar { background: var(--mm-calido); color: var(--mm-oscuro); }
+.mm-tienda.color-claro .mm-tienda-compartir { color: rgba(17, 24, 39, .65); }
+.mm-tienda.color-claro .mm-tienda-compartir:hover { color: var(--mm-oscuro); background: rgba(17, 24, 39, .08); }
+@media (min-width: 768px) {
+  .mm-tiendas.una-sola .mm-tienda.con-color .mm-tienda-portada { aspect-ratio: auto; }
+  .mm-tiendas.una-sola .mm-tienda.con-color .mm-tienda-portada::after { inset: 0 0 0 auto; width: 35%; height: auto; background: linear-gradient(90deg, transparent, var(--mm-tienda-color)); }
+}
+
 
 /* --- Bandas: separan secciones con un fondo blanco de lado a lado ---------- */
 .mm-banda { margin-top: var(--mm-espacio-seccion); padding-bottom: var(--mm-espacio-seccion); background: var(--mm-superficie); border-top: 1px solid var(--mm-borde); border-bottom: 1px solid var(--mm-borde); }

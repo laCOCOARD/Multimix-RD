@@ -73,6 +73,10 @@ class Tienda(models.Model):
         help_text='JPG, PNG o WebP de hasta 5 MB. Es el fondo del banner de la tienda y de su tarjeta en la portada.',
     )
 
+    # Color principal del pie del banner (tiendas.services.color_de_la_tarjeta): la tarjeta del directorio se pinta
+    # con el. `color_banner_de` es el archivo del que salio; si el banner cambia, se calcula otra vez.
+    color_banner = models.CharField(max_length=7, blank=True, editable=False)
+    color_banner_de = models.CharField(max_length=255, blank=True, editable=False)
     correo = models.EmailField('correo de contacto', blank=True)
     telefono = models.CharField('teléfono', max_length=20, blank=True)
     horario = models.CharField(max_length=150, blank=True, help_text='Ej.: Lun a Sáb, 9:00 a.m. a 6:00 p.m.')

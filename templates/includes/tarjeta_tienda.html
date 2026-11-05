@@ -1,6 +1,8 @@
 {# Tarjeta de una tienda del directorio. Recibe `item` (de tiendas.services.directorio + para_el_directorio). #}
 {# Toda la tarjeta lleva a la tienda: el enlace es el nombre y su area cubre la tarjeta (stretched-link). #}
-<article class="mm-tienda">
+{# Con banner la tarjeta toma su color (`item.color`, tiendas.services.color_de_la_tarjeta, pedido del dueño el #}
+{# 2026-11-05) y el banner se ve mas alto; `item.color_claro` pone el texto oscuro. #}
+<article class="mm-tienda{% if item.color %} con-color{% if item.color_claro %} color-claro{% endif %}{% endif %}"{% if item.color %} style="--mm-tienda-color: {{ item.color }};"{% endif %}>
   <span class="mm-tienda-portada mm-tienda-tono-{{ item.tono }}"
         {% if item.banner_imagen %}style="background-image: url('{{ item.banner_imagen.url }}');"{% endif %}>
     {% if item.destacada %}<span class="mm-tienda-badge">Destacada</span>{% endif %}
