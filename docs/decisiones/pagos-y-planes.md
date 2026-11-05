@@ -47,7 +47,9 @@ Decisiones tomadas en Multimix RD (movidas desde CLAUDE.md el 2026-10-28). Leela
   `static/js/videos.js`): en la portada uno despues de "Lo nuevo" y uno despues de cada fila de categoria
   (`services.videos_para_la_portada`, tiendas al azar y alternadas, hasta 8); en la pagina de la tienda uno despues de
   cada fila. Se reproduce solo y sin sonido cuando se ve la mitad, uno a la vez; lleva "Visitar producto" (o
-  "Visitar la tienda") y "Omitir anuncio", que lo quita durante la visita (`sessionStorage`). Sale solo aprobado por el superusuario (`services.aprobar_video`, correo a la tienda); cambiar video, titulo
+  "Visitar la tienda") y "Omitir anuncio", que lo quita durante la visita (`sessionStorage`). Al lado del video (pedido del dueño el
+  2026-11-05, para que no quede vacio): el banner de la tienda (o un fondo carbon con brillo ambar), su logo, su frase,
+  el titulo y 3 productos suyos a la venta, el del video primero (`services.con_productos_de_la_tienda`). Sale solo aprobado por el superusuario (`services.aprobar_video`, correo a la tienda); cambiar video, titulo
   o producto lo devuelve a revision. El plan cuenta todos los videos guardados, activos o no. No se convierte nada
   (Render free no tiene ffmpeg): `core.videos` lee solo las cajas del MP4/MOV y exige H.264 (+AAC), la duracion y el
   peso de `ConfiguracionTienda` (`video_segundos_maximos`, `video_megas_maximos`); el HEVC del iPhone se rechaza con

@@ -762,6 +762,28 @@ def _agrupar_por_tienda(videos):
     return list(grupos.values())
 
 
+PRODUCTOS_JUNTO_AL_VIDEO = 3
+
+
+def con_productos_de_la_tienda(videos, limite=PRODUCTOS_JUNTO_AL_VIDEO):
+    """Pone en `video.productos` unos productos a la venta de su tienda, para llenar el lado del video (pedido del
+    dueño el 2026-11-05: que no quede vacio). El producto del video va primero. Una consulta por tienda."""
+    from catalogo.services import _base
+
+    por_tienda = {}
+    for video in videos:
+        if video.tienda_id not in por_tienda:
+            por_tienda[video.tienda_id] = list(
+                _base(video.tienda).order_by('-destacado', '-actualizado', '-id')[:limite + 1]
+            )
+        productos = por_tienda[video.tienda_id]
+        primero = [p for p in productos if p.pk == video.producto_id]
+        if video.producto_id and not primero:
+            primero = list(_base(video.tienda, agrupar=False).filter(pk=video.producto_id))
+        video.productos = (primero + [p for p in productos if p.pk != video.producto_id])[:limite]
+    return videos
+
+
 def videos_para_la_portada(limite=VIDEOS_EN_PORTADA):
     """Los videos que se reparten por la portada. Las tiendas cambian de orden en cada visita (todas pagan lo mismo
     por estar ahi) y se alternan: primero un video de cada tienda, despues el segundo de cada una, y asi."""
@@ -772,13 +794,13 @@ def videos_para_la_portada(limite=VIDEOS_EN_PORTADA):
     while len(videos) < limite and any(len(grupo['videos']) > vuelta for grupo in grupos):
         videos.extend(grupo['videos'][vuelta] for grupo in grupos if len(grupo['videos']) > vuelta)
         vuelta += 1
-    return videos[:limite]
+    return con_productos_de_la_tienda(videos[:limite])
 
 
 def videos_de_la_tienda(tienda):
     """Los videos de una tienda para su pagina, sin pasar de lo que permite su plan."""
     grupos = _agrupar_por_tienda(videos_visibles().filter(tienda=tienda))
-    return grupos[0]['videos'] if grupos else []
+    return con_productos_de_la_tienda(grupos[0]['videos']) if grupos else []
 
 
 def cupos_de_video(tienda):

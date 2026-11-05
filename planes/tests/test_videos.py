@@ -201,6 +201,24 @@ class SitioTests(ConVideos):
         self.assertNotContains(portada, 'data-abrir-historia')
         self.assertIn("media-src 'self' blob: https:", portada['Content-Security-Policy'])
 
+    def test_al_lado_del_video_salen_productos_de_su_tienda(self):
+        """Pedido del dueño el 2026-11-05: el lado del video no queda vacio. Solo productos de esa tienda, el del
+        video primero, y nunca de otra."""
+        self.con_plan(self.tienda)
+        otros = [crear_producto(nombre=f'Jabon {n}', sku=f'J{n}', precio=Decimal('100')) for n in range(4)]
+        video = self.video(producto=self.crema)
+        [mostrado] = services.videos_para_la_portada()
+        self.assertEqual(len(mostrado.productos), services.PRODUCTOS_JUNTO_AL_VIDEO)
+        self.assertEqual(mostrado.productos[0], self.crema)
+        self.assertTrue(all(p.tienda_id == self.tienda.pk for p in mostrado.productos))
+        self.assertNotIn(self.pesas, mostrado.productos)
+        portada = self.client.get('/')
+        self.assertContains(portada, 'mm-video-anuncio-productos')
+        self.assertContains(portada, 'RD$ 800.00')
+        [en_su_pagina] = services.videos_de_la_tienda(self.tienda)
+        self.assertEqual(en_su_pagina, video)
+        self.assertTrue(set(en_su_pagina.productos) <= {self.crema, *otros})
+
     def test_sin_producto_lleva_a_la_tienda(self):
         self.con_plan(self.tienda)
         self.video()
