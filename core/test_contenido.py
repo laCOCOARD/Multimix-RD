@@ -53,22 +53,23 @@ class PaginasInformativasTests(TestCase):
         tienda_de_prueba().usuarios.add(vendedor)
         dar_acceso_al_panel([vendedor])
         self.client.force_login(vendedor)
-        for nombre in ('admin:core_paginainformativa_changelist', 'admin:core_preguntafrecuente_changelist'):
+        for nombre in ('admin:core_paginainformativa_changelist',):
             self.assertEqual(self.client.get(reverse(nombre)).status_code, 403, nombre)
 
 
 class PreguntasFrecuentesTests(TestCase):
-    def test_sin_preguntas_no_hay_pagina_ni_enlace(self):
-        self.assertEqual(self.client.get(reverse('core:preguntas')).status_code, 404)
-        self.assertNotContains(self.client.get(reverse('tiendas:portada')), 'Preguntas frecuentes')
+    """El dueño las quito del sitio el 2026-11-04: ni en la portada, ni en Vender, ni en el menu o el pie."""
 
-    def test_solo_se_ven_las_activas(self):
+    def test_ya_no_salen_en_el_sitio(self):
         PreguntaFrecuente.objects.create(pregunta='¿Hacen envíos?', respuesta='Sí, a las zonas de cada tienda.')
-        PreguntaFrecuente.objects.create(pregunta='¿Pregunta oculta?', respuesta='No se ve.', activa=False)
-        for url in (reverse('core:preguntas'), reverse('tiendas:portada')):
+        for url in (reverse('tiendas:portada'), reverse('tiendas:vender'), reverse('core:terminos')):
             pagina = self.client.get(url)
-            self.assertContains(pagina, '¿Hacen envíos?')
-            self.assertNotContains(pagina, '¿Pregunta oculta?')
+            self.assertNotContains(pagina, 'Preguntas frecuentes')
+            self.assertNotContains(pagina, '¿Hacen envíos?')
+
+    def test_el_enlace_viejo_lleva_a_la_portada(self):
+        respuesta = self.client.get(reverse('core:preguntas'))
+        self.assertRedirects(respuesta, reverse('tiendas:portada'), status_code=301, fetch_redirect_response=False)
 
 
 class BannerTests(TestCase):

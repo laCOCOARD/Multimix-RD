@@ -40,7 +40,7 @@ OPCIONES_ESTRELLAS = [
 
 @de_tienda
 def inicio(request):
-    from planes.services import historias_de_la_tienda
+    from planes.services import videos_de_la_tienda
 
     tienda = request.tienda
     metricas.anotar(request, metricas.Evento.VISITA_TIENDA, tienda)
@@ -50,6 +50,11 @@ def inicio(request):
         {'titulo': 'Nuevos', 'icono': 'bi-stars', 'productos': services.nuevos(tienda), 'enlace': '?orden=nuevos'},
         {'titulo': 'Más vendidos', 'icono': 'bi-fire', 'productos': services.mas_vendidos(tienda), 'enlace': '?orden=vendidos'},
     ]
+    secciones = [s for s in secciones if s['productos']]
+    # Sus videos (plan Premium) dentro de la pagina: uno despues de cada fila de productos; los que sobran, al final.
+    videos = videos_de_la_tienda(tienda)
+    for seccion, video in zip(secciones, videos):
+        seccion['video'] = video
     url_absoluta = request.build_absolute_uri(tienda.get_absolute_url())
     og_imagen = None
     if tienda.banner_imagen:
@@ -57,12 +62,12 @@ def inicio(request):
     elif tienda.logo:
         og_imagen = request.build_absolute_uri(tienda.logo.url)
     return render(request, 'catalogo/inicio.html', {
-        'secciones': [s for s in secciones if s['productos']],
+        'secciones': secciones,
+        'videos': videos,
+        'videos_al_final': videos[len(secciones):],
         'categorias': services.categorias_de_portada(tienda),
         'banners': banners_de(tienda),
         'vistos': services.vistos(request.session, tienda),
-        # Su video (plan Premium), arriba de la pagina.
-        'historias': historias_de_la_tienda(tienda),
         # SEO y compartir en redes.
         'url_absoluta': url_absoluta,
         'og_imagen': og_imagen,

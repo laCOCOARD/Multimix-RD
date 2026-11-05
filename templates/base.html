@@ -199,7 +199,6 @@
           <ul class="list-unstyled small mb-0">
             {% if puede_navegar %}<li><a href="{% url 'clientes:cuenta' %}">Mis pedidos y su seguimiento</a></li>{% endif %}
             {% if tienda %}<li><a href="{% url 'core:envios' tienda.slug %}">Envíos y retiros</a></li>{% endif %}
-            {% if contenido_pie.hay_preguntas %}<li><a href="{% url 'core:preguntas' %}">Preguntas frecuentes</a></li>{% endif %}
             {% for pagina in paginas_ayuda %}
               <li><a href="{% url 'core:pagina' pagina.slug %}">{{ pagina.titulo }}</a></li>
             {% endfor %}

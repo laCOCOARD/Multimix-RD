@@ -33,7 +33,8 @@ class PaginaParaVenderTests(TestCase):
         self.assertContains(pagina, f'href="{reverse("tiendas:solicitar_tienda")}"')
         self.assertContains(pagina, 'href="#como-funciona"')
         self.assertContains(pagina, 'id="como-funciona"')
-        self.assertContains(pagina, '¿Qué información debo preparar?')
+        # Sin preguntas frecuentes desde el 2026-11-04 (pedido del dueño).
+        self.assertNotContains(pagina, 'Preguntas frecuentes')
         # No promete lo que no existe: aprobacion automatica, plazos ni comisiones.
         for promesa in ('sin costo', 'automátic', 'horas', 'comisión'):
             self.assertNotContains(pagina, promesa)

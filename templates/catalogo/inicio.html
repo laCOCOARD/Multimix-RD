@@ -56,18 +56,6 @@
   {% endif %}
   <h1 class="visually-hidden">{{ tienda.nombre }}</h1>
 </section>
-{% if historias %}
-  {# Con carrusel, el video va en una franja debajo (cada diapositiva ya tiene su boton). #}
-  <div class="container">
-    <a class="mm-video-tienda" href="{{ historias.0.videos.0.archivo.url }}" data-abrir-historia="0">
-      <span class="mm-historia-aro mm-historia-aro-chico" aria-hidden="true">
-        <span class="mm-historia-logo{% if tienda.logo %} con-logo{% endif %}">{% if tienda.logo %}<img src="{{ tienda.logo.url }}" alt="" width="48" height="48">{% else %}{{ tienda.nombre|slice:':1'|upper }}{% endif %}</span>
-      </span>
-      <span class="mm-video-tienda-texto"><strong>Mira nuestro video</strong><span>{{ historias.0.videos.0.titulo }}</span></span>
-      <i class="bi bi-play-circle-fill" aria-hidden="true"></i>
-    </a>
-  </div>
-{% endif %}
 {% else %}
 <section class="mm-banner{% if tienda.banner_imagen %} mm-banner-con-imagen{% endif %}"
          {% if tienda.banner_imagen %}style="background-image: linear-gradient(90deg, rgba(17,24,39,.88), rgba(17,24,39,.45)), url('{{ tienda.banner_imagen.url }}');"{% endif %}>
@@ -78,10 +66,6 @@
         {% if tienda.banner_subtitulo %}<p class="mm-banner-subtitulo">{{ tienda.banner_subtitulo }}</p>{% endif %}
         <div class="d-flex flex-wrap gap-2">
           <a class="btn btn-acento btn-lg" href="{% url 'catalogo:lista' tienda.slug %}">{{ tienda.banner_texto_boton|default:'Ver catálogo' }}</a>
-          {% if historias %}
-            {# Su video (plan Premium) en el visor; sin JavaScript abre el video tal cual. #}
-            <a class="btn btn-outline-light btn-lg mm-boton-video" href="{{ historias.0.videos.0.archivo.url }}" data-abrir-historia="0"><i class="bi bi-play-circle-fill" aria-hidden="true"></i>Ver nuestro video</a>
-          {% endif %}
           <button class="btn btn-outline-light solo-con-js js-compartir" type="button" data-titulo="{{ tienda.nombre }}" data-url="{{ url_absoluta }}">
             <i class="bi bi-share me-1" aria-hidden="true"></i>Compartir
           </button>
@@ -154,6 +138,7 @@
   </div>
   {% include 'includes/fila_productos.html' with productos=seccion.productos auto=forloop.first %}
 </section>
+{% if seccion.video %}{% include 'includes/video_anuncio.html' with video=seccion.video %}{% endif %}
 {% empty %}
 <section class="container mm-seccion text-center">
   <p class="lead text-muted">Pronto verás aquí nuestros productos.</p>
@@ -171,7 +156,8 @@
   </a>
 </section>
 {% endif %}
-{% if historias %}{% include 'includes/visor_historias.html' %}{% endif %}
+{# Sus videos (plan Premium) van despues de cada fila; los que sobran, aqui. #}
+{% for video in videos_al_final %}{% include 'includes/video_anuncio.html' %}{% endfor %}
 {% endblock %}
 
-{% block scripts %}{% if historias %}<script src="{% static 'js/historias.js' %}" defer></script>{% endif %}{% endblock %}
+{% block scripts %}{% if videos %}<script src="{% static 'js/videos.js' %}" defer></script>{% endif %}{% endblock %}

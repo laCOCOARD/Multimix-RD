@@ -1,0 +1,28 @@
+{# Un video de una tienda dentro de la pagina (pedido del dueño el 2026-11-04: ya no como historias). Recibe `video`. #}
+{# static/js/videos.js lo reproduce solo y sin sonido cuando se ve al deslizarse, y "Omitir anuncio" lo esconde #}
+{# durante la visita. Sin JavaScript queda el video con sus controles. Sin producto a la venta lleva a la tienda. #}
+{% with producto=video.url_del_producto tienda_del_video=video.tienda %}
+<section class="container mm-seccion mm-video-anuncio js-video-anuncio" data-id="{{ video.pk }}" data-vista="{% url 'planes:vista_de_video' video.pk %}" data-csrf="{{ csrf_token }}" aria-label="Video de {{ tienda_del_video.nombre }}">
+  <div class="mm-video-anuncio-marco">
+    <div class="mm-video-anuncio-pantalla">
+      <video class="mm-video-anuncio-video" src="{{ video.archivo.url }}" preload="none" playsinline muted loop controls aria-label="{{ video.titulo }}"></video>
+      <button class="mm-video-anuncio-sonido js-video-sonido" type="button" aria-label="Activar el sonido" hidden><i class="bi bi-volume-mute-fill" aria-hidden="true"></i></button>
+    </div>
+    <div class="mm-video-anuncio-info">
+      <a class="mm-video-anuncio-tienda" href="{{ tienda_del_video.get_absolute_url }}">
+        <span class="mm-video-anuncio-logo{% if tienda_del_video.logo %} con-logo{% endif %}" aria-hidden="true">{% if tienda_del_video.logo %}<img src="{{ tienda_del_video.logo.url }}" alt="" loading="lazy" decoding="async" width="44" height="44">{% else %}{{ tienda_del_video.nombre|slice:':1'|upper }}{% endif %}</span>
+        <span class="mm-video-anuncio-nombre">{{ tienda_del_video.nombre }}</span>
+      </a>
+      <p class="mm-video-anuncio-titulo">{{ video.titulo }}</p>
+      <div class="mm-video-anuncio-acciones">
+        {% if producto %}
+          <a class="btn btn-acento" href="{{ producto }}">Visitar producto <i class="bi bi-arrow-right" aria-hidden="true"></i></a>
+        {% else %}
+          <a class="btn btn-acento" href="{{ tienda_del_video.get_absolute_url }}">Visitar la tienda <i class="bi bi-arrow-right" aria-hidden="true"></i></a>
+        {% endif %}
+        <button class="btn btn-outline-secondary solo-con-js js-video-omitir" type="button">Omitir anuncio</button>
+      </div>
+    </div>
+  </div>
+</section>
+{% endwith %}

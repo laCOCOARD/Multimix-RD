@@ -186,50 +186,79 @@ class LimitesDelPlanTests(ConVideos):
 
 
 class SitioTests(ConVideos):
-    def test_la_portada_muestra_los_videos_aprobados_como_anuncios(self):
+    def test_la_portada_muestra_los_videos_dentro_de_la_pagina(self):
+        """Desde el 2026-11-04 ya no son historias: un bloque en la pagina con "Visitar producto" y "Omitir anuncio"."""
         self.con_plan(self.tienda)
         video = self.video(producto=self.crema)
         portada = self.client.get('/')
-        self.assertEqual(portada.context['historias'], [{'tienda': self.tienda, 'videos': [video]}])
-        self.assertContains(portada, 'Videos de las tiendas')
-        # Desde el 2026-11-02 la seccion se llama "Videos de las tiendas", sin la etiqueta "Anuncios".
-        self.assertNotContains(portada, 'data-etiqueta="Anuncio"')
-        self.assertContains(portada, f'data-producto="{self.crema.get_absolute_url()}"')
-        self.assertContains(portada, 'js/historias')
+        self.assertEqual(portada.context['videos'], [video])
+        self.assertEqual(portada.context['primer_video'], video)
+        self.assertContains(portada, 'js-video-anuncio', count=1)
+        self.assertContains(portada, f'href="{self.crema.get_absolute_url()}">Visitar producto')
+        self.assertContains(portada, 'Omitir anuncio')
+        self.assertContains(portada, 'js/videos.js')
+        self.assertNotContains(portada, 'js/historias')
+        self.assertNotContains(portada, 'data-abrir-historia')
         self.assertIn("media-src 'self' blob: https:", portada['Content-Security-Policy'])
+
+    def test_sin_producto_lleva_a_la_tienda(self):
+        self.con_plan(self.tienda)
+        self.video()
+        portada = self.client.get('/')
+        self.assertContains(portada, f'href="{self.tienda.get_absolute_url()}">Visitar la tienda')
+        self.assertNotContains(portada, 'Visitar producto')
 
     def test_solo_aprobados_activos_de_tiendas_activas_con_plan(self):
         self.con_plan(self.tienda)
         self.video(aprobado=False)
         self.video(tienda=self.ajena, titulo='Sin plan')
-        self.assertEqual(services.historias_para_la_portada(), [])
+        self.assertEqual(services.videos_para_la_portada(), [])
         portada = self.client.get('/')
-        self.assertNotContains(portada, 'Videos de las tiendas')
-        self.assertNotContains(portada, 'js/historias')
+        self.assertNotContains(portada, 'js-video-anuncio')
+        self.assertNotContains(portada, 'js/videos.js')
 
         aprobado = Video.objects.get(tienda=self.tienda)
         Video.objects.filter(pk=aprobado.pk).update(aprobado=True)
-        self.assertEqual(len(services.historias_para_la_portada()), 1)
+        self.assertEqual(len(services.videos_para_la_portada()), 1)
         Video.objects.filter(pk=aprobado.pk).update(activo=False)
-        self.assertEqual(services.historias_para_la_portada(), [])
+        self.assertEqual(services.videos_para_la_portada(), [])
         Video.objects.filter(pk=aprobado.pk).update(activo=True)
         Tienda.objects.filter(pk=self.tienda.pk).update(activa=False)
-        self.assertEqual(services.historias_para_la_portada(), [])
+        self.assertEqual(services.videos_para_la_portada(), [])
+
+    def test_se_alternan_las_tiendas(self):
+        """Primero un video de cada tienda y despues el segundo de cada una."""
+        self.con_plan(self.tienda)
+        self.con_plan(self.ajena)
+        Plan.objects.filter(pk=self.tienda.plan_id).update(videos_portada=2)
+        Plan.objects.filter(pk=self.ajena.plan_id).update(videos_portada=2)
+        propios = [self.video(titulo='Uno', orden=1), self.video(titulo='Dos', orden=2)]
+        ajenos = [self.video(tienda=self.ajena, titulo='Tres', orden=1), self.video(tienda=self.ajena, titulo='Cuatro', orden=2)]
+        videos = services.videos_para_la_portada()
+        self.assertEqual(len(videos), 4)
+        self.assertEqual({videos[0].tienda_id, videos[1].tienda_id}, {self.tienda.pk, self.ajena.pk})
+        self.assertEqual(set(videos[:2]), {propios[0], ajenos[0]})
+        self.assertEqual(set(videos[2:]), {propios[1], ajenos[1]})
+        self.assertEqual(len(services.videos_para_la_portada(limite=3)), 3)
 
     def test_si_le_bajan_el_plan_no_pasa_del_limite(self):
         self.con_plan(self.tienda)
         primero = self.video(titulo='Primero', orden=1)
         Video.objects.create(tienda=self.tienda, titulo='Segundo', archivo=subido(), aprobado=True, orden=2)
-        self.assertEqual(services.historias_de_la_tienda(self.tienda)[0]['videos'], [primero])
+        self.assertEqual(services.videos_de_la_tienda(self.tienda), [primero])
 
-    def test_la_pagina_de_la_tienda_ofrece_su_video(self):
+    def test_la_pagina_de_la_tienda_muestra_su_video(self):
         self.con_plan(self.tienda)
-        self.video()
+        video = self.video()
         pagina = self.client.get(self.tienda.get_absolute_url())
-        self.assertContains(pagina, 'Ver nuestro video')
-        self.assertContains(pagina, 'js/historias')
+        self.assertEqual(pagina.context['videos'], [video])
+        self.assertContains(pagina, 'js-video-anuncio', count=1)
+        self.assertContains(pagina, 'Omitir anuncio')
+        self.assertContains(pagina, 'js/videos.js')
+        self.assertNotContains(pagina, 'Ver nuestro video')
         ajena = self.client.get(self.ajena.get_absolute_url())
-        self.assertNotContains(ajena, 'Ver nuestro video')
+        self.assertNotContains(ajena, 'js-video-anuncio')
+        self.assertNotContains(ajena, 'js/videos.js')
 
     def test_cuenta_una_vista_por_persona_y_solo_de_videos_visibles(self):
         self.con_plan(self.tienda)

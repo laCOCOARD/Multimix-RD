@@ -60,8 +60,8 @@ Cada plan define:
   etiqueta "Patrocinado"). La portada siempre dice que son anuncios.
 - **Videos en la portada** (Premium trae 1). La tienda sube un video corto en Panel → Videos de las tiendas (MP4 en
   H.264, hasta 15 segundos y 10 MB; ambos se cambian en Configuración general). Sale cuando el administrador lo
-  aprueba, en "Videos de las tiendas" de la portada (un círculo por tienda que abre el visor, como las historias de
-  Instagram, marcado "Anuncio") y arriba en la página de la tienda. Cambiar el video, el texto o el producto pide
+  aprueba, dentro de la portada y de la página de la tienda, entre las filas de productos: se reproduce solo y sin
+  sonido al llegar a él, con "Visitar producto" y "Omitir anuncio". Cambiar el video, el texto o el producto pide
   aprobarlo otra vez. La tienda ve cuántas personas lo vieron. Necesita el bucket de videos (ver `RENDER.md`).
 
 ### Cómo pagan y qué pasa si no pagan

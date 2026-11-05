@@ -9,7 +9,7 @@ from django.views.decorators.http import require_POST
 from tiendas.panel import AdminDeTienda
 
 from .admin_avisos import AvisaImagenesSinGuardar
-from .models import ConfiguracionTienda, CuentaDelSitio, PaginaInformativa, PreguntaFrecuente
+from .models import ConfiguracionTienda, CuentaDelSitio, PaginaInformativa
 
 
 @admin.register(ConfiguracionTienda)
@@ -113,13 +113,6 @@ class PaginaInformativaAdmin(admin.ModelAdmin):
     search_fields = ['titulo', 'contenido']
     prepopulated_fields = {'slug': ['titulo']}
     view_on_site = True
-
-
-@admin.register(PreguntaFrecuente)
-class PreguntaFrecuenteAdmin(admin.ModelAdmin):
-    list_display = ['pregunta', 'activa', 'orden']
-    list_editable = ['activa', 'orden']
-    search_fields = ['pregunta', 'respuesta']
 
 
 @admin.register(admin.models.LogEntry)

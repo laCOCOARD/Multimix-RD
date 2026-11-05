@@ -263,9 +263,9 @@ def limite_de_videos(tienda):
 class Video(models.Model):
     """Video corto de una tienda (pedido del dueño el 2026-10-26: lo incluye el plan Premium).
 
-    Sale en "Videos de las tiendas" de la portada, como las historias de Instagram (un circulo por tienda que abre
-    el visor), y arriba en la pagina de la tienda. Cuantos puede tener lo dice su plan, y sale solo cuando el
-    administrador lo aprueba: cambiar el video, su texto o su producto pide aprobarlo otra vez.
+    Sale dentro de la portada y de la pagina de la tienda, entre las filas de productos (desde el 2026-11-04, antes
+    como historias): se reproduce solo al verse y lleva "Visitar producto" y "Omitir anuncio". Cuantos puede tener
+    lo dice su plan, y sale solo cuando el administrador lo aprueba: cambiar el video, su texto o su producto pide aprobarlo otra vez.
     """
 
     tienda = models.ForeignKey('tiendas.Tienda', on_delete=models.CASCADE, related_name='videos')
@@ -280,7 +280,7 @@ class Video(models.Model):
     )
     producto = models.ForeignKey(
         'catalogo.Producto', on_delete=models.SET_NULL, null=True, blank=True, related_name='+',
-        help_text='Si eliges uno, el video lleva el botón "Ver el producto". Vacío = solo "Visitar la tienda".',
+        help_text='Si eliges uno, el video lleva el botón "Visitar producto". Vacío = "Visitar la tienda".',
     )
     activo = models.BooleanField(default=True, help_text='Apagado no se muestra, pero lo conservas.')
     aprobado = models.BooleanField(default=False, help_text='Solo los videos aprobados salen en el sitio.')

@@ -18,7 +18,7 @@ comisión.
   contraseña; reseñas de productos moderadas, con "compra verificada".
 - **Pedidos:** seguimiento paso a paso con número de guía, comprobante de transferencia, cancelación por el
   cliente antes de pagar, solicitudes de devolución y reembolsos. Correos al cliente y a la tienda.
-- **Contenido:** banners por tienda, páginas de políticas y preguntas frecuentes editables desde el panel.
+- **Contenido:** banners por tienda y páginas de políticas editables desde el panel.
 - **Stack:** Python 3.13 (o 3.12), Django 5.2, Bootstrap 5 por CDN, JavaScript sin frameworks.
   SQLite en desarrollo; PostgreSQL (o MySQL 8) en producción. WhiteNoise sirve los archivos estáticos.
 

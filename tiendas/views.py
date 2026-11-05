@@ -85,8 +85,7 @@ def portada(request):
     """Portada del sitio al estilo de las grandes tiendas (pedido del dueño el 2026-11-02, "full Amazon"): promociones
     arriba, cuadros de categorias con fotos y filas de productos de todas las tiendas. Cada producto sale una sola vez
     y dice de que tienda es; se sigue comprando dentro de ella."""
-    from core.models import PreguntaFrecuente
-    from planes.services import historias_para_la_portada, promociones_para
+    from planes.services import promociones_para, videos_para_la_portada
 
     destacadas_qs = list(services.tiendas_destacadas()[:6])
     # "Tiendas para conocer" una sola vez: las destacadas tienen su seccion y no se repiten en la lista.
@@ -111,6 +110,11 @@ def portada(request):
         categoria.estante = repartidor.tomar(categoria.estante, PRODUCTOS_POR_ESTANTE)
         if categoria.estante:
             estantes_visibles.append(categoria)
+    # Videos de las tiendas (plan Premium) repartidos por la pagina: uno despues de "Lo nuevo" y luego uno despues
+    # de cada fila de categoria, para que aparezcan mientras el cliente se desliza.
+    videos = videos_para_la_portada()
+    for indice, categoria in enumerate(estantes_visibles, start=1):
+        categoria.video = videos[indice] if indice < len(videos) else None
     tiendas_del_directorio = services.para_el_directorio(tiendas[:TIENDAS_EN_PORTADA])
     plataforma = ConfiguracionTienda.obtener()
     return render(request, 'tiendas/portada.html', {
@@ -122,12 +126,11 @@ def portada(request):
         'estantes': estantes_visibles,
         'promociones': promociones,
         'promociones_personalizadas': personalizadas,
-        # Videos de las tiendas (plan Premium): un circulo por tienda, en otro orden en cada visita.
-        'historias': historias_para_la_portada(),
+        'primer_video': videos[0] if videos else None,
+        'videos': videos,
         'ofertas': ofertas,
         'nuevos': nuevos,
         'vistos': vistos,
-        'preguntas': PreguntaFrecuente.objects.filter(activa=True)[:6],
         'sitio_json_ld': sitio_json_ld(
             plataforma.nombre, request.build_absolute_uri('/'),
             request.build_absolute_uri(reverse('tiendas:buscar')),

@@ -5,7 +5,4 @@
   {% for item in contenido_pie.paginas %}
     <a href="{% url 'core:pagina' item.slug %}"{% if actual == item.slug %} class="activa" aria-current="page"{% endif %}>{{ item.titulo }}</a>
   {% endfor %}
-  {% if contenido_pie.hay_preguntas %}
-    <a href="{% url 'core:preguntas' %}"{% if actual == 'preguntas' %} class="activa" aria-current="page"{% endif %}>Preguntas frecuentes</a>
-  {% endif %}
 </nav>

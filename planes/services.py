@@ -735,11 +735,12 @@ def limite_de_patrocinados(tienda):
 
 
 # --- Videos de las tiendas -------------------------------------------------------------
-# Como las historias de Instagram: un circulo por tienda en la portada; al tocarlo se abre el visor con sus videos
-# (static/js/historias.js). El video solo se descarga cuando alguien lo abre.
+# Desde el 2026-11-04 (pedido del dueño) ya no son historias: cada video es un bloque dentro de la pagina, entre las
+# filas de productos, que se reproduce solo y sin sonido cuando el cliente llega a el al deslizarse
+# (static/js/videos.js). Lleva "Visitar producto" (o "Visitar la tienda") y "Omitir anuncio", que lo esconde.
 
 VIDEOS_VISTOS = 'videos_vistos'
-TIENDAS_CON_VIDEO_EN_PORTADA = 20
+VIDEOS_EN_PORTADA = 8
 
 
 def videos_visibles():
@@ -761,17 +762,23 @@ def _agrupar_por_tienda(videos):
     return list(grupos.values())
 
 
-def historias_para_la_portada(limite=TIENDAS_CON_VIDEO_EN_PORTADA):
-    """Los videos de la portada, agrupados por tienda. El orden de las tiendas cambia en cada visita: todas pagan lo
-    mismo por estar ahi y ninguna queda siempre de ultima."""
+def videos_para_la_portada(limite=VIDEOS_EN_PORTADA):
+    """Los videos que se reparten por la portada. Las tiendas cambian de orden en cada visita (todas pagan lo mismo
+    por estar ahi) y se alternan: primero un video de cada tienda, despues el segundo de cada una, y asi."""
     grupos = _agrupar_por_tienda(videos_visibles())
     random.shuffle(grupos)
-    return grupos[:limite]
+    videos = []
+    vuelta = 0
+    while len(videos) < limite and any(len(grupo['videos']) > vuelta for grupo in grupos):
+        videos.extend(grupo['videos'][vuelta] for grupo in grupos if len(grupo['videos']) > vuelta)
+        vuelta += 1
+    return videos[:limite]
 
 
-def historias_de_la_tienda(tienda):
-    """Los videos de una tienda para arriba de su pagina: una lista con su grupo, o vacia."""
-    return _agrupar_por_tienda(videos_visibles().filter(tienda=tienda))
+def videos_de_la_tienda(tienda):
+    """Los videos de una tienda para su pagina, sin pasar de lo que permite su plan."""
+    grupos = _agrupar_por_tienda(videos_visibles().filter(tienda=tienda))
+    return grupos[0]['videos'] if grupos else []
 
 
 def cupos_de_video(tienda):

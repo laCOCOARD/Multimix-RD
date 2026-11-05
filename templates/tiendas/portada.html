@@ -114,36 +114,9 @@
 </section>
 {% endif %}
 
-{% if historias %}
-{# Videos de las tiendas (plan Premium), como las historias: un circulo por tienda que abre el visor. Desde el #}
-{# 2026-11-02 (pedido del dueño) la seccion se llama solo "Videos de las tiendas", sin la etiqueta "Anuncios". #}
-{# El video solo se descarga cuando alguien lo toca; sin JavaScript el circulo abre el video tal cual. #}
-<section class="container mm-seccion mm-historias" aria-labelledby="titulo-historias">
-  <div class="mm-seccion-cabecera">
-    <h2 id="titulo-historias">Videos de las tiendas</h2>
-  </div>
-  <div class="mm-fila" data-fila>
-    <button class="mm-fila-flecha mm-fila-anterior" type="button" data-mover="-1" aria-label="Ver videos anteriores" hidden><i class="bi bi-chevron-left"></i></button>
-    <div class="mm-fila-pista mm-fila-historias" tabindex="0">
-      {% for grupo in historias %}
-        <div class="mm-fila-item">
-          <a class="mm-historia" href="{{ grupo.videos.0.archivo.url }}" data-abrir-historia="{{ forloop.counter0 }}" aria-label="Ver el video de {{ grupo.tienda.nombre }}">
-            <span class="mm-historia-aro">
-              <span class="mm-historia-logo{% if grupo.tienda.logo %} con-logo{% endif %}">
-                {% if grupo.tienda.logo %}<img src="{{ grupo.tienda.logo.url }}" alt="" loading="lazy" decoding="async" width="72" height="72">{% else %}{{ grupo.tienda.nombre|slice:':1'|upper }}{% endif %}
-              </span>
-              <span class="mm-historia-play" aria-hidden="true"><i class="bi bi-play-fill"></i></span>
-            </span>
-            <span class="mm-historia-nombre">{{ grupo.tienda.nombre }}</span>
-          </a>
-        </div>
-      {% endfor %}
-    </div>
-    <button class="mm-fila-flecha mm-fila-siguiente" type="button" data-mover="1" aria-label="Ver más videos" hidden><i class="bi bi-chevron-right"></i></button>
-  </div>
-</section>
-{% include 'includes/visor_historias.html' %}
-{% endif %}
+{# Videos de las tiendas dentro de la pagina (pedido del dueño el 2026-11-04): el primero aqui y uno despues de #}
+{# cada fila de categoria (tiendas.views.portada). #}
+{% if primer_video %}{% include 'includes/video_anuncio.html' with video=primer_video %}{% endif %}
 
 {% for categoria in estantes %}
 <section class="container mm-seccion mm-az-estante" aria-labelledby="titulo-estante-{{ categoria.pk }}">
@@ -155,6 +128,7 @@
   {% include 'includes/fila_productos.html' with productos=categoria.estante %}
 </div>
 </section>
+{% if categoria.video %}{% include 'includes/video_anuncio.html' with video=categoria.video %}{% endif %}
 {% endfor %}
 
 {% if tiendas_destacadas %}
@@ -208,15 +182,6 @@
   </div>
 </section>
 
-{% if preguntas %}
-<section class="container mm-seccion" aria-labelledby="titulo-preguntas">
-  <div class="mm-seccion-cabecera">
-    <h2 id="titulo-preguntas"><i class="bi bi-question-circle me-2" aria-hidden="true"></i>Preguntas frecuentes</h2>
-    <a href="{% url 'core:preguntas' %}">Ver todas <i class="bi bi-arrow-right" aria-hidden="true"></i></a>
-  </div>
-  {% include 'includes/preguntas.html' %}
-</section>
-{% endif %}
 {% endblock %}
 
-{% block scripts %}{% if historias %}<script src="{% static 'js/historias.js' %}" defer></script>{% endif %}{% endblock %}
+{% block scripts %}{% if videos %}<script src="{% static 'js/videos.js' %}" defer></script>{% endif %}{% endblock %}

@@ -3,7 +3,7 @@ import hashlib
 from django.contrib.auth.decorators import login_not_required
 from django.http import Http404, JsonResponse
 from django.templatetags.static import static
-from django.shortcuts import get_object_or_404, render
+from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.views.decorators.cache import cache_control
 from django.views.decorators.http import require_GET
@@ -11,7 +11,7 @@ from django.views.decorators.http import require_GET
 from pedidos.services import zonas_activas
 from tiendas.decoradores import de_tienda
 
-from .models import ConfiguracionTienda, PaginaInformativa, PreguntaFrecuente
+from .models import ConfiguracionTienda, PaginaInformativa
 
 
 @require_GET
@@ -51,10 +51,8 @@ def pagina(request, slug):
 @login_not_required
 @require_GET
 def preguntas(request):
-    activas = PreguntaFrecuente.objects.filter(activa=True)
-    if not activas.exists():
-        raise Http404
-    return render(request, 'paginas/preguntas.html', {'preguntas': activas})
+    """Las preguntas frecuentes se quitaron el 2026-11-04 (pedido del dueño): los enlaces viejos van a la portada."""
+    return redirect('tiendas:portada', permanent=True)
 
 
 @login_not_required

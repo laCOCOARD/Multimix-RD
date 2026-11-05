@@ -206,6 +206,9 @@ class PaginaInformativa(models.Model):
 
 
 class PreguntaFrecuente(models.Model):
+    """Ya no se usa: el dueño quito las preguntas frecuentes del sitio el 2026-11-04. La tabla se queda (las
+    migraciones son aditivas), pero no sale en el sitio ni en el panel."""
+
     pregunta = models.CharField(max_length=200)
     respuesta = models.TextField()
     activa = models.BooleanField(default=True)
@@ -230,12 +233,11 @@ class PreguntaFrecuente(models.Model):
 
 
 def contenido_del_pie():
-    """Paginas publicadas y si hay preguntas frecuentes: lo que enlaza el pie de todas las paginas."""
+    """Paginas publicadas: lo que enlaza el pie de todas las paginas."""
     datos = cache.get(CACHE_CONTENIDO)
     if datos is None:
         datos = {
             'paginas': list(PaginaInformativa.objects.filter(publicada=True).values('slug', 'titulo')),
-            'hay_preguntas': PreguntaFrecuente.objects.filter(activa=True).exists(),
         }
         cache.set(CACHE_CONTENIDO, datos, 300)
     return datos

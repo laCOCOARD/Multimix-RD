@@ -43,6 +43,10 @@ Decisiones tomadas en Multimix RD (movidas desde CLAUDE.md el 2026-10-28). Leela
   principal y sus subcategorias, solo lo comprable, con foto primero; una consulta con `RowNumber`; solo categorias con
   3 o mas, hasta 6), tiendas y una franja corta para vender. Todo sale de la base. La cabecera lleva siempre el lugar
   del carrito (`con-carrito`): sin el, en la PC el carrito caia a una segunda fila.
+- Sin preguntas frecuentes (pedido del dueño el 2026-11-04): fuera de la portada, de /vender, del menu, del pie y
+  del panel; `/preguntas-frecuentes/` redirige a la portada. La tabla `PreguntaFrecuente` se queda (migraciones
+  aditivas). Las preguntas de los clientes a cada tienda en la ficha del producto siguen. Los videos de las tiendas
+  dejaron de ser historias: van dentro de la pagina (ver `pagos-y-planes.md`).
 - Menos contenido (pedido del dueño el 2026-11-03): los cuadros de arriba son solo de categorias (sin el de la cuenta
   ni el de la oferta destacada: la barra de abajo ya lleva a la cuenta y el carrusel ya muestra ofertas), sin el boton
   flotante de volver arriba (tapaba las tarjetas en el celular) y el menu "Ayuda" con preguntas, WhatsApp y las dos
@@ -206,7 +210,7 @@ Decisiones tomadas en Multimix RD (movidas desde CLAUDE.md el 2026-10-28). Leela
   - Un solo carrito: `/tienda/<slug>/carrito/` (`carrito:detalle`) redirige a `/carrito/` (`carrito_global`), que por
     tienda trae cupon, envio gratis, avisos de la revision y "Completa tu pedido". Todos los enlaces y redirecciones van
     a `/carrito/`.
-  - Sin enlaces vacios (`href="#"`): los del visor de videos los pone `historias.js` y se ocultan sin direccion.
+  - Sin enlaces vacios (`href="#"`).
   - `alt`: fotos de productos y promociones con su nombre, logos sueltos "Logo de <tienda>"; los logos junto al nombre
     escrito son decorativos (`alt=""`).
   - /vender: los pasos se numeran con CSS (escritos en el HTML se leian "1 1"); bloque de precio editable en
