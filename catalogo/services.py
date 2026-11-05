@@ -461,6 +461,54 @@ def _es_imagen(archivo):
     return True
 
 
+@dataclass
+class ResultadoImportacion:
+    nuevos: int = 0
+    actualizados: int = 0
+    errores: list = None
+
+    @property
+    def ok(self):
+        return not self.errores
+
+
+def importar_productos(archivo, tienda, crear_categorias=False):
+    """Crea o actualiza los productos del Excel en la tienda (pedido del dueño el 2026-11-05: subirlo junto con las
+    fotos). Primero lo prueba entero: si una fila tiene un error no se guarda ninguna y se dicen todos los errores."""
+    import tablib
+
+    from .resources import ProductoResource
+
+    nombre = (archivo.name or '').lower()
+    if not nombre.endswith(('.xlsx', '.csv')):
+        return ResultadoImportacion(errores=['El archivo debe ser un Excel (.xlsx) o un .csv.'])
+    try:
+        contenido = archivo.read()
+        if nombre.endswith('.csv'):
+            datos = tablib.Dataset().load(contenido.decode('utf-8-sig'), format='csv')
+        else:
+            datos = tablib.Dataset().load(contenido, format='xlsx')
+    except Exception:  # noqa: BLE001 - un archivo dañado o que no es lo que dice
+        return ResultadoImportacion(errores=['No se pudo leer el archivo. Usa la plantilla de Excel del panel.'])
+
+    def importar(prueba):
+        recurso = ProductoResource(tienda=tienda, crear_categorias=crear_categorias)
+        return recurso.import_data(datos, dry_run=prueba, raise_errors=False, use_transactions=True)
+
+    resultado = importar(prueba=True)
+    errores = [f'Archivo: {error.error}' for error in resultado.base_errors]
+    for numero, fila in resultado.row_errors():
+        errores.extend(f'Fila {numero}: {error.error}' for error in fila)
+    for invalida in resultado.invalid_rows:
+        for campo, mensajes in invalida.error_dict.items():
+            errores.extend(f'Fila {invalida.number}, {campo}: {mensaje}' for mensaje in mensajes)
+    if errores:
+        return ResultadoImportacion(errores=errores)
+    resultado = importar(prueba=False)
+    totales = resultado.totals
+    return ResultadoImportacion(nuevos=totales.get('new', 0), actualizados=totales.get('update', 0), errores=[])
+
+
 # `RLJ-001-2.jpg`: la foto numero 2 del producto RLJ-001 (pedido del dueño el 2026-11-05).
 SUFIJO_DE_FOTO = re.compile(r'^(?P<sku>.+)-(?P<numero>[2-9])$')
 

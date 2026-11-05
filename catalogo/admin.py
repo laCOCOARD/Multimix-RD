@@ -274,21 +274,34 @@ class ProductoAdmin(AvisaImagenesSinGuardar, AdminDeTienda, ImportExportModelAdm
         return next((tienda for tienda in tiendas if str(tienda.pk) == elegida), None)
 
     def fotos_por_sku(self, request):
-        """Sube varias fotos a la vez: el nombre de cada archivo es el SKU de su producto en la tienda."""
+        """Carga el Excel de productos y las fotos en un solo paso (el Excel es opcional). El nombre de cada foto es el
+        SKU de su producto en la tienda; el Excel va primero para que los productos existan cuando llegan las fotos."""
         if not self.has_change_permission(request):
             raise PermissionDenied
         procesado = request.method == 'POST'
         reemplazar = bool(request.POST.get('reemplazar'))
         tienda = self._tienda_de_las_fotos(request)
-        resultados = [
-            services.asignar_foto_por_sku(archivo, tienda, reemplazar) for archivo in request.FILES.getlist('fotos')
-        ]
-        # La pagina envia las fotos una por una con fetch para no agotar el tiempo del servidor.
+        excel = request.FILES.get('excel')
+        importacion = None
+        if procesado and excel:
+            if not self.has_add_permission(request):
+                raise PermissionDenied
+            if tienda is None:
+                importacion = services.ResultadoImportacion(errores=['Elige la tienda.'])
+            else:
+                importacion = services.importar_productos(excel, tienda, crear_categorias=ve_todas(request.user))
+        fotos = request.FILES.getlist('fotos') if importacion is None or importacion.ok else []
+        resultados = [services.asignar_foto_por_sku(archivo, tienda, reemplazar) for archivo in fotos]
+        # La pagina envia el Excel y despues las fotos una por una con fetch, para no agotar el tiempo del servidor.
         if procesado and request.headers.get('X-Requested-With') == 'fetch':
-            return JsonResponse({'resultados': [asdict(resultado) for resultado in resultados]})
+            return JsonResponse({
+                'importacion': asdict(importacion) if importacion else None,
+                'resultados': [asdict(resultado) for resultado in resultados],
+            })
         return render(request, 'admin/catalogo/producto/fotos_por_sku.html', {
             **self.admin_site.each_context(request),
-            'title': 'Subir fotos por SKU',
+            'title': 'Cargar productos y fotos',
+            'importacion': importacion,
             'tiendas': tiendas_del_panel(request),
             'tienda_elegida': tienda,
             'procesado': procesado,

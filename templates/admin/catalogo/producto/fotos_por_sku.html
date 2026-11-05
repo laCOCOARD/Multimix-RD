@@ -3,7 +3,7 @@
 {% block breadcrumbs %}
 <div class="breadcrumbs">
   <a href="{% url 'admin:index' %}">Inicio</a> &rsaquo;
-  <a href="{% url 'admin:catalogo_producto_changelist' %}">Productos</a> &rsaquo; Fotos por SKU
+  <a href="{% url 'admin:catalogo_producto_changelist' %}">Productos</a> &rsaquo; Cargar productos y fotos
 </div>
 {% endblock %}
 
@@ -12,7 +12,7 @@
   <form method="post" enctype="multipart/form-data" id="fotos-por-sku">
     {% csrf_token %}
     <fieldset class="module aligned">
-      <h2>Subir fotos por SKU</h2>
+      <h2>Cargar productos y fotos</h2>
       {% if tiendas|length > 1 %}
         <div class="form-row">
           <div class="flex-container">
@@ -24,15 +24,26 @@
               {% endfor %}
             </select>
           </div>
-          <div class="help">Las fotos se buscan por SKU solo entre los productos de esta tienda.</div>
+          <div class="help">Los productos se crean o actualizan en esta tienda y las fotos se buscan por SKU solo entre sus productos.</div>
         </div>
       {% elif not tiendas %}
         <p class="errornote">Tu usuario no tiene ninguna tienda asignada, así que no hay productos a los que subir fotos.</p>
       {% endif %}
       <div class="form-row">
         <div class="flex-container">
+          <label for="id_excel">Excel de productos:</label>
+          <input type="file" name="excel" id="id_excel" accept=".xlsx,.csv">
+        </div>
+        <div class="help">
+          Opcional. La <a href="{% url 'admin:catalogo_producto_plantilla' %}">plantilla de Excel</a> con los productos
+          (el SKU identifica cada uno: si ya existe, se actualiza). Se carga primero; si una fila tiene un error no se
+          guarda nada y no se suben las fotos.
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="flex-container">
           <label for="id_fotos">Fotos:</label>
-          <input type="file" name="fotos" id="id_fotos" multiple required accept=".jpg,.jpeg,.png,.webp">
+          <input type="file" name="fotos" id="id_fotos" multiple accept=".jpg,.jpeg,.png,.webp">
         </div>
         <div class="help">
           El nombre de cada archivo debe ser el SKU del producto, por ejemplo <strong>123785.jpg</strong>: esa queda
@@ -50,15 +61,21 @@
     </fieldset>
 
     <div class="submit-row">
-      <input type="submit" value="Subir fotos" class="default">
+      <input type="submit" value="Cargar" class="default">
       <a class="closelink" href="{% url 'admin:catalogo_producto_changelist' %}">Volver a productos</a>
     </div>
   </form>
 
   <div class="module" id="fotos-resultado"{% if not procesado %} hidden{% endif %}>
     <h2>Resultado</h2>
+    <p class="panel-fotos-resumen" id="excel-resumen" role="status"{% if not importacion %} hidden{% endif %}>
+      {% if importacion.ok %}Productos: {{ importacion.nuevos }} nuevos, {{ importacion.actualizados }} actualizados.{% elif importacion %}El Excel tiene errores: no se guardó ningún producto ni se subieron las fotos.{% endif %}
+    </p>
+    <ul class="errorlist" id="excel-errores"{% if not importacion.errores %} hidden{% endif %}>
+      {% for error in importacion.errores %}<li>{{ error }}</li>{% endfor %}
+    </ul>
     <p class="panel-fotos-resumen" id="fotos-resumen" role="status">
-      {% if procesado %}{{ asignadas }} foto(s) asignadas, {{ rechazadas|length }} sin asignar.{% endif %}
+      {% if procesado and not importacion.errores %}{{ asignadas }} foto(s) asignadas, {{ rechazadas|length }} sin asignar.{% endif %}
     </p>
     <table id="fotos-rechazadas"{% if not rechazadas %} hidden{% endif %}>
       <caption>Fotos sin asignar</caption>

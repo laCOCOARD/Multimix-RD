@@ -266,9 +266,10 @@ borrarla. Los cambios pueden tardar hasta un minuto en verse en el sitio.
   cancela. El almacén no puede quedar por debajo de lo reservado.
 - Las fotos se suben en JPG, PNG o WebP (hasta 5 MB); se ajustan a 1200 px y se guardan en WebP.
 - El SKU no se repite dentro de una tienda; dos tiendas sí pueden usar el mismo.
-- **Fotos por SKU** (botón de la lista): sube muchas fotos a la vez. El nombre de cada archivo es el SKU
-  del producto (`123785.jpg`) y la foto queda como principal; al terminar lista las que no encontraron
-  producto. Se puede elegir reemplazar las fotos que ya tenía cada producto. Solo busca entre los
+- **Cargar productos y fotos** (botón de la lista): sube el Excel de productos (opcional) y muchas fotos a la
+  vez. El Excel va primero; si una fila tiene un error no se guarda nada ni se suben las fotos. El nombre de cada
+  foto es el SKU del producto (`123785.jpg`, la principal; `123785-2.jpg`, `123785-3.jpg`… las secundarias); al
+  terminar lista las que no encontraron producto. Se puede elegir reemplazar las fotos que ya tenía cada producto. Solo busca entre los
   productos de la tienda; quien administra varias elige cuál.
 - Acciones masivas: destacar, activar/desactivar, poner oferta de X % con fechas y quitar oferta.
 

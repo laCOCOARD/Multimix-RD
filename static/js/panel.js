@@ -30,7 +30,8 @@
   });
 })();
 
-// Envia las fotos una por una: asi no importa cuantas sean ni cuanto tarde cada una.
+// Cargar productos y fotos: primero el Excel (si hay) y despues las fotos una por una, asi no importa cuantas sean ni
+// cuanto tarde cada una. Si el Excel tiene errores no se sube ninguna foto.
 (() => {
   const formulario = document.getElementById('fotos-por-sku');
   if (!formulario) return;
@@ -49,10 +50,29 @@
     tabla.hidden = false;
   };
 
+  const resumenExcel = document.getElementById('excel-resumen');
+  const erroresExcel = document.getElementById('excel-errores');
+
+  const enviar = async (datos) => {
+    const respuesta = await fetch(formulario.action, {
+      method: 'POST', body: datos, headers: { 'X-Requested-With': 'fetch' },
+    });
+    if (!respuesta.ok) throw new Error(`Error ${respuesta.status}`);
+    return respuesta.json();
+  };
+  const datosBase = (token) => {
+    const datos = new FormData();
+    datos.append('csrfmiddlewaretoken', token);
+    if (formulario.elements.tienda) datos.append('tienda', formulario.elements.tienda.value);
+    if (formulario.elements.reemplazar.checked) datos.append('reemplazar', '1');
+    return datos;
+  };
+
   formulario.addEventListener('submit', async (evento) => {
     evento.preventDefault();
     const fotos = Array.from(formulario.elements.fotos.files);
-    if (!fotos.length) return;
+    const excel = formulario.elements.excel ? formulario.elements.excel.files[0] : null;
+    if (!fotos.length && !excel) return;
     const token = formulario.elements.csrfmiddlewaretoken.value;
     let asignadas = 0;
     let rechazadas = 0;
@@ -60,21 +80,43 @@
     boton.disabled = true;
     tabla.tBodies[0].replaceChildren();
     tabla.hidden = true;
+    resumenExcel.hidden = true;
+    erroresExcel.replaceChildren();
+    erroresExcel.hidden = true;
+    resumen.textContent = '';
     document.getElementById('fotos-resultado').hidden = false;
+
+    if (excel) {
+      resumenExcel.hidden = false;
+      resumenExcel.textContent = `Cargando los productos de ${excel.name}…`;
+      const datos = datosBase(token);
+      datos.append('excel', excel);
+      let importacion = null;
+      try {
+        importacion = (await enviar(datos)).importacion;
+      } catch (error) {
+        importacion = { errores: [`No se pudo cargar el Excel (${error.message}).`] };
+      }
+      if (importacion.errores && importacion.errores.length) {
+        resumenExcel.textContent = 'El Excel tiene errores: no se guardó ningún producto ni se subieron las fotos.';
+        importacion.errores.forEach((texto) => {
+          const item = document.createElement('li');
+          item.textContent = texto;
+          erroresExcel.append(item);
+        });
+        erroresExcel.hidden = false;
+        boton.disabled = false;
+        return;
+      }
+      resumenExcel.textContent = `Productos: ${importacion.nuevos} nuevos, ${importacion.actualizados} actualizados.`;
+    }
 
     for (const [indice, foto] of fotos.entries()) {
       resumen.textContent = `Subiendo ${indice + 1} de ${fotos.length}: ${foto.name}`;
-      const datos = new FormData();
-      datos.append('csrfmiddlewaretoken', token);
+      const datos = datosBase(token);
       datos.append('fotos', foto);
-      if (formulario.elements.tienda) datos.append('tienda', formulario.elements.tienda.value);
-      if (formulario.elements.reemplazar.checked) datos.append('reemplazar', '1');
       try {
-        const respuesta = await fetch(formulario.action, {
-          method: 'POST', body: datos, headers: { 'X-Requested-With': 'fetch' },
-        });
-        if (!respuesta.ok) throw new Error(`Error ${respuesta.status}`);
-        for (const resultado of (await respuesta.json()).resultados) {
+        for (const resultado of (await enviar(datos)).resultados) {
           if (resultado.asignada) {
             asignadas += 1;
           } else {
@@ -88,7 +130,7 @@
       }
     }
 
-    resumen.textContent = `${asignadas} foto(s) asignadas, ${rechazadas} sin asignar.`;
+    if (fotos.length) resumen.textContent = `${asignadas} foto(s) asignadas, ${rechazadas} sin asignar.`;
     boton.disabled = false;
     formulario.reset();
   });

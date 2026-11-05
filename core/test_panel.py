@@ -295,7 +295,7 @@ class FotosPorSkuTests(PanelBase):
 
     def test_el_nombre_del_archivo_es_el_sku(self):
         self.assertContains(self.client.get(reverse('admin:catalogo_producto_changelist')), self.url)
-        self.assertContains(self.client.get(self.url), 'Subir fotos por SKU')
+        self.assertContains(self.client.get(self.url), 'Cargar productos y fotos')
 
         respuesta = self.client.post(self.url, {'fotos': [imagen_de_prueba('l1.png'), imagen_de_prueba('NOEXISTE.png')]})
         self.assertContains(respuesta, '1 foto(s) asignadas, 1 sin asignar.')
@@ -340,6 +340,59 @@ class FotosPorSkuTests(PanelBase):
         # Un SKU sin producto, con o sin numero, no se asigna; el de otra tienda tampoco (ver tiendas/tests).
         respuesta = self.client.post(self.url, {'fotos': imagen_de_prueba('NOEXISTE-2.png')}, HTTP_X_REQUESTED_WITH='fetch')
         self.assertEqual(respuesta.json()['resultados'][0]['asignada'], False)
+
+    def excel(self, filas):
+        """Un .xlsx con las columnas de la plantilla."""
+        from openpyxl import Workbook
+
+        libro = Workbook()
+        hoja = libro.active
+        hoja.append(COLUMNAS)
+        for fila in filas:
+            hoja.append(fila)
+        salida = BytesIO()
+        libro.save(salida)
+        return SimpleUploadedFile('productos.xlsx', salida.getvalue())
+
+    def fila(self, sku, precio='2500.00', oferta=''):
+        categoria = self.producto.categoria.nombre
+        return [sku, f'Reloj {sku}', categoria, 'De prueba.', precio, oferta, '', '', 'disponible', 0, 0, 0, 1, 1,
+                'Casio', '', '', '']
+
+    def test_carga_el_excel_y_las_fotos_juntos(self):
+        """Pedido del dueño el 2026-11-05: el Excel y las fotos en un solo paso; el Excel va primero."""
+        respuesta = self.client.post(self.url, {
+            'excel': self.excel([self.fila('R1'), self.fila('L1', precio='1300.00')]),
+            'fotos': [imagen_de_prueba('R1.png'), imagen_de_prueba('R1-2.png')],
+        })
+        self.assertContains(respuesta, 'Productos: 1 nuevos, 1 actualizados.')
+        self.assertContains(respuesta, '2 foto(s) asignadas, 0 sin asignar.')
+        nuevo = Producto.objects.get(sku='R1')
+        self.assertEqual(nuevo.tienda, self.producto.tienda)
+        self.assertEqual(nuevo.fotos.count(), 2)
+        self.producto.refresh_from_db()
+        self.assertEqual(self.producto.precio, Decimal('1300.00'))
+
+    def test_con_fetch_el_excel_responde_json(self):
+        respuesta = self.client.post(self.url, {'excel': self.excel([self.fila('R2')])}, HTTP_X_REQUESTED_WITH='fetch')
+        self.assertEqual(respuesta.json()['importacion'], {'nuevos': 1, 'actualizados': 0, 'errores': []})
+
+    def test_si_el_excel_tiene_errores_no_guarda_nada(self):
+        respuesta = self.client.post(self.url, {
+            'excel': self.excel([self.fila('R3'), self.fila('R4', precio='100', oferta='150')]),
+            'fotos': imagen_de_prueba('R3.png'),
+        }, HTTP_X_REQUESTED_WITH='fetch')
+        datos = respuesta.json()
+        self.assertTrue(datos['importacion']['errores'])
+        self.assertTrue(all(error.startswith('Fila') for error in datos['importacion']['errores']))
+        self.assertEqual(datos['resultados'], [])
+        self.assertFalse(Producto.objects.filter(sku__in=['R3', 'R4']).exists())
+
+    def test_un_archivo_que_no_es_excel(self):
+        respuesta = self.client.post(
+            self.url, {'excel': SimpleUploadedFile('productos.xlsx', b'no es un excel')}, HTTP_X_REQUESTED_WITH='fetch',
+        )
+        self.assertIn('No se pudo leer el archivo', respuesta.json()['importacion']['errores'][0])
 
     def test_rechaza_lo_que_no_es_una_imagen(self):
         falsa = SimpleUploadedFile('L1.jpg', b'esto no es una foto')

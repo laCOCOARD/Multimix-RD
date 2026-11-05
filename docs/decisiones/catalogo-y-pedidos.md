@@ -77,6 +77,9 @@ Decisiones tomadas en Multimix RD (movidas desde CLAUDE.md el 2026-10-28). Leela
   ni `stock_reservado`.
 - Inicio de tienda: `catalogo.services.categorias_de_portada(tienda)` trae las categorias con productos de
   la tienda y da a la que no tiene imagen la foto de uno de ellos.
+- Cargar productos y fotos (2026-11-05, pedido del dueño: todo en un paso): la pagina de fotos por SKU acepta tambien
+  el Excel (`catalogo.services.importar_productos`: lo prueba entero con `dry_run` y solo si no hay errores lo guarda;
+  crea categorias solo el superusuario). El JS manda primero el Excel y despues las fotos una por una.
 - Fotos por SKU: `catalogo.services.asignar_foto_por_sku` usa el nombre del archivo como SKU (dentro de la
   tienda) y deja la foto como principal. Desde el 2026-11-05 `SKU-2.jpg` a `SKU-9.jpg` son fotos secundarias (`orden` = el
   numero) si no hay un producto con ese SKU completo; con "reemplazar" la principal no borra las numeradas y cada
