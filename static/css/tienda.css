@@ -626,51 +626,51 @@ html:not(.js) .solo-con-js { display: none !important; }
    video arriba y los botones abajo; en pantallas anchas, el video vertical a la izquierda y los datos al lado. */
 .mm-video-anuncio { transition: opacity .25s ease, transform .25s ease; }
 .mm-video-anuncio.omitido { opacity: 0; transform: scale(.98); }
+/* Dueño, 2026-11-05: mas video, el banner de la tienda completo y los productos en miniatura. */
 .mm-video-anuncio-marco { display: grid; overflow: hidden; border: 1px solid var(--mm-borde); border-radius: var(--mm-radio); background: var(--mm-superficie); box-shadow: var(--mm-sombra); }
 .mm-video-anuncio-pantalla { position: relative; display: grid; place-items: center; background: #000; }
-.mm-video-anuncio-video { display: block; width: 100%; height: min(45vh, 24rem); height: min(45dvh, 24rem); object-fit: contain; background: #000; cursor: pointer; }
+.mm-video-anuncio-video { display: block; width: 100%; height: min(60vh, 32rem); height: min(60dvh, 32rem); object-fit: contain; background: #000; cursor: pointer; }
 .mm-video-anuncio-sonido { position: absolute; right: .6rem; bottom: .6rem; display: grid; place-items: center; width: 2.75rem; height: 2.75rem; padding: 0; border: 0; border-radius: 50%; background: rgba(0, 0, 0, .55); color: #fff; font-size: 1.25rem; }
 .mm-video-anuncio-sonido:hover { background: rgba(0, 0, 0, .75); }
 .mm-video-anuncio-sonido:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
 .mm-video-anuncio-info { display: flex; flex-direction: column; min-width: 0; }
-/* Arriba, el banner de la tienda; sin banner, un fondo carbon con un brillo ambar. */
-.mm-video-anuncio-portada { position: relative; height: 5rem; overflow: hidden; background: radial-gradient(120% 140% at 85% 10%, rgba(245, 158, 11, .55), transparent 55%), linear-gradient(135deg, var(--mm-oscuro, #111827), #1f2937); }
-.mm-video-anuncio-portada img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
-.mm-video-anuncio-portada.con-imagen::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(17, 24, 39, 0) 40%, rgba(17, 24, 39, .45)); }
+/* El banner entero a lo ancho (3:1, la forma de los banners); sin banner, carbon con un brillo ambar. */
+.mm-video-anuncio-portada { position: relative; display: block; aspect-ratio: 3 / 1; overflow: hidden; background: radial-gradient(120% 140% at 85% 10%, rgba(245, 158, 11, .55), transparent 55%), linear-gradient(135deg, var(--mm-oscuro, #111827), #1f2937); }
+.mm-video-anuncio-portada img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transition: transform .6s ease; }
+.mm-video-anuncio-portada:hover img { transform: scale(1.03); }
 .mm-video-anuncio-marca { position: absolute; top: .6rem; right: .6rem; z-index: 1; padding: .15rem .55rem; border-radius: 999px; background: rgba(255, 255, 255, .92); color: var(--mm-oscuro, #111827); font-size: .72rem; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; }
-.mm-video-anuncio-cuerpo { display: grid; flex: 1; align-content: start; gap: .9rem; padding: 0 1rem 1.1rem; }
-.mm-video-anuncio-tienda { display: flex; align-items: center; gap: .75rem; min-width: 0; padding-top: .5rem; color: var(--mm-texto); text-decoration: none; }
+.mm-video-anuncio-cuerpo { display: flex; flex: 1; flex-direction: column; gap: .7rem; padding: 0 1rem 1rem; }
+.mm-video-anuncio-tienda { display: flex; align-items: center; gap: .7rem; min-width: 0; padding-top: .45rem; color: var(--mm-texto); text-decoration: none; }
 .mm-video-anuncio-tienda:hover { color: var(--mm-texto); }
 .mm-video-anuncio-tienda:hover .mm-video-anuncio-nombre { text-decoration: underline; }
-.mm-video-anuncio-logo { position: relative; z-index: 1; display: grid; flex: none; place-items: center; width: 4.25rem; height: 4.25rem; overflow: hidden; border: 3px solid var(--mm-superficie); border-radius: 50%; background: var(--mm-primario); color: #fff; font-size: 1.6rem; font-weight: 800; box-shadow: 0 4px 14px rgba(17, 24, 39, .18); margin-top: -2.4rem; }
+.mm-video-anuncio-logo { position: relative; z-index: 1; display: grid; flex: none; place-items: center; width: 3.75rem; height: 3.75rem; margin-top: -2rem; overflow: hidden; border: 3px solid var(--mm-superficie); border-radius: 50%; background: var(--mm-primario); color: #fff; font-size: 1.4rem; font-weight: 800; box-shadow: 0 4px 14px rgba(17, 24, 39, .18); }
 .mm-video-anuncio-logo.con-logo { background: var(--mm-superficie); }
 .mm-video-anuncio-logo img { width: 100%; height: 100%; object-fit: contain; }
 .mm-video-anuncio-nombres { display: grid; min-width: 0; }
-.mm-video-anuncio-nombre { overflow: hidden; font-size: 1.1rem; font-weight: 800; white-space: nowrap; text-overflow: ellipsis; }
-.mm-video-anuncio-frase { overflow: hidden; color: var(--mm-texto-suave, #6b7280); font-size: .88rem; white-space: nowrap; text-overflow: ellipsis; }
-.mm-video-anuncio-titulo { position: relative; margin: 0; padding-left: .9rem; font-size: 1.15rem; font-weight: 800; line-height: 1.3; color: var(--mm-oscuro); }
+.mm-video-anuncio-nombre { overflow: hidden; font-size: 1.05rem; font-weight: 800; white-space: nowrap; text-overflow: ellipsis; }
+.mm-video-anuncio-frase { overflow: hidden; color: var(--mm-texto-suave, #6b7280); font-size: .84rem; white-space: nowrap; text-overflow: ellipsis; }
+.mm-video-anuncio-titulo { position: relative; margin: 0; padding-left: .8rem; font-size: 1.1rem; font-weight: 800; line-height: 1.3; color: var(--mm-oscuro); }
 .mm-video-anuncio-titulo::before { content: ""; position: absolute; top: .15rem; bottom: .15rem; left: 0; width: 4px; border-radius: 4px; background: var(--mm-acento, #F59E0B); }
-.mm-video-anuncio-productos { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .6rem; margin: 0; padding: 0; list-style: none; }
-.mm-video-anuncio-producto { display: grid; gap: .3rem; height: 100%; padding: .45rem; border: 1px solid var(--mm-borde); border-radius: calc(var(--mm-radio) * .75); color: var(--mm-texto); text-decoration: none; transition: border-color .2s ease, box-shadow .2s ease, transform .2s ease; }
-.mm-video-anuncio-producto:hover { border-color: var(--mm-acento, #F59E0B); box-shadow: var(--mm-sombra); color: var(--mm-texto); transform: translateY(-2px); }
-.mm-video-anuncio-producto-foto { display: grid; place-items: center; aspect-ratio: 1; overflow: hidden; border-radius: calc(var(--mm-radio) * .5); background: #f3f4f6; color: #9ca3af; font-size: 1.5rem; }
-.mm-video-anuncio-producto-foto img { width: 100%; height: 100%; object-fit: contain; }
-.mm-video-anuncio-producto-nombre { display: -webkit-box; overflow: hidden; font-size: .82rem; line-height: 1.3; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
-.mm-video-anuncio-producto-precio { font-size: .88rem; font-weight: 800; color: var(--mm-oscuro); }
-.mm-video-anuncio-acciones { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: auto; }
-.mm-video-anuncio-acciones .btn { display: inline-flex; flex: 1 1 10rem; align-items: center; justify-content: center; gap: .4rem; min-height: 2.9rem; font-weight: 700; }
+.mm-video-anuncio-pie { display: flex; margin-top: auto; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: .75rem 1rem; }
+/* Productos en miniatura: foto chica y precio; el nombre lo dice el enlace (title y texto oculto). */
+.mm-video-anuncio-productos { display: flex; gap: .5rem; margin: 0; padding: 0; list-style: none; }
+.mm-video-anuncio-producto { display: grid; justify-items: center; gap: .2rem; width: 4.75rem; color: var(--mm-texto); text-decoration: none; }
+.mm-video-anuncio-producto-foto { display: grid; place-items: center; width: 100%; aspect-ratio: 1; overflow: hidden; border: 1px solid var(--mm-borde); border-radius: .6rem; background: #f3f4f6; color: #9ca3af; font-size: 1.2rem; transition: border-color .2s ease, transform .2s ease; }
+.mm-video-anuncio-producto:hover .mm-video-anuncio-producto-foto { border-color: var(--mm-acento, #F59E0B); transform: translateY(-2px); }
+.mm-video-anuncio-producto-foto img { width: 100%; height: 100%; object-fit: cover; }
+.mm-video-anuncio-producto-precio { font-size: .72rem; font-weight: 800; color: var(--mm-oscuro); white-space: nowrap; }
+.mm-video-anuncio-acciones { display: flex; flex-wrap: wrap; gap: .5rem; flex: 1 1 100%; }
+.mm-video-anuncio-acciones .btn { display: inline-flex; flex: 1 1 10rem; align-items: center; justify-content: center; gap: .4rem; min-height: 2.75rem; font-weight: 700; }
 @media (min-width: 768px) {
-  /* Mas compacto (pedido del dueño el 2026-11-05: "salen muy grandes"). */
-  .mm-video-anuncio-marco { grid-template-columns: minmax(0, 15rem) minmax(0, 1fr); }
-  .mm-video-anuncio-video { height: 24rem; }
-  .mm-video-anuncio-portada { height: 6rem; }
-  .mm-video-anuncio-cuerpo { gap: .75rem; padding: 0 1.75rem 1.25rem; }
-  .mm-video-anuncio-logo { width: 4.25rem; height: 4.25rem; margin-top: -2.4rem; font-size: 1.6rem; }
+  .mm-video-anuncio-marco { grid-template-columns: minmax(0, 20rem) minmax(0, 1fr); }
+  .mm-video-anuncio-video { height: 100%; min-height: 30rem; }
+  .mm-video-anuncio-cuerpo { padding: 0 1.5rem 1.25rem; }
+  .mm-video-anuncio-logo { width: 4.25rem; height: 4.25rem; margin-top: -2.4rem; }
   .mm-video-anuncio-nombre { font-size: 1.15rem; }
-  .mm-video-anuncio-titulo { font-size: 1.2rem; }
-  .mm-video-anuncio-productos { grid-template-columns: repeat(3, minmax(0, 8.5rem)); gap: .75rem; }
-  .mm-video-anuncio-producto-nombre { font-size: .8rem; }
-  .mm-video-anuncio-acciones .btn { flex: 0 1 auto; min-height: 2.6rem; }
+  .mm-video-anuncio-titulo { font-size: 1.25rem; }
+  .mm-video-anuncio-producto { width: 5.25rem; }
+  .mm-video-anuncio-acciones { flex: 0 1 auto; justify-content: flex-end; }
+  .mm-video-anuncio-acciones .btn { flex: 0 1 auto; }
 }
 .badge.mm-etiqueta-patrocinado { --bs-badge-color: var(--mm-oscuro); background: #fff; border: 1px solid var(--mm-borde); }
 

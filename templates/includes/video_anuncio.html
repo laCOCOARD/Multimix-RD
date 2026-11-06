@@ -2,8 +2,9 @@
 {# Un video de una tienda dentro de la pagina (pedido del dueño el 2026-11-04: ya no como historias). Recibe `video`. #}
 {# static/js/videos.js lo reproduce solo y sin sonido cuando se ve al deslizarse, y "Omitir anuncio" lo esconde #}
 {# durante la visita. Sin JavaScript queda el video con sus controles. Sin producto a la venta lleva a la tienda. #}
-{# Al lado (pedido del dueño el 2026-11-05: que no quede vacio): el banner de la tienda, su logo y su frase, el #}
-{# titulo del video y unos productos suyos (`video.productos`, de planes.services.con_productos_de_la_tienda). #}
+{# Al lado (dueño, 2026-11-05: mas video, el banner bien visible y productos pequeños): el banner de la tienda #}
+{# completo, su logo, el titulo del video y unos productos suyos en miniatura (`video.productos`, de #}
+{# planes.services.con_productos_de_la_tienda). #}
 {% with producto=video.url_del_producto tienda_del_video=video.tienda %}
 <section class="container mm-seccion mm-video-anuncio js-video-anuncio" data-id="{{ video.pk }}" data-vista="{% url 'planes:vista_de_video' video.pk %}" data-csrf="{{ csrf_token }}" aria-label="Video de {{ tienda_del_video.nombre }}">
   <div class="mm-video-anuncio-marco">
@@ -12,10 +13,10 @@
       <button class="mm-video-anuncio-sonido js-video-sonido" type="button" aria-label="Activar el sonido" hidden><i class="bi bi-volume-mute-fill" aria-hidden="true"></i></button>
     </div>
     <div class="mm-video-anuncio-info">
-      <div class="mm-video-anuncio-portada{% if tienda_del_video.banner_imagen %} con-imagen{% endif %}" aria-hidden="true">
+      <a class="mm-video-anuncio-portada{% if tienda_del_video.banner_imagen %} con-imagen{% endif %}" href="{{ tienda_del_video.get_absolute_url }}" tabindex="-1" aria-hidden="true">
         {% if tienda_del_video.banner_imagen %}<img src="{{ tienda_del_video.banner_imagen.url }}" alt="" loading="lazy" decoding="async">{% endif %}
         <span class="mm-video-anuncio-marca">Anuncio</span>
-      </div>
+      </a>
       <div class="mm-video-anuncio-cuerpo">
         <a class="mm-video-anuncio-tienda" href="{{ tienda_del_video.get_absolute_url }}">
           <span class="mm-video-anuncio-logo{% if tienda_del_video.logo %} con-logo{% endif %}" aria-hidden="true">{% if tienda_del_video.logo %}<img src="{{ tienda_del_video.logo.url }}" alt="" loading="lazy" decoding="async" width="72" height="72">{% else %}{{ tienda_del_video.nombre|slice:':1'|upper }}{% endif %}</span>
@@ -25,28 +26,30 @@
           </span>
         </a>
         <p class="mm-video-anuncio-titulo">{{ video.titulo }}</p>
-        {% if video.productos %}
-          <ul class="mm-video-anuncio-productos" aria-label="Productos de {{ tienda_del_video.nombre }}">
-            {% for item in video.productos %}
-              <li>
-                <a class="mm-video-anuncio-producto" href="{{ item.get_absolute_url }}">
-                  <span class="mm-video-anuncio-producto-foto">
-                    {% with foto=item.foto_principal %}{% if foto %}<img src="{{ foto.url_tarjeta }}" alt="" loading="lazy" decoding="async" width="160" height="160">{% else %}<i class="bi bi-image" aria-hidden="true"></i>{% endif %}{% endwith %}
-                  </span>
-                  <span class="mm-video-anuncio-producto-nombre">{{ item.nombre }}</span>
-                  <span class="mm-video-anuncio-producto-precio">{{ item.precio_final|moneda }}</span>
-                </a>
-              </li>
-            {% endfor %}
-          </ul>
-        {% endif %}
-        <div class="mm-video-anuncio-acciones">
-          {% if producto %}
-            <a class="btn btn-acento" href="{{ producto }}">Visitar producto <i class="bi bi-arrow-right" aria-hidden="true"></i></a>
-          {% else %}
-            <a class="btn btn-acento" href="{{ tienda_del_video.get_absolute_url }}">Visitar la tienda <i class="bi bi-arrow-right" aria-hidden="true"></i></a>
+        <div class="mm-video-anuncio-pie">
+          {% if video.productos %}
+            <ul class="mm-video-anuncio-productos" aria-label="Productos de {{ tienda_del_video.nombre }}">
+              {% for item in video.productos %}
+                <li>
+                  <a class="mm-video-anuncio-producto" href="{{ item.get_absolute_url }}" title="{{ item.nombre }}">
+                    <span class="mm-video-anuncio-producto-foto">
+                      {% with foto=item.foto_principal %}{% if foto %}<img src="{{ foto.url_tarjeta }}" alt="" loading="lazy" decoding="async" width="160" height="160">{% else %}<i class="bi bi-image" aria-hidden="true"></i>{% endif %}{% endwith %}
+                    </span>
+                    <span class="visually-hidden">{{ item.nombre }}</span>
+                    <span class="mm-video-anuncio-producto-precio">{{ item.precio_final|moneda }}</span>
+                  </a>
+                </li>
+              {% endfor %}
+            </ul>
           {% endif %}
-          <button class="btn btn-outline-secondary solo-con-js js-video-omitir" type="button">Omitir anuncio</button>
+          <div class="mm-video-anuncio-acciones">
+            {% if producto %}
+              <a class="btn btn-acento" href="{{ producto }}">Visitar producto <i class="bi bi-arrow-right" aria-hidden="true"></i></a>
+            {% else %}
+              <a class="btn btn-acento" href="{{ tienda_del_video.get_absolute_url }}">Visitar la tienda <i class="bi bi-arrow-right" aria-hidden="true"></i></a>
+            {% endif %}
+            <button class="btn btn-outline-secondary solo-con-js js-video-omitir" type="button">Omitir anuncio</button>
+          </div>
         </div>
       </div>
     </div>
