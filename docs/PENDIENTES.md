@@ -5,9 +5,11 @@ https://multimix-rd.onrender.com): la portada baja de 12-33 s a menos de 1 s. El
 suspende (no borrar todavia). Ese dia tambien: videos de las tiendas dentro de la pagina y sin preguntas frecuentes.
 Lo que sigue empieza en el punto 3.
 
-**2026-11-05 (sin subir ni desplegar):** el anuncio de video lleva al lado el banner, el logo y 3 productos de la
-tienda; escalera de premios de referidos (niveles 4 y 6). Migraciones nuevas: core/0027, referidos/0003,
-tiendas/0025. El dueño ya tiene el correo `contacto.multimixrd@gmail.com`: falta Brevo (punto 3).
+**2026-11-05 (todo desplegado, GitHub y Render en `ffac8ab`):** anuncio de video con el banner completo, logo y
+productos en miniatura; escalera de premios de referidos (niveles 4 y 6); tarjetas de tienda con el color de su banner;
+correo por Brevo desde `contacto.multimixrd@gmail.com` (punto 3 hecho: falta probar "olvide mi contraseña"). Glow &
+Power ahora se llama TIMEVERA. ÉLIXORA cargo 13 perfumes inspirados. Pendiente: que cada deploy no cierre la sesion
+del administrador (el arranque vuelve a poner la contraseña con `set_password`).
 
 Notas para seguir el trabajo desde Claude Code en VS Code. Sin claves: las variables estan solo en Render.
 
