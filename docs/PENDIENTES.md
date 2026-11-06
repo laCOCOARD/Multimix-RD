@@ -8,8 +8,8 @@ Lo que sigue empieza en el punto 3.
 **2026-11-05 (todo desplegado, GitHub y Render en `ffac8ab`):** anuncio de video con el banner completo, logo y
 productos en miniatura; escalera de premios de referidos (niveles 4 y 6); tarjetas de tienda con el color de su banner;
 correo por Brevo desde `contacto.multimixrd@gmail.com` (punto 3 hecho: falta probar "olvide mi contraseña"). Glow &
-Power ahora se llama TIMEVERA. ÉLIXORA cargo 13 perfumes inspirados. Pendiente: que cada deploy no cierre la sesion
-del administrador (el arranque vuelve a poner la contraseña con `set_password`).
+Power ahora se llama TIMEVERA. ÉLIXORA cargo 13 perfumes inspirados. Que cada deploy no cierre la sesion del
+administrador: comando `asegurar_superusuario`; falta poner el Start Command nuevo en Render (`docs/RENDER.md`).
 
 Notas para seguir el trabajo desde Claude Code en VS Code. Sin claves: las variables estan solo en Render.
 

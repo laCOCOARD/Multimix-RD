@@ -13,8 +13,9 @@ Cómo está desplegado el sitio hoy y cómo mantenerlo. Para un servidor propio 
 | Correos         | Brevo, por su API                                                               |
 
 - **Build:** `pip install -r requirements-prod.txt && python manage.py collectstatic --noinput`
-- **Start:** `python manage.py migrate`, crea o actualiza el superusuario con `DJANGO_SUPERUSER_*` y arranca
-  Gunicorn. Las migraciones corren solas en cada despliegue.
+- **Start:** `python manage.py migrate && python manage.py asegurar_superusuario && gunicorn config.wsgi:application --bind 0.0.0.0:$PORT`.
+  Las migraciones corren solas en cada despliegue. `asegurar_superusuario` crea o pone al dia el administrador con
+  `DJANGO_SUPERUSER_*` y solo cambia su contraseña si es otra (antes la reponia siempre y cada deploy lo sacaba del panel).
 - **Despliegue:** manual. Tras subir a GitHub: *Manual Deploy → Deploy latest commit*.
 - **Health Check Path** (Settings): `/salud/`. Responde `ok` si el sitio y la base funcionan.
 - **Panel:** la ruta sale de `ADMIN_URL` y no es `/panel/`. Nada del sitio la enlaza ni la menciona (tampoco
@@ -31,7 +32,7 @@ Cómo está desplegado el sitio hoy y cómo mantenerlo. Para un servidor propio 
 | `DATABASE_URL`                                          | Conexión a PostgreSQL (la *Internal Database URL* de Render).          |
 | `ALLOWED_HOSTS`, `CSRF_TRUSTED_ORIGINS`                 | Solo si se usa un dominio propio; el de Render se agrega solo.        |
 | `ADMIN_URL`                                             | Ruta del panel (por defecto `panel`). Conviene cambiarla.             |
-| `DJANGO_SUPERUSER_USERNAME`, `_EMAIL`, `_PASSWORD`      | Administrador principal. Su contraseña se repone en cada arranque.    |
+| `DJANGO_SUPERUSER_USERNAME`, `_EMAIL`, `_PASSWORD`      | Administrador principal. Su contraseña cambia solo si la variable cambia. |
 | `MEDIA_STORAGE=supabase` y las seis `SUPABASE_*`        | Fotos en Supabase.                                                    |
 | `SUPABASE_S3_BUCKET_PRIVADO`                            | Bucket **privado** para los comprobantes de pago (ver abajo).         |
 | `SUPABASE_S3_BUCKET_VIDEOS`                             | Bucket **público** para los videos de las tiendas (ver abajo).        |
