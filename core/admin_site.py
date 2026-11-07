@@ -187,7 +187,13 @@ class PanelAdminSite(admin.AdminSite):
         from .panel import primeros_pasos, resumen_panel, tareas_del_panel, ventas_por_tienda
 
         from planes.services import cambios_de_plan_pendientes, estado_de_cuenta, resumen_para_el_administrador
+        from tiendas.services import es_ayudante
 
+        if es_ayudante(request.user):
+            # El ayudante solo atiende pedidos: su inicio es el tablero de pedidos.
+            from django.shortcuts import redirect
+
+            return redirect('admin:pedidos_pedido_changelist')
         contexto = {}
         if request.user.has_perm('pedidos.view_pedido'):
             if ve_todas(request.user):

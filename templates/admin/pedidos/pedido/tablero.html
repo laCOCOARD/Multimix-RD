@@ -1,0 +1,141 @@
+{% extends "admin/base_site.html" %}
+{% load moneda %}
+{# Tablero de pedidos (2026-11-06): tarjetas grandes con un boton para lo que toca, facil de usar para cualquiera. #}
+{# La lista de Django sigue en ?lista=1 (pedidos.admin.PedidoAdmin.changelist_view). #}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs"><a href="{% url 'admin:index' %}">Inicio</a> › Pedidos</div>
+{% endblock %}
+
+{# El titulo grande va dentro de la pagina: sin el de Django arriba. #}
+{% block content_title %}{% endblock %}
+
+{% block content %}
+<div class="pv-tablero pv-grande">
+  <header class="pv-titulo-pagina">
+    <h1>Pedidos</h1>
+    <p>Cada pedido tiene un botón grande con lo que toca hacer. Al tocarlo, al cliente le llega el aviso solo.</p>
+  </header>
+
+  <nav class="pv-pestanas" aria-label="Qué pedidos ver">
+    <a class="pv-pestana pv-pestana-atender{% if not bandeja_actual %} pv-pestana-activa{% endif %}" href="{{ url_atender }}"
+       {% if not bandeja_actual %}aria-current="page"{% endif %}>
+      <span class="pv-pestana-icono" aria-hidden="true">🔔</span>
+      <span class="pv-pestana-nombre">Para atender</span>
+      <span class="pv-pestana-numero">{{ para_atender }}</span>
+    </a>
+    {% for pestana in pestanas %}
+      <a class="pv-pestana{% if pestana.activa %} pv-pestana-activa{% endif %}{% if pestana.atender and pestana.cantidad %} pv-pestana-aviso{% endif %}{% if not pestana.atender %} pv-pestana-chica{% endif %}"
+         href="{{ pestana.url }}" {% if pestana.activa %}aria-current="page"{% endif %}>
+        <span class="pv-pestana-icono" aria-hidden="true">{{ pestana.icono }}</span>
+        <span class="pv-pestana-nombre">{{ pestana.nombre }}</span>
+        <span class="pv-pestana-numero">{{ pestana.cantidad }}</span>
+      </a>
+    {% endfor %}
+    <a class="pv-pestana pv-pestana-chica{% if bandeja_actual == 'todos' %} pv-pestana-activa{% endif %}" href="{{ url_todos }}"
+       {% if bandeja_actual == 'todos' %}aria-current="page"{% endif %}>
+      <span class="pv-pestana-icono" aria-hidden="true">📋</span>
+      <span class="pv-pestana-nombre">Todos</span>
+    </a>
+  </nav>
+
+  <form method="get" class="pv-buscar" role="search">
+    {% if bandeja_actual %}<input type="hidden" name="bandeja" value="{{ bandeja_actual }}">{% endif %}
+    {% if varias_tiendas %}
+      <label class="pv-buscar-tienda">Tienda
+        <select name="tienda">
+          <option value="">Todas</option>
+          {% for tienda in tiendas %}<option value="{{ tienda.pk }}"{% if tienda == tienda_elegida %} selected{% endif %}>{{ tienda.nombre }}</option>{% endfor %}
+        </select>
+      </label>
+    {% endif %}
+    <label class="visually-hidden" for="pv-buscar-texto">Buscar un pedido</label>
+    <input type="search" name="q" id="pv-buscar-texto" value="{{ busqueda }}" placeholder="Buscar por número, nombre o teléfono">
+    <button type="submit" class="pv-boton-grande pv-boton-gris">🔍 Buscar</button>
+    {% if busqueda %}<a href="?{% if bandeja_actual %}bandeja={{ bandeja_actual }}{% endif %}" class="pv-enlace-grande">Quitar búsqueda</a>{% endif %}
+  </form>
+
+  <h2 class="pv-tablero-titulo">{{ titulo_bandeja }} <span>({{ pagina.paginator.count }})</span></h2>
+
+  <div class="pv-tarjetas">
+  {% for tarjeta in tarjetas %}
+    {% with pedido=tarjeta.pedido paso=tarjeta.paso %}
+    <article class="pv-tarjeta-pedido{% if tarjeta.urgente %} pv-tarjeta-urgente{% endif %}" aria-labelledby="pedido-{{ pedido.pk }}">
+      <header class="pv-tarjeta-cabeza">
+        <h3 id="pedido-{{ pedido.pk }}">Pedido {{ pedido.numero }}</h3>
+        <span class="panel-estado panel-estado-{{ pedido.estado }}">{{ pedido.get_estado_display }}</span>
+        <time datetime="{{ pedido.creado|date:'c' }}">{{ pedido.creado|date:"j M, g:i a" }} · hace {{ pedido.creado|timesince }}</time>
+        {% if varias_tiendas %}<span class="pv-tarjeta-tienda">{{ pedido.tienda.nombre }}</span>{% endif %}
+      </header>
+
+      <div class="pv-tarjeta-cuerpo">
+        <div class="pv-tarjeta-cliente">
+          <p class="pv-tarjeta-nombre">{{ pedido.nombre }}</p>
+          <p class="pv-tarjeta-total">{{ pedido.total|moneda }}</p>
+          <p>{{ pedido.get_metodo_pago_display }}</p>
+          <p>{% if pedido.recoge_en_tienda %}🏪 Lo recoge en la tienda{% else %}🏠 {{ pedido.direccion_completa|default:"Envío a domicilio" }}{% if pedido.zona %} · {{ pedido.zona.nombre }}{% endif %}{% endif %}</p>
+        </div>
+        <ul class="pv-tarjeta-productos" aria-label="Productos">
+          {% for detalle in tarjeta.productos %}<li><strong>{{ detalle.cantidad }} ×</strong> {{ detalle.nombre_producto }}</li>{% endfor %}
+          {% if tarjeta.mas_productos %}<li>y {{ tarjeta.mas_productos }} más</li>{% endif %}
+        </ul>
+      </div>
+
+      <div class="pv-tarjeta-paso">
+        <p class="pv-tarjeta-paso-titulo">👉 {{ paso.titulo }}</p>
+        <p>{{ paso.texto }}</p>
+        {% if paso.corto %}<p class="visually-hidden">{{ paso.corto }}</p>{% endif %}
+      </div>
+
+      {% if tarjeta.comprobante_url %}
+        <a class="pv-tarjeta-comprobante" href="{{ tarjeta.comprobante_url }}" target="_blank" rel="noopener">
+          <img src="{{ tarjeta.comprobante_url }}" alt="Comprobante de la transferencia del pedido {{ pedido.numero }}" loading="lazy">
+          <span>Ver el comprobante en grande</span>
+        </a>
+      {% endif %}
+
+      <div class="pv-tarjeta-botones">
+        {% if tarjeta.accion %}
+          {% if tarjeta.accion.tipo == 'pago' %}
+            <form method="post" action="{% url 'admin:pedidos_pedido_pago' pedido.pk %}">
+              {% csrf_token %}
+              <input type="hidden" name="volver" value="{{ volver }}">
+              <button class="pv-boton-grande pv-boton-verde pv-boton-ancho" type="submit" name="accion" value="aprobar"
+                      data-confirmar="{{ tarjeta.accion.confirmar }}">{{ tarjeta.accion.texto }}</button>
+            </form>
+          {% else %}
+            <form method="post" action="{% url 'admin:pedidos_pedido_estado' pedido.pk %}">
+              {% csrf_token %}
+              <input type="hidden" name="volver" value="{{ volver }}">
+              <button class="pv-boton-grande pv-boton-verde pv-boton-ancho" type="submit" name="estado" value="{{ tarjeta.accion.valor }}"
+                      data-confirmar="{{ tarjeta.accion.confirmar }}">{{ tarjeta.accion.texto }}</button>
+            </form>
+          {% endif %}
+        {% endif %}
+        <a class="pv-boton-grande pv-boton-whatsapp" href="{{ tarjeta.whatsapp }}" target="_blank" rel="noopener">💬 WhatsApp</a>
+        <a class="pv-boton-grande pv-boton-gris" href="{{ tarjeta.llamar }}">📞 Llamar <span class="pv-boton-dato">{{ tarjeta.telefono }}</span></a>
+        <a class="pv-boton-grande pv-boton-claro" href="{% url 'admin:pedidos_pedido_change' pedido.pk %}">{% if tarjeta.accion.tipo == 'pago' %}No llegó / ver todo{% else %}Ver el pedido completo{% endif %}</a>
+      </div>
+    </article>
+    {% endwith %}
+  {% empty %}
+    <p class="pv-al-dia pv-vacio"><span aria-hidden="true">✓</span>
+      {% if busqueda %}No hay pedidos con "{{ busqueda }}".{% elif not bandeja_actual %}Todo al día: no hay pedidos esperando por ti.{% else %}No hay pedidos aquí.{% endif %}</p>
+  {% endfor %}
+  </div>
+
+  {% if pagina.has_other_pages %}
+    <nav class="pv-paginas" aria-label="Más pedidos">
+      {% if url_anterior %}<a class="pv-boton-grande pv-boton-gris" href="{{ url_anterior }}">‹ Anteriores</a>{% endif %}
+      <span>Página {{ pagina.number }} de {{ pagina.paginator.num_pages }}</span>
+      {% if url_siguiente %}<a class="pv-boton-grande pv-boton-gris" href="{{ url_siguiente }}">Siguientes ›</a>{% endif %}
+    </nav>
+  {% endif %}
+
+  <nav class="pv-tablero-mas" aria-label="Otras pantallas de pedidos">
+    <a href="{% url 'admin:pedidos_pedido_reporte' %}">📈 Reporte de ventas</a>
+    <a href="{% url 'admin:pedidos_pedido_clientes' %}">👥 Mis clientes</a>
+    <a href="?lista=1">Ver como lista (con filtros)</a>
+  </nav>
+</div>
+{% endblock %}

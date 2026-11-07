@@ -4,10 +4,12 @@ from django.core.exceptions import PermissionDenied
 from django.core.paginator import Paginator
 import csv
 
+from django.db.models import Prefetch, Q
 from django.http import Http404, HttpResponse
 from django.shortcuts import redirect, render
 from django.urls import path, reverse
 from django.utils.html import format_html
+from django.utils.http import url_has_allowed_host_and_scheme, urlencode
 from django.views.decorators.http import require_POST
 
 from core.telefonos import formatear_telefono, telefono_internacional
@@ -22,6 +24,34 @@ from .whatsapp import construir_enlace, enlace_al_cliente, enlace_aviso_de_estad
 
 Estado = Pedido.Estado
 CLIENTES_POR_PAGINA = 50
+
+# --- Tablero de pedidos (2026-11-06, pedido del dueño: "facil hasta para un anciano") ----------------------------
+# La pantalla de Pedidos muestra tarjetas grandes con un boton para lo que toca. Con otros filtros, o con
+# ?lista=1, sigue la lista de siempre de Django.
+TARJETAS_POR_PAGINA = 20
+PARAMETROS_DEL_TABLERO = {'bandeja', 'q', 'p', 'tienda'}
+# (clave de services._bandejas, icono, nombre en el tablero). Las primeras cuatro esperan algo de la tienda.
+PESTANAS = [
+    ('por_confirmar', '💰', 'Revisar pagos'),
+    ('por_preparar', '📦', 'Por preparar'),
+    ('preparando', '⏱️', 'Preparándose'),
+    ('por_entregar', '🚚', 'Por entregar'),
+    ('esperando_pago', '⏳', 'Esperando que paguen'),
+    ('entregados', '✅', 'Entregados'),
+    ('cancelados', '✖️', 'Cancelados'),
+]
+ICONOS = {
+    Estado.PAGADO: '💰', Estado.PREPARANDO: '📦', Estado.LISTO: '🛍️', Estado.ENVIADO: '🚚',
+    Estado.EN_REPARTO: '🛵', Estado.ENTREGADO: '✅',
+}
+# La pregunta antes de cada boton grande del tablero: un toque de mas evita un aviso equivocado al cliente.
+PREGUNTAS = {
+    Estado.PREPARANDO: '¿Empezar a preparar el pedido {numero}? Al cliente le llega el aviso.',
+    Estado.LISTO: '¿El pedido {numero} ya está listo? Al cliente le llega el aviso para que pase a recogerlo.',
+    Estado.ENVIADO: '¿El pedido {numero} ya salió? Al cliente le llega el aviso de que va en camino.',
+    Estado.EN_REPARTO: '¿El pedido {numero} salió a repartir? Al cliente le llega el aviso.',
+    Estado.ENTREGADO: '¿El cliente ya recibió el pedido {numero}{cobro}? Se marca como entregado.',
+}
 
 
 def _pago_por_revisar(pedido):
@@ -174,6 +204,12 @@ class PedidoAdmin(AdminDeTienda, admin.ModelAdmin):
         return [c for c in columnas if c != 'metodo_pago']
 
     def changelist_view(self, request, extra_context=None):
+        if request.method == 'GET' and 'lista' not in request.GET and set(request.GET) <= PARAMETROS_DEL_TABLERO:
+            return self.tablero_vista(request)
+        if 'lista' in request.GET:
+            # La lista de Django no conoce el parametro: se quita antes de que lo tome por un filtro.
+            request.GET = request.GET.copy()
+            del request.GET['lista']
         contexto = {
             'bandejas': services.bandejas_de_pedidos(self.get_queryset(request)),
             'bandeja_actual': request.GET.get('bandeja', ''),
@@ -221,6 +257,119 @@ class PedidoAdmin(AdminDeTienda, admin.ModelAdmin):
             path('reporte/', self.admin_site.admin_view(self.reporte_vista), name='pedidos_pedido_reporte'),
         ]
         return propias + super().get_urls()
+
+    # --- Tablero: tarjetas grandes con el boton de lo que sigue -----------------------
+
+    def tablero_vista(self, request):
+        from pagos.models import Pago
+
+        if not self.has_view_permission(request):
+            raise PermissionDenied
+        pedidos = self.get_queryset(request)
+        tiendas = tiendas_del_panel(request) if maneja_varias_tiendas(request) else []
+        elegida = next((t for t in tiendas if str(t.pk) == request.GET.get('tienda', '')), None)
+        if elegida is not None:
+            pedidos = pedidos.filter(tienda=elegida)
+        busqueda = request.GET.get('q', '').strip()[:60]
+        if busqueda:
+            pedidos = pedidos.filter(
+                Q(numero__icontains=busqueda) | Q(nombre__icontains=busqueda) | Q(telefono__icontains=busqueda)
+            )
+        cuentas = {bandeja['clave']: bandeja['cantidad'] for bandeja in services.bandejas_de_pedidos(pedidos)}
+        clave = request.GET.get('bandeja', '')
+        nombres = {c: nombre for c, _, nombre in PESTANAS}
+        if clave == 'todos':
+            lista, titulo, orden = pedidos, 'Todos los pedidos', '-creado'
+        elif clave in nombres:
+            lista, titulo = pedidos.filter(services.filtro_de_bandeja(clave)), nombres[clave]
+            # Lo que espera a la tienda, del mas viejo al mas nuevo; lo terminado, lo ultimo primero.
+            orden = 'creado' if clave in services.BANDEJAS_PARA_ATENDER else '-creado'
+        else:
+            clave, titulo, orden = '', 'Para atender', 'creado'
+            lista = pedidos.filter(services.filtro_para_atender())
+        lista = lista.select_related('zona', 'tienda').prefetch_related(
+            'detalles',
+            Prefetch('pagos', queryset=Pago.objects.filter(estado=Pago.Estado.EN_REVISION).order_by('-id'),
+                     to_attr='pagos_en_revision'),
+        ).order_by(orden, 'pk')
+        pagina = Paginator(lista, TARJETAS_POR_PAGINA).get_page(request.GET.get('p'))
+
+        def enlace(**cambios):
+            parametros = {'bandeja': clave, 'q': busqueda, 'tienda': elegida.pk if elegida else '', **cambios}
+            texto = urlencode({k: v for k, v in parametros.items() if v})
+            return f'?{texto}' if texto else '?'
+
+        pestanas = [
+            {'clave': c, 'icono': icono, 'nombre': nombre, 'cantidad': cuentas[c], 'url': enlace(bandeja=c, p=''),
+             'activa': c == clave, 'atender': c in services.BANDEJAS_PARA_ATENDER}
+            for c, icono, nombre in PESTANAS
+        ]
+        return render(request, 'admin/pedidos/pedido/tablero.html', {
+            **self.admin_site.each_context(request),
+            'title': 'Pedidos',
+            'opts': self.model._meta,
+            'pestanas': pestanas,
+            'para_atender': sum(cuentas[c] for c in services.BANDEJAS_PARA_ATENDER),
+            'url_atender': enlace(bandeja='', p=''),
+            'url_todos': enlace(bandeja='todos', p=''),
+            'bandeja_actual': clave,
+            'titulo_bandeja': titulo,
+            'tarjetas': [self._tarjeta(request, pedido) for pedido in pagina],
+            'pagina': pagina,
+            'url_anterior': enlace(p=pagina.previous_page_number()) if pagina.has_previous() else '',
+            'url_siguiente': enlace(p=pagina.next_page_number()) if pagina.has_next() else '',
+            'busqueda': busqueda,
+            'tiendas': tiendas,
+            'tienda_elegida': elegida,
+            'varias_tiendas': bool(tiendas),
+            'volver': request.get_full_path(),
+        })
+
+    def _tarjeta(self, request, pedido):
+        """Lo que muestra una tarjeta del tablero y su boton grande. Sin consultas: todo viene precargado."""
+        paso = services.siguiente_paso(pedido, request.user)
+        pago = pedido.pagos_en_revision[0] if paso.revisar_pago and pedido.pagos_en_revision else None
+        accion = None
+        if self.has_change_permission(request, pedido):
+            if pago is not None and not paso.confirma_el_sitio and request.user.has_perm('pagos.change_pago'):
+                accion = {
+                    'tipo': 'pago', 'texto': '💰 El dinero llegó: confirmar pago',
+                    'confirmar': f'¿Ya viste el dinero del pedido {pedido.numero} en tu banco? Se marca como pagado '
+                                 'y al cliente le llega el aviso.',
+                }
+            elif paso.principal:
+                cobro = '' if pedido.fecha_pago else ' y pagó'
+                icono = ICONOS.get(paso.principal, '')
+                accion = {
+                    'tipo': 'estado', 'valor': paso.principal,
+                    'texto': f'{icono} {services.VERBOS[paso.principal]}'.strip(),
+                    'confirmar': PREGUNTAS.get(paso.principal, '¿Cambiar el pedido {numero}?').format(
+                        numero=pedido.numero, cobro=cobro),
+                }
+        productos = list(pedido.detalles.all())
+        return {
+            'pedido': pedido,
+            'paso': paso,
+            'accion': accion,
+            'comprobante_url': (
+                reverse('admin:pagos_pago_comprobante', args=[pago.pk])
+                if pago is not None and pago.comprobante and request.user.has_perm('pagos.view_pago') else ''
+            ),
+            'productos': productos[:4],
+            'mas_productos': max(0, len(productos) - 4),
+            'whatsapp': enlace_al_cliente(pedido),
+            'llamar': f'tel:+{telefono_internacional(pedido.telefono)}',
+            'telefono': formatear_telefono(pedido.telefono),
+            'urgente': accion is not None and (accion['tipo'] == 'pago' or paso.principal == Estado.PREPARANDO),
+        }
+
+    def _volver(self, request, pedido):
+        """Despues de un boton: al tablero si se toco ahi (misma pestaña y pagina), si no al pedido."""
+        volver = request.POST.get('volver', '')
+        if volver.startswith(reverse('admin:pedidos_pedido_changelist')) and url_has_allowed_host_and_scheme(
+                volver, allowed_hosts={request.get_host()}, require_https=request.is_secure()):
+            return redirect(volver)
+        return redirect(reverse('admin:pedidos_pedido_change', args=[pedido.pk]))
 
     # --- Clientes: salen de los pedidos que el usuario puede ver --------------------
 
@@ -315,7 +464,7 @@ class PedidoAdmin(AdminDeTienda, admin.ModelAdmin):
                 request, f'El pedido {pedido.numero} pasó a "{pedido.get_estado_display()}". Al cliente le llega el aviso.',
                 messages.SUCCESS,
             )
-        return redirect(reverse('admin:pedidos_pedido_change', args=[pedido.pk]))
+        return self._volver(request, pedido)
 
     def revisar_pago_vista(self, request, object_id):
         """Confirmar o rechazar la transferencia desde el propio pedido, viendo el comprobante."""
@@ -344,7 +493,7 @@ class PedidoAdmin(AdminDeTienda, admin.ModelAdmin):
                 raise PagoError('Elige confirmar o rechazar el pago.')
         except (PagoError, services.PedidoError) as error:
             self.message_user(request, error.mensaje, messages.ERROR)
-        return redirect(reverse('admin:pedidos_pedido_change', args=[pedido.pk]))
+        return self._volver(request, pedido)
 
     def change_view(self, request, object_id, form_url='', extra_context=None):
         pedido = self.get_object(request, unquote(object_id))

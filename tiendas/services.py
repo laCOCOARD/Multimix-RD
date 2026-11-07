@@ -49,6 +49,17 @@ PERMISOS_VENDEDOR = {
     # Sin 'core': las cuentas del sitio (a donde le pagan las tiendas) las registra solo el administrador principal.
 }
 
+# Ayudante (2026-11-06): un empleado que solo atiende pedidos (confirmar pagos, prepararlos, entregarlos). No ve
+# productos, dinero de la tienda, plan ni datos de la tienda. Lo agrega el dueño en "Personas de la tienda".
+GRUPO_AYUDANTES = 'Ayudantes'
+PERMISOS_AYUDANTE = {
+    'pedidos': [
+        'view_pedido', 'change_pedido', 'view_detallepedido', 'view_eventopedido',
+        'view_solicituddevolucion', 'change_solicituddevolucion',
+    ],
+    'pagos': ['view_pago', 'change_pago'],
+}
+
 
 def ve_todas(usuario):
     """Solo el administrador principal (superusuario) ve y administra todas las tiendas."""
@@ -71,23 +82,169 @@ def preparar_grupo_vendedores(using=DEFAULT_DB_ALIAS, **kwargs):
     # Los permisos de cada app se crean al terminar su migracion; aqui se adelantan los que falten.
     for app in PERMISOS_VENDEDOR:
         create_permissions(apps.get_app_config(app), verbosity=0, using=using)
-    grupo, _ = Group.objects.using(using).get_or_create(name=GRUPO_VENDEDORES)
-    # `set` y no `add`: un permiso que se quita de la lista tambien se le quita al grupo al migrar.
-    filtro = Q()
-    for app, codigos in PERMISOS_VENDEDOR.items():
-        filtro |= Q(content_type__app_label=app, codename__in=codigos)
-    grupo.permissions.set(Permission.objects.using(using).filter(filtro))
+    grupos = {}
+    for nombre, permisos in ((GRUPO_VENDEDORES, PERMISOS_VENDEDOR), (GRUPO_AYUDANTES, PERMISOS_AYUDANTE)):
+        grupo, _ = Group.objects.using(using).get_or_create(name=nombre)
+        # `set` y no `add`: un permiso que se quita de la lista tambien se le quita al grupo al migrar.
+        filtro = Q()
+        for app, codigos in permisos.items():
+            filtro |= Q(content_type__app_label=app, codename__in=codigos)
+        grupo.permissions.set(Permission.objects.using(using).filter(filtro))
+        grupos[nombre] = grupo
+    return grupos[GRUPO_VENDEDORES]
+
+
+def _grupo(nombre):
+    grupo = Group.objects.filter(name=nombre).first()
+    if grupo is None:
+        preparar_grupo_vendedores()
+        grupo = Group.objects.get(name=nombre)
     return grupo
 
 
 def dar_acceso_al_panel(usuarios):
-    """Deja a los vendedores listos para entrar al panel: usuario del personal y grupo Vendedores."""
-    grupo = Group.objects.filter(name=GRUPO_VENDEDORES).first() or preparar_grupo_vendedores()
+    """Deja a los vendedores listos para entrar al panel: usuario del personal y grupo Vendedores. A un ayudante lo
+    deja como ayudante (no lo vuelve dueño por guardar la tienda)."""
+    grupo = _grupo(GRUPO_VENDEDORES)
     for usuario in usuarios:
         if not usuario.is_staff:
             usuario.is_staff = True
             usuario.save(update_fields=['is_staff'])
-        usuario.groups.add(grupo)
+        if not usuario.groups.filter(name=GRUPO_AYUDANTES).exists():
+            usuario.groups.add(grupo)
+
+
+# --- Personas de la tienda: quien entra al panel y con que rol (2026-11-06) ------------------------------------
+
+DUENO, AYUDANTE = 'dueno', 'ayudante'
+ROLES = [
+    (DUENO, 'Dueño: puede hacer todo'),
+    (AYUDANTE, 'Ayudante: solo atiende pedidos'),
+]
+
+
+class PersonaError(Exception):
+    def __init__(self, mensaje):
+        super().__init__(mensaje)
+        self.mensaje = mensaje
+
+
+def es_ayudante(usuario):
+    """Entra al panel solo para atender pedidos."""
+    return (
+        usuario.is_authenticated and not usuario.is_superuser
+        and usuario.groups.filter(name=GRUPO_AYUDANTES).exists()
+        and not usuario.groups.filter(name=GRUPO_VENDEDORES).exists()
+    )
+
+
+def rol_de(usuario):
+    return AYUDANTE if es_ayudante(usuario) else DUENO
+
+
+def puede_manejar_personas(usuario, tienda):
+    """El administrador principal, o un dueño de esa tienda. Un ayudante no."""
+    if ve_todas(usuario):
+        return True
+    return (
+        usuario.is_authenticated and usuario.groups.filter(name=GRUPO_VENDEDORES).exists()
+        and tienda.usuarios.filter(pk=usuario.pk).exists()
+    )
+
+
+def personas_de(tienda):
+    """Quienes entran al panel de la tienda, con su rol."""
+    personas = list(tienda.usuarios.order_by('first_name', 'username').prefetch_related('groups'))
+    for persona in personas:
+        nombres = {grupo.name for grupo in persona.groups.all()}
+        persona.rol = AYUDANTE if GRUPO_AYUDANTES in nombres and GRUPO_VENDEDORES not in nombres else DUENO
+        persona.rol_texto = 'Ayudante' if persona.rol == AYUDANTE else 'Dueño'
+    return personas
+
+
+def _poner_rol(usuario, rol):
+    vendedores, ayudantes = _grupo(GRUPO_VENDEDORES), _grupo(GRUPO_AYUDANTES)
+    if rol == AYUDANTE:
+        usuario.groups.remove(vendedores)
+        usuario.groups.add(ayudantes)
+    else:
+        usuario.groups.remove(ayudantes)
+        usuario.groups.add(vendedores)
+
+
+def _solo_en_esta_tienda(usuario, tienda):
+    """El rol vale para todas las tiendas de la persona: un dueño solo lo cambia si la persona es solo de la suya."""
+    return not usuario.tiendas.exclude(pk=tienda.pk).exists()
+
+
+def agregar_persona(tienda, por, nombre, usuario, clave, rol, correo=''):
+    """Crea la cuenta de una persona nueva y le da acceso al panel de la tienda con ese rol.
+
+    Solo crea cuentas nuevas: asi nadie toma por esta via una cuenta que ya existe (la de un cliente u otra tienda).
+    """
+    from django.contrib.auth import get_user_model
+    from django.contrib.auth.password_validation import validate_password
+    from django.core.exceptions import ValidationError
+    from django.db import transaction
+
+    if not puede_manejar_personas(por, tienda):
+        raise PersonaError('Solo el dueño de la tienda puede agregar personas.')
+    if rol not in (DUENO, AYUDANTE):
+        raise PersonaError('Elige si será dueño o ayudante.')
+    nombre, usuario, correo = (nombre or '').strip(), (usuario or '').strip(), (correo or '').strip()
+    if not nombre or not usuario or not clave:
+        raise PersonaError('Escribe el nombre, el usuario y la contraseña.')
+    Usuario = get_user_model()
+    campo = Usuario._meta.get_field(Usuario.USERNAME_FIELD)
+    try:
+        campo.run_validators(usuario)
+    except ValidationError:
+        raise PersonaError('El usuario solo puede llevar letras, números y @ . + - _ (sin espacios).')
+    if Usuario.objects.filter(**{f'{Usuario.USERNAME_FIELD}__iexact': usuario}).exists():
+        raise PersonaError(f'Ya existe una cuenta con el usuario "{usuario}". Elige otro.')
+    nueva = Usuario(**{Usuario.USERNAME_FIELD: usuario}, first_name=nombre[:150], email=correo, is_staff=True)
+    try:
+        validate_password(clave, nueva)
+    except ValidationError as error:
+        raise PersonaError(' '.join(error.messages))
+    with transaction.atomic():
+        nueva.set_password(clave)
+        nueva.save()
+        _poner_rol(nueva, rol)
+        tienda.usuarios.add(nueva)
+    logger.info('Persona agregada a %s por %s: %s (%s)', tienda, por, nueva, rol)
+    return nueva
+
+
+def cambiar_rol(tienda, por, persona, rol):
+    if not puede_manejar_personas(por, tienda):
+        raise PersonaError('Solo el dueño de la tienda puede cambiar los permisos.')
+    if rol not in (DUENO, AYUDANTE):
+        raise PersonaError('Elige si será dueño o ayudante.')
+    if persona.is_superuser or not tienda.usuarios.filter(pk=persona.pk).exists():
+        raise PersonaError('Esa persona no es de esta tienda.')
+    if persona.pk == por.pk:
+        raise PersonaError('No puedes cambiar tu propio permiso.')
+    if not ve_todas(por) and not _solo_en_esta_tienda(persona, tienda):
+        raise PersonaError('Esa persona también trabaja en otra tienda: pídeselo al administrador del sitio.')
+    _poner_rol(persona, rol)
+    logger.info('Rol cambiado en %s por %s: %s -> %s', tienda, por, persona, rol)
+
+
+def quitar_persona(tienda, por, persona):
+    """Le quita el acceso al panel de esta tienda. Si ya no tiene ninguna, deja de entrar al panel."""
+    if not puede_manejar_personas(por, tienda):
+        raise PersonaError('Solo el dueño de la tienda puede quitar personas.')
+    if persona.is_superuser or not tienda.usuarios.filter(pk=persona.pk).exists():
+        raise PersonaError('Esa persona no es de esta tienda.')
+    if persona.pk == por.pk:
+        raise PersonaError('No puedes quitarte a ti mismo.')
+    tienda.usuarios.remove(persona)
+    if not persona.tiendas.exists():
+        persona.groups.remove(_grupo(GRUPO_VENDEDORES), _grupo(GRUPO_AYUDANTES))
+        persona.is_staff = False
+        persona.save(update_fields=['is_staff'])
+    logger.info('Persona quitada de %s por %s: %s', tienda, por, persona)
 
 
 def banners_de(tienda):

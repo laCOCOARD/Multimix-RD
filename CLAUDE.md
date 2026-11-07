@@ -63,6 +63,8 @@ Al cerrar cada modulo: check, makemigrations, migrate, test y commit.
   ModelAdmin con datos de tienda hereda `tiendas.panel.AdminDeTienda`. Un modelo o una pantalla nueva
   entra con su prueba de aislamiento (`tiendas/tests/`).
 - Solo el superusuario ve todas las tiendas (`tiendas.services.ve_todas`); el resto, las de `Tienda.usuarios`.
+  Roles en la tienda: dueño (grupo Vendedores) y ayudante (grupo Ayudantes, solo pedidos); se manejan en
+  "Personas y permisos" (`tiendas.services.agregar_persona`).
 - La logica de negocio vive en `services.py` de cada app, no en vistas ni plantillas.
 - Montos siempre calculados en el servidor; nunca se confia en montos del navegador.
 - Stock: `transaction.atomic` + `select_for_update`. `stock_reservado` solo lo toca `pedidos/services.py`.

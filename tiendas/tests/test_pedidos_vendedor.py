@@ -17,7 +17,8 @@ Estado = Pedido.Estado
 class PedidosDelVendedorTests(PanelDeVendedores):
     def bandejas(self, **filtros):
         respuesta = self.client.get(reverse('admin:pedidos_pedido_changelist'), filtros)
-        return {b['clave']: b['cantidad'] for b in respuesta.context['bandejas']}, list(respuesta.context['cl'].result_list)
+        cuentas = {p['clave']: p['cantidad'] for p in respuesta.context['pestanas']}
+        return cuentas, [tarjeta['pedido'] for tarjeta in respuesta.context['tarjetas']]
 
     def detalle(self, pedido):
         return self.client.get(reverse('admin:pedidos_pedido_change', args=[pedido.pk]))
@@ -27,10 +28,12 @@ class PedidosDelVendedorTests(PanelDeVendedores):
             return pagos.registrar_comprobante(pedido, comprobante_de_prueba(), 'REF-9')
 
     def test_pestanas_cuentan_solo_lo_de_su_tienda_y_filtran(self):
-        cuentas, pedidos = self.bandejas()
+        cuentas, pedidos = self.bandejas(bandeja='todos')
         self.assertEqual(cuentas['esperando_pago'], 1)
         self.assertEqual(sum(cuentas.values()), 1)  # el de la otra tienda no cuenta
         self.assertEqual(pedidos, [self.pedido_propio])
+        # "Para atender" (lo primero que se ve) no trae lo que espera al cliente.
+        self.assertEqual(self.bandejas()[1], [])
         self.avisar_transferencia(self.pedido_propio)
         cuentas, pedidos = self.bandejas(bandeja='por_confirmar')
         self.assertEqual((cuentas['por_confirmar'], cuentas['esperando_pago']), (1, 0))
@@ -40,10 +43,10 @@ class PedidosDelVendedorTests(PanelDeVendedores):
         self.assertEqual(self.bandejas(bandeja='por_preparar')[1], [self.pedido_propio])
 
     def test_columna_que_sigue(self):
-        lista = self.client.get(reverse('admin:pedidos_pedido_changelist'))
+        lista = self.client.get(reverse('admin:pedidos_pedido_changelist'), {'lista': 1})
         self.assertContains(lista, 'Esperando el pago')
         self.avisar_transferencia(self.pedido_propio)
-        lista = self.client.get(reverse('admin:pedidos_pedido_changelist'))
+        lista = self.client.get(reverse('admin:pedidos_pedido_changelist'), {'lista': 1})
         self.assertContains(lista, 'pv-que-sigue pv-urgente')
         self.assertContains(lista, 'Revisar el pago')
 

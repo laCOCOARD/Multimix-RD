@@ -654,6 +654,17 @@ def _bandejas():
     ]
 
 
+# Las pestañas que esperan algo de la tienda: juntas son "Para atender", lo primero que ve el tablero.
+BANDEJAS_PARA_ATENDER = ['por_confirmar', 'por_preparar', 'preparando', 'por_entregar']
+
+
+def filtro_para_atender():
+    filtro = Q()
+    for clave in BANDEJAS_PARA_ATENDER:
+        filtro |= filtro_de_bandeja(clave)
+    return filtro
+
+
 def filtro_de_bandeja(clave):
     """El filtro (Q) de una pestaña de la lista de pedidos; None si la clave no existe."""
     return next((q for c, _, q, _ in _bandejas() if c == clave), None)

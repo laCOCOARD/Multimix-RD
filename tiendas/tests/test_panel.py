@@ -65,6 +65,8 @@ class PanelDeVendedores(TestCase):
         self.client.force_login(self.vendedor)
 
     def lista(self, nombre, **filtros):
+        if nombre == 'pedidos_pedido':
+            filtros['lista'] = 1  # la lista de Django; sin esto la pantalla es el tablero
         respuesta = self.client.get(reverse(f'admin:{nombre}_changelist'), filtros)
         return list(respuesta.context['cl'].result_list)
 

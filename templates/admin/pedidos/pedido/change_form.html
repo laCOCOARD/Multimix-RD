@@ -3,7 +3,8 @@
 
 {% block content %}
 {% if original %}
-<section class="pv-pedido" aria-label="Qué sigue en este pedido">
+<p class="pv-volver"><a class="pv-boton-grande pv-boton-claro" href="{% url 'admin:pedidos_pedido_changelist' %}">‹ Volver a los pedidos</a></p>
+<section class="pv-pedido pv-grande" aria-label="Qué sigue en este pedido">
   <div class="pv-pedido-cabeza">
     <span class="panel-estado panel-estado-{{ original.estado }}">{{ original.get_estado_display }}</span>
     <strong class="pv-pedido-total">{{ original.total|moneda }}</strong>
@@ -111,7 +112,12 @@
     Pagado. Te llega un correo cuando lo confirme; prepáralo después de eso.
   </p>
 {% endif %}
-<h2 class="pv-todos-los-datos">Todos los datos del pedido</h2>
-{% endif %}
+{# Lo de todos los dias va arriba; el formulario completo (notas internas, montos, historial) queda a un toque. #}
+<details class="pv-todos-los-datos">
+  <summary>Ver todos los datos del pedido (montos, notas internas e historial)</summary>
+  {{ block.super }}
+</details>
+{% else %}
 {{ block.super }}
+{% endif %}
 {% endblock %}

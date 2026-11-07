@@ -74,6 +74,9 @@ class TiendaAdmin(AvisaImagenesSinGuardar, admin.ModelAdmin):
             path('mi-plan/', self.admin_site.admin_view(self.mi_plan_view), name='tiendas_tienda_mi_plan'),
             path('<path:object_id>/plan/', self.admin_site.admin_view(self.cambiar_plan_view),
                  name='tiendas_tienda_plan'),
+            path('personas/', self.admin_site.admin_view(self.mis_personas_view), name='tiendas_tienda_mis_personas'),
+            path('<path:object_id>/personas/', self.admin_site.admin_view(self.personas_view),
+                 name='tiendas_tienda_personas'),
         ]
         return propias + super().get_urls()
 
@@ -83,6 +86,60 @@ class TiendaAdmin(AvisaImagenesSinGuardar, admin.ModelAdmin):
         if len(tiendas) == 1 and not ve_todas(request.user):
             return redirect(reverse('admin:tiendas_tienda_plan', args=[tiendas[0].pk]))
         return redirect(reverse('admin:tiendas_tienda_changelist'))
+
+    def mis_personas_view(self, request):
+        """El acceso "Personas y permisos" del inicio: lleva a la pagina de su tienda."""
+        tiendas = tiendas_del_panel(request)
+        if len(tiendas) == 1 and not ve_todas(request.user):
+            return redirect(reverse('admin:tiendas_tienda_personas', args=[tiendas[0].pk]))
+        return redirect(reverse('admin:tiendas_tienda_changelist'))
+
+    def personas_view(self, request, object_id):
+        """Personas de la tienda (2026-11-06): quien entra al panel y si es dueño o ayudante, sin el admin de usuarios
+        de Django. La logica esta en tiendas.services (agregar_persona, cambiar_rol, quitar_persona)."""
+        from django.contrib.auth import get_user_model
+
+        from . import services
+
+        tienda = get_object_or_404(self.get_queryset(request), pk=unquote(object_id))
+        if not services.puede_manejar_personas(request.user, tienda):
+            raise PermissionDenied
+        aqui = reverse('admin:tiendas_tienda_personas', args=[tienda.pk])
+        datos = {}
+        if request.method == 'POST':
+            accion = request.POST.get('accion')
+            try:
+                if accion == 'agregar':
+                    datos = {campo: request.POST.get(campo, '') for campo in ('nombre', 'usuario', 'correo', 'rol')}
+                    nueva = services.agregar_persona(
+                        tienda, request.user, datos['nombre'], datos['usuario'], request.POST.get('clave', ''),
+                        datos['rol'], correo=datos['correo'],
+                    )
+                    self.message_user(
+                        request, f'Listo: {nueva.first_name} ya puede entrar al panel con el usuario '
+                        f'"{nueva.get_username()}" y la contraseña que escribiste.', messages.SUCCESS,
+                    )
+                    return redirect(aqui)
+                persona = get_object_or_404(get_user_model(), pk=request.POST.get('persona') or 0)
+                if accion == 'rol':
+                    services.cambiar_rol(tienda, request.user, persona, request.POST.get('rol', ''))
+                    self.message_user(request, f'Cambiaste el permiso de {persona.first_name or persona}.', messages.SUCCESS)
+                elif accion == 'quitar':
+                    services.quitar_persona(tienda, request.user, persona)
+                    self.message_user(request, f'{persona.first_name or persona} ya no entra al panel de {tienda.nombre}.',
+                                      messages.SUCCESS)
+                return redirect(aqui)
+            except services.PersonaError as error:
+                self.message_user(request, error.mensaje, messages.ERROR)
+                if accion != 'agregar':
+                    return redirect(aqui)
+        contexto = {
+            **self.admin_site.each_context(request),
+            'title': 'Personas y permisos', 'opts': self.model._meta, 'tienda': tienda,
+            'personas': services.personas_de(tienda), 'roles': services.ROLES, 'datos': datos,
+            'yo': request.user.pk,
+        }
+        return TemplateResponse(request, 'admin/tiendas/tienda/personas.html', contexto)
 
     def cambiar_plan_view(self, request, object_id):
         """La tienda elige otro plan; lo aprueba el administrador principal."""
@@ -312,9 +369,13 @@ class TiendaAdmin(AvisaImagenesSinGuardar, admin.ModelAdmin):
     def productos_a_la_venta(self, tienda):
         return tienda.total_productos
 
-    @admin.display(description='Vendedores')
+    @admin.display(description='Personas con acceso')
     def vendedores(self, tienda):
-        return ', '.join(usuario.get_username() for usuario in tienda.usuarios.all()) or '—'
+        nombres = ', '.join(usuario.get_username() for usuario in tienda.usuarios.all()) or 'nadie'
+        return format_html(
+            '<a href="{}" title="Agregar o quitar personas y sus permisos">{} ›</a>',
+            reverse('admin:tiendas_tienda_personas', args=[tienda.pk]), nombres,
+        )
 
 
 @admin.register(CuentaBancaria)

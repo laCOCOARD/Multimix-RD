@@ -68,3 +68,14 @@ Decisiones tomadas en Multimix RD (movidas desde CLAUDE.md el 2026-10-28). Leela
   de `core.red.ip_para_axes`. Se suma al limite propio de 15 minutos (`LimiteDeEntrada`), que corre antes. Entrar bien
   borra los fallos. Apagado en las pruebas salvo `clientes/tests/test_axes.py`. Para desbloquear a alguien: Panel >
   Axes > Access attempts (borrar su fila) o `manage.py axes_reset_username <usuario>`.
+
+## Personas de la tienda: dueño y ayudante (2026-11-06)
+- Pantalla "Personas y permisos" (`admin:tiendas_tienda_personas`, logica en `tiendas.services`): el dueño de la
+  tienda (o el superusuario) agrega personas con dos roles, sin el admin de usuarios de Django. Dueño = grupo
+  Vendedores (todo). Ayudante = grupo Ayudantes (`PERMISOS_AYUDANTE`: solo pedidos, pagos y devoluciones); su inicio
+  es el tablero de pedidos y las tareas del inicio se filtran por permisos.
+- Solo crea cuentas nuevas: nunca toma una que ya existe (de un cliente o de otra tienda). Contraseña con los
+  validadores de Django. Nadie se quita a si mismo ni toca superusuarios. El rol vale para todas las tiendas de la
+  persona: un dueño solo cambia el de quien es solo de su tienda; si no, lo hace el administrador.
+- `dar_acceso_al_panel` (al guardar la tienda) no vuelve dueño a un ayudante.
+

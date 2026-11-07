@@ -95,7 +95,7 @@ class PedidoAdminTests(PanelBase):
 
     def test_lista_y_detalle(self):
         pedido = pedido_de_prueba(self.producto, 2)
-        lista = self.client.get(reverse('admin:pedidos_pedido_changelist'))
+        lista = self.client.get(reverse('admin:pedidos_pedido_changelist'), {'bandeja': 'todos'})
         self.assertContains(lista, pedido.numero)
         self.assertContains(lista, 'https://wa.me/18095551234')
         self.assertContains(lista, 'panel-estado-pendiente')

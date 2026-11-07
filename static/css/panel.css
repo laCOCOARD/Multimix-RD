@@ -370,3 +370,141 @@ html[data-theme="dark"] .pv-al-dia { background: #14352a; color: #bbf7d0; }
 .pv-ref-escalera li::before { content: "○"; position: absolute; left: .1rem; color: var(--body-quiet-color); }
 .pv-ref-escalera li.logrado { color: var(--body-fg); }
 .pv-ref-escalera li.logrado::before { content: "✓"; color: #d97706; font-weight: 800; }
+
+/* --- Tablero de pedidos y pantallas faciles (2026-11-06) ----------------------------------------------------
+   Pedido del dueño: facil hasta para un anciano. Letra grande, botones grandes con icono y texto, una sola
+   accion principal por pedido y una pregunta antes de avisar al cliente. */
+.pv-grande { font-size: 1.05rem; line-height: 1.5; }
+.pv-titulo-pagina h1 { margin: 0 0 6px; font-size: 1.9rem; font-weight: 800; }
+.pv-titulo-pagina p { margin: 0 0 18px; font-size: 1.05rem; color: var(--body-quiet-color); }
+
+.pv-boton-grande { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 52px;
+  padding: 12px 20px; border: 2px solid transparent; border-radius: 12px; font-size: 1.08rem; font-weight: 800;
+  line-height: 1.2; text-align: center; text-decoration: none !important; cursor: pointer; }
+.pv-boton-grande:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.pv-boton-verde { background: #15803d; color: #fff !important; }
+.pv-boton-verde:hover { background: #166534; }
+.pv-boton-rojo { background: #fff; border-color: #b91c1c; color: #b91c1c !important; }
+.pv-boton-rojo:hover { background: #b91c1c; color: #fff !important; }
+.pv-boton-gris { background: #374151; color: #fff !important; }
+.pv-boton-gris:hover { background: #111827; }
+.pv-boton-claro { background: var(--body-bg); border-color: var(--hairline-color); color: var(--body-fg) !important; }
+.pv-boton-claro:hover { border-color: var(--accent); background: var(--darkened-bg); }
+/* WhatsApp con borde: el verde lleno es solo del boton de lo que toca hacer. */
+.pv-boton-whatsapp { background: var(--body-bg); border-color: #1da851; color: #15803d !important; }
+.pv-boton-whatsapp:hover { background: #1da851; color: #fff !important; }
+.pv-boton-ancho { width: 100%; font-size: 1.2rem; min-height: 60px; }
+.pv-boton-dato { font-weight: 600; opacity: .85; }
+.pv-enlace-grande { font-size: 1.05rem; font-weight: 700; }
+
+/* Pestañas: tarjetas grandes con su numero. Las que esperan algo de la tienda se resaltan en ambar. */
+.pv-pestanas { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; margin: 0 0 16px; }
+.pv-pestana { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; min-height: 96px;
+  padding: 12px 8px; border: 2px solid var(--hairline-color); border-radius: 14px; background: var(--body-bg);
+  color: var(--body-fg) !important; text-align: center; text-decoration: none !important; }
+.pv-pestana:hover { border-color: var(--accent); }
+.pv-pestana-icono { font-size: 1.7rem; line-height: 1; }
+.pv-pestana-nombre { font-size: 1rem; font-weight: 700; }
+.pv-pestana-numero { font-size: 1.5rem; font-weight: 800; }
+.pv-pestana-chica { min-height: 72px; opacity: .9; }
+.pv-pestana-chica .pv-pestana-icono { font-size: 1.3rem; }
+.pv-pestana-chica .pv-pestana-numero { font-size: 1.15rem; }
+.pv-pestana-aviso { border-color: var(--accent); background: #fffbeb; }
+.pv-pestana-atender { border-color: var(--secondary); }
+.pv-pestana-activa, .pv-pestana-activa.pv-pestana-aviso { border-color: var(--secondary); background: var(--secondary); color: #fff !important; }
+
+.pv-buscar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: 0 0 18px; }
+.pv-buscar input[type="search"], .pv-buscar select { min-height: 52px; padding: 8px 14px; border: 2px solid var(--hairline-color);
+  border-radius: 12px; font-size: 1.05rem; background: var(--body-bg); color: var(--body-fg); }
+.pv-buscar input[type="search"] { flex: 1 1 260px; }
+.pv-buscar-tienda { display: flex; align-items: center; gap: 8px; font-weight: 700; }
+
+.pv-tablero-titulo { margin: 0 0 12px; padding: 0; background: none; color: var(--body-fg); font-size: 1.4rem; font-weight: 800;
+  text-transform: none; letter-spacing: 0; }
+.pv-tablero-titulo span { color: var(--body-quiet-color); font-weight: 600; }
+.pv-tarjetas { display: grid; gap: 16px; }
+
+.pv-tarjeta-pedido { padding: 18px; border: 2px solid var(--hairline-color); border-radius: 16px; background: var(--body-bg); }
+.pv-tarjeta-urgente { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(245, 158, 11, .18); }
+.pv-tarjeta-cabeza { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; margin-bottom: 12px; }
+.pv-tarjeta-cabeza h3 { margin: 0; font-size: 1.3rem; font-weight: 800; color: var(--body-fg); }
+.pv-tarjeta-cabeza .panel-estado { font-size: .95rem; padding: 4px 12px; }
+.pv-tarjeta-cabeza time { color: var(--body-quiet-color); font-size: .98rem; }
+.pv-tarjeta-tienda { padding: 2px 10px; border-radius: 999px; background: var(--darkened-bg); font-weight: 700; font-size: .9rem; }
+.pv-tarjeta-cuerpo { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 14px; }
+.pv-tarjeta-cliente p, .pv-tarjeta-paso p { margin: 0 0 4px; padding: 0; font-size: 1.05rem; }
+.pv-tarjeta-nombre { font-size: 1.25rem !important; font-weight: 800; }
+.pv-tarjeta-total { font-size: 1.5rem !important; font-weight: 800; }
+.pv-tarjeta-productos { margin: 0; padding: 12px 14px; list-style: none; border-radius: 12px; background: var(--darkened-bg); }
+.pv-tarjeta-productos li { padding: 3px 0; font-size: 1.05rem; list-style: none; }
+.pv-tarjeta-paso { margin: 14px 0 0; padding: 12px 14px; border-left: 6px solid var(--accent); border-radius: 8px; background: var(--darkened-bg); }
+.pv-tarjeta-paso-titulo { font-size: 1.2rem !important; font-weight: 800; }
+.pv-tarjeta-comprobante { display: inline-flex; flex-direction: column; gap: 4px; margin: 12px 0 0; font-weight: 700; }
+.pv-tarjeta-comprobante img { max-width: 260px; max-height: 260px; border: 2px solid var(--hairline-color); border-radius: 10px; object-fit: contain; background: #fff; }
+.pv-tarjeta-botones { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin-top: 14px; }
+.pv-tarjeta-botones form { grid-column: 1 / -1; margin: 0; }
+.pv-vacio { font-size: 1.15rem; padding: 18px; }
+.pv-paginas { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 14px; margin: 20px 0; font-size: 1.05rem; }
+.pv-tablero-mas { display: flex; flex-wrap: wrap; gap: 10px 22px; margin: 24px 0 0; padding-top: 14px; border-top: 1px solid var(--hairline-color); font-size: 1.02rem; font-weight: 700; }
+
+/* Detalle del pedido: botones mas grandes y el formulario de Django escondido bajo "Ver todos los datos". */
+.pv-volver { margin: 0 0 14px; }
+.pv-volver .pv-boton-grande { min-height: 48px; padding: 8px 18px; }
+/* En el detalle, el boton de lo que toca es verde como en el tablero. */
+.pv-pedido.pv-grande .button.pv-boton-principal { background: #15803d; color: #fff !important; }
+.pv-pedido.pv-grande .button.pv-boton-principal:hover { background: #166534; }
+.pv-pedido.pv-grande .button.pv-boton-principal { min-height: 56px; padding: 14px 24px !important; font-size: 1.15rem; }
+.pv-pedido.pv-grande .button.pv-boton-secundario, .pv-pedido.pv-grande .panel-boton-whatsapp { min-height: 50px; font-size: 1.05rem; }
+.pv-pedido.pv-grande .pv-paso-titulo { font-size: 1.45rem; }
+.pv-pedido.pv-grande .pv-paso-texto { font-size: 1.08rem; }
+.pv-pedido.pv-grande input[type="text"] { min-height: 44px; font-size: 1rem; }
+details.pv-todos-los-datos { margin-top: 18px; }
+details.pv-todos-los-datos > summary { display: inline-block; padding: 12px 18px; border: 2px solid var(--hairline-color); border-radius: 12px;
+  font-size: 1.05rem; font-weight: 700; cursor: pointer; }
+details.pv-todos-los-datos[open] > summary { margin-bottom: 14px; }
+
+/* Personas y permisos */
+.pv-personas { margin: 0; padding: 0; list-style: none; }
+.pv-persona { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 0;
+  border-bottom: 1px solid var(--hairline-color); list-style: none; }
+.pv-persona-datos { display: flex; align-items: center; gap: 12px; }
+.pv-persona-datos strong { font-size: 1.15rem; }
+.pv-persona-datos small { display: block; color: var(--body-quiet-color); font-size: .95rem; }
+.pv-persona-icono { font-size: 2rem; }
+.pv-persona-acciones { display: flex; flex-wrap: wrap; gap: 10px; }
+.pv-persona-acciones form { margin: 0; }
+.pv-rol { display: inline-block; margin-top: 4px; padding: 2px 12px; border-radius: 999px; font-weight: 800; font-size: .92rem; }
+.pv-rol-dueno { background: #fef3c7; color: #92400e; }
+.pv-rol-ayudante { background: #dbeafe; color: #1e40af; }
+.pv-ayuda-grande { font-size: 1.05rem; }
+.pv-formulario-grande { display: grid; gap: 14px; max-width: 560px; }
+.pv-formulario-grande label { display: grid; gap: 6px; font-size: 1.05rem; font-weight: 700; }
+.pv-formulario-grande label small { font-weight: 400; color: var(--body-quiet-color); }
+.pv-formulario-grande input[type="text"], .pv-formulario-grande input[type="password"], .pv-formulario-grande input[type="email"] {
+  min-height: 50px; padding: 8px 14px; border: 2px solid var(--hairline-color); border-radius: 12px; font-size: 1.08rem;
+  background: var(--body-bg); color: var(--body-fg); }
+.pv-roles { display: grid; gap: 8px; margin: 0; padding: 12px 14px; border: 2px solid var(--hairline-color); border-radius: 12px; }
+.pv-roles legend { padding: 0 6px; font-size: 1.05rem; font-weight: 800; }
+.pv-formulario-grande .pv-rol-opcion { display: flex; align-items: center; gap: 10px; font-weight: 600; cursor: pointer; }
+.pv-rol-opcion input { width: 22px; height: 22px; }
+
+/* Mensajes del panel (pago confirmado, pedido avanzado...) mas grandes. */
+.messagelist li { font-size: 1.05rem; padding-top: 14px; padding-bottom: 14px; }
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .pv-pestana-aviso { background: #3a2d0b; }
+  :root:not([data-theme="light"]) .pv-rol-dueno { background: #3a2d0b; color: #fde68a; }
+  :root:not([data-theme="light"]) .pv-rol-ayudante { background: #172554; color: #bfdbfe; }
+  :root:not([data-theme="light"]) .pv-boton-rojo { background: transparent; color: #fca5a5 !important; border-color: #f87171; }
+}
+html[data-theme="dark"] .pv-pestana-aviso { background: #3a2d0b; }
+html[data-theme="dark"] .pv-rol-dueno { background: #3a2d0b; color: #fde68a; }
+html[data-theme="dark"] .pv-rol-ayudante { background: #172554; color: #bfdbfe; }
+html[data-theme="dark"] .pv-boton-rojo { background: transparent; color: #fca5a5 !important; border-color: #f87171; }
+
+@media (max-width: 767px) {
+  .pv-pestanas { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .pv-tarjeta-cuerpo, .pv-tarjeta-botones { grid-template-columns: minmax(0, 1fr); }
+  .pv-titulo-pagina h1 { font-size: 1.6rem; }
+  .pv-persona-acciones, .pv-persona-acciones form, .pv-persona-acciones button { width: 100%; }
+}

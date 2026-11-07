@@ -59,12 +59,13 @@
     <h2 id="titulo-accesos">Accesos rápidos</h2>
     <div class="pv-accesos">
       {% if perms.catalogo.add_producto %}<a class="pv-acceso pv-acceso-principal" href="{% url 'admin:catalogo_producto_add' %}"><span aria-hidden="true">＋</span>Agregar producto</a>{% endif %}
-      <a class="pv-acceso" href="{% url 'admin:pedidos_pedido_changelist' %}"><span aria-hidden="true">🧾</span>Pedidos</a>
+      <a class="pv-acceso pv-acceso-principal" href="{% url 'admin:pedidos_pedido_changelist' %}"><span aria-hidden="true">🧾</span>Pedidos</a>
       <a class="pv-acceso" href="{% url 'admin:catalogo_producto_changelist' %}"><span aria-hidden="true">📦</span>Mis productos</a>
       <a class="pv-acceso" href="{% url 'admin:pedidos_pedido_clientes' %}"><span aria-hidden="true">👥</span>Mis clientes</a>
       {% if perms.promociones.add_cupon %}<a class="pv-acceso" href="{% url 'admin:promociones_cupon_add' %}"><span aria-hidden="true">🏷️</span>Crear cupón</a>{% endif %}
       {% if tiendas|length == 1 %}<a class="pv-acceso" href="{% url 'admin:tiendas_tienda_change' tiendas.0.pk %}"><span aria-hidden="true">🏪</span>Datos de la tienda</a>{% endif %}
       <a class="pv-acceso" href="{% url 'admin:tiendas_tienda_mi_plan' %}"><span aria-hidden="true">⭐</span>Mi plan y mensualidades</a>
+      <a class="pv-acceso" href="{% url 'admin:tiendas_tienda_mis_personas' %}"><span aria-hidden="true">🔑</span>Personas y permisos</a>
     </div>
   </nav>
 

@@ -40,13 +40,13 @@ class InicioDelVendedorTests(PanelDeVendedores):
     def test_cada_tarea_lleva_a_su_lista_filtrada(self):
         Pedido.objects.filter(pk=self.pedido_propio.pk).update(transferencia_realizada=True)
         tarea = self.client.get(reverse('admin:index')).context['tareas'][0]
-        lista = self.client.get(tarea['url'])
-        self.assertEqual(list(lista.context['cl'].result_list), [self.pedido_propio])
+        tablero = self.client.get(tarea['url'])
+        self.assertEqual([t['pedido'] for t in tablero.context['tarjetas']], [self.pedido_propio])
         cambiar_estado(self.pedido_propio, Pedido.Estado.PAGADO)
         cambiar_estado(self.pedido_propio, Pedido.Estado.PREPARANDO)
         cambiar_estado(self.pedido_propio, Pedido.Estado.LISTO)
         tarea = self.client.get(reverse('admin:index')).context['tareas'][0]
-        self.assertEqual(list(self.client.get(tarea['url']).context['cl'].result_list), [self.pedido_propio])
+        self.assertEqual([t['pedido'] for t in self.client.get(tarea['url']).context['tarjetas']], [self.pedido_propio])
 
     def test_primeros_pasos_mientras_falte_algo(self):
         # La tienda de prueba tiene cuenta y zona, pero no WhatsApp y su producto no tiene foto.

@@ -101,3 +101,15 @@ Decisiones tomadas en Multimix RD (movidas desde CLAUDE.md el 2026-10-28). Leela
 - Solicitudes de tiendas: el negocio elige un rubro general (`tiendas.models.RUBROS`: detergentes y limpieza, cocina,
   barberia, musica, electronica...), no las categorias de los productos (pedido del dueño el 2026-10-27; `tiendas/0018`
   a `0020`; las solicitudes de antes guardaron su categoria en las notas).
+
+## Tablero de pedidos del panel (2026-11-06)
+- Pedido del dueño: el panel de pedidos era confuso ("tipo lista"); tiene que ser facil hasta para un anciano.
+- La pantalla de Pedidos (`PedidoAdmin.changelist_view`) es un tablero de tarjetas (`tablero.html`): pestañas grandes
+  con su numero ("Para atender" primero: revisar pagos, por preparar, preparandose, por entregar) y en cada pedido un
+  solo boton verde con lo que toca (`services.siguiente_paso`), mas WhatsApp, Llamar y "Ver el pedido completo".
+  Cancelar y rechazar un comprobante quedan dentro del pedido, para no tocarlos por error.
+- Cada boton pregunta antes (`data-confirmar`): al cliente le llega un aviso. Despues vuelve a la misma pestaña
+  (`volver`, solo rutas de la lista de pedidos).
+- La lista de Django sigue con `?lista=1` o con cualquier filtro suyo (los enlaces del resumen del administrador).
+- En el detalle, lo de todos los dias arriba y el formulario completo dentro de "Ver todos los datos del pedido".
+

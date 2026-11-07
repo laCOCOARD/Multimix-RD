@@ -147,21 +147,20 @@ def tareas_de_la_tienda(tiendas):
     filas = [
         (PEDIDO, pendientes.filter(transferencia_realizada=True).count(), 'transferencia por confirmar',
          'transferencias por confirmar', 'Mira el comprobante y, si el dinero llegó, márcalo como pagado.',
-         _enlace('pedidos_pedido_changelist', 'estado__exact=pendiente&transferencia_realizada__exact=1'), True),
+         _enlace('pedidos_pedido_changelist', 'bandeja=por_confirmar'), True),
         # Contra entrega y efectivo al recoger: se preparan sin esperar el pago.
         (PEDIDO, pendientes.exclude(metodo_pago=Pedido.Pago.TRANSFERENCIA).count(), 'pedido para cobrar al entregar',
          'pedidos para cobrar al entregar', 'Prepáralo y cóbralo en efectivo al entregarlo.',
-         _enlace('pedidos_pedido_changelist',
-                 'estado__exact=pendiente&metodo_pago__in=contra_entrega,efectivo_recoger'), True),
+         _enlace('pedidos_pedido_changelist', 'bandeja=por_preparar'), True),
         (PEDIDO, pedidos.filter(estado=E.PAGADO).count(), 'pedido pagado por preparar', 'pedidos pagados por preparar',
          'Ya están cobrados: prepáralos y cambia su estado.',
-         _enlace('pedidos_pedido_changelist', 'estado__exact=pagado'), True),
+         _enlace('pedidos_pedido_changelist', 'bandeja=por_preparar'), True),
         (PEDIDO, pedidos.filter(estado=E.PREPARANDO).count(), 'pedido en preparación', 'pedidos en preparación',
          'Cuando esté listo, márcalo como listo para recoger o enviado.',
-         _enlace('pedidos_pedido_changelist', 'estado__exact=preparando'), False),
+         _enlace('pedidos_pedido_changelist', 'bandeja=preparando'), False),
         (PEDIDO, pedidos.filter(estado__in=[E.LISTO, E.ENVIADO, E.EN_REPARTO]).count(), 'pedido por entregar',
          'pedidos por entregar', 'Márcalo como entregado cuando el cliente lo reciba.',
-         _enlace('pedidos_pedido_changelist', 'estado__in=listo,enviado,en_reparto'), False),
+         _enlace('pedidos_pedido_changelist', 'bandeja=por_entregar'), False),
         (DEVOLUCION, SolicitudDevolucion.objects.filter(tienda__in=tiendas, estado=SolicitudDevolucion.Estado.PENDIENTE).count(),
          'devolución por revisar', 'devoluciones por revisar', 'Acéptala o recházala y explica por qué.',
          _enlace('pedidos_solicituddevolucion_changelist', 'estado__exact=pendiente'), True),
@@ -185,7 +184,11 @@ def tareas_del_panel(request):
     if not hasattr(request, '_tareas_del_panel'):
         from tiendas.panel import tiendas_del_panel
 
-        request._tareas_del_panel = tareas_de_la_tienda(tiendas_del_panel(request))
+        # Solo las de pantallas que la persona puede ver (un ayudante no ve preguntas ni productos).
+        request._tareas_del_panel = [
+            tarea for tarea in tareas_de_la_tienda(tiendas_del_panel(request))
+            if request.user.has_perm('{}.view_{}'.format(*tarea['pantalla']))
+        ]
     return request._tareas_del_panel
 
 

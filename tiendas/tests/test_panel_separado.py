@@ -14,7 +14,7 @@ from .test_panel import PanelDeVendedores
 
 class SinLoDelAdministradorTests(PanelDeVendedores):
     def test_pedidos_sin_reparto_viejo(self):
-        lista = self.client.get(reverse('admin:pedidos_pedido_changelist'))
+        lista = self.client.get(reverse('admin:pedidos_pedido_changelist'), {'lista': 1})
         filtros = [f.title for f in lista.context['cl'].filter_specs]
         self.assertNotIn('lo cobra el sitio', filtros)
         self.assertNotIn('liquidación', filtros)
@@ -26,7 +26,7 @@ class SinLoDelAdministradorTests(PanelDeVendedores):
 
     def test_el_administrador_si_ve_el_reparto(self):
         self.client.force_login(self.admin)
-        lista = self.client.get(reverse('admin:pedidos_pedido_changelist'))
+        lista = self.client.get(reverse('admin:pedidos_pedido_changelist'), {'lista': 1})
         self.assertIn('lo cobra el sitio', [f.title for f in lista.context['cl'].filter_specs])
 
     def test_pagos_sin_quien_confirma(self):
