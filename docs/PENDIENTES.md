@@ -11,6 +11,12 @@ correo por Brevo desde `contacto.multimixrd@gmail.com` (punto 3 hecho: falta pro
 Power ahora se llama TIMEVERA. ÉLIXORA cargo 13 perfumes inspirados. Que cada deploy no cierre la sesion del
 administrador: comando `asegurar_superusuario`; falta poner el Start Command nuevo en Render (`docs/RENDER.md`).
 
+**2026-11-06:** `asegurar_superusuario` desplegado y el Start Command nuevo ya esta en Render. Respaldo semanal
+automatico de la base al bucket privado (`core/respaldos.py`, comando `respaldar_base`) y ping de GitHub Actions a
+`/salud/` cada 10 min para que el sitio no se duerma (`docs/RENDER.md`). Del punto 4 quedan: dominio, quitar datos
+de prueba, compra real desde el celular, politicas, UptimeRobot (opcional: el ping ya avisa por GitHub si falla) y
+Search Console (necesita dominio). Falta poner Health Check Path `/salud/` en `multimix-rd` (Settings).
+
 Notas para seguir el trabajo desde Claude Code en VS Code. Sin claves: las variables estan solo en Render.
 
 ## Lo que ya se hizo hoy

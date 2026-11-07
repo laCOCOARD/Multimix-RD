@@ -50,6 +50,10 @@ def ejecutar_si_toca():
 
         # Mensualidades y pedidos de mas de cada tienda, sus recordatorios y el cierre de quien no pago.
         revisar_cobros()
+        from .respaldos import respaldar_si_toca
+
+        # Una copia de la base por semana en el bucket privado (core/respaldos.py).
+        respaldar_si_toca()
     except Exception:
         # El mantenimiento nunca debe tumbar la pagina que alguien esta viendo.
         logger.exception('Fallaron las tareas periodicas')

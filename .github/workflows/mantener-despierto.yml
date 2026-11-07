@@ -1,0 +1,21 @@
+# Render free duerme el sitio tras 15 min sin visitas (30-50 s para despertar). Este ping lo mantiene despierto,
+# y de paso dispara las tareas periodicas (core/tareas.py: pedidos vencidos, cobros, respaldo semanal) aunque no
+# entre nadie y le da actividad a Supabase, que pausa el proyecto gratis tras 7 dias sin uso.
+# Gratis: el repositorio es publico. Un solo servicio despierto todo el mes cabe en las 750 h de Render free.
+# GitHub apaga los horarios tras 60 dias sin commits: si pasa, reactivarlo en Actions.
+name: Mantener despierto el sitio
+
+on:
+  schedule:
+    - cron: '*/10 * * * *'
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Llamar a /salud/
+        run: curl --fail --silent --show-error --retry 3 --retry-delay 20 --max-time 90 https://multimix-rd.onrender.com/salud/

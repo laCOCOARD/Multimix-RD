@@ -84,9 +84,25 @@ no está llegando: los límites por cuenta y por correo siguen funcionando, pero
   los pedidos pendientes vencidos y limpia sesiones caducadas (`core/tareas.py`).
 - **Disco permanente.** Nada se guarda en el servidor: las fotos van a Supabase y los registros a la consola
   de Render.
-- **Siempre encendido.** El servicio se duerme sin visitas; la primera carga tarda. Los límites de intentos
-  se cuentan en la base (`core.Intento`), así que no se reinician al dormirse.
-- **Respaldos de la base.** No hay ninguno automático.
+- **Siempre encendido.** El servicio se duerme a los 15 min sin visitas (30-50 s al despertar). Desde el
+  2026-11-06 lo evita `.github/workflows/mantener-despierto.yml`: GitHub Actions llama a `/salud/` cada 10 min
+  (gratis porque el repositorio es público). Eso también dispara las tareas periódicas sin visitas y mantiene
+  activo Supabase. GitHub apaga los horarios tras 60 días sin commits: si pasa, *Actions → Mantener despierto el
+  sitio → Enable workflow*. Los límites de intentos se cuentan en la base (`core.Intento`).
+- **Respaldos de la base.** Los hace el sitio: ver "Respaldos automáticos".
+
+## Respaldos automáticos (desde el 2026-11-06)
+
+- Una vez por semana las tareas periódicas guardan la base entera en el bucket **privado**
+  `multimix-privado`, carpeta `respaldos/`, como `AAAA-MM-DD-HHMM.json.gz` (`core/respaldos.py`). Se guardan los
+  últimos 8; los más viejos se borran solos. Sin `SUPABASE_S3_BUCKET_PRIVADO` no se respalda (nunca va al bucket
+  público de las fotos).
+- **Respaldar ya:** `python manage.py respaldar_base` (en la PC con `DATABASE_URL` de Supabase y las variables
+  `SUPABASE_*`, `MEDIA_STORAGE=supabase` y `SUPABASE_S3_BUCKET_PRIVADO=multimix-privado`).
+- **Bajar uno:** Supabase → Storage → `multimix-privado` → `respaldos` → Download. Contiene datos de clientes:
+  guárdalo fuera del repositorio.
+- **Restaurar** en una base vacía: `migrate` y luego `loaddata <archivo>.json.gz` (lo lee comprimido), como en el
+  paso 3 de la sección siguiente. Las fotos no van en el respaldo: siguen en Supabase.
 
 ## Donde esta la base (desde el 2026-11-02)
 

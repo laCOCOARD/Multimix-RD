@@ -4,7 +4,11 @@ Decisiones tomadas en Multimix RD (movidas desde CLAUDE.md el 2026-10-28). Leela
 
 - Sin cron en Render free: `config.middleware.TareasPeriodicasMiddleware` llama a `core.tareas.ejecutar_si_toca`,
   que como mucho una vez por hora (candado en la cache) cancela los pedidos vencidos y borra sesiones caducadas.
-  En las pruebas esta apagado (`TAREAS_AUTOMATICAS`).
+  En las pruebas esta apagado (`TAREAS_AUTOMATICAS`). Desde el 2026-11-06 un GitHub Action llama a `/salud/`
+  cada 10 min: el sitio no se duerme y las tareas corren aunque no entre nadie.
+- Respaldo semanal de la base (2026-11-06, `core/respaldos.py`): `dumpdata` comprimido al bucket privado, los
+  ultimos 8. Se sube con `bucket.put_object` y `application/gzip`: con `S3Storage.save` va como JSON con
+  Content-Encoding gzip y Supabase lo devuelve descomprimido.
 - Imagenes: `validar_imagen` mide los pixeles leyendo solo la cabecera (`IMAGEN_MAX_PIXELES` 40 MP;
   `IMAGEN_MAX_PIXELES_JPEG` 120 MP, porque un JPG se abre reducido con `draft`). `convertir_a_webp` achica antes de
   girar segun el EXIF, para no tener dos copias grandes en memoria (Render free tiene 512 MB).
