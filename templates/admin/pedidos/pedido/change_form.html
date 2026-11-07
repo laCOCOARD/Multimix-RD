@@ -1,11 +1,16 @@
 {% extends "admin/change_form.html" %}
 {% load moneda %}
 
+{# El numero del pedido va en su propio encabezado (sin el "Editar pedido" de Django). #}
+{% block content_title %}{% if not original %}{{ block.super }}{% endif %}{% endblock %}
+{% block content_subtitle %}{% if not original %}{{ block.super }}{% endif %}{% endblock %}
+
 {% block content %}
 {% if original %}
-<p class="pv-volver"><a class="pv-boton-grande pv-boton-claro" href="{% url 'admin:pedidos_pedido_changelist' %}">‹ Volver a los pedidos</a></p>
-<section class="pv-pedido pv-grande" aria-label="Qué sigue en este pedido">
+<p class="pv-volver"><a href="{% url 'admin:pedidos_pedido_changelist' %}">← Volver a los pedidos</a></p>
+<section class="pv-pedido pv-pagina" aria-label="Qué sigue en este pedido">
   <div class="pv-pedido-cabeza">
+    <h1 class="pv-pedido-numero">Pedido {{ original.numero }}</h1>
     <span class="panel-estado panel-estado-{{ original.estado }}">{{ original.get_estado_display }}</span>
     <strong class="pv-pedido-total">{{ original.total|moneda }}</strong>
     <span class="pv-pedido-dato">{{ original.get_metodo_pago_display }} · {{ original.get_metodo_entrega_display }}</span>
@@ -30,7 +35,7 @@
           {% if paso.puede_resolver_pago %}
             <form method="post" action="{% url 'admin:pedidos_pedido_pago' original.pk %}" class="pv-acciones">
               {% csrf_token %}
-              <button class="button pv-boton-principal" type="submit" name="accion" value="aprobar">El dinero llegó: confirmar pago</button>
+              <button class="pv-btn pv-btn-principal pv-btn-grande" type="submit" name="accion" value="aprobar">El dinero llegó: confirmar pago</button>
             </form>
             <details class="pv-rechazar">
               <summary>No llegó: rechazar el comprobante</summary>
@@ -38,7 +43,7 @@
                 {% csrf_token %}
                 <label for="pv-motivo">Motivo (le llega al cliente):</label>
                 <input type="text" name="motivo" id="pv-motivo" maxlength="255" placeholder="Ej.: no aparece en el banco">
-                <button class="button panel-boton-cancelado" type="submit" name="accion" value="rechazar">Rechazar comprobante</button>
+                <button class="pv-btn pv-btn-peligro" type="submit" name="accion" value="rechazar">Rechazar comprobante</button>
               </form>
             </details>
           {% endif %}
@@ -60,10 +65,10 @@
         </label>
         <div class="pv-acciones">
           {% if paso.principal %}
-            <button class="button pv-boton-principal" type="submit" name="estado" value="{{ paso.principal.valor }}">{{ paso.principal.texto }}</button>
+            <button class="pv-btn pv-btn-principal pv-btn-grande" type="submit" name="estado" value="{{ paso.principal.valor }}">{{ paso.principal.texto }}</button>
           {% endif %}
           {% for boton in paso.otros %}
-            <button class="button pv-boton-secundario{% if boton.valor == 'cancelado' %} pv-boton-peligro{% endif %}" type="submit" name="estado" value="{{ boton.valor }}"
+            <button class="pv-btn{% if boton.valor == 'cancelado' %} pv-btn-peligro{% endif %}" type="submit" name="estado" value="{{ boton.valor }}"
                     {% if boton.confirmar %}data-confirmar="{{ boton.confirmar }}"{% endif %}>{{ boton.texto }}</button>
           {% endfor %}
         </div>
@@ -77,8 +82,8 @@
       <h3>Cliente</h3>
       <p><strong>{{ original.nombre }}</strong></p>
       <p class="pv-acciones">
-        <a class="button panel-boton-whatsapp" href="{{ enlace_whatsapp_cliente }}" target="_blank" rel="noopener">WhatsApp ↗</a>
-        <a class="button pv-boton-secundario" href="{{ llamar_cliente }}">Llamar {{ telefono_cliente }}</a>
+        <a class="pv-btn" href="{{ enlace_whatsapp_cliente }}" target="_blank" rel="noopener">WhatsApp</a>
+        <a class="pv-btn" href="{{ llamar_cliente }}">Llamar {{ telefono_cliente }}</a>
       </p>
       {% if aviso_whatsapp %}
         <p><a href="{{ aviso_whatsapp }}" target="_blank" rel="noopener">Avisar al cliente por WhatsApp ↗</a>

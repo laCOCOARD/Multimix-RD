@@ -222,3 +222,10 @@ Decisiones tomadas en Multimix RD (movidas desde CLAUDE.md el 2026-10-28). Leela
   `quantize`), lo guarda en `Tienda.color_banner` junto al archivo del que salio (`color_banner_de`; si el banner
   cambia se calcula otra vez) y oscurece un poco el casi blanco. La tarjeta (`con-color`, texto oscuro con
   `color-claro`) lleva el banner en 12:5 y un degradado hacia ese color. Sin banner o si no se puede leer, queda igual.
+
+## Panel: tipografia y escala (2026-11-06)
+- El dueño encontro el primer tablero "de juguete" (emojis, muchos tamaños). El panel usa Inter (la de la tienda) y
+  cuatro tamaños: 13 datos, 15 texto y botones, 18 lo importante del pedido (numero y total), 24 titulo. Pesos 400,
+  500 y 600. Sin emojis en botones ni pestañas. Variables `--pv-t-*` y clases `.pv-pagina`, `.pv-btn` en `panel.css`.
+- Un solo boton ambar por pedido (la marca: ambar para la accion importante); el resto con borde.
+

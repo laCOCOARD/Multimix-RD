@@ -1,5 +1,5 @@
 {% extends "admin/base_site.html" %}
-{# Personas de la tienda (2026-11-06): quien entra al panel y con que permiso, en palabras simples. #}
+{# Personas de la tienda (2026-11-06): quien entra al panel y con que permiso. Logica en tiendas.services. #}
 
 {% block breadcrumbs %}
 <div class="breadcrumbs">
@@ -7,79 +7,81 @@
 </div>
 {% endblock %}
 
-{# El titulo grande va dentro de la pagina: sin el de Django arriba. #}
 {% block content_title %}{% endblock %}
 
 {% block content %}
-<div class="pv-inicio pv-grande">
-  <header class="pv-titulo-pagina">
-    <h1>Personas que entran al panel de {{ tienda.nombre }}</h1>
-    <p>Hay dos permisos. <strong>Dueño</strong>: puede hacer todo (productos, pedidos, dinero, plan).
-      <strong>Ayudante</strong>: solo atiende los pedidos (confirmar pagos, prepararlos y entregarlos).</p>
+<div class="pv-pagina">
+  <header class="pv-encabezado">
+    <div>
+      <h1>Personas y permisos</h1>
+      <p>Quiénes entran al panel de {{ tienda.nombre }} y qué puede hacer cada uno.</p>
+    </div>
   </header>
 
-  <section class="pv-bloque" aria-labelledby="titulo-personas">
-    <h2 id="titulo-personas">Quiénes entran ahora</h2>
-    <ul class="pv-personas">
-      {% for persona in personas %}
-        <li class="pv-persona">
-          <div class="pv-persona-datos">
-            <span class="pv-persona-icono" aria-hidden="true">{% if persona.rol == 'ayudante' %}🧑‍🔧{% else %}👑{% endif %}</span>
-            <div>
-              <strong>{{ persona.first_name|default:persona.get_username }}</strong>{% if persona.pk == yo %} (tú){% endif %}
-              <small>Usuario: {{ persona.get_username }}{% if persona.email %} · {{ persona.email }}{% endif %}</small>
-              <span class="pv-rol pv-rol-{{ persona.rol }}">{{ persona.rol_texto }}</span>
+  <div class="pv-columnas">
+    <section class="pv-caja" aria-labelledby="titulo-personas">
+      <h2 id="titulo-personas">Con acceso</h2>
+      <p><strong>Dueño:</strong> todo (productos, pedidos, dinero y plan). <strong>Ayudante:</strong> solo los pedidos.</p>
+      <ul class="pv-personas">
+        {% for persona in personas %}
+          <li class="pv-persona">
+            <span class="pv-iniciales" aria-hidden="true">{{ persona.first_name|default:persona.get_username|slice:":1"|upper }}</span>
+            <div class="pv-persona-datos">
+              <p><strong>{{ persona.first_name|default:persona.get_username }}</strong>{% if persona.pk == yo %} (tú){% endif %}
+                <span class="pv-rol pv-rol-{{ persona.rol }}">{{ persona.rol_texto }}</span></p>
+              <p class="pv-suave">Usuario: {{ persona.get_username }}{% if persona.email %} · {{ persona.email }}{% endif %}</p>
             </div>
-          </div>
-          {% if persona.pk != yo and not persona.is_superuser %}
-            <div class="pv-persona-acciones">
-              <form method="post">
-                {% csrf_token %}
-                <input type="hidden" name="persona" value="{{ persona.pk }}">
-                <input type="hidden" name="accion" value="rol">
-                {% if persona.rol == 'ayudante' %}
-                  <button class="pv-boton-grande pv-boton-gris" type="submit" name="rol" value="dueno"
-                          data-confirmar="¿Hacer dueño a {{ persona.first_name|default:persona.get_username }}? Podrá hacer todo en la tienda.">Hacerlo dueño</button>
-                {% else %}
-                  <button class="pv-boton-grande pv-boton-gris" type="submit" name="rol" value="ayudante"
-                          data-confirmar="¿Dejar a {{ persona.first_name|default:persona.get_username }} solo con los pedidos?">Dejarlo solo con pedidos</button>
-                {% endif %}
-              </form>
-              <form method="post">
-                {% csrf_token %}
-                <input type="hidden" name="persona" value="{{ persona.pk }}">
-                <button class="pv-boton-grande pv-boton-rojo" type="submit" name="accion" value="quitar"
-                        data-confirmar="¿Quitarle el acceso a {{ persona.first_name|default:persona.get_username }}? Ya no podrá entrar al panel de {{ tienda.nombre }}.">Quitar acceso</button>
-              </form>
-            </div>
-          {% endif %}
-        </li>
-      {% empty %}
-        <li>Nadie entra todavía.</li>
-      {% endfor %}
-    </ul>
-  </section>
-
-  <section class="pv-bloque" aria-labelledby="titulo-agregar">
-    <h2 id="titulo-agregar">Agregar una persona</h2>
-    <p class="pv-ayuda-grande">Crea su cuenta aquí y dale el usuario y la contraseña. Con eso entra al panel.</p>
-    <form method="post" class="pv-formulario-grande">
-      {% csrf_token %}
-      <input type="hidden" name="accion" value="agregar">
-      <label>Nombre <input type="text" name="nombre" maxlength="150" required value="{{ datos.nombre }}" placeholder="Ej.: María Pérez"></label>
-      <label>Usuario para entrar <input type="text" name="usuario" maxlength="150" required autocomplete="off" value="{{ datos.usuario }}" placeholder="Ej.: maria"></label>
-      <label>Contraseña <input type="password" name="clave" required autocomplete="new-password" minlength="8">
-        <small>Al menos 8 letras o números. Que no sea fácil de adivinar.</small></label>
-      <label>Correo (opcional) <input type="email" name="correo" maxlength="254" value="{{ datos.correo }}"></label>
-      <fieldset class="pv-roles">
-        <legend>¿Qué podrá hacer?</legend>
-        {% for valor, texto in roles %}
-          <label class="pv-rol-opcion"><input type="radio" name="rol" value="{{ valor }}" required
-            {% if datos.rol == valor or not datos.rol and valor == 'ayudante' %}checked{% endif %}> {{ texto }}</label>
+            {% if persona.pk != yo and not persona.is_superuser %}
+              <div class="pv-persona-acciones">
+                <form method="post">
+                  {% csrf_token %}
+                  <input type="hidden" name="persona" value="{{ persona.pk }}">
+                  <input type="hidden" name="accion" value="rol">
+                  {% if persona.rol == 'ayudante' %}
+                    <button class="pv-btn" type="submit" name="rol" value="dueno"
+                            data-confirmar="¿Hacer dueño a {{ persona.first_name|default:persona.get_username }}? Podrá hacer todo en la tienda.">Hacer dueño</button>
+                  {% else %}
+                    <button class="pv-btn" type="submit" name="rol" value="ayudante"
+                            data-confirmar="¿Dejar a {{ persona.first_name|default:persona.get_username }} solo con los pedidos?">Pasar a ayudante</button>
+                  {% endif %}
+                </form>
+                <form method="post">
+                  {% csrf_token %}
+                  <input type="hidden" name="persona" value="{{ persona.pk }}">
+                  <button class="pv-btn pv-btn-peligro" type="submit" name="accion" value="quitar"
+                          data-confirmar="¿Quitarle el acceso a {{ persona.first_name|default:persona.get_username }}? Ya no podrá entrar al panel de {{ tienda.nombre }}.">Quitar acceso</button>
+                </form>
+              </div>
+            {% endif %}
+          </li>
+        {% empty %}
+          <li class="pv-persona">Nadie entra todavía.</li>
         {% endfor %}
-      </fieldset>
-      <button class="pv-boton-grande pv-boton-verde" type="submit">Agregar persona</button>
-    </form>
-  </section>
+      </ul>
+    </section>
+
+    <section class="pv-caja" aria-labelledby="titulo-agregar">
+      <h2 id="titulo-agregar">Agregar una persona</h2>
+      <p>Crea su cuenta y dale el usuario y la contraseña para entrar.</p>
+      <form method="post" class="pv-formulario">
+        {% csrf_token %}
+        <input type="hidden" name="accion" value="agregar">
+        <label>Nombre <input class="pv-campo" type="text" name="nombre" maxlength="150" required value="{{ datos.nombre }}" placeholder="María Pérez"></label>
+        <label>Usuario <input class="pv-campo" type="text" name="usuario" maxlength="150" required autocomplete="off" value="{{ datos.usuario }}" placeholder="maria">
+          <small>Sin espacios. Con esto entra al panel.</small></label>
+        <label>Contraseña <input class="pv-campo" type="password" name="clave" required autocomplete="new-password" minlength="8">
+          <small>Al menos 8 caracteres y que no sea fácil de adivinar.</small></label>
+        <label>Correo (opcional) <input class="pv-campo" type="email" name="correo" maxlength="254" value="{{ datos.correo }}"></label>
+        <fieldset class="pv-roles">
+          <legend>Permiso</legend>
+          <label class="pv-rol-opcion"><input type="radio" name="rol" value="ayudante" required{% if datos.rol != 'dueno' %} checked{% endif %}>
+            <span><strong>Ayudante</strong><small class="pv-suave">Confirma pagos, prepara y entrega pedidos.</small></span></label>
+          <label class="pv-rol-opcion"><input type="radio" name="rol" value="dueno"{% if datos.rol == 'dueno' %} checked{% endif %}>
+            <span><strong>Dueño</strong><small class="pv-suave">Puede hacer todo en la tienda.</small></span></label>
+        </fieldset>
+        <button class="pv-btn pv-btn-oscuro pv-btn-grande" type="submit">Agregar persona</button>
+      </form>
+    </section>
+  </div>
 </div>
 {% endblock %}

@@ -30,20 +30,16 @@ CLIENTES_POR_PAGINA = 50
 # ?lista=1, sigue la lista de siempre de Django.
 TARJETAS_POR_PAGINA = 20
 PARAMETROS_DEL_TABLERO = {'bandeja', 'q', 'p', 'tienda'}
-# (clave de services._bandejas, icono, nombre en el tablero). Las primeras cuatro esperan algo de la tienda.
+# (clave de services._bandejas, nombre en el tablero). Las primeras cuatro esperan algo de la tienda.
 PESTANAS = [
-    ('por_confirmar', '💰', 'Revisar pagos'),
-    ('por_preparar', '📦', 'Por preparar'),
-    ('preparando', '⏱️', 'Preparándose'),
-    ('por_entregar', '🚚', 'Por entregar'),
-    ('esperando_pago', '⏳', 'Esperando que paguen'),
-    ('entregados', '✅', 'Entregados'),
-    ('cancelados', '✖️', 'Cancelados'),
+    ('por_confirmar', 'Revisar pagos'),
+    ('por_preparar', 'Por preparar'),
+    ('preparando', 'Preparándose'),
+    ('por_entregar', 'Por entregar'),
+    ('esperando_pago', 'Esperando pago'),
+    ('entregados', 'Entregados'),
+    ('cancelados', 'Cancelados'),
 ]
-ICONOS = {
-    Estado.PAGADO: '💰', Estado.PREPARANDO: '📦', Estado.LISTO: '🛍️', Estado.ENVIADO: '🚚',
-    Estado.EN_REPARTO: '🛵', Estado.ENTREGADO: '✅',
-}
 # La pregunta antes de cada boton grande del tablero: un toque de mas evita un aviso equivocado al cliente.
 PREGUNTAS = {
     Estado.PREPARANDO: '¿Empezar a preparar el pedido {numero}? Al cliente le llega el aviso.',
@@ -277,7 +273,7 @@ class PedidoAdmin(AdminDeTienda, admin.ModelAdmin):
             )
         cuentas = {bandeja['clave']: bandeja['cantidad'] for bandeja in services.bandejas_de_pedidos(pedidos)}
         clave = request.GET.get('bandeja', '')
-        nombres = {c: nombre for c, _, nombre in PESTANAS}
+        nombres = dict(PESTANAS)
         if clave == 'todos':
             lista, titulo, orden = pedidos, 'Todos los pedidos', '-creado'
         elif clave in nombres:
@@ -300,9 +296,9 @@ class PedidoAdmin(AdminDeTienda, admin.ModelAdmin):
             return f'?{texto}' if texto else '?'
 
         pestanas = [
-            {'clave': c, 'icono': icono, 'nombre': nombre, 'cantidad': cuentas[c], 'url': enlace(bandeja=c, p=''),
+            {'clave': c, 'nombre': nombre, 'cantidad': cuentas[c], 'url': enlace(bandeja=c, p=''),
              'activa': c == clave, 'atender': c in services.BANDEJAS_PARA_ATENDER}
-            for c, icono, nombre in PESTANAS
+            for c, nombre in PESTANAS
         ]
         return render(request, 'admin/pedidos/pedido/tablero.html', {
             **self.admin_site.each_context(request),
@@ -333,16 +329,15 @@ class PedidoAdmin(AdminDeTienda, admin.ModelAdmin):
         if self.has_change_permission(request, pedido):
             if pago is not None and not paso.confirma_el_sitio and request.user.has_perm('pagos.change_pago'):
                 accion = {
-                    'tipo': 'pago', 'texto': '💰 El dinero llegó: confirmar pago',
+                    'tipo': 'pago', 'texto': 'El dinero llegó: confirmar pago',
                     'confirmar': f'¿Ya viste el dinero del pedido {pedido.numero} en tu banco? Se marca como pagado '
                                  'y al cliente le llega el aviso.',
                 }
             elif paso.principal:
                 cobro = '' if pedido.fecha_pago else ' y pagó'
-                icono = ICONOS.get(paso.principal, '')
                 accion = {
                     'tipo': 'estado', 'valor': paso.principal,
-                    'texto': f'{icono} {services.VERBOS[paso.principal]}'.strip(),
+                    'texto': services.VERBOS[paso.principal],
                     'confirmar': PREGUNTAS.get(paso.principal, '¿Cambiar el pedido {numero}?').format(
                         numero=pedido.numero, cobro=cobro),
                 }

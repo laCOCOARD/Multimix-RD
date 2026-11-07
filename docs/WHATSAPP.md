@@ -46,6 +46,12 @@ le escribe a quien la marca (`Pedido.avisos_whatsapp`).
    | `WHATSAPP_IDIOMA` | opcional; por defecto `es` |
 
    Al guardar, Render vuelve a desplegar y el checkout ya muestra la casilla.
+5. Probar el envio desde el Shell de Render (o la PC con esas variables): `python manage.py probar_whatsapp 809-555-1234`
+   con un telefono propio. Si Meta lo rechaza, el motivo queda en los registros.
+
+Desde el 2026-11-06 (pedido del dueño) la casilla "Recibir los avisos de mi pedido por WhatsApp" viene **marcada**;
+el cliente la puede desmarcar. Solo aparece cuando WhatsApp esta conectado. Se avisa al crear el pedido y en cada
+cambio de estado, ademas del correo.
 
 ### Costos y registro
 

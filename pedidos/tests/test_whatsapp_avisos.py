@@ -103,3 +103,31 @@ class AvisoAutomaticoTests(TestCase):
                 pedido = self.comprar(avisos_whatsapp='on')
             self.assertFalse(whatsapp_api.enviar_estado(pedido))
         self.assertEqual(pedido.estado, Pedido.Estado.PENDIENTE)
+
+    @override_settings(**CONECTADO)
+    def test_la_casilla_viene_marcada(self):
+        self.client.post(ruta('carrito:agregar'), {'producto_id': self.producto.pk, 'cantidad': 1})
+        pagina = self.client.get(ruta('pedidos:checkout'))
+        self.assertContains(pagina, 'name="avisos_whatsapp" checked')
+        self.assertContains(pagina, 'Recibir los avisos de mi pedido por WhatsApp')
+
+
+class ProbarWhatsappTests(TestCase):
+    def test_sin_conectar_avisa(self):
+        from django.core.management import CommandError, call_command
+
+        with self.assertRaises(CommandError):
+            call_command('probar_whatsapp', '809-555-1234')
+
+    @override_settings(**CONECTADO)
+    def test_manda_la_plantilla_de_prueba(self):
+        from io import StringIO
+
+        from django.core.management import call_command
+
+        salida = StringIO()
+        with mock.patch('pedidos.whatsapp_api.urllib.request.urlopen', return_value=RespuestaDeMeta()) as urlopen:
+            call_command('probar_whatsapp', '809-555-1234', stdout=salida)
+        cuerpo = json.loads(urlopen.call_args.args[0].data)
+        self.assertEqual(cuerpo['to'], '18095551234')
+        self.assertIn('Enviado', salida.getvalue())

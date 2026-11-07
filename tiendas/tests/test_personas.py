@@ -22,7 +22,7 @@ class PersonasTests(PanelDeVendedores):
         })
 
     def test_el_dueno_agrega_un_ayudante_que_solo_ve_pedidos(self):
-        self.assertContains(self.client.get(self.url), 'Personas que entran al panel')
+        self.assertContains(self.client.get(self.url), 'Agregar una persona')
         self.assertRedirects(self.agregar(), self.url, fetch_redirect_response=False)
         maria = get_user_model().objects.get(username='maria')
         self.assertTrue(maria.is_staff and maria.check_password(CLAVE))

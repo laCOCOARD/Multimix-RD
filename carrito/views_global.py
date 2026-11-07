@@ -105,6 +105,8 @@ def checkout_global(request):
 
 
 def _contexto_checkout(carrito, formulario):
+    from pedidos import whatsapp_api
+
     from decimal import Decimal
     carritos = carrito.carritos()
     total = sum(c.resumen().total for c in carritos.values())
@@ -113,6 +115,7 @@ def _contexto_checkout(carrito, formulario):
         'carritos': carritos,
         'total_global': total,
         'cuentas_sitio': cuentas_del_sitio(),
+        'whatsapp_automatico': whatsapp_api.configurado(),
     }
 
 

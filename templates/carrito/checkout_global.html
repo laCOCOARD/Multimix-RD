@@ -87,10 +87,12 @@
         </div>
 
         <div class="mm-panel p-4 mb-3">
+          {% if whatsapp_automatico %}
           <div class="form-check mb-2">
             {{ formulario.avisos_whatsapp }}
             <label class="form-check-label" for="{{ formulario.avisos_whatsapp.id_for_label }}">{{ formulario.avisos_whatsapp.label }}</label>
           </div>
+          {% endif %}
           <div class="form-check">
             {{ formulario.acepta_terminos }}
             <label class="form-check-label" for="{{ formulario.acepta_terminos.id_for_label }}">{{ formulario.acepta_terminos.label }}</label>

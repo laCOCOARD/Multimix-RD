@@ -37,16 +37,21 @@ def enviar_estado(pedido):
     """Envia la plantilla del estado del pedido al telefono del cliente. Devuelve True si Meta la acepto."""
     if not configurado() or not pedido.avisos_whatsapp or not pedido.telefono:
         return False
+    return enviar_plantilla(pedido.telefono, parametros_del_estado(pedido), f'pedido {pedido.numero}, {pedido.estado}')
+
+
+def enviar_plantilla(telefono, parametros, referencia):
+    """Envia la plantilla de avisos a un telefono. `referencia` solo va a los registros. True si Meta la acepto."""
     cuerpo = {
         'messaging_product': 'whatsapp',
-        'to': telefono_internacional(pedido.telefono),
+        'to': telefono_internacional(telefono),
         'type': 'template',
         'template': {
             'name': settings.WHATSAPP_PLANTILLA,
             'language': {'code': settings.WHATSAPP_IDIOMA},
             'components': [{
                 'type': 'body',
-                'parameters': [{'type': 'text', 'text': texto} for texto in parametros_del_estado(pedido)],
+                'parameters': [{'type': 'text', 'text': texto} for texto in parametros],
             }],
         },
     }
@@ -61,10 +66,10 @@ def enviar_estado(pedido):
     except urllib.error.HTTPError as error:
         # El cuerpo dice por que lo rechazo (plantilla sin aprobar, numero sin WhatsApp...). No trae el token.
         detalle = error.read().decode('utf-8', errors='replace')[:300]
-        logger.error('WhatsApp rechazó el aviso del pedido %s (%s): %s', pedido.numero, error.code, detalle)
+        logger.error('WhatsApp rechazó el aviso (%s, %s): %s', referencia, error.code, detalle)
         return False
     except OSError:
-        logger.exception('No se pudo enviar el aviso de WhatsApp del pedido %s', pedido.numero)
+        logger.exception('No se pudo enviar el aviso de WhatsApp (%s)', referencia)
         return False
-    logger.info('Aviso de WhatsApp enviado: pedido %s, %s', pedido.numero, pedido.estado)
+    logger.info('Aviso de WhatsApp enviado: %s', referencia)
     return True
